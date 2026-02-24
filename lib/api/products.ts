@@ -39,7 +39,7 @@ export async function searchProducts(
   offset = 0
 ): Promise<{ products: Product[]; total: number }> {
   const data = await apiGet<{ products: BackendProduct[]; total: number }>("/products", {
-    search: search && search.length >= 2 ? search : undefined,
+    search: search?.trim() || undefined,
     category_id: categoryId,
     limit,
     offset,

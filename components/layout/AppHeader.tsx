@@ -7,10 +7,12 @@ export function AppHeader() {
   const { area } = useArea();
 
   return (
-    <div className="bg-olive px-5 pt-4 pb-5 relative overflow-hidden flex-shrink-0">
-      {/* BG circles */}
-      <div className="absolute w-44 h-44 rounded-full bg-white/5 -bottom-14 -left-12 pointer-events-none" />
-      <div className="absolute w-24 h-24 rounded-full bg-white/4 -top-8 right-5 pointer-events-none" />
+    <div className="bg-olive px-5 pt-4 pb-5 relative overflow-visible flex-shrink-0 z-30">
+      {/* BG circles (clipped to header) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-44 h-44 rounded-full bg-white/5 -bottom-14 -left-12" />
+        <div className="absolute w-24 h-24 rounded-full bg-white/4 -top-8 right-5" />
+      </div>
 
       {/* Top row */}
       <div className="flex items-center justify-between mb-3 relative z-10">

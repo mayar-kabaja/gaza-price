@@ -13,17 +13,16 @@ export function useSearch() {
   useEffect(() => {
     clearTimeout(timer.current);
 
-    if (!query.trim() || query.length < 1) {
+    if (!query.trim()) {
       setResults([]);
       setOpen(false);
       return;
     }
-
     timer.current = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/products?search=${encodeURIComponent(query)}&limit=8`
+          `/api/products?search=${encodeURIComponent(query.trim())}&limit=10&offset=0`
         );
         const data = await res.json();
         setResults(data.products ?? []);

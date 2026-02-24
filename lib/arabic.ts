@@ -21,8 +21,9 @@ export function normalizeArabicNumerals(text: string): string {
 }
 
 /** Returns number as string (English digits). Use for display when Arabic numerals are not wanted. */
-export function toArabicNumerals(num: number): string {
-  return num.toString();
+export function toArabicNumerals(num: number | undefined | null): string {
+  if (num == null || Number.isNaN(num)) return "0";
+  return String(num);
 }
 
 export function formatPrice(price: number, currency = "₪"): string {

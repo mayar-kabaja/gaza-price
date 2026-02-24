@@ -14,6 +14,16 @@ export function SearchBar() {
     router.push(`/product/${product.id}`);
   }
 
+  function handleSuggest() {
+    const name = query.trim();
+    clear();
+    router.push(`/suggest?name=${encodeURIComponent(name)}`);
+  }
+
+  const showDropdown = open && query.trim().length >= 1 && !loading;
+  const hasResults = results.length > 0;
+  const showNoResults = showDropdown && !hasResults;
+
   return (
     <div className="relative z-20">
       <div className="bg-white rounded-xl flex items-center gap-2.5 px-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
@@ -25,7 +35,7 @@ export function SearchBar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="ابحث... سكر، أرز، زيت، دقيق"
-          className="flex-1 py-3 text-sm font-body text-ink placeholder:text-mist bg-transparent outline-none"
+          className="flex-1 py-3 text-sm font-body text-ink placeholder:text-mist bg-transparent outline-none min-w-0"
           dir="rtl"
         />
         {loading && (
@@ -33,34 +43,41 @@ export function SearchBar() {
         )}
       </div>
 
-      {/* Dropdown */}
-      {open && results.length > 0 && (
+      {/* Results dropdown */}
+      {showDropdown && hasResults && (
         <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-border overflow-hidden z-30">
           {results.map((product) => (
             <button
               key={product.id}
+              type="button"
               onClick={() => handleSelect(product)}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-fog text-right border-b border-border last:border-0 transition-colors"
             >
-              <span className="text-lg">{product.category?.icon ?? "📦"}</span>
-              <div className="flex-1 min-w-0">
+              <span className="text-lg flex-shrink-0">{product.category?.icon ?? "📦"}</span>
+              <div className="flex-1 min-w-0 text-right">
                 <div className="font-display font-bold text-sm text-ink truncate">
                   {product.name_ar}
                 </div>
                 <div className="text-xs text-mist">
-                  {product.unit_size} {product.unit} · {product.category?.name_ar}
+                  {product.unit_size} {product.unit} · {product.category?.name_ar ?? ""}
                 </div>
               </div>
             </button>
           ))}
-          {/* Suggest row */}
+        </div>
+      )}
+
+      {/* No results — suggest new product */}
+      {showNoResults && (
+        <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-border overflow-hidden z-30">
           <button
-            onClick={() => { setOpen(false); router.push(`/suggest?name=${encodeURIComponent(query)}`); }}
+            type="button"
+            onClick={handleSuggest}
             className="w-full flex items-center gap-3 px-4 py-3 text-right bg-fog hover:bg-olive-pale transition-colors"
           >
-            <span className="text-lg">➕</span>
-            <div className="text-sm text-olive font-semibold">
-              اقترح منتجاً جديداً: "{query}"
+            <span className="text-lg flex-shrink-0">➕</span>
+            <div className="flex-1 min-w-0 text-sm text-olive font-semibold">
+              اقترح منتجاً جديداً: {query.trim()}
             </div>
           </button>
         </div>
