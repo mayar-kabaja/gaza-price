@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Tailwind v4: custom theme in @theme {}, not tailwind.config */
+@theme {
+  --color-olive: #4A7C59;
+  --color-olive-deep: #3A6347;
+  --color-olive-pale: #EBF3EE;
+  --color-olive-mid: #C2DBC9;
+  --color-sand: #C9A96E;
+  --color-sand-light: #F7F0E4;
+  --color-confirm: #2D9E5F;
+  --color-ink: #1A1F2E;
+  --color-slate: #556070;
+  --color-mist: #96A3AF;
+  --color-border: #E4EAF0;
+  --color-fog: #F4F7F9;
+}
+
+:root {
+  --font-tajawal: "Tajawal";
+  --font-ibm-arabic: "IBM Plex Sans Arabic";
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: var(--font-ibm-arabic), sans-serif;
+  background-color: #F4F7F9;
+  color: #1A1F2E;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Price numbers always LTR */
+.price-number {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Mobile shell */
+.app-shell {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: #F4F7F9;
+  position: relative;
+  overflow: hidden;
+}

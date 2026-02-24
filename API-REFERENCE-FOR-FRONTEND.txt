@@ -1,0 +1,490 @@
+================================================================================
+GAZA PRICE BACKEND - API REFERENCE FOR FRONTEND / AI TOOL
+================================================================================
+Base URL: your backend root (e.g. https://gaza-price-backend.onrender.com)
+Content-Type: application/json unless noted.
+
+--------------------------------------------------------------------------------
+AUTHENTICATION
+--------------------------------------------------------------------------------
+- Admin login: POST /auth/login with body → returns { accessToken, expiresIn }.
+  Use header: Authorization: Bearer <accessToken> for admin/protected routes.
+- Anonymous contributor: send header x-anon-session-id (any string, e.g. UUID)
+  for /contributors/me, /contributors/me/reports, /prices (to attribute report).
+- Public routes: no auth. Protected routes require JWT (admin).
+
+================================================================================
+AUTH
+================================================================================
+
+POST /auth/login
+  Public.
+  Request body:
+    email: string (email)
+    password: string (min 6 chars)
+  Response: { accessToken: string, expiresIn: string }
+
+POST /auth/register
+  Public.
+  Request body:
+    email: string (email)
+    password: string (min 6 chars)
+  Response: { accessToken: string, expiresIn: string }
+
+POST /auth/me
+  Auth: JWT required.
+  No body.
+  Response: { id: string, email: string }
+
+================================================================================
+AREAS
+================================================================================
+
+GET /areas
+  Public.
+  Query: governorate?: "north" | "central" | "south"
+  Response: { areas: Array<{ id: string, name_ar: string, governorate: string | null, active_reports_count: number }> }
+
+GET /areas/:id
+  Public. :id = UUID.
+  Response: { id: string, name_ar: string, governorate: string | null, is_active: boolean }
+
+POST /areas
+  Auth: JWT.
+  Request body:
+    name_ar: string (max 50)
+    governorate?: string (max 50)
+    is_active?: boolean
+  Response: Area entity (id, name_ar, governorate, is_active)
+
+PATCH /areas/:id
+  Auth: JWT. :id = UUID.
+  Request body: partial of { name_ar?, governorate?, is_active? }
+  Response: updated Area
+
+DELETE /areas/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+CATEGORIES
+================================================================================
+
+GET /categories
+  Public.
+  Response: Array<{ id: string, name_ar: string, name_en: string | null, icon: string | null, sort_order: number }>
+
+GET /categories/:id
+  Public. :id = UUID.
+  Response: Category entity
+
+POST /categories
+  Auth: JWT.
+  Request body:
+    name_ar: string (max 50)
+    name_en?: string (max 50)
+    icon?: string (max 10)
+    sort_order?: number (int >= 0)
+  Response: Category entity
+
+PATCH /categories/:id
+  Auth: JWT. :id = UUID.
+  Request body: partial of create
+  Response: updated Category
+
+DELETE /categories/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+PRODUCTS
+================================================================================
+
+GET /products
+  Public. Query params:
+    search?: string (max 100, min 2 chars for search)
+    category_id?: string (UUID)
+    limit?: number (1-30, default 10)
+    offset?: number (>= 0, default 0)
+  Response: { products: Array<{ id: string, name_ar: string, unit: string | null, unit_size: number, category: { name_ar: string, icon: string | null } | null }>, total: number }
+
+GET /products/:id
+  Public. :id = UUID.
+  Response: { id, name_ar, unit, unit_size, category: { name_ar, icon }, stats: { avg_price, median_price, min_price, active_prices_count }, recent_prices?: [...] }
+
+POST /products/suggest
+  Public.
+  Request body:
+    name_ar: string (max 100)
+    category_id: string (UUID)
+    unit?: string (max 20)
+    unit_size: number (>= 0)
+    suggestion_note?: string (max 200)
+    price: number (>= 0.01)
+    area_id: string (UUID)
+    store_name_raw?: string (max 100)
+  Response: { message, pending_product_name, ... } (suggestion recorded)
+
+POST /products
+  Auth: JWT.
+  Request body:
+    name_ar: string (max 100)
+    name_en?: string (max 100)
+    category_id: string (UUID)
+    unit?: string (max 20)
+    unit_size: number (>= 0)
+    barcode?: string (max 30)
+    status?: "active" | "pending_review" | "rejected" | "merged"
+    suggestion_note?: string (max 200)
+  Response: Product entity
+
+PATCH /products/:id
+  Auth: JWT. :id = UUID.
+  Request body: partial of create
+  Response: updated Product
+
+DELETE /products/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+PRICES
+================================================================================
+
+POST /prices
+  Public. Optional: JWT or header x-anon-session-id to attribute reporter.
+  Request body:
+    product_id?: string | null (UUID)
+    store_id?: string | null (UUID)
+    store_name_raw?: string | null (max 100)
+    area_id: string (UUID)  (required)
+    price: number (>= 0.01)
+    currency?: string (max 5, default "ILS")
+    pending_product_name?: string | null (max 100)
+    awaiting_product_approval?: boolean
+    receipt_photo_url?: string | null
+    status?: "pending" | "confirmed" | "flagged" | "rejected" | "expired"
+  Response: saved Price entity (id, product_id, store_id, area_id, price, currency, status, reported_at, expires_at, ...)
+
+GET /prices
+  Public. Query params:
+    product_id: string (UUID)  (required)
+    area_id?: string (UUID)
+    sort?: "price_asc" | "trust_desc" | "recent" (default "price_asc")
+    limit?: number (1-50, default 20)
+    offset?: number (>= 0, default 0)
+  Response: { prices: Array<{ id, price, currency, store: { name_ar }, area: { name_ar }, trust_score, confirmation_count, has_receipt, is_lowest, reported_at, expires_at }>, stats: { avg_price, median_price, min_price }, total: number }
+
+GET /prices/:id
+  Public. :id = UUID.
+  Response: { id, price, currency, product: { id, name_ar, unit } | null, store: { name_ar }, area: { name_ar }, trust_score, confirmation_count, flag_count, has_receipt, receipt_url, status, reported_at, expires_at }
+
+PATCH /prices/:id
+  Auth: JWT. :id = UUID.
+  Request body: partial of create
+  Response: updated Price
+
+DELETE /prices/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+STORES
+================================================================================
+
+GET /stores
+  Public. Query: verified?: "true" | "1" (filter verified only)
+  Response: Array<Store with area>
+
+GET /stores/:id
+  Public. :id = UUID.
+  Response: Store entity (id, name_ar, area_id, area?, lat, lng, is_verified, created_at)
+
+POST /stores
+  Auth: JWT.
+  Request body:
+    name_ar: string (max 100)
+    area_id: string (UUID)
+    lat?: number
+    lng?: number
+    is_verified?: boolean
+  Response: Store entity
+
+PATCH /stores/:id
+  Auth: JWT. :id = UUID.
+  Request body: partial of create
+  Response: updated Store
+
+DELETE /stores/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+CONTRIBUTORS
+================================================================================
+
+GET /contributors/me
+  Public. Identify by JWT or header x-anon-session-id (required if no JWT).
+  Response: { id, display_handle, area: { id, name_ar } | null, ... } (profile)
+
+PATCH /contributors/me
+  Public. Same identity as GET /contributors/me.
+  Request body:
+    display_handle?: string | null (max 30)
+    area_id?: string | null (UUID)
+  Response: { updated: true, display_handle: string | null, area: { id, name_ar } | null }
+
+DELETE /contributors/me
+  Public. Same identity. Deletes contributor/anon profile.
+  Response: { deleted: true } or similar
+
+GET /contributors/me/reports
+  Public. Same identity. Query: status?: string, limit?: number, offset?: number
+  Response: list of contributor's price reports
+
+PATCH /contributors/me/auth
+  Auth: JWT.
+  Request body (UpdateContributorDto):
+    device_hash?: string (max 64)
+    area_id?: string | null (UUID)
+    display_handle?: string | null (max 30)
+    trust_level?: TrustLevel
+    is_banned?: boolean
+    ban_reason?: string | null
+  Response: updated contributor
+
+GET /contributors/:id
+  Public. :id = UUID.
+  Response: Contributor entity
+
+POST /contributors
+  Auth: JWT. Links anon session to authenticated user.
+  Request body:
+    anon_session_id: string (UUID)
+    device_hash?: string (max 64)
+    area_id?: string (UUID)
+    display_handle?: string (max 30)
+    trust_level?: TrustLevel
+  Response: Contributor entity
+
+================================================================================
+REPORTS (price report summary / confirm / flag)
+================================================================================
+
+GET /reports/summary
+  Public. Query: from?: string (ISO date), to?: string (ISO date), areaId?: string (UUID)
+  Response: summary stats (e.g. counts by area/product)
+
+POST /reports
+  Public. Submits a price report (same as POST /prices conceptually; check backend for actual semantics).
+  Request body (CreateReportDto):
+    product_id: string (UUID)
+    price: number (>= 0.01)
+    currency?: string (max 5)
+    area_id: string (UUID)
+    store_id?: string | null (UUID)
+    store_name_raw?: string | null (max 100)
+    receipt_photo_url?: string | null
+  Response: created report/price
+
+GET /reports/:id
+  Public. :id = UUID (report/price id).
+  Response: report state (id, status, trust_score, confirmation_count, flag_count, product, area, reported_at, expires_at)
+
+POST /reports/:id/confirm
+  Public. :id = report/price UUID. Confirms a report.
+  No body.
+  Response: confirmation result
+
+POST /reports/:id/flag
+  Public. :id = report/price UUID. Flags a report.
+  Request body:
+    reason: "wrong_price" | "wrong_store" | "outdated" | "spam" | "other"
+  Response: flag result
+
+================================================================================
+CONFIRMATIONS
+================================================================================
+
+POST /confirmations
+  Auth: JWT.
+  Request body:
+    price_id: string (UUID)
+  Response: Confirmation entity
+
+GET /confirmations/report/:priceReportId
+  Public. :priceReportId = UUID.
+  Response: confirmations for that price report
+
+GET /confirmations/contributor/:contributorId
+  Public. :contributorId = UUID.
+  Response: confirmations by that contributor
+
+GET /confirmations/:id
+  Public. :id = UUID.
+  Response: Confirmation entity
+
+DELETE /confirmations/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+PRICE FLAGS
+================================================================================
+
+POST /price-flags
+  Auth: JWT.
+  Request body:
+    price_id: string (UUID)
+    reason: "wrong_price" | "wrong_store" | "outdated" | "spam" | "other"
+  Response: PriceFlag entity
+
+GET /price-flags/report/:priceReportId
+  Public. :priceReportId = UUID.
+  Response: flags for that price
+
+GET /price-flags/contributor/:contributorId
+  Public. :contributorId = UUID.
+  Response: flags by that contributor
+
+GET /price-flags/:id
+  Public. :id = UUID.
+  Response: PriceFlag entity
+
+DELETE /price-flags/:id
+  Auth: JWT. :id = UUID.
+  Response: void
+
+================================================================================
+ADMIN (all require JWT + admin role)
+================================================================================
+
+GET /admin/me
+  Response: Admin entity (id, email, name, role, is_active, ...)
+
+GET /admin
+  Response: list of admins
+
+GET /admin/:id
+  :id = UUID. Response: Admin entity
+
+POST /admin
+  Request body:
+    email: string (email, max 100)
+    name?: string | null (max 50)
+    role: "super_admin" | "moderator"
+    is_active?: boolean
+  Response: Admin entity (no password)
+
+PATCH /admin/:id
+  Request body: partial of { name?, role?, is_active? }
+  Response: updated Admin
+
+DELETE /admin/:id
+  Response: void
+
+GET /admin/products/pending
+  Query: limit?: number, offset?: number (default limit 20, offset 0)
+  Response: { products: [...], total: number } (pending_review products)
+
+PATCH /admin/products/:id/review
+  :id = product UUID.
+  Request body:
+    action: "approve" | "reject" | "merge"
+    merge_into?: string | null (UUID, required when action is "merge")
+    note?: string | null
+  Response: updated product / review result
+
+GET /admin/flags
+  Query: status?: "flagged" | "all", limit?: number, offset?: number
+  Response: { reports: Array<{ id, price, product: { name_ar }, flag_count, flags: [{ reason, flagged_at }], trust_score, reported_at }>, total: number }
+
+POST /admin/contributors/:id/ban
+  :id = contributor UUID.
+  Request body:
+    reason?: string | null
+    hide_reports?: boolean
+  Response: ban result
+
+================================================================================
+ANALYTICS
+================================================================================
+
+POST /analytics/snapshots
+  Auth: JWT.
+  Request body:
+    product_id: string (UUID)
+    area_id?: string | null (UUID)
+    snapshot_date: string (ISO date)
+    avg_price?: number | null (>= 0)
+    median_price?: number | null (>= 0)
+    min_price?: number | null (>= 0)
+    max_price?: number | null (>= 0)
+    count_report?: number (>= 0)
+    store_count?: number (>= 0)
+    currency?: string (max 5)
+  Response: PriceSnapshot entity
+
+GET /analytics/snapshots
+  Public. Query: product_id?: string, area_id?: string | "null", from?: string, to?: string
+  Response: list of snapshots
+
+GET /analytics/snapshots/:id
+  Public. :id = UUID.
+  Response: PriceSnapshot entity
+
+POST /analytics/search-logs
+  Public.
+  Request body:
+    query: string (max 100)
+    product_id?: string | null (UUID)
+    area_id: string (UUID)
+    count_result?: number (>= 0)
+  Response: SearchLog entity
+
+GET /analytics/search-logs
+  Auth: JWT. Query: area_id?: string, from?: string, to?: string
+  Response: list of search logs
+
+================================================================================
+ENUMS REFERENCE
+================================================================================
+Product status: active | pending_review | rejected | merged
+Price status: pending | confirmed | flagged | rejected | expired
+Admin role: super_admin | moderator
+Flag reason: wrong_price | wrong_store | outdated | spam | other
+Governorate (areas filter): north | central | south
+
+================================================================================
+EXAMPLE: Login and get areas
+================================================================================
+1. POST /auth/login
+   Body: { "email": "admin@test.com", "password": "admin123" }
+   Response: { "accessToken": "eyJ...", "expiresIn": "7d" }
+
+2. GET /areas
+   (no auth) Response: { "areas": [ { "id": "uuid", "name_ar": "الرمال", "governorate": "gaza", "active_reports_count": 5 }, ... ] }
+
+3. GET /areas?governorate=north
+   Response: { "areas": [ ... ] }  (only north)
+
+================================================================================
+EXAMPLE: Search products and get prices
+================================================================================
+1. GET /products?search=طماطم&limit=10
+   Response: { "products": [ { "id": "uuid", "name_ar": "طماطم", "unit": "كيلو", "unit_size": 1, "category": { "name_ar": "خضروات", "icon": "🥬" } } ], "total": 1 }
+
+2. GET /prices?product_id=<product-uuid>&area_id=<area-uuid>&sort=price_asc
+   Response: { "prices": [ { "id": "uuid", "price": 5.5, "currency": "ILS", "store": { "name_ar": "متجر محلي" }, "area": { "name_ar": "النصر" }, "trust_score": 0, "confirmation_count": 0, "has_receipt": false, "is_lowest": true, "reported_at": "2026-02-24T00:00:00.000Z", "expires_at": "2026-02-26T00:00:00.000Z" } ], "stats": { "avg_price": 5.8, "median_price": 5.5, "min_price": 5.5 }, "total": 1 }
+
+================================================================================
+EXAMPLE: Submit a price (anonymous)
+================================================================================
+POST /prices
+Headers: x-anon-session-id: <some-uuid-or-string>
+Body: { "product_id": "<product-uuid>", "area_id": "<area-uuid>", "price": 6.0, "currency": "ILS" }
+Response: { "id": "uuid", "product_id": "...", "area_id": "...", "price": "6", "currency": "ILS", "status": "pending", "reported_at": "...", "expires_at": "..." }
+
+================================================================================
+END OF API REFERENCE
+================================================================================
