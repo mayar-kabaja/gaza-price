@@ -4,10 +4,10 @@ import { getContributorById, updateContributor, deleteContributor } from "@/lib/
 
 export async function GET() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
-  const contributor = await getContributorById(session.user.id);
+  const contributor = await getContributorById(user.id);
   if (!contributor) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
   return NextResponse.json(contributor);
@@ -15,8 +15,8 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
   const body = await req.json();
 
@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "اللقب يجب أن يكون أقل من 30 حرف" }, { status: 400 });
   }
 
-  const updated = await updateContributor(session.user.id, {
+  const updated = await updateContributor(user.id, {
     display_handle: body.display_handle,
     area_id: body.area_id,
   });
@@ -34,10 +34,10 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
-  const result = await deleteContributor(session.user.id);
+  const result = await deleteContributor(user.id);
   await supabase.auth.signOut();
 
   return NextResponse.json({

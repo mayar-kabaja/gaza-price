@@ -10,12 +10,12 @@ export async function POST(
   const { id: priceId } = await params;
   const supabase = await createClient();
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
   }
 
-  const contributorId = session.user.id;
+  const contributorId = user.id;
 
   // Rate limit check
   const { allowed, retryAfterSeconds } = await checkRateLimit({

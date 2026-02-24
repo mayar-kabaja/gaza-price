@@ -7,21 +7,28 @@ import { SubmitPriceRequest } from "@/types/api";
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
   }
 
-  const contributorId = session.user.id;
+  const contributorId = user.id;
 
-  // Check if banned
+  // Contributor row is created in /onboarding — must exist for prices.reported_by FK
   const { data: contributor } = await supabase
     .from("contributors")
     .select("is_banned, trust_level")
     .eq("id", contributorId)
     .single();
 
-  if (contributor?.is_banned) {
+  if (!contributor) {
+    return NextResponse.json(
+      { error: "ONBOARDING_REQUIRED", message: "يرجى إكمال التهيئة أولاً من الصفحة الرئيسية" },
+      { status: 403 }
+    );
+  }
+
+  if (contributor.is_banned) {
     return NextResponse.json({ error: "BANNED", message: "حسابك محظور" }, { status: 403 });
   }
 
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest) {
       store_name_raw: body.store_name_raw ?? null,
       reported_by: contributorId,
       receipt_photo_url: body.receipt_photo_url ?? null,
-      status: contributor?.trust_level === "trusted" || contributor?.trust_level === "verified" ? "confirmed" : "pending",
+      status: contributor.trust_level === "trusted" || contributor.trust_level === "verified" ? "confirmed" : "pending",
       trust_score: 0,
       reported_at: new Date().toISOString(),
     })
@@ -71,7 +78,16 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: "SERVER_ERROR", message: "خطأ في الحفظ" }, { status: 500 });
+    console.error("[reports] insert error:", error.code, error.message, error.details);
+    return NextResponse.json(
+      {
+        error: "SERVER_ERROR",
+        message: "خطأ في الحفظ",
+        detail: error.message,
+        code: error.code,
+      },
+      { status: 500 }
+    );
   }
 
   await logAttempt({ table: "report_attempts", contributorId, success: true, extraData: { product_id: body.product_id } });
