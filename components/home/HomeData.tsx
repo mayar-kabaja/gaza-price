@@ -14,6 +14,7 @@ const DEFAULT_PRODUCT_ID = process.env.NEXT_PUBLIC_DEFAULT_PRODUCT_ID ?? "";
 
 export function HomeData() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [prices, setPrices] = useState<Price[]>([]);
   const [stats, setStats] = useState<PriceStats>({ avg_price: 0, median_price: 0, min_price: 0, report_count: 0 });
   const [productName, setProductName] = useState<string | null>(null);
@@ -32,6 +33,9 @@ export function HomeData() {
     if (typeof window !== "undefined") localStorage.setItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed, "1");
   }
 
+  const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const effectiveCategoryId = selectedCategoryId ?? sortedCategories[0]?.id ?? null;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -41,18 +45,25 @@ export function HomeData() {
       try {
         const [categoriesRes, productsRes] = await Promise.all([
           fetch("/api/categories").then((r) => (r.ok ? r.json() : [])),
-          fetch("/api/products?limit=10").then((r) => (r.ok ? r.json() : { products: [], total: 0 })),
+          fetch(
+            effectiveCategoryId
+              ? `/api/products?category_id=${encodeURIComponent(effectiveCategoryId)}&limit=10`
+              : "/api/products?limit=10"
+          ).then((r) => (r.ok ? r.json() : { products: [], total: 0 })),
         ]);
         if (cancelled) return;
 
         const cats = Array.isArray(categoriesRes) ? categoriesRes : [];
-        setCategories(cats);
+        if (categories.length === 0) setCategories(cats);
 
         const products = productsRes.products ?? [];
-        const productId = DEFAULT_PRODUCT_ID || products[0]?.id;
+        const productId = products[0]?.id ?? DEFAULT_PRODUCT_ID;
         const productFromList = products.find((p: { id: string; name_ar?: string }) => p.id === productId);
 
         if (!productId) {
+          setPrices([]);
+          setStats({ avg_price: 0, median_price: 0, min_price: 0, report_count: 0 });
+          setProductName(null);
           setLoading(false);
           return;
         }
@@ -84,14 +95,9 @@ export function HomeData() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [effectiveCategoryId, categories.length]);
 
-  const chipLabels =
-    categories.length > 0
-      ? categories
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((c) => (c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar))
-      : FALLBACK_CHIPS;
+  const hasCategories = sortedCategories.length > 0;
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -111,16 +117,33 @@ export function HomeData() {
       )}
 
       <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0">
-        {chipLabels.map((chip, i) => (
-          <span
-            key={chip}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 ${
-              i === 0 ? "bg-olive-pale border-olive text-olive font-semibold" : "bg-white border-border text-slate"
-            }`}
-          >
-            {chip}
-          </span>
-        ))}
+        {hasCategories ? (
+          sortedCategories.map((c) => {
+            const label = c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar;
+            const isSelected = effectiveCategoryId === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCategoryId(c.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                  isSelected ? "bg-olive-pale border-olive text-olive font-semibold" : "bg-white border-border text-slate hover:border-olive/50"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })
+        ) : (
+          FALLBACK_CHIPS.map((chip) => (
+            <span
+              key={chip}
+              className="px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 bg-white border-border text-slate"
+            >
+              {chip}
+            </span>
+          ))
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">

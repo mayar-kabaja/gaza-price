@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "غزةبريس — أسعار شفافة",
+  title: "غزة بريس — أسعار شفافة",
   description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
   manifest: "/manifest.json",
   icons: {

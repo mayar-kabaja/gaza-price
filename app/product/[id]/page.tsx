@@ -29,7 +29,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
             ←
           </Link>
           <div className="font-display font-extrabold text-xl text-white leading-none">
-            غزة<span className="text-sand">بريس</span>
+            غزة <span className="text-sand">بريس</span>
           </div>
         </div>
         <div className="relative z-10">
