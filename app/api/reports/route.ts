@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, logAttempt } from "@/lib/rate-limit";
 import { RATE_LIMITS } from "@/lib/constants";
 import { SubmitPriceRequest } from "@/types/api";
+import { getApiBaseUrl, apiPost } from "@/lib/api/client";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -14,22 +15,14 @@ export async function POST(req: NextRequest) {
 
   const contributorId = user.id;
 
-  // Contributor row is created in /onboarding — must exist for prices.reported_by FK
-  const { data: contributor } = await supabase
-    .from("contributors")
-    .select("is_banned, trust_level")
-    .eq("id", contributorId)
-    .single();
+  const body: SubmitPriceRequest = await req.json();
 
-  if (!contributor) {
-    return NextResponse.json(
-      { error: "ONBOARDING_REQUIRED", message: "يرجى إكمال التهيئة أولاً من الصفحة الرئيسية" },
-      { status: 403 }
-    );
+  if (!body.product_id || !body.price || !body.area_id) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "بيانات ناقصة" }, { status: 400 });
   }
 
-  if (contributor.is_banned) {
-    return NextResponse.json({ error: "BANNED", message: "حسابك محظور" }, { status: 403 });
+  if (body.price <= 0) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "السعر يجب أن يكون أكبر من صفر" }, { status: 400 });
   }
 
   // Rate limit — 5/hour
@@ -48,17 +41,59 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body: SubmitPriceRequest = await req.json();
-
-  if (!body.product_id || !body.price || !body.area_id) {
-    return NextResponse.json({ error: "BAD_REQUEST", message: "بيانات ناقصة" }, { status: 400 });
+  // Use backend when NEXT_PUBLIC_API_URL is set
+  const backendBase = getApiBaseUrl();
+  if (backendBase) {
+    try {
+      const data = await apiPost<{ id?: string; status?: string; trust_score?: number; expires_at?: string }>(
+        "/reports",
+        {
+          product_id: body.product_id,
+          price: body.price,
+          currency: body.currency ?? "ILS",
+          area_id: body.area_id,
+          store_id: body.store_id ?? null,
+          store_name_raw: body.store_name_raw ?? null,
+          receipt_photo_url: body.receipt_photo_url ?? null,
+        },
+        { "x-anon-session-id": contributorId }
+      );
+      await logAttempt({ table: "report_attempts", contributorId, success: true, extraData: { product_id: body.product_id } });
+      return NextResponse.json({
+        id: data?.id,
+        status: data?.status ?? "pending",
+        trust_score: data?.trust_score ?? 0,
+        expires_at: data?.expires_at,
+        message: "شكراً! سيظهر سعرك بعد التأكيدات.",
+      }, { status: 201 });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "خطأ في الحفظ";
+      const status = message.startsWith("API 4") ? (message.startsWith("API 404") ? 404 : 400) : 500;
+      return NextResponse.json(
+        { error: "SERVER_ERROR", message: message.replace(/^API \d+: /, ""), detail: message },
+        { status }
+      );
+    }
   }
 
-  if (body.price <= 0) {
-    return NextResponse.json({ error: "BAD_REQUEST", message: "السعر يجب أن يكون أكبر من صفر" }, { status: 400 });
+  // No backend: use Supabase (contributor must exist for FK)
+  const { data: contributor } = await supabase
+    .from("contributors")
+    .select("is_banned, trust_level")
+    .eq("id", contributorId)
+    .single();
+
+  if (!contributor) {
+    return NextResponse.json(
+      { error: "ONBOARDING_REQUIRED", message: "يرجى إكمال التهيئة أولاً من الصفحة الرئيسية" },
+      { status: 403 }
+    );
   }
 
-  // Insert price
+  if (contributor.is_banned) {
+    return NextResponse.json({ error: "BANNED", message: "حسابك محظور" }, { status: 403 });
+  }
+
   const { data: inserted, error } = await supabase
     .from("prices")
     .insert({
