@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function useConfirm(initialCount: number, priceId: string) {
   const [count, setCount] = useState(initialCount);
@@ -15,9 +16,15 @@ export function useConfirm(initialCount: number, priceId: string) {
     setCount((c) => c + 1);
     setLoading(true);
 
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {};
+    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
     try {
       const res = await fetch(`/api/prices/${priceId}/confirm`, {
         method: "POST",
+        headers,
       });
 
       if (!res.ok) {

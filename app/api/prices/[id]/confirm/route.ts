@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthFromRequest } from "@/lib/supabase/get-auth-from-request";
 import { checkRateLimit, logAttempt } from "@/lib/rate-limit";
 import { RATE_LIMITS } from "@/lib/constants";
 import { getApiBaseUrl, apiPost } from "@/lib/api/client";
@@ -9,14 +9,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: priceId } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;
+  try {
+    auth = await getAuthFromRequest(req);
+  } catch {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
   }
-
+  const { user, accessToken, supabase } = auth;
   const contributorId = user.id;
+  const authHeaders = { Authorization: `Bearer ${accessToken}` };
 
   // Rate limit check (applies whether we use backend or DB)
   const { allowed, retryAfterSeconds } = await checkRateLimit({
@@ -42,7 +43,7 @@ export async function POST(
       const data = await apiPost<{ confirmed?: boolean; new_confirmation_count?: number; new_trust_score?: number; new_status?: string }>(
         `/reports/${priceId}/confirm`,
         undefined,
-        { "x-anon-session-id": contributorId }
+        authHeaders
       );
       await logAttempt({ table: "confirmation_attempts", contributorId, success: true, extraData: { price_id: priceId } });
       return NextResponse.json({

@@ -9,9 +9,11 @@ AUTHENTICATION
 --------------------------------------------------------------------------------
 - Admin login: POST /auth/login with body → returns { accessToken, expiresIn }.
   Use header: Authorization: Bearer <accessToken> for admin/protected routes.
-- Anonymous contributor: send header x-anon-session-id (any string, e.g. UUID)
-  for /contributors/me, /contributors/me/reports, /prices (to attribute report).
-- Public routes: no auth. Protected routes require JWT (admin).
+- Anonymous contributor (secure flow): frontend gets Supabase session after
+  signInAnonymously(), then sends: Authorization: Bearer <session.access_token>
+  for /contributors/me, /reports, /reports/:id/confirm. Backend (NestJS) verifies
+  with: supabase.auth.getUser(token); if !data.user throw UnauthorizedException.
+- Public routes: no auth. Protected routes require JWT (admin or Supabase anon).
 
 ================================================================================
 AUTH

@@ -5,12 +5,14 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { Product, Area } from "@/types/app";
 import { useSearch } from "@/hooks/useSearch";
+import { useSession } from "@/hooks/useSession";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 
 function SubmitForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productIdFromUrl = searchParams.get("product_id");
+  const { accessToken } = useSession();
 
   const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
   const [product, setProduct] = useState<Product | null>(null);
@@ -44,9 +46,12 @@ function SubmitForm() {
     setSubmitting(true);
     setError("");
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+
     const res = await fetch("/api/reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         product_id: id,
         price: parseFloat(price),

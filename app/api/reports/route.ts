@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthFromRequest } from "@/lib/supabase/get-auth-from-request";
 import { checkRateLimit, logAttempt } from "@/lib/rate-limit";
 import { RATE_LIMITS } from "@/lib/constants";
 import { SubmitPriceRequest } from "@/types/api";
 import { getApiBaseUrl, apiPost } from "@/lib/api/client";
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;
+  try {
+    auth = await getAuthFromRequest(req);
+  } catch {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
   }
-
+  const { user, accessToken, supabase } = auth;
   const contributorId = user.id;
+  const authHeaders = { Authorization: `Bearer ${accessToken}` };
 
   const body: SubmitPriceRequest = await req.json();
 
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
           store_name_raw: body.store_name_raw ?? null,
           receipt_photo_url: body.receipt_photo_url ?? null,
         },
-        { "x-anon-session-id": contributorId }
+        authHeaders
       );
       await logAttempt({ table: "report_attempts", contributorId, success: true, extraData: { product_id: body.product_id } });
       return NextResponse.json({

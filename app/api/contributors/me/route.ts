@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getAuthFromRequest } from "@/lib/supabase/get-auth-from-request";
 import { getContributorById, updateContributor, deleteContributor } from "@/lib/queries/contributors";
 import { getApiBaseUrl, apiGetWithHeaders, apiPatch, apiDelete } from "@/lib/api/client";
 
-function anonHeader(userId: string) {
-  return { "x-anon-session-id": userId };
-}
-
-export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+export async function GET(req: NextRequest) {
+  let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;
+  try {
+    auth = await getAuthFromRequest(req);
+  } catch {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const { user, accessToken, supabase } = auth;
+  const authHeaders = { Authorization: `Bearer ${accessToken}` };
 
   const base = getApiBaseUrl();
   if (base) {
     try {
-      const data = await apiGetWithHeaders("/contributors/me", anonHeader(user.id));
+      const data = await apiGetWithHeaders("/contributors/me", authHeaders);
       return NextResponse.json(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "خطأ في الخادم";
@@ -30,9 +31,14 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;
+  try {
+    auth = await getAuthFromRequest(req);
+  } catch {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const { user, accessToken, supabase } = auth;
+  const authHeaders = { Authorization: `Bearer ${accessToken}` };
 
   const body = await req.json();
 
@@ -43,7 +49,7 @@ export async function PATCH(req: NextRequest) {
   const base = getApiBaseUrl();
   if (base) {
     try {
-      const data = await apiPatch("/contributors/me", { display_handle: body.display_handle, area_id: body.area_id }, anonHeader(user.id));
+      const data = await apiPatch("/contributors/me", { display_handle: body.display_handle, area_id: body.area_id }, authHeaders);
       return NextResponse.json({ updated: true, ...(data as object) });
     } catch (err) {
       const message = err instanceof Error ? err.message : "خطأ في الخادم";
@@ -59,15 +65,20 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ updated: true, ...updated });
 }
 
-export async function DELETE() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+export async function DELETE(req: NextRequest) {
+  let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;
+  try {
+    auth = await getAuthFromRequest(req);
+  } catch {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+  const { user, accessToken, supabase } = auth;
+  const authHeaders = { Authorization: `Bearer ${accessToken}` };
 
   const base = getApiBaseUrl();
   if (base) {
     try {
-      await apiDelete("/contributors/me", anonHeader(user.id));
+      await apiDelete("/contributors/me", authHeaders);
       await supabase.auth.signOut();
       return NextResponse.json({
         deleted: true,

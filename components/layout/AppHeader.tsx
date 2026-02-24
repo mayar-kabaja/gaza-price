@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useArea } from "@/hooks/useArea";
+import { useSession } from "@/hooks/useSession";
 import { SearchBar } from "@/components/search/SearchBar";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ const GOV_LABELS: Record<string, string> = {
 
 export function AppHeader() {
   const { area, saveArea } = useArea();
+  const { accessToken } = useSession();
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [areas, setAreas] = useState<Area[]>([]);
 
@@ -35,10 +37,12 @@ export function AppHeader() {
 
   async function handleSelectArea(selected: Area) {
     saveArea(selected);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
     try {
       await fetch("/api/contributors/me", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ area_id: selected.id }),
       });
     } catch {}
