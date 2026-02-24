@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Area } from "@/types/app";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import { cn } from "@/lib/utils";
 
 interface AreaPickerProps {
@@ -34,15 +35,14 @@ export function AreaPicker({ areas, onSelect, loading }: AreaPickerProps) {
       {/* Header */}
       <div className="bg-olive px-5 pt-6 pb-7 relative overflow-hidden flex-shrink-0">
         <div className="absolute w-48 h-48 rounded-full bg-white/5 -bottom-16 -left-14 pointer-events-none" />
-        <div className="inline-flex items-center gap-1.5 bg-white/12 border border-white/20 rounded-full px-3 py-1 mb-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-sand" />
-          <span className="text-[11px] text-white/80">إعداد سريع · خطوة واحدة فقط</span>
+        <div className="inline-block bg-white/15 border border-white/20 rounded-[20px] px-2.5 py-0.5 mb-2.5 text-[11px] font-semibold text-white/80">
+          الخطوة ١ من ١ · إعداد سريع
         </div>
-        <h1 className="font-display font-extrabold text-2xl text-white mb-1.5">
+        <h1 className="font-display font-extrabold text-[1.3rem] text-white leading-tight mb-1">
           أين تسكن؟
         </h1>
-        <p className="text-sm text-white/60 font-body">
-          لنُريك أسعار منطقتك أولاً · يمكن تغييرها لاحقاً
+        <p className="text-[0.8rem] text-white/65 font-body mt-0.5">
+          لنُريك أسعار منطقتك — يمكن تغييرها لاحقاً
         </p>
       </div>
 
@@ -127,11 +127,10 @@ export function AreaPicker({ areas, onSelect, loading }: AreaPickerProps) {
           )}
         >
           {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <LoaderDots size="sm" variant="light" />
           ) : (
             <>
-              {selected ? `عرض أسعار ${selected.name_ar}` : "اختر منطقتك"}
-              {selected && <span>←</span>}
+              {selected ? `عرض أسعار ${selected.name_ar} ←` : "اختر منطقتك"}
             </>
           )}
         </button>

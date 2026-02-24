@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>غزةبريس — First Visit Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --olive:      #4A7C59;
+  --olive-deep: #3A6347;
+  --olive-pale: #EBF3EE;
+  --olive-mid:  #C2DBC9;
+  --sand:       #C9A96E;
+  --sand-light: #F7F0E4;
+  --confirm:    #2D9E5F;
+  --ink:        #1A1F2E;
+  --slate:      #556070;
+  --mist:       #96A3AF;
+  --border:     #E4EAF0;
+  --fog:        #F4F7F9;
+  --white:      #FFFFFF;
+  --font-d:     'Tajawal', sans-serif;
+  --font-b:     'IBM Plex Sans Arabic', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font-b);
+  background: #1A1F2E;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* ── STAGE WRAPPER ── */
+.stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* ── STEP INDICATOR ── */
+.step-indicator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 10;
+}
+
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.step-dot.active {
+  background: var(--sand);
+  width: 24px;
+  border-radius: 4px;
+}
+
+.step-dot.done {
+  background: var(--olive);
+}
+
+.step-label {
+  font-family: var(--font-d);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+/* ── PHONE SHELL ── */
+.phone {
+  width: 375px;
+  height: 680px;
+  background: var(--fog);
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 10px #0D1017,
+    0 40px 80px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.phone-bar {
+  background: #0D1017;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.notch {
+  width: 90px; height: 16px;
+  background: #000;
+  border-radius: 20px;
+}
+
+/* ── SCREEN CONTAINER ── */
+.screens {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.screen.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+.screen.exit {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* ── NAV BUTTONS ── */
+.nav-btns {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nav-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-family: var(--font-d);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: white;
+}
+
+.nav-btn.primary {
+  background: var(--olive);
+  border-color: var(--olive);
+  color: white;
+}
+
+.nav-btn.primary:hover { background: var(--olive-deep); }
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── SCREEN 0: SPLASH ── */
+.splash {
+  background: var(--ink);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.splash-circle1 {
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(74,124,89,0.15);
+  top: -60px; left: -60px;
+}
+
+.splash-circle2 {
+  position: absolute;
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  background: rgba(201,169,110,0.08);
+  bottom: -30px; right: -40px;
+}
+
+.splash-logo {
+  font-family: var(--font-d);
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.splash-logo em {
+  font-style: normal;
+  color: var(--sand);
+}
+
+.splash-sub {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.splash-loader {
+  margin-top: 40px;
+  display: flex;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.loader-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--olive);
+  animation: loader 1.2s infinite ease-in-out;
+}
+
+.loader-dot:nth-child(2) { animation-delay: 0.2s; background: var(--olive-mid); }
+.loader-dot:nth-child(3) { animation-delay: 0.4s; background: var(--sand); }
+
+@keyframes loader {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+
+.splash-status {
+  position: absolute;
+  bottom: 24px;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.2);
+  z-index: 1;
+  font-family: monospace;
+}
+
+/* ── SCREEN 1: AREA PICKER ── */
+.area-screen {
+  background: white;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.area-header {
+  background: var(--olive);
+  padding: 22px 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.area-header::before {
+  content: '';
+  position: absolute;
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  bottom: -50px; right: -40px;
+}
+
+.area-step-badge {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.area-title {
+  font-family: var(--font-d);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+}
+
+.area-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.65);
+  margin-top: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.area-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  scrollbar-width: none;
+}
+.area-list::-webkit-scrollbar { display: none; }
+
+.area-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: white;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.area-option:active { transform: scale(0.99); }
+
+.area-option.selected {
+  border-color: var(--olive);
+  background: var(--olive-pale);
+}
+
+.area-option-info { flex: 1; }
+
+.area-option-name {
+  font-family: var(--font-d);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.area-option-gov {
+  font-size: 0.7rem;
+  color: var(--mist);
+  margin-top: 2px;
+}
+
+.area-radio {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.area-option.selected .area-radio {
+  border-color: var(--olive);
+  background: var(--olive);
+}
+
+.area-radio-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.area-option.selected .area-radio-dot { opacity: 1; }
+
+.area-footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
+  background: white;
+}
+
+.area-cta {
+  width: 100%;
+  background: var(--olive);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: var(--font-d);
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0.4;
+}
+
+.area-cta.enabled {
+  opacity: 1;
+}
+
+.area-cta.enabled:active {
+  background: var(--olive-deep);
+  transform: scale(0.99);
+}
+
+/* ── SCREEN 2: HOME (first time) ── */
+.home-screen {
+  background: var(--fog);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-header {
+  background: var(--olive);
+  padding: 18px 20px 22px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.home-header::before {
+  content: '';
+  position: absolute;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  bottom: -60px; right: -50px;
+}
+
+.home-header::after {
+  content: '';
+  position: absolute;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  top: -30px; left: 20px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  font-family: var(--font-d);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.logo em { font-style: normal; color: var(--sand); }
+
+.loc-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 0.72rem;
+  font-family: var(--font-b);
+  color: rgba(255,255,255,0.9);
+}
+
+.loc-dot { width: 6px; height: 6px; background: var(--sand); border-radius: 50%; }
+
+.tagline {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.search-field {
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  position: relative;
+  z-index: 1;
+}
+
+.search-field input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 13px 0;
+  font-size: 0.9rem;
+  font-family: var(--font-b);
+  color: var(--ink);
+  background: transparent;
+  direction: rtl;
+}
+
+.search-field input::placeholder { color: #BCC5CE; }
+
+/* First time welcome toast */
+.welcome-toast {
+  margin: 12px 16px 0;
+  background: var(--ink);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.toast-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.toast-text { flex: 1; }
+
+.toast-title {
+  font-family: var(--font-d);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.3;
+}
+
+.toast-sub {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+
+.toast-close {
+  color: rgba(255,255,255,0.3);
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px;
+}
+
+.chips-row {
+  display: flex;
+  gap: 7px;
+  padding: 12px 16px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.chips-row::-webkit-scrollbar { display: none; }
+
+.chip {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 0.76rem;
+  font-family: var(--font-b);
+  color: var(--slate);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chip.on {
+  background: var(--olive-pale);
+  border-color: var(--olive);
+  color: var(--olive);
+  font-weight: 600;
+}
+
+.list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 16px 80px;
+  scrollbar-width: none;
+}
+.list-wrap::-webkit-scrollbar { display: none; }
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.list-title {
+  font-family: var(--font-d);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stats-group { display: flex; gap: 6px; }
+
+.stat-tag {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 3px 8px;
+  text-align: center;
+}
+
+.stat-tag-val { font-family: var(--font-d); font-size: 0.75rem; font-weight: 700; color: var(--ink); display: block; }
+.stat-tag-lbl { font-size: 0.62rem; color: var(--mist); display: block; }
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  border: 1.5px solid transparent;
+  position: relative;
+}
+
+.card.best { border-color: var(--confirm); background: #F2FBF6; }
+
+.best-tag {
+  position: absolute;
+  top: 0; left: 0;
+  background: var(--confirm);
+  color: white;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-family: var(--font-d);
+  padding: 3px 9px 3px 7px;
+  border-radius: 0 0 10px 0;
+}
+
+.card-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 9px;
+}
+
+.store-nm { font-family: var(--font-d); font-size: 0.88rem; font-weight: 700; color: var(--ink); }
+.store-loc { font-size: 0.7rem; color: var(--mist); margin-top: 1px; }
+.price-num { font-family: var(--font-d); font-size: 1.25rem; font-weight: 800; color: var(--olive); line-height: 1; text-align: left; direction: ltr; }
+.card.best .price-num { color: var(--confirm); }
+.price-sub { font-size: 0.67rem; color: var(--mist); text-align: right; direction: rtl; }
+
+.card-footer { display: flex; justify-content: space-between; align-items: center; }
+
+.dots { display: flex; gap: 3px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+.dot.hi { background: var(--olive); }
+.dot.md { background: var(--sand); }
+
+.trust-txt { font-size: 0.67rem; color: var(--mist); margin-right: 4px; }
+.time-txt { font-size: 0.67rem; color: var(--mist); margin-top: 2px; }
+
+.confirm-btn {
+  background: var(--olive-pale);
+  border: 1px solid var(--olive-mid);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-b);
+  color: var(--olive);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bottom-nav {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: white;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 14px;
+}
+
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; }
+.nav-ic { font-size: 1.15rem; line-height: 1; }
+.nav-lbl { font-size: 0.62rem; font-family: var(--font-b); color: var(--mist); }
+.nav-item.on .nav-lbl { color: var(--olive); font-weight: 600; }
+
+/* ── SCREEN 3: ACCOUNT — FIRST TIME ── */
+.account-screen {
+  background: var(--fog);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.account-header {
+  background: var(--ink);
+  padding: 20px 20px 24px;
+  flex-shrink: 0;
+}
+
+.acct-id-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.acct-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 2px solid rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.acct-name {
+  font-family: var(--font-d);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: white;
+}
+
+.acct-handle {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.35);
+  margin-top: 3px;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+
+.acct-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.acct-stat {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.acct-stat-val {
+  font-family: var(--font-d);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.2);
+  line-height: 1;
+}
+
+.acct-stat-val.zero { color: rgba(255,255,255,0.15); }
+
+.acct-stat-lbl {
+  font-size: 0.62rem;
+  color: rgba(255,255,255,0.35);
+  margin-top: 3px;
+}
+
+.acct-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px 90px;
+  scrollbar-width: none;
+}
+
+.section-ttl {
+  font-family: var(--font-d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mist);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 18px;
+}
+
+.section-ttl:first-child { margin-top: 0; }
+
+/* Empty state */
+.empty-state {
+  background: white;
+  border-radius: 14px;
+  padding: 24px 16px;
+  text-align: center;
+  border: 1.5px dashed var(--border);
+}
+
+.empty-icon { font-size: 2rem; margin-bottom: 8px; }
+
+.empty-title {
+  font-family: var(--font-d);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+
+.empty-sub {
+  font-size: 0.78rem;
+  color: var(--mist);
+  line-height: 1.5;
+}
+
+.empty-cta {
+  margin-top: 14px;
+  display: inline-block;
+  background: var(--olive-pale);
+  border: 1px solid var(--olive-mid);
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--olive);
+  cursor: pointer;
+  font-family: var(--font-b);
+}
+
+/* Trust level — new */
+.trust-new-card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.trust-level-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.trust-level-nm {
+  font-family: var(--font-d);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.trust-badge-new {
+  background: var(--fog);
+  color: var(--mist);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.level-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 10px;
+}
+
+.level-step {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  position: relative;
+}
+
+.level-step:first-child { border-radius: 4px 0 0 4px; }
+.level-step:last-child  { border-radius: 0 4px 4px 0; }
+
+.level-step.done { background: var(--olive); }
+.level-step.active { background: linear-gradient(to left, var(--border), var(--olive)); }
+
+.level-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: white;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.level-dot.done { border-color: var(--olive); background: var(--olive); }
+.level-dot.active { border-color: var(--olive); background: white; box-shadow: 0 0 0 3px var(--olive-pale); }
+
+.level-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.level-label {
+  font-size: 0.6rem;
+  color: var(--mist);
+  text-align: center;
+}
+
+.level-label.active { color: var(--olive); font-weight: 600; }
+
+.trust-hint {
+  font-size: 0.75rem;
+  color: var(--mist);
+  background: var(--fog);
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Display handle prompt */
+.handle-card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--olive-mid);
+}
+
+.handle-title {
+  font-family: var(--font-d);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.handle-sub {
+  font-size: 0.75rem;
+  color: var(--mist);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.handle-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.handle-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.86rem;
+  font-family: var(--font-b);
+  color: var(--ink);
+  outline: none;
+  direction: rtl;
+}
+
+.handle-input:focus { border-color: var(--olive); }
+
+.handle-skip {
+  background: var(--fog);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 0.78rem;
+  color: var(--mist);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-b);
+}
+
+/* Settings */
+.settings-card {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--fog);
+  cursor: pointer;
+}
+
+.setting-row:last-child { border-bottom: none; }
+.setting-lbl { font-size: 0.84rem; color: var(--ink); }
+.setting-val { font-size: 0.78rem; color: var(--mist); }
+.setting-row.danger .setting-lbl { color: #C0622A; }
+
+/* Anon note at bottom */
+.anon-note-bar {
+  background: rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 18px;
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.25);
+  flex-shrink: 0;
+  position: absolute;
+  bottom: 64px;
+  left: 0; right: 0;
+}
+
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- Step indicator -->
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="step-label" id="stepLabel">الخطوة ١ من ٤</span>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot0" onclick="goTo(0)"></div>
+      <div class="step-dot" id="dot1" onclick="goTo(1)"></div>
+      <div class="step-dot" id="dot2" onclick="goTo(2)"></div>
+      <div class="step-dot" id="dot3" onclick="goTo(3)"></div>
+    </div>
+  </div>
+
+  <!-- Phone -->
+  <div class="phone">
+    <div class="phone-bar"><div class="notch"></div></div>
+    <div class="screens">
+
+      <!-- ══ SCREEN 0: SPLASH ══ -->
+      <div class="screen active" id="screen0">
+        <div class="splash">
+          <div class="splash-circle1"></div>
+          <div class="splash-circle2"></div>
+          <div class="splash-logo">غزة<em>بريس</em></div>
+          <div class="splash-sub">أسعار شفافة · قوة المجتمع</div>
+          <div class="splash-loader">
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+          </div>
+          <div class="splash-status">initializing session...</div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 1: AREA PICKER ══ -->
+      <div class="screen" id="screen1">
+        <div class="area-screen">
+          <div class="area-header">
+            <div class="area-step-badge">الخطوة ١ من ١ · إعداد سريع</div>
+            <div class="area-title">أين تسكن؟</div>
+            <div class="area-sub">لنُريك أسعار منطقتك — يمكن تغييرها لاحقاً</div>
+          </div>
+          <div class="area-list" id="areaList">
+            <div class="area-option" onclick="selectArea(this, 'الشجاعية')">
+              <div class="area-option-info">
+                <div class="area-option-name">الشجاعية</div>
+                <div class="area-option-gov">غزة — شرق المدينة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'الرمال')">
+              <div class="area-option-info">
+                <div class="area-option-name">الرمال</div>
+                <div class="area-option-gov">غزة — وسط المدينة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'البلد')">
+              <div class="area-option-info">
+                <div class="area-option-name">البلد</div>
+                <div class="area-option-gov">غزة — قلب المدينة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'جباليا')">
+              <div class="area-option-info">
+                <div class="area-option-name">جباليا</div>
+                <div class="area-option-gov">شمال غزة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'بيت لاهيا')">
+              <div class="area-option-info">
+                <div class="area-option-name">بيت لاهيا</div>
+                <div class="area-option-gov">شمال غزة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'دير البلح')">
+              <div class="area-option-info">
+                <div class="area-option-name">دير البلح</div>
+                <div class="area-option-gov">وسط قطاع غزة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'خان يونس')">
+              <div class="area-option-info">
+                <div class="area-option-name">خان يونس</div>
+                <div class="area-option-gov">جنوب غزة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+            <div class="area-option" onclick="selectArea(this, 'رفح')">
+              <div class="area-option-info">
+                <div class="area-option-name">رفح</div>
+                <div class="area-option-gov">أقصى جنوب غزة</div>
+              </div>
+              <div class="area-radio"><div class="area-radio-dot"></div></div>
+            </div>
+          </div>
+          <div class="area-footer">
+            <button class="area-cta" id="areaCta" onclick="goTo(2)">تابع ←</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 2: HOME (first time) ══ -->
+      <div class="screen" id="screen2">
+        <div class="home-screen">
+          <div class="home-header">
+            <div class="header-row">
+              <div class="logo">غزة<em>بريس</em></div>
+              <div class="loc-btn">
+                <div class="loc-dot"></div>
+                <span id="selectedAreaLabel">الشجاعية</span>
+              </div>
+            </div>
+            <div class="tagline">أسعار شفافة · قوة المجتمع</div>
+            <div class="search-field">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="#1A1F2E" stroke-width="2"/>
+                <path d="M16.5 16.5L21 21" stroke="#1A1F2E" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <input placeholder="ابحث... سكر، أرز، زيت، دقيق" readonly />
+            </div>
+          </div>
+
+          <!-- First-time welcome toast -->
+          <div class="welcome-toast" id="welcomeToast">
+            <div class="toast-icon">👋</div>
+            <div class="toast-text">
+              <div class="toast-title">أهلاً — كل شيء جاهز</div>
+              <div class="toast-sub">أنت مجهول الهوية تماماً · لا حساب مطلوب</div>
+            </div>
+            <div class="toast-close" onclick="document.getElementById('welcomeToast').style.display='none'">×</div>
+          </div>
+
+          <div class="chips-row">
+            <div class="chip on">🌾 دقيق</div>
+            <div class="chip">🍚 أرز</div>
+            <div class="chip">🫒 زيت</div>
+            <div class="chip">🍬 سكر</div>
+            <div class="chip">🥛 حليب</div>
+          </div>
+
+          <div class="list-wrap">
+            <div class="list-header">
+              <div class="list-title">دقيق أبيض — ١ كغ</div>
+              <div class="stats-group">
+                <div class="stat-tag"><span class="stat-tag-val">٢.٩٠</span><span class="stat-tag-lbl">متوسط ₪</span></div>
+                <div class="stat-tag"><span class="stat-tag-val">٢.٧٥</span><span class="stat-tag-lbl">وسيط ₪</span></div>
+              </div>
+            </div>
+
+            <div class="card best">
+              <div class="best-tag">✓ أدنى سعر</div>
+              <div class="card-main" style="margin-top:16px;">
+                <div><div class="store-nm">متجر أبو رامي</div><div class="store-loc">الشجاعية · ٣٠٠م</div></div>
+                <div><div class="price-num">٢.٤٠</div><div class="price-sub">₪ / كغ</div></div>
+              </div>
+              <div class="card-footer">
+                <div>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div class="dots"><div class="dot hi"></div><div class="dot hi"></div><div class="dot hi"></div><div class="dot hi"></div><div class="dot"></div></div>
+                    <span class="trust-txt">٨ تأكيدات</span>
+                  </div>
+                  <div class="time-txt">منذ ٢ ساعة</div>
+                </div>
+                <button class="confirm-btn">✓ أكّد السعر</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-main">
+                <div><div class="store-nm">بقالة الحاج خالد</div><div class="store-loc">الشجاعية · ٦٠٠م</div></div>
+                <div><div class="price-num">٢.٩٠</div><div class="price-sub">₪ / كغ</div></div>
+              </div>
+              <div class="card-footer">
+                <div>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div class="dots"><div class="dot hi"></div><div class="dot hi"></div><div class="dot md"></div><div class="dot"></div><div class="dot"></div></div>
+                    <span class="trust-txt">٤ تأكيدات</span>
+                  </div>
+                  <div class="time-txt">منذ ٥ ساعات</div>
+                </div>
+                <button class="confirm-btn">✓ أكّد السعر</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-main">
+                <div><div class="store-nm">سوق الزاوية</div><div class="store-loc">البلد · ٩٠٠م</div></div>
+                <div><div class="price-num">٣.١٠</div><div class="price-sub">₪ / كغ</div></div>
+              </div>
+              <div class="card-footer">
+                <div>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div class="dots"><div class="dot hi"></div><div class="dot hi"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    <span class="trust-txt">٢ تأكيدات</span>
+                  </div>
+                  <div class="time-txt">منذ ٧ ساعات</div>
+                </div>
+                <button class="confirm-btn">✓ أكّد السعر</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-nav">
+            <div class="nav-item on"><div class="nav-ic">🏠</div><div class="nav-lbl">الرئيسية</div></div>
+            <div class="nav-item"><div class="nav-ic">➕</div><div class="nav-lbl">إضافة</div></div>
+            <div class="nav-item"><div class="nav-ic">📊</div><div class="nav-lbl">تقارير</div></div>
+            <div class="nav-item" onclick="goTo(3)" style="cursor:pointer;"><div class="nav-ic">👤</div><div class="nav-lbl">حسابي</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 3: ACCOUNT — FIRST TIME ══ -->
+      <div class="screen" id="screen3">
+        <div class="account-screen">
+          <div class="account-header">
+            <div class="acct-id-row">
+              <div class="acct-avatar">👤</div>
+              <div>
+                <div class="acct-name">مساهم جديد</div>
+                <div class="acct-handle">#a3f9 · انضم للتو</div>
+              </div>
+            </div>
+            <div class="acct-stats">
+              <div class="acct-stat">
+                <div class="acct-stat-val zero">٠</div>
+                <div class="acct-stat-lbl">سعر أضفته</div>
+              </div>
+              <div class="acct-stat">
+                <div class="acct-stat-val zero">٠</div>
+                <div class="acct-stat-lbl">تأكيد قدّمته</div>
+              </div>
+              <div class="acct-stat">
+                <div class="acct-stat-val zero">٠</div>
+                <div class="acct-stat-lbl">نقطة ثقة</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="acct-body">
+
+            <!-- Trust level — empty/new -->
+            <div class="section-ttl">مستوى الثقة</div>
+            <div class="trust-new-card">
+              <div class="trust-level-row">
+                <div class="trust-level-nm">جديد — New</div>
+                <div class="trust-badge-new">المستوى ١</div>
+              </div>
+              <div class="level-track">
+                <div class="level-dot active"></div>
+                <div class="level-step"></div>
+                <div class="level-dot"></div>
+                <div class="level-step"></div>
+                <div class="level-dot"></div>
+                <div class="level-step"></div>
+                <div class="level-dot"></div>
+              </div>
+              <div class="level-labels">
+                <div class="level-label active">جديد</div>
+                <div class="level-label">منتظم</div>
+                <div class="level-label">موثوق</div>
+                <div class="level-label">موثّق</div>
+              </div>
+              <div class="trust-hint" style="margin-top:10px;">
+                أضف ٥ أسعار مقبولة للانتقال لمستوى «منتظم» — تقاريرك ستحمل وزناً أعلى
+              </div>
+            </div>
+
+            <!-- Optional handle -->
+            <div class="section-ttl">اختياري — اسم عرض</div>
+            <div class="handle-card">
+              <div class="handle-title">كيف يناديك الناس؟</div>
+              <div class="handle-sub">لقب مجهول لا يكشف هويتك — يظهر بجانب مساهماتك</div>
+              <div class="handle-input-row">
+                <input class="handle-input" placeholder="مثال: أبو رامي" />
+                <button class="handle-skip">تخطّ</button>
+              </div>
+            </div>
+
+            <!-- My contributions — empty -->
+            <div class="section-ttl">مساهماتي</div>
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <div class="empty-title">لم تضف أي سعر بعد</div>
+              <div class="empty-sub">ابدأ بمشاركة سعر رأيته اليوم<br>وساعد عائلات غزة في توفير المال</div>
+              <div class="empty-cta">➕ أضف سعرك الأول</div>
+            </div>
+
+            <!-- Settings -->
+            <div class="section-ttl">الإعدادات</div>
+            <div class="settings-card">
+              <div class="setting-row">
+                <span class="setting-lbl">منطقتي</span>
+                <span class="setting-val" id="settingArea">الشجاعية ›</span>
+              </div>
+              <div class="setting-row">
+                <span class="setting-lbl">الإشعارات</span>
+                <span class="setting-val">قريباً ›</span>
+              </div>
+              <div class="setting-row danger">
+                <span class="setting-lbl">حذف بياناتي</span>
+                <span class="setting-val" style="color:#C0622A;">›</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="bottom-nav" style="position:absolute; bottom:0; left:0; right:0; background:white; border-top:1px solid var(--border);">
+            <div class="nav-item" onclick="goTo(2)" style="cursor:pointer;"><div class="nav-ic">🏠</div><div class="nav-lbl">الرئيسية</div></div>
+            <div class="nav-item"><div class="nav-ic">➕</div><div class="nav-lbl">إضافة</div></div>
+            <div class="nav-item"><div class="nav-ic">📊</div><div class="nav-lbl">تقارير</div></div>
+            <div class="nav-item on"><div class="nav-ic">👤</div><div class="nav-lbl">حسابي</div></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- end screens -->
+  </div><!-- end phone -->
+
+  <!-- Navigation buttons -->
+  <div class="nav-btns">
+    <button class="nav-btn" id="prevBtn" onclick="prev()" disabled>← السابق</button>
+    <button class="nav-btn primary" id="nextBtn" onclick="next()">التالي ←</button>
+  </div>
+
+  <!-- Step description -->
+  <div id="stepDesc" style="font-size:0.78rem; color:rgba(255,255,255,0.35); text-align:center; max-width:360px; font-family:'IBM Plex Sans Arabic',sans-serif; line-height:1.6;">
+    الشاشة الأولى التي يراها المستخدم — تحميل الجلسة المجهولة في الخلفية
+  </div>
+
+</div>
+
+<script>
+let current = 0;
+let selectedArea = 'الشجاعية';
+
+const steps = [
+  {
+    label: 'الخطوة ١ من ٤',
+    desc: 'الشاشة الأولى — يحدث في الخلفية: Supabase يُنشئ جلسة مجهولة (UUID) في أقل من 200ms. المستخدم لا يرى شيئاً سوى الشعار.',
+  },
+  {
+    label: 'الخطوة ٢ من ٤',
+    desc: 'اختيار المنطقة — السؤال الوحيد الذي يُطرح. نقرة واحدة، لا كتابة. يُحفظ في contributors.area_id + localStorage.',
+  },
+  {
+    label: 'الخطوة ٣ من ٤',
+    desc: 'الصفحة الرئيسية — أول ما يراه المستخدم بعد اختيار المنطقة. إشعار ترحيب خفيف يؤكد أنه مجهول الهوية. يختفي بضغطة ×.',
+  },
+  {
+    label: 'الخطوة ٤ من ٤',
+    desc: 'حسابي في اليوم الأول — الأرقام أصفار، لكن كل شيء حاضر وجاهز. مستوى الثقة، خانة اللقب الاختياري، ومساهمات فارغة تنتظر.',
+  },
+];
+
+function goTo(n) {
+  if (n < 0 || n > 3) return;
+
+  const prev = document.getElementById('screen' + current);
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 400);
+
+  current = n;
+  const next = document.getElementById('screen' + current);
+  next.classList.add('active');
+
+  // Update dots
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('dot' + i);
+    dot.className = 'step-dot';
+    if (i < current) dot.classList.add('done');
+    else if (i === current) dot.classList.add('active');
+  }
+
+  // Update label and desc
+  document.getElementById('stepLabel').textContent = steps[current].label;
+  document.getElementById('stepDesc').textContent = steps[current].desc;
+
+  // Update buttons
+  document.getElementById('prevBtn').disabled = (current === 0);
+  document.getElementById('nextBtn').disabled = (current === 3);
+  document.getElementById('nextBtn').textContent = current === 2 ? 'حسابي ←' : 'التالي ←';
+
+  // Update area labels
+  if (selectedArea) {
+    const lbl = document.getElementById('selectedAreaLabel');
+    if (lbl) lbl.textContent = selectedArea;
+    const sa = document.getElementById('settingArea');
+    if (sa) sa.textContent = selectedArea + ' ›';
+  }
+}
+
+function next() { goTo(current + 1); }
+function prev() { goTo(current - 1); }
+
+function selectArea(el, name) {
+  document.querySelectorAll('.area-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedArea = name;
+  const cta = document.getElementById('areaCta');
+  cta.classList.add('enabled');
+  cta.textContent = 'عرض أسعار ' + name + ' ←';
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (e.key === 'ArrowLeft') next();
+    else prev();
+  }
+});
+</script>
+
+</body>
+</html>

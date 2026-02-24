@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/hooks/useSearch";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import { Product } from "@/types/app";
 
 export function SearchBar() {
@@ -28,7 +29,7 @@ export function SearchBar() {
           dir="rtl"
         />
         {loading && (
-          <div className="w-4 h-4 border-2 border-olive/30 border-t-olive rounded-full animate-spin flex-shrink-0" />
+          <LoaderDots size="sm" className="flex-shrink-0" />
         )}
       </div>
 

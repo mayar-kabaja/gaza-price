@@ -53,4 +53,5 @@ export const TRUST_LEVEL_LABELS = {
 export const LOCAL_STORAGE_KEYS = {
   area: "gazaprice_area",
   onboarding_done: "gazaprice_onboarding",
+  welcome_toast_dismissed: "gazaprice_welcome_dismissed",
 } as const;
