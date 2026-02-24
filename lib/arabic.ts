@@ -20,8 +20,9 @@ export function normalizeArabicNumerals(text: string): string {
     );
 }
 
+/** Returns number as string (English digits). Use for display when Arabic numerals are not wanted. */
 export function toArabicNumerals(num: number): string {
-  return num.toString().replace(/[0-9]/g, (d) => "٠١٢٣٤٥٦٧٨٩"[parseInt(d)]);
+  return num.toString();
 }
 
 export function formatPrice(price: number, currency = "₪"): string {

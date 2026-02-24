@@ -36,7 +36,7 @@ export function AreaPicker({ areas, onSelect, loading }: AreaPickerProps) {
       <div className="bg-olive px-5 pt-6 pb-7 relative overflow-hidden flex-shrink-0">
         <div className="absolute w-48 h-48 rounded-full bg-white/5 -bottom-16 -left-14 pointer-events-none" />
         <div className="inline-block bg-white/15 border border-white/20 rounded-[20px] px-2.5 py-0.5 mb-2.5 text-[11px] font-semibold text-white/80">
-          الخطوة ١ من ١ · إعداد سريع
+          الخطوة 1 من 1 · إعداد سريع
         </div>
         <h1 className="font-display font-extrabold text-[1.3rem] text-white leading-tight mb-1">
           أين تسكن؟

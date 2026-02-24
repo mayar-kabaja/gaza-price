@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!hourLimit.allowed) {
     await logAttempt({ table: "report_attempts", contributorId, success: false });
     return NextResponse.json(
-      { error: "RATE_LIMIT_EXCEEDED", message: "تجاوزت الحد: ٥ تقارير/ساعة", retry_after_seconds: hourLimit.retryAfterSeconds },
+      { error: "RATE_LIMIT_EXCEEDED", message: "تجاوزت الحد: 5 تقارير/ساعة", retry_after_seconds: hourLimit.retryAfterSeconds },
       { status: 429 }
     );
   }

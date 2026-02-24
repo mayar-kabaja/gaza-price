@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "غزةبريس — أسعار شفافة",
   description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {

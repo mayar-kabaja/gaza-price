@@ -85,7 +85,7 @@ export default function AccountPage() {
                 {TRUST_LEVEL_LABELS[contributor?.trust_level ?? "new"]}
               </span>
               <span className="text-xs text-mist bg-fog border border-border rounded-full px-2.5 py-0.5">
-                المستوى {contributor?.trust_level === "new" ? "١" : contributor?.trust_level === "regular" ? "٢" : contributor?.trust_level === "trusted" ? "٣" : "٤"}
+                المستوى {contributor?.trust_level === "new" ? "1" : contributor?.trust_level === "regular" ? "2" : contributor?.trust_level === "trusted" ? "3" : "4"}
               </span>
             </div>
             <TrustLevelBar level={contributor?.trust_level ?? "new"} />

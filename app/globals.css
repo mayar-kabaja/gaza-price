@@ -46,10 +46,9 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Mobile shell */
+/* App shell — full viewport on all devices (phone, tablet, desktop) */
 .app-shell {
-  max-width: 430px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100dvh;
   background: #F4F7F9;
   position: relative;
