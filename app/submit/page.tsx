@@ -10,6 +10,7 @@ import { LoaderDots } from "@/components/ui/LoaderDots";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
+import { validateSubmitPrice } from "@/lib/validation/submit-price";
 
 function SubmitForm() {
   const router = useRouter();
@@ -44,12 +45,21 @@ function SubmitForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const id = product?.id ?? productIdFromUrl;
-    if (!id || !price || !areaId) {
-      setError("يرجى ملء جميع الحقول");
+
+    const id = product?.id ?? productIdFromUrl ?? null;
+
+    // 1 — Frontend validation first (UX only, never send request if invalid)
+    const frontendError = validateSubmitPrice({
+      productId: id,
+      price,
+      areaId,
+    });
+    if (frontendError) {
+      setError(frontendError);
       return;
     }
 
+    // 2 — Send to backend
     setSubmitting(true);
     setError("");
     setRetryAfterSeconds(undefined);
@@ -70,6 +80,7 @@ function SubmitForm() {
 
     const data = await res.json();
 
+    // 3 — Backend error → show Arabic message directly
     if (!res.ok) {
       handleApiError(res, data as ApiErrorResponse, setError, router);
       if (res.status === 429 && typeof (data as ApiErrorResponse).retry_after_seconds === "number") {
@@ -79,11 +90,13 @@ function SubmitForm() {
       return;
     }
 
+    // 4 — Success
     router.push(`/product/${id}?submitted=1`);
   }
 
   function handleSelectProduct(p: Product) {
     setProduct(p);
+    setError("");
     clear();
     setOpen(false);
     setShowNewProductInput(false);
@@ -207,7 +220,7 @@ function SubmitForm() {
             <input
               type="number"
               value={price}
-              onChange={e => setPrice(e.target.value)}
+              onChange={e => { setPrice(e.target.value); setError(""); }}
               placeholder="0.00"
               step="0.01"
               min="0"
@@ -222,7 +235,7 @@ function SubmitForm() {
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">المنطقة</label>
           <select
             value={areaId}
-            onChange={e => setAreaId(e.target.value)}
+            onChange={e => { setAreaId(e.target.value); setError(""); }}
             className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none appearance-none"
           >
             <option value="">اختر المنطقة</option>
@@ -254,7 +267,7 @@ function SubmitForm() {
 
         <button
           type="submit"
-          disabled={submitting || !product || !price || !areaId}
+          disabled={submitting}
           className="w-full bg-olive text-white py-4 rounded-2xl font-display font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99] transition-all"
         >
           {submitting ? "جاري الإرسال..." : "إرسال السعر ←"}
