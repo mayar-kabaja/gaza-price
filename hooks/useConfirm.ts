@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+function toNumber(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function useConfirm(initialCount: number, priceId: string) {
-  const [count, setCount] = useState(initialCount);
+  const [count, setCount] = useState(() => toNumber(initialCount));
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +38,11 @@ export function useConfirm(initialCount: number, priceId: string) {
         setCount((c) => c - 1);
       } else {
         const data = await res.json();
-        setCount(data.new_confirmation_count);
+        setCount((c) =>
+          data && "new_confirmation_count" in data
+            ? toNumber(data.new_confirmation_count)
+            : c
+        );
       }
     } catch {
       // Rollback

@@ -30,7 +30,7 @@ export function useSearch() {
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(timer.current);
   }, [query]);
