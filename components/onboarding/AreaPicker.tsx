@@ -9,6 +9,7 @@ interface AreaPickerProps {
   areas: Area[];
   onSelect: (area: Area) => void;
   loading?: boolean;
+  loadError?: string | null;
 }
 
 const GOV_LABELS: Record<string, string> = {
@@ -17,7 +18,7 @@ const GOV_LABELS: Record<string, string> = {
   south:   "جنوب غزة",
 };
 
-export function AreaPicker({ areas, onSelect, loading }: AreaPickerProps) {
+export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerProps) {
   const [selected, setSelected] = useState<Area | null>(null);
 
   // Group by governorate
@@ -48,6 +49,11 @@ export function AreaPicker({ areas, onSelect, loading }: AreaPickerProps) {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4">
+        {loadError && (
+          <div className="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+            {loadError}
+          </div>
+        )}
         {govOrder.map((gov) => {
           const govAreas = grouped[gov];
           if (!govAreas?.length) return null;

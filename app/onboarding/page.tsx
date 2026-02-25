@@ -11,16 +11,28 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    // If already onboarded, go home
     const done = localStorage.getItem(LOCAL_STORAGE_KEYS.onboarding_done);
-    if (done) { router.replace("/"); return; }
-
-    // Load areas
-    fetch("/api/areas")
-      .then((r) => r.json())
-      .then((d) => setAreas(d.areas ?? []));
+    if (done) {
+      router.replace("/");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/areas");
+      const data = await res.json();
+      if (cancelled) return;
+      if (!res.ok) {
+        setLoadError(typeof data?.message === "string" ? data.message : "تعذر تحميل المناطق");
+        setAreas([]);
+        return;
+      }
+      setLoadError(null);
+      setAreas(data?.areas ?? []);
+    })();
+    return () => { cancelled = true; };
   }, [router]);
 
   async function handleSelect(area: Area) {
@@ -52,5 +64,5 @@ export default function OnboardingPage() {
     }
   }
 
-  return <AreaPicker areas={areas} onSelect={handleSelect} loading={loading} />;
+  return <AreaPicker areas={areas} onSelect={handleSelect} loading={loading} loadError={loadError} />;
 }

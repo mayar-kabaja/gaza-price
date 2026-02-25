@@ -84,8 +84,8 @@ export function HomeData() {
           report_count: pricesRes.total ?? pricesRes.prices?.length ?? 0,
         });
         setProductName(productRes?.name_ar ?? productFromList?.name_ar ?? null);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "تعذر تحميل البيانات");
+      } catch {
+        if (!cancelled) setError("تعذر تحميل البيانات");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -155,10 +155,8 @@ export function HomeData() {
             </div>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-4xl mb-3">⚠️</div>
-            <div className="font-display font-bold text-ink mb-1">تعذر تحميل البيانات</div>
-            <div className="text-sm text-mist mt-1">{error}</div>
+          <div className="mx-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+            {error}
           </div>
         ) : productName ? (
           <PriceList prices={prices} stats={stats} productName={productName} />

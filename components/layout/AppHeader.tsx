@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
 import { SearchBar } from "@/components/search/SearchBar";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
+import { handleApiError } from "@/lib/api/errors";
+import type { ApiErrorResponse } from "@/lib/api/errors";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -14,17 +17,29 @@ const GOV_LABELS: Record<string, string> = {
 };
 
 export function AppHeader() {
+  const router = useRouter();
   const { area, saveArea } = useArea();
   const { accessToken } = useSession();
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [areas, setAreas] = useState<Area[]>([]);
+  const [areaError, setAreaError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (openAreaPicker) {
-      fetch("/api/areas")
-        .then((r) => r.json())
-        .then((d) => setAreas(d.areas ?? []));
-    }
+    if (!openAreaPicker) return;
+    setAreaError(null);
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/areas");
+      const data = await res.json();
+      if (cancelled) return;
+      if (!res.ok) {
+        setAreaError(typeof data?.message === "string" ? data.message : "تعذر تحميل المناطق");
+        setAreas([]);
+        return;
+      }
+      setAreas(data?.areas ?? []);
+    })();
+    return () => { cancelled = true; };
   }, [openAreaPicker]);
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
@@ -37,15 +52,19 @@ export function AppHeader() {
 
   async function handleSelectArea(selected: Area) {
     saveArea(selected);
+    setAreaError(null);
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-    try {
-      await fetch("/api/contributors/me", {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ area_id: selected.id }),
-      });
-    } catch {}
+    const res = await fetch("/api/contributors/me", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ area_id: selected.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      handleApiError(res, data as ApiErrorResponse, setAreaError, router);
+      return;
+    }
     setOpenAreaPicker(false);
   }
 
@@ -101,6 +120,11 @@ export function AppHeader() {
                 ×
               </button>
             </div>
+            {areaError && (
+              <div className="mx-4 mt-2 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                {areaError}
+              </div>
+            )}
             <div className="overflow-y-auto no-scrollbar flex-1 px-4 py-3">
               {govOrder.map((gov) => {
                 const govAreas = grouped[gov];

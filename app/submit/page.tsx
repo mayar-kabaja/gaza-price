@@ -7,6 +7,9 @@ import { Product, Area } from "@/types/app";
 import { useSearch } from "@/hooks/useSearch";
 import { useSession } from "@/hooks/useSession";
 import { LoaderDots } from "@/components/ui/LoaderDots";
+import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
+import { handleApiError } from "@/lib/api/errors";
+import type { ApiErrorResponse } from "@/lib/api/errors";
 
 function SubmitForm() {
   const router = useRouter();
@@ -22,6 +25,7 @@ function SubmitForm() {
   const [storeNameRaw, setStoreNameRaw] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
   const [showNewProductInput, setShowNewProductInput] = useState(false);
   const [newProductName, setNewProductName] = useState("");
 
@@ -41,10 +45,14 @@ function SubmitForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const id = product?.id ?? productIdFromUrl;
-    if (!id || !price || !areaId) { setError("يرجى ملء جميع الحقول"); return; }
+    if (!id || !price || !areaId) {
+      setError("يرجى ملء جميع الحقول");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
+    setRetryAfterSeconds(undefined);
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
@@ -63,7 +71,10 @@ function SubmitForm() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.message ?? "حدث خطأ");
+      handleApiError(res, data as ApiErrorResponse, setError, router);
+      if (res.status === 429 && typeof (data as ApiErrorResponse).retry_after_seconds === "number") {
+        setRetryAfterSeconds((data as ApiErrorResponse).retry_after_seconds);
+      }
       setSubmitting(false);
       return;
     }
@@ -234,9 +245,11 @@ function SubmitForm() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-            {error}
-          </div>
+          <ApiErrorBox
+            message={error}
+            retryAfterSeconds={retryAfterSeconds}
+            onDismiss={() => { setError(""); setRetryAfterSeconds(undefined); }}
+          />
         )}
 
         <button
