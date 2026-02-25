@@ -50,6 +50,14 @@ export const TRUST_LEVEL_LABELS = {
   verified: "موثّق",
 } as const;
 
+/** Profile avatar icon shown on account page (حسابي). Keyed by trust_level. */
+export const PROFILE_ICONS = {
+  new:      "👤",
+  regular:  "👤",
+  trusted:  "⭐",
+  verified: "✓",
+} as const;
+
 export const LOCAL_STORAGE_KEYS = {
   area: "gazaprice_area",
   onboarding_done: "gazaprice_onboarding",

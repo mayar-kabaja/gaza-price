@@ -13,27 +13,33 @@ export function useSession() {
     const supabase = createClient();
 
     async function load() {
-      let { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        await fetch("/api/auth/session", { credentials: "include" });
-        const again = await supabase.auth.getSession();
-        session = again.data.session;
-      }
-      if (!session) {
+      try {
+        let { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          await fetch("/api/auth/session", { credentials: "include" });
+          const again = await supabase.auth.getSession();
+          session = again.data.session;
+        }
+        if (!session) {
+          setAccessToken(null);
+          setContributor(null);
+          return;
+        }
+        setAccessToken(session.access_token);
+
+        const { data } = await supabase
+          .from("contributors")
+          .select("*, area:areas(*)")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        setContributor(data ?? null);
+      } catch (_err) {
+        setContributor(null);
         setAccessToken(null);
+      } finally {
         setLoading(false);
-        return;
       }
-      setAccessToken(session.access_token);
-
-      const { data } = await supabase
-        .from("contributors")
-        .select("*, area:areas(*)")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      setContributor(data ?? null);
-      setLoading(false);
     }
 
     load();

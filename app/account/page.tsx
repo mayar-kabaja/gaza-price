@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "@/hooks/useSession";
+import { useContributorMe } from "@/lib/queries/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -10,56 +11,126 @@ import { toArabicNumerals } from "@/lib/arabic";
 import { getReportsToNextLevel } from "@/lib/trust";
 import { Skeleton } from "@/components/ui/Skeleton";
 import Link from "next/link";
+import type { Contributor } from "@/types/app";
+
+/** Backend returns { handle, trust_score_total } and may omit display_handle / anon_session_id. Normalize to Contributor-like. */
+function normalizeContributor(raw: unknown): Contributor | null {
+  if (!raw || typeof raw !== "object" || !("id" in raw)) return null;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: String(r.id ?? ""),
+    anon_session_id: typeof r.anon_session_id === "string" ? r.anon_session_id : String(r.id ?? ""),
+    display_handle:
+      typeof r.handle === "string" ? r.handle : typeof r.display_handle === "string" ? r.display_handle : undefined,
+    area:
+      r.area && typeof r.area === "object" && r.area !== null && "name_ar" in (r.area as object)
+        ? (r.area as Contributor["area"])
+        : undefined,
+    trust_level: (r.trust_level as Contributor["trust_level"]) ?? "new",
+    report_count: typeof r.report_count === "number" ? r.report_count : 0,
+    confirmation_count: typeof r.confirmation_count === "number" ? r.confirmation_count : 0,
+    flag_count: typeof r.flag_count === "number" ? r.flag_count : 0,
+    is_banned: Boolean(r.is_banned),
+    joined_at: typeof r.joined_at === "string" ? r.joined_at : new Date().toISOString(),
+    last_active_at:
+      typeof r.last_active_at === "string" ? r.last_active_at : new Date().toISOString(),
+  };
+}
+
+/** Trust score total from API (backend formatMeProfile). */
+function getTrustScoreTotal(data: unknown): number {
+  if (data && typeof data === "object" && "trust_score_total" in data && typeof (data as { trust_score_total: unknown }).trust_score_total === "number") {
+    return (data as { trust_score_total: number }).trust_score_total;
+  }
+  return 0;
+}
+
+/** Avatar initial: first letter of display_handle or "م" for مساهم */
+function profileInitial(contributor: Contributor | null): string {
+  const name = contributor?.display_handle?.trim();
+  if (name && name.length > 0) return name.slice(0, 1);
+  return "م";
+}
+
+/** Prefer API contributor when available, else session contributor. */
+function useProfile() {
+  const { contributor: sessionContributor, loading: sessionLoading } = useSession();
+  const { data: apiData } = useContributorMe();
+
+  const apiContributor = normalizeContributor(apiData);
+  const contributor: Contributor | null = apiContributor ?? sessionContributor;
+  const loading = sessionLoading;
+  const trustScoreTotal = getTrustScoreTotal(apiData);
+
+  return { contributor, loading, trustScoreTotal };
+}
 
 export default function AccountPage() {
-  const { contributor, loading } = useSession();
+  const { contributor, loading, trustScoreTotal } = useProfile();
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to onboarding if no area set
     const done = localStorage.getItem(LOCAL_STORAGE_KEYS.onboarding_done);
-    if (!done) router.replace("/onboarding");
+    if (!done) {
+      const t = setTimeout(() => router.replace("/onboarding"), 150);
+      return () => clearTimeout(t);
+    }
   }, [router]);
 
   const area = contributor?.area;
 
   return (
     <div className="flex flex-col min-h-dvh">
-      {/* Header */}
+      {/* Header — always show avatar + name (no loading gate so they're never missing) */}
       <div className="bg-ink px-5 pt-5 pb-6 flex-shrink-0">
         {loading ? (
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Skeleton className="w-12 h-12 rounded-full bg-white/10" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28 bg-white/10" />
-                <Skeleton className="h-3 w-20 bg-white/10" />
+            <div className="flex items-center gap-3 mb-4">
+              <Skeleton className="w-12 h-12 rounded-full shrink-0 bg-white/30" />
+              <div className="space-y-2 min-w-0 flex-1">
+                <Skeleton className="h-4 w-32 bg-white/30" />
+                <Skeleton className="h-3 w-24 bg-white/25" />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 rounded-xl bg-white/20" />
+              ))}
             </div>
           </div>
         ) : (
           <>
-            {/* Avatar + name */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-white/7 border-2 border-white/12 flex items-center justify-center text-xl">
-                👤
+            {/* Avatar + name — match reference: gray circle with initial, then name / trust label */}
+            <div className="flex items-center gap-3 mb-4 min-h-[3rem]">
+              <div
+                className="w-12 h-12 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"
+                aria-hidden
+              >
+                {profileInitial(contributor)}
               </div>
-              <div>
-                <div className="font-display font-bold text-base text-white">
-                  {contributor?.display_handle ?? "مساهم مجهول"}
+              <div className="min-w-0 flex-1">
+                <div className="font-display font-bold text-base text-white truncate">
+                  {contributor?.display_handle
+                    ? contributor.display_handle
+                    : contributor
+                      ? "مساهم " + TRUST_LEVEL_LABELS[contributor.trust_level]
+                      : "مساهم مجهول"}
                 </div>
-                <div className="text-[11px] text-white/35 font-mono mt-0.5">
-                  #{contributor?.anon_session_id?.slice(-4) ?? "----"} · {contributor ? "انضم " + new Date(contributor.joined_at).toLocaleDateString("ar") : "..."}
+                <div className="text-[11px] text-white/80 font-mono mt-0.5">
+                  #{(typeof contributor?.anon_session_id === "string" ? contributor.anon_session_id : contributor?.id ?? "").slice(-4) || "----"}
+                  {contributor?.joined_at
+                    ? " · منذ " + new Date(contributor.joined_at).toLocaleDateString("ar-EGP", { month: "long", year: "numeric" })
+                    : ""}
                 </div>
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats — order like reference: نقطة ثقة, تأكيد قدّمته, سعر أضفته */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { val: contributor?.report_count ?? 0, label: "سعر أضفته" },
+                { val: trustScoreTotal, label: "نقطة ثقة" },
                 { val: contributor?.confirmation_count ?? 0, label: "تأكيد قدّمته" },
-                { val: 0, label: "نقطة ثقة" },
+                { val: contributor?.report_count ?? 0, label: "سعر أضفته" },
               ].map(({ val, label }) => (
                 <div key={label} className="bg-white/6 border border-white/7 rounded-xl p-2.5 text-center">
                   <div className={`font-display font-extrabold text-2xl leading-none ${val === 0 ? "text-white/20" : "text-white"}`}>
@@ -132,6 +203,10 @@ export default function AccountPage() {
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-fog">
               <span className="text-sm text-ink">منطقتي</span>
               <span className="text-sm text-mist">{area?.name_ar ?? "—"} ›</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-fog">
+              <span className="text-sm text-ink">اسم العرض</span>
+              <span className="text-sm text-mist">{contributor?.display_handle ?? "غير محدد"} ›</span>
             </div>
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-fog">
               <span className="text-sm text-ink">الإشعارات</span>
