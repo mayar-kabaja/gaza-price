@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/",        icon: "🏠", label: "الرئيسية" },
-  { href: "/submit",  icon: "➕", label: "إضافة" },
-  { href: "/product", icon: "📊", label: "تقارير" },
-  { href: "/account", icon: "👤", label: "حسابي" },
+  { href: "/submit",  icon: "➕", label: "إضافة"    },
+  { href: "/reports", icon: "📋", label: "تقارير"   },
+  { href: "/account", icon: "👤", label: "حسابي"    },
 ];
 
 export function BottomNav() {

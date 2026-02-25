@@ -121,3 +121,28 @@ export interface PriceSnapshot {
   report_count: number;
   currency: Currency;
 }
+
+// ── Reports feed (community feed) ──
+
+export interface ReportFeedItem {
+  id: string;
+  product_id: string;
+  price: number;
+  currency: Currency;
+  store_name_raw?: string | null;
+  confirmation_count: number;
+  trust_score: number;
+  status: PriceStatus;
+  reported_at: string;
+  has_receipt: boolean;
+  is_confirmed_by_me: boolean;
+  product?: {
+    id: string;
+    name_ar: string;
+    unit: string;
+    unit_size: number;
+    category?: { icon: string; name_ar: string };
+  } | null;
+  store?: { name_ar: string } | null;
+  area?: { name_ar: string } | null;
+}

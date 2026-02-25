@@ -4,6 +4,109 @@ import { checkRateLimit, logAttempt } from "@/lib/rate-limit";
 import { RATE_LIMITS } from "@/lib/constants";
 import { SubmitPriceRequest } from "@/types/api";
 import { getApiBaseUrl, apiPost } from "@/lib/api/client";
+import { createClient } from "@/lib/supabase/server";
+
+const PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 50;
+
+export type ReportFilter = "all" | "my_area" | "today" | "trusted";
+
+/** GET — Community feed: recent prices with product + area + store. Optional auth for is_confirmed_by_me. */
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const { searchParams } = new URL(req.url);
+
+  const areaId = searchParams.get("area_id")?.trim() || undefined;
+  const filter = (searchParams.get("filter") as ReportFilter) || "all";
+  const limit = Math.min(Number(searchParams.get("limit")) || PAGE_SIZE, MAX_PAGE_SIZE);
+  const offset = Number(searchParams.get("offset")) || 0;
+
+  let query = supabase
+    .from("prices")
+    .select(
+      `
+      id, product_id, price, currency, store_name_raw,
+      confirmation_count, trust_score, status,
+      reported_at, receipt_photo_url,
+      product:products(id, name_ar, unit, unit_size, category:categories(icon, name_ar)),
+      store:stores(name_ar),
+      area:areas(name_ar)
+    `,
+      { count: "exact" }
+    )
+    .in("status", ["pending", "confirmed"])
+    .gt("expires_at", new Date().toISOString())
+    .order("reported_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (areaId) {
+    query = query.eq("area_id", areaId);
+  }
+
+  if (filter === "today") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    query = query.gte("reported_at", today.toISOString());
+  }
+
+  if (filter === "trusted") {
+    query = query.gte("trust_score", 60);
+  }
+
+  const { data: rows, count, error } = await query;
+
+  if (error) {
+    console.error("[reports] GET error:", error.message);
+    return NextResponse.json(
+      { error: "SERVER_ERROR", message: "حدث خطأ غير متوقع" },
+      { status: 500 }
+    );
+  }
+
+  const reports = (rows ?? []).map((r: Record<string, unknown>) => {
+    const product = r.product as { id: string; name_ar: string; unit: string; unit_size: number; category?: { icon: string; name_ar: string } } | null;
+    const has_receipt = !!(r.receipt_photo_url as string | null);
+    return {
+      ...r,
+      id: r.id as string,
+      product,
+      has_receipt,
+      is_confirmed_by_me: false as boolean,
+    };
+  });
+
+  // Optional: set is_confirmed_by_me when user is logged in
+  let userId: string | null = null;
+  try {
+    const auth = await getAuthFromRequest(req);
+    userId = auth.user.id;
+  } catch {
+    // no session
+  }
+
+  if (userId && reports.length > 0) {
+    const ids = reports.map((r) => r.id);
+    const { data: confirmations } = await supabase
+      .from("price_confirmations")
+      .select("price_id")
+      .eq("confirmed_by", userId)
+      .in("price_id", ids);
+
+    const confirmedSet = new Set((confirmations ?? []).map((c: { price_id: string }) => c.price_id));
+    reports.forEach((r) => {
+      r.is_confirmed_by_me = confirmedSet.has(r.id);
+    });
+  }
+
+  const total = count ?? 0;
+  const next_offset = offset + limit < total ? offset + limit : null;
+
+  return NextResponse.json({
+    reports,
+    total,
+    next_offset,
+  });
+}
 
 export async function POST(req: NextRequest) {
   let auth: Awaited<ReturnType<typeof getAuthFromRequest>>;

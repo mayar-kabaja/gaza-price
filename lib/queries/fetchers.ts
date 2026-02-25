@@ -7,15 +7,15 @@ import type { Area, Category, Price, PriceStats, Product } from "@/types/app";
 // ── Query keys ──
 export const queryKeys = {
   areas: ["areas"] as const,
-  areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]) as const,
+  areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]),
   categories: ["categories"] as const,
   products: (filters?: { category_id?: string; limit?: number; offset?: number }) =>
-    ["products", filters ?? {}] as const,
+    ["products", filters ?? {}],
   product: (id: string) => ["products", id] as const,
   productsSearch: (search: string, limit?: number) =>
-    ["products", "search", search, limit ?? 10] as const,
+    ["products", "search", search, limit ?? 10],
   prices: (productId: string, areaId?: string, sort?: string, limit?: number) =>
-    ["prices", productId, areaId, sort, limit] as const,
+    ["prices", productId, areaId, sort, limit],
   contributorMe: ["contributors", "me"] as const,
 };
 
