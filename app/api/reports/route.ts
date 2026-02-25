@@ -190,10 +190,25 @@ export async function POST(req: NextRequest) {
         message: "شكراً! سيظهر سعرك بعد التأكيدات.",
       }, { status: 201 });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "خطأ في الحفظ";
-      const status = message.startsWith("API 4") ? (message.startsWith("API 404") ? 404 : 400) : 500;
+      const rawMessage = err instanceof Error ? err.message : "خطأ في الحفظ";
+      const status = rawMessage.startsWith("API 4") ? (rawMessage.startsWith("API 404") ? 404 : 400) : 500;
+      // Forward backend 4xx body so frontend can show message (e.g. outlier: "السعر بعيد جداً عن المتوسط")
+      const bodyMatch = rawMessage.match(/^API \d+: (.+)$/s);
+      if (bodyMatch) {
+        try {
+          const parsed = JSON.parse(bodyMatch[1].trim()) as { error?: string; message?: string };
+          if (typeof parsed.message === "string" && (parsed.error != null || parsed.message)) {
+            return NextResponse.json(
+              { error: parsed.error ?? "BAD_REQUEST", message: parsed.message },
+              { status }
+            );
+          }
+        } catch {
+          // not JSON, fall through to generic message
+        }
+      }
       return NextResponse.json(
-        { error: "SERVER_ERROR", message: message.replace(/^API \d+: /, ""), detail: message },
+        { error: "SERVER_ERROR", message: rawMessage.replace(/^API \d+: /, ""), detail: rawMessage },
         { status }
       );
     }
