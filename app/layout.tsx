@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export const metadata: Metadata = {
   title: "غزة بريس — أسعار شفافة",
@@ -34,9 +35,11 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <div className="app-shell">
-          {children}
-        </div>
+        <QueryProvider>
+          <div className="app-shell">
+            {children}
+          </div>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -1,0 +1,177 @@
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryKeys,
+  fetchAreas,
+  fetchCategories,
+  fetchProducts,
+  fetchProduct,
+  fetchPrices,
+  fetchContributorMe,
+} from "@/lib/queries/fetchers";
+
+// ── Areas ──
+export function useAreas() {
+  return useQuery({
+    queryKey: queryKeys.areas,
+    queryFn: fetchAreas,
+    staleTime: 5 * 60 * 1000, // 5 min — areas change rarely
+  });
+}
+
+// ── Categories ──
+export function useCategories() {
+  return useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: fetchCategories,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ── Products ──
+export function useProducts(params: {
+  category_id?: string | null;
+  limit?: number;
+  offset?: number;
+}) {
+  const { category_id, limit = 10, offset = 0 } = params;
+  return useQuery({
+    queryKey: queryKeys.products({ category_id: category_id ?? undefined, limit, offset }),
+    queryFn: () => fetchProducts({ category_id: category_id ?? undefined, limit, offset }),
+    enabled: true,
+  });
+}
+
+export function useProduct(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.product(id ?? ""),
+    queryFn: () => fetchProduct(id!),
+    enabled: !!id,
+  });
+}
+
+export function useProductsSearch(search: string, limit = 10) {
+  return useQuery({
+    queryKey: queryKeys.productsSearch(search, limit),
+    queryFn: () => fetchProducts({ search, limit }),
+    enabled: search.trim().length >= 1,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+// ── Prices ──
+export function usePrices(params: {
+  productId: string | null;
+  areaId?: string | null;
+  sort?: string;
+  limit?: number;
+}) {
+  const { productId, areaId, sort = "price_asc", limit = 20 } = params;
+  return useQuery({
+    queryKey: queryKeys.prices(productId ?? "", areaId ?? undefined, sort, limit),
+    queryFn: () =>
+      fetchPrices({
+        product_id: productId!,
+        area_id: areaId ?? undefined,
+        sort,
+        limit,
+      }),
+    enabled: !!productId,
+  });
+}
+
+// ── Contributor me (for PATCH we use mutation) ──
+export function useContributorMe() {
+  return useQuery({
+    queryKey: queryKeys.contributorMe,
+    queryFn: () => fetchContributorMe(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useUpdateContributorMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      area_id?: string;
+      display_handle?: string | null;
+      headers?: Record<string, string>;
+    }) => {
+      const { headers: customHeaders, ...body } = payload;
+      const res = await fetch("/api/contributors/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...customHeaders },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw { status: res.status, data };
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
+    },
+  });
+}
+
+// ── Submit report (invalidate prices + product) ──
+export function useSubmitReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      product_id: string;
+      price: number;
+      area_id: string;
+      store_name_raw?: string;
+      headers?: Record<string, string>;
+    }) => {
+      const { headers: customHeaders, ...body } = payload;
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...customHeaders },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw { status: res.status, data };
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.prices(variables.product_id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.product(variables.product_id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
+    },
+  });
+}
+
+// ── Suggest product (name + category + unit + price + area in one call) ──
+export function useSuggestProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      name_ar: string;
+      category_id: string;
+      unit?: string;
+      unit_size: number;
+      suggestion_note?: string;
+      price: number;
+      area_id: string;
+      store_name_raw?: string;
+    }) => {
+      const res = await fetch("/api/products/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw { status: res.status, data };
+      return data as { suggestion_id: string; pending_report_id: string; status: string; message: string };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+    },
+  });
+}

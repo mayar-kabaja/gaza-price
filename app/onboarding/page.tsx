@@ -6,48 +6,31 @@ import { AreaPicker } from "@/components/onboarding/AreaPicker";
 import { Area } from "@/types/app";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
+import { useAreas } from "@/lib/queries/hooks";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const { data: areasData, isError: areasError } = useAreas();
+  const areas = areasData?.areas ?? [];
+  const loadError = areasError ? "تعذر تحميل المناطق" : null;
 
   useEffect(() => {
     const done = localStorage.getItem(LOCAL_STORAGE_KEYS.onboarding_done);
-    if (done) {
-      router.replace("/");
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const res = await fetch("/api/areas");
-      const data = await res.json();
-      if (cancelled) return;
-      if (!res.ok) {
-        setLoadError(typeof data?.message === "string" ? data.message : "تعذر تحميل المناطق");
-        setAreas([]);
-        return;
-      }
-      setLoadError(null);
-      setAreas(data?.areas ?? []);
-    })();
-    return () => { cancelled = true; };
+    if (done) router.replace("/");
   }, [router]);
 
   async function handleSelect(area: Area) {
     setLoading(true);
     try {
-      // Save to localStorage
       localStorage.setItem(LOCAL_STORAGE_KEYS.area, JSON.stringify(area));
       localStorage.setItem(LOCAL_STORAGE_KEYS.onboarding_done, "1");
 
-      // Save to Supabase contributor row
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
-        // Upsert contributor with selected area
         await supabase.from("contributors").upsert({
           id: session.user.id,
           anon_session_id: session.user.id,

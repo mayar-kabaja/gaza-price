@@ -2,44 +2,41 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Product } from "@/types/app";
+import { useProductsSearch } from "@/lib/queries/hooks";
+
+const DEBOUNCE_MS = 300;
 
 export function useSearch() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    clearTimeout(timer.current);
-
     if (!query.trim()) {
-      setResults([]);
+      setDebouncedQuery("");
       setOpen(false);
       return;
     }
-    timer.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `/api/products?search=${encodeURIComponent(query.trim())}&limit=10&offset=0`
-        );
-        const data = await res.json();
-        setResults(data.products ?? []);
-        setOpen(true);
-      } finally {
-        setLoading(false);
-      }
-    }, 200);
-
-    return () => clearTimeout(timer.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setOpen(true);
+      timerRef.current = null;
+    }, DEBOUNCE_MS);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [query]);
+
+  const { data, isLoading } = useProductsSearch(debouncedQuery, 10);
+  const results = (data?.products ?? []) as Product[];
 
   function clear() {
     setQuery("");
-    setResults([]);
+    setDebouncedQuery("");
     setOpen(false);
   }
 
-  return { query, setQuery, results, loading, open, setOpen, clear };
+  return { query, setQuery, results, loading: isLoading, open, setOpen, clear };
 }

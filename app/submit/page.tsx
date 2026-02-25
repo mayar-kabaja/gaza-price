@@ -11,6 +11,7 @@ import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import { validateSubmitPrice } from "@/lib/validation/submit-price";
+import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
 const ARABIC_DIGITS = /[٠-٩]/g;
@@ -34,18 +35,24 @@ function SubmitForm() {
   const { accessToken } = useSession();
 
   const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
+  const { data: productFromUrl } = useProduct(productIdFromUrl);
+  const { data: areasData } = useAreas();
+  const submitReport = useSubmitReport();
+
   const [product, setProduct] = useState<Product | null>(null);
-  const [areas, setAreas] = useState<Area[]>([]);
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
   const [showNewProductInput, setShowNewProductInput] = useState(false);
   const [newProductName, setNewProductName] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
   const priceToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const areas = areasData?.areas ?? [];
+  const effectiveProduct = product ?? (productFromUrl as Product | null) ?? null;
+  const submitting = submitReport.isPending;
 
   const showPriceToast = useCallback((message: string) => {
     if (priceToastTimeoutRef.current) clearTimeout(priceToastTimeoutRef.current);
@@ -63,22 +70,27 @@ function SubmitForm() {
   }, []);
 
   useEffect(() => {
-    if (productIdFromUrl) {
-      fetch(`/api/products/${productIdFromUrl}`).then(r => r.json()).then(setProduct);
+    if (productIdFromUrl && productFromUrl && !product) {
+      setProduct(productFromUrl as Product);
     }
-    fetch("/api/areas").then(r => r.json()).then(d => {
-      setAreas(d.areas ?? []);
+  }, [productIdFromUrl, productFromUrl, product]);
+
+  useEffect(() => {
+    if (areas.length > 0 && !areaId) {
       try {
         const saved = localStorage.getItem("gazaprice_area");
-        if (saved) { const a = JSON.parse(saved); setAreaId(a.id); }
+        if (saved) {
+          const a = JSON.parse(saved);
+          if (a?.id) setAreaId(a.id);
+        }
       } catch {}
-    });
-  }, [productIdFromUrl]);
+    }
+  }, [areas.length, areaId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const id = product?.id ?? productIdFromUrl ?? null;
+    const id = effectiveProduct?.id ?? productIdFromUrl ?? null;
 
     // 1 — Frontend validation first (UX only, never send request if invalid)
     const frontendError = validateSubmitPrice({
@@ -92,39 +104,28 @@ function SubmitForm() {
       return;
     }
 
-    // 2 — Send to backend
-    setSubmitting(true);
+    // 2 — Send to backend via React Query mutation
     setError("");
     setRetryAfterSeconds(undefined);
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-
-    const res = await fetch("/api/reports", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        product_id: id,
+    try {
+      await submitReport.mutateAsync({
+        product_id: id!,
         price: parseFloat(price),
         area_id: areaId,
         store_name_raw: storeNameRaw || undefined,
-      }),
-    });
-
-    const data = await res.json();
-
-    // 3 — Backend error → show Arabic message directly
-    if (!res.ok) {
-      handleApiError(res, data as ApiErrorResponse, setError, router);
-      if (res.status === 429 && typeof (data as ApiErrorResponse).retry_after_seconds === "number") {
-        setRetryAfterSeconds((data as ApiErrorResponse).retry_after_seconds);
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
+      router.push(`/product/${id}?submitted=1`);
+    } catch (err: unknown) {
+      const status = (err && typeof err === "object" && "status" in err ? (err as { status: number }).status : 500) as number;
+      const data = (err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {}) as ApiErrorResponse;
+      const res = new Response(null, { status });
+      handleApiError(res, data, setError, router);
+      if (status === 429 && typeof data?.retry_after_seconds === "number") {
+        setRetryAfterSeconds(data.retry_after_seconds);
       }
-      setSubmitting(false);
-      return;
     }
-
-    // 4 — Success
-    router.push(`/product/${id}?submitted=1`);
   }
 
   function handleSelectProduct(p: Product) {
@@ -158,13 +159,13 @@ function SubmitForm() {
         {/* Product */}
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">المنتج</label>
-          {product ? (
+          {effectiveProduct ? (
             <div className="bg-olive-pale border border-olive-mid rounded-2xl px-4 py-3 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-lg flex-shrink-0">{product.category?.icon ?? "📦"}</span>
+                <span className="text-lg flex-shrink-0">{effectiveProduct.category?.icon ?? "📦"}</span>
                 <div className="min-w-0">
-                  <div className="font-display font-bold text-sm text-ink">{product.name_ar}</div>
-                  <div className="text-xs text-mist">{product.unit_size} {product.unit}</div>
+                  <div className="font-display font-bold text-sm text-ink">{effectiveProduct.name_ar}</div>
+                  <div className="text-xs text-mist">{effectiveProduct.unit_size} {effectiveProduct.unit}</div>
                 </div>
               </div>
               <button
