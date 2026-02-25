@@ -8,8 +8,9 @@ export function validateSubmitPrice(params: {
   productId: string | null | undefined;
   price: string;
   areaId: string;
+  storeNameRaw?: string;
 }): string | null {
-  const { productId, price, areaId } = params;
+  const { productId, price, areaId, storeNameRaw } = params;
 
   if (!productId || !productId.trim()) {
     return "يرجى اختيار منتج";
@@ -25,6 +26,11 @@ export function validateSubmitPrice(params: {
 
   if (!areaId || !areaId.trim()) {
     return "يرجى اختيار المنطقة";
+  }
+
+  const storeTrimmed = (storeNameRaw ?? "").trim();
+  if (storeTrimmed.length > 0 && storeTrimmed.length < 2) {
+    return "اسم المتجر يجب أن يكون حرفين على الأقل";
   }
 
   return null;

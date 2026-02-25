@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { Product, Area } from "@/types/app";
 import { useSearch } from "@/hooks/useSearch";
@@ -11,6 +11,21 @@ import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import { validateSubmitPrice } from "@/lib/validation/submit-price";
+
+const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
+const ARABIC_DIGITS = /[٠-٩]/g;
+const ARABIC_TO_ENGLISH: Record<string, string> = {
+  "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
+  "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
+};
+
+function normalizePriceInput(value: string): string {
+  return value.replace(ARABIC_DIGITS, (d) => ARABIC_TO_ENGLISH[d] ?? d);
+}
+
+function hasArabicDigits(value: string): boolean {
+  return ARABIC_DIGITS.test(value);
+}
 
 function SubmitForm() {
   const router = useRouter();
@@ -29,6 +44,23 @@ function SubmitForm() {
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
   const [showNewProductInput, setShowNewProductInput] = useState(false);
   const [newProductName, setNewProductName] = useState("");
+  const [priceToast, setPriceToast] = useState<string | null>(null);
+  const priceToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPriceToast = useCallback((message: string) => {
+    if (priceToastTimeoutRef.current) clearTimeout(priceToastTimeoutRef.current);
+    setPriceToast(message);
+    priceToastTimeoutRef.current = setTimeout(() => {
+      setPriceToast(null);
+      priceToastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (priceToastTimeoutRef.current) clearTimeout(priceToastTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (productIdFromUrl) {
@@ -53,6 +85,7 @@ function SubmitForm() {
       productId: id,
       price,
       areaId,
+      storeNameRaw,
     });
     if (frontendError) {
       setError(frontendError);
@@ -213,18 +246,28 @@ function SubmitForm() {
           )}
         </div>
 
-        {/* Price */}
+        {/* Price — LTR so digits stay English (0-9) */}
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر</label>
           <div className="bg-white border border-border rounded-2xl flex items-center overflow-hidden">
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              lang="en"
+              dir="ltr"
               value={price}
-              onChange={e => { setPrice(e.target.value); setError(""); }}
+              onChange={e => {
+                const raw = e.target.value;
+                if (hasArabicDigits(raw)) {
+                  showPriceToast(PRICE_TOAST_MSG);
+                  setPrice(normalizePriceInput(raw));
+                } else {
+                  setPrice(raw);
+                }
+                setError("");
+              }}
               placeholder="0.00"
-              step="0.01"
-              min="0"
-              className="flex-1 px-4 py-3.5 text-lg font-display font-bold text-ink outline-none bg-transparent price-number"
+              className="flex-1 px-4 py-3.5 text-lg font-display font-bold text-ink outline-none bg-transparent price-number text-left"
             />
             <div className="px-4 text-mist font-display font-bold text-lg border-r border-border">₪</div>
           </div>
@@ -245,15 +288,16 @@ function SubmitForm() {
           </select>
         </div>
 
-        {/* Store name */}
+        {/* Store name — if provided, at least 2 characters */}
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر (اختياري)</label>
           <input
             type="text"
             value={storeNameRaw}
-            onChange={e => setStoreNameRaw(e.target.value)}
+            onChange={e => { setStoreNameRaw(e.target.value); setError(""); }}
             placeholder="مثال: بقالة أبو رامي"
             className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+            dir="rtl"
           />
         </div>
 
@@ -263,6 +307,17 @@ function SubmitForm() {
             retryAfterSeconds={retryAfterSeconds}
             onDismiss={() => { setError(""); setRetryAfterSeconds(undefined); }}
           />
+        )}
+
+        {/* Small toast when user enters Arabic numerals in price */}
+        {priceToast && (
+          <div
+            className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white shadow-lg"
+            role="status"
+            aria-live="polite"
+          >
+            {priceToast}
+          </div>
         )}
 
         <button
