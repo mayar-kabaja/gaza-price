@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
       const rawMessage = err instanceof Error ? err.message : "خطأ في الحفظ";
       const status = rawMessage.startsWith("API 4") ? (rawMessage.startsWith("API 404") ? 404 : 400) : 500;
       // Forward backend 4xx body so frontend can show message (e.g. outlier: "السعر بعيد جداً عن المتوسط")
-      const bodyMatch = rawMessage.match(/^API \d+: (.+)$/s);
+      const bodyMatch = rawMessage.match(/^API \d+: ([\s\S]+)$/);
       if (bodyMatch) {
         try {
           const parsed = JSON.parse(bodyMatch[1].trim()) as { error?: string; message?: string };
