@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     .select(
       `
       id, product_id, price, currency, store_name_raw,
-      confirmation_count, trust_score, status,
+      trust_score, status,
       reported_at, receipt_photo_url,
       product:products(id, name_ar, unit, unit_size, category:categories(icon, name_ar)),
       store:stores(name_ar),
@@ -71,9 +71,28 @@ export async function GET(req: NextRequest) {
       id: r.id as string,
       product,
       has_receipt,
+      confirmation_count: 0 as number,
       is_confirmed_by_me: false as boolean,
     };
   });
+
+  // Confirmation counts from price_confirmations (prices table may not have confirmation_count column)
+  if (reports.length > 0) {
+    const ids = reports.map((r) => r.id);
+    const { data: confirmationRows } = await supabase
+      .from("price_confirmations")
+      .select("price_id")
+      .in("price_id", ids);
+
+    const countByPriceId = new Map<string, number>();
+    for (const row of confirmationRows ?? []) {
+      const pid = (row as { price_id: string }).price_id;
+      countByPriceId.set(pid, (countByPriceId.get(pid) ?? 0) + 1);
+    }
+    reports.forEach((r) => {
+      r.confirmation_count = countByPriceId.get(r.id) ?? 0;
+    });
+  }
 
   // Optional: set is_confirmed_by_me when user is logged in
   let userId: string | null = null;
