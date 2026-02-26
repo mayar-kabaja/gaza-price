@@ -60,7 +60,9 @@ export async function searchProducts(
     query = query.eq("category_id", categoryId);
   }
 
-  const { data, count, error } = await query;
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) throw error;
 
   return { products: data ?? [], total: count ?? 0 };

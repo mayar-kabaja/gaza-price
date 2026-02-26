@@ -3,20 +3,13 @@
 import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { PriceList } from "@/components/prices/PriceList";
+import { HomeProductCard } from "@/components/home/HomeProductCard";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
-import type { Category, Price, PriceStats } from "@/types/app";
-import {
-  useCategories,
-  useProducts,
-  usePrices,
-  useProduct,
-} from "@/lib/queries/hooks";
+import type { Category } from "@/types/app";
+import { useCategories, useProductsInfinite } from "@/lib/queries/hooks";
 
 const FALLBACK_CHIPS = ["🌾 دقيق", "🍚 أرز", "🫒 زيت", "🍬 سكر", "🥛 حليب", "🧂 ملح"];
-
-const DEFAULT_PRODUCT_ID = process.env.NEXT_PUBLIC_DEFAULT_PRODUCT_ID ?? "";
 
 export function HomeData() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -24,41 +17,29 @@ export function HomeData() {
 
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
   const categories = Array.isArray(categoriesData) ? categoriesData : [];
-  const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  const effectiveCategoryId = selectedCategoryId ?? sortedCategories[0]?.id ?? null;
+  const sortedCategories = [...categories].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  const effectiveCategoryId =
+    selectedCategoryId ?? sortedCategories[0]?.id ?? null;
 
-  const { data: productsData, isLoading: productsLoading } = useProducts({
-    limit: 10,
-  });
-  const products = productsData?.products ?? [];
-  const productId = products[0]?.id ?? DEFAULT_PRODUCT_ID;
+  const {
+    data: infiniteData,
+    isLoading: productsLoading,
+    isError: productsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useProductsInfinite(effectiveCategoryId);
 
-  const { data: pricesData, isLoading: pricesLoading, isError: pricesError } = usePrices({
-    productId: productId || null,
-    sort: "price_asc",
-    limit: 20,
-  });
-  const { data: productDetail } = useProduct(productId || null);
-
-  const prices = (pricesData?.prices ?? []) as Price[];
-  const stats: PriceStats = {
-    avg_price: pricesData?.stats?.avg_price ?? 0,
-    median_price: pricesData?.stats?.median_price ?? 0,
-    min_price: pricesData?.stats?.min_price ?? 0,
-    report_count: pricesData?.total ?? pricesData?.prices?.length ?? 0,
-  };
-  const productName =
-    (productDetail as { name_ar?: string } | null)?.name_ar ??
-    (products.find((p: { id: string; name_ar?: string }) => p.id === productId) as { name_ar?: string } | undefined)
-      ?.name_ar ??
-    null;
-
-  const loading = categoriesLoading || productsLoading || pricesLoading;
-  const error = pricesError ? "تعذر تحميل البيانات" : null;
+  const products =
+    infiniteData?.pages?.flatMap((p) => p.products) ?? [];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const dismissed = localStorage.getItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed);
+    const dismissed = localStorage.getItem(
+      LOCAL_STORAGE_KEYS.welcome_toast_dismissed
+    );
     if (!dismissed) setShowWelcomeToast(true);
   }, []);
 
@@ -69,6 +50,8 @@ export function HomeData() {
   }
 
   const hasCategories = sortedCategories.length > 0;
+  const loading = categoriesLoading || (effectiveCategoryId && productsLoading);
+  const error = productsError ? "تعذر تحميل البيانات" : null;
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -96,7 +79,8 @@ export function HomeData() {
         </div>
       )}
 
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0">
+      {/* Category tabs — scrollable, first active by default */}
+      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-border">
         {hasCategories ? (
           sortedCategories.map((c: Category) => {
             const label = c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar;
@@ -140,16 +124,51 @@ export function HomeData() {
           <div className="mx-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
             {error}
           </div>
-        ) : productName ? (
-          <PriceList prices={prices} stats={stats} productName={productName} />
-        ) : (
+        ) : !effectiveCategoryId ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-4xl mb-3">🔍</div>
-            <div className="font-display font-bold text-ink mb-1">ابحث عن منتج</div>
+            <div className="text-4xl mb-3">📂</div>
+            <div className="font-display font-bold text-ink mb-1">
+              لا توجد فئات
+            </div>
             <div className="text-sm text-mist">
-              اكتب اسم المنتج في حقل البحث أعلاه
+              لم يتم العثور على فئات منتجات
             </div>
           </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+            <div className="text-4xl mb-3">🔍</div>
+            <div className="font-display font-bold text-ink mb-1">
+              لا منتجات في هذه الفئة
+            </div>
+            <div className="text-sm text-mist">
+              جرب فئة أخرى أو ابحث عن منتج أعلاه
+            </div>
+          </div>
+        ) : (
+          <>
+            {products.map((product) => (
+              <HomeProductCard key={product.id} product={product} />
+            ))}
+            {hasNextPage && (
+              <div className="px-4 pt-2 pb-4">
+                <button
+                  type="button"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="w-full py-3 rounded-xl border-[1.5px] border-olive text-olive font-display font-bold text-sm hover:bg-olive-pale disabled:opacity-50 transition-colors"
+                >
+                  {isFetchingNextPage ? (
+                    <span className="inline-flex items-center gap-2">
+                      جاري التحميل
+                      <LoaderDots size="sm" />
+                    </span>
+                  ) : (
+                    "تحميل المزيد"
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

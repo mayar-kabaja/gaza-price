@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import {
   queryKeys,
   fetchAreas,
@@ -30,12 +30,45 @@ export function useCategories() {
 }
 
 // ── Products (first category only, newest first) ──
-export function useProducts(params?: { limit?: number; offset?: number }) {
-  const { limit = 10, offset = 0 } = params ?? {};
+export function useProducts(params?: {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  categoryId?: string | null;
+}) {
+  const { limit = 10, offset = 0, search, categoryId } = params ?? {};
   return useQuery({
-    queryKey: queryKeys.products({ limit, offset }),
-    queryFn: () => fetchProducts({ limit, offset }),
+    queryKey: queryKeys.products({ limit, offset, search, categoryId: categoryId ?? undefined }),
+    queryFn: () => fetchProducts({ limit, offset, search, categoryId: categoryId ?? undefined }),
     enabled: true,
+  });
+}
+
+const PRODUCTS_PAGE_SIZE = 10;
+
+/** Infinite products list for a category (cached per category). */
+export function useProductsInfinite(categoryId: string | null, search?: string) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.products({
+      categoryId: categoryId ?? undefined,
+      search,
+      limit: PRODUCTS_PAGE_SIZE,
+    }),
+    queryFn: async ({ pageParam = 0 }) => {
+      return fetchProducts({
+        categoryId: categoryId ?? undefined,
+        search,
+        limit: PRODUCTS_PAGE_SIZE,
+        offset: pageParam as number,
+      });
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((acc, p) => acc + p.products.length, 0);
+      if (lastPage.products.length < PRODUCTS_PAGE_SIZE) return undefined;
+      return loaded;
+    },
+    initialPageParam: 0,
+    enabled: !!categoryId,
   });
 }
 
