@@ -57,11 +57,13 @@ export function getApiBaseUrl(): string | null {
 export async function apiPost<T = unknown>(
   path: string,
   body?: object,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
+  opts?: { timeoutMs?: number }
 ): Promise<T> {
   const base = getApiBaseUrl();
   if (!base) throw new Error("NEXT_PUBLIC_API_URL is not set");
   const url = `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+  const timeoutMs = opts?.timeoutMs ?? 25000;
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -70,7 +72,7 @@ export async function apiPost<T = unknown>(
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) {
     const text = await res.text();

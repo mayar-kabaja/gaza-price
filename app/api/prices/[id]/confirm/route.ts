@@ -38,12 +38,12 @@ export async function POST(
 
   const backendBase = getApiBaseUrl();
   if (backendBase) {
-    // Proxy to backend API: POST /reports/:id/confirm with x-anon-session-id
     try {
       const data = await apiPost<{ confirmed?: boolean; new_confirmation_count?: number; new_trust_score?: number; new_status?: string }>(
         `/reports/${priceId}/confirm`,
         undefined,
-        authHeaders
+        authHeaders,
+        { timeoutMs: 60000 }
       );
       await logAttempt({ table: "confirmation_attempts", contributorId, success: true, extraData: { price_id: priceId } });
       return NextResponse.json({
@@ -53,12 +53,32 @@ export async function POST(
         new_status: data?.new_status ?? "pending",
       }, { status: 201 });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "خطأ في التأكيد";
-      const is404 = message.startsWith("API 404");
-      const is4xx = message.startsWith("API 4");
-      const status = is404 ? 404 : is4xx ? 400 : 500;
+      const rawMessage = err instanceof Error ? err.message : "خطأ في التأكيد";
+      const isTimeout = rawMessage.includes("aborted") || rawMessage.includes("timeout");
+      const is404 = rawMessage.startsWith("API 404");
+      const is4xx = rawMessage.startsWith("API 4");
+      const status = isTimeout ? 504 : is404 ? 404 : is4xx ? 400 : 500;
+      const timeoutMessage = "انتهت المهلة، جرّب مرة أخرى";
+      if (isTimeout) {
+        return NextResponse.json(
+          { error: "GATEWAY_TIMEOUT", message: timeoutMessage, detail: rawMessage },
+          { status: 504 }
+        );
+      }
+      const jsonMatch = rawMessage.match(/^API \d+: (\s*\{[\s\S]*\})$/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1].trim()) as { error?: string; message?: string };
+          return NextResponse.json(
+            { error: parsed.error ?? "BAD_REQUEST", message: parsed.message ?? rawMessage.replace(/^API \d+: /, "") },
+            { status }
+          );
+        } catch {
+          // fall through
+        }
+      }
       return NextResponse.json(
-        { error: "SERVER_ERROR", message: message.replace(/^API \d+: /, ""), detail: message },
+        { error: "SERVER_ERROR", message: rawMessage.replace(/^API \d+: /, ""), detail: rawMessage },
         { status }
       );
     }

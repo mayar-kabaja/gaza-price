@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getApiBaseUrl } from "@/lib/api/client";
-import { getPricesByProduct } from "@/lib/api/prices";
-import { getPricesByProduct as getPricesByProductSupabase } from "@/lib/queries/prices";
+import { getPricesByProduct } from "@/lib/queries/prices";
 
 export const dynamic = "force-dynamic";
 
@@ -17,20 +15,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "product_id مطلوب" }, { status: 400 });
   }
 
-  const useBackend = !!getApiBaseUrl();
   try {
-    const result = useBackend
-      ? await getPricesByProduct(productId, areaId, sort, limit, offset)
-      : await getPricesByProductSupabase(productId, areaId, sort, limit, offset);
+    const result = await getPricesByProduct(productId, areaId, sort, limit, offset);
     return NextResponse.json(result);
   } catch (err) {
-    if (useBackend) {
-      return NextResponse.json({
-        prices: [],
-        stats: { avg_price: 0, median_price: 0, min_price: 0 },
-        total: 0,
-      });
-    }
+    console.error("[prices] GET error:", err);
     return NextResponse.json(
       { error: "SERVER_ERROR", message: err instanceof Error ? err.message : "خطأ في الخادم" },
       { status: 500 }
