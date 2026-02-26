@@ -22,13 +22,16 @@ export function ReportCard({ report }: ReportCardProps) {
   const stale = isStale(report.reported_at);
 
   return (
-    <Link
-      href={report.product_id ? `/product/${report.product_id}` : "#"}
+    <div
       className={cn(
         "block bg-white rounded-2xl p-3.5 border-[1.5px] border-border",
         "hover:border-olive-mid transition-colors"
       )}
     >
+      <Link
+        href={report.product_id ? `/product/${report.product_id}` : "#"}
+        className="block focus:outline-none"
+      >
       {/* Row 1: category icon + product name */}
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-lg leading-none">{categoryIcon}</span>
@@ -51,8 +54,8 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       </div>
 
-      {/* Row 4: trust dots + confirmation count + confirm button + receipt badge */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Row 4 left: trust dots + count + receipt */}
+      <div className="flex justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 flex-wrap">
           <TrustDots confirmations={report.confirmation_count} />
           <span className="text-[11px] text-mist">
@@ -64,14 +67,17 @@ export function ReportCard({ report }: ReportCardProps) {
             </span>
           )}
         </div>
-        <div onClick={(e) => e.preventDefault()}>
-          <ConfirmButton
-            priceId={report.id}
-            initialCount={report.confirmation_count}
-            confirmedByMe={report.is_confirmed_by_me}
-          />
-        </div>
       </div>
-    </Link>
+      </Link>
+
+      {/* Confirm outside Link so click always sends API request */}
+      <div className="flex justify-end mt-1">
+        <ConfirmButton
+          priceId={report.id}
+          initialCount={report.confirmation_count}
+          confirmedByMe={report.is_confirmed_by_me}
+        />
+      </div>
+    </div>
   );
 }
