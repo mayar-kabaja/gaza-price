@@ -1,6 +1,43 @@
 import { createClient } from "@/lib/supabase/server";
 import { Product } from "@/types/app";
 
+/** First category = smallest sort_order (e.g. "حبوب ودقيق"). */
+export async function getProductsFirstCategory(
+  limit = 10,
+  offset = 0,
+  search?: string
+): Promise<{ products: Product[]; total: number }> {
+  const supabase = await createClient();
+
+  const { data: firstCategory, error: catError } = await supabase
+    .from("categories")
+    .select("id")
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (catError || !firstCategory?.id) {
+    return { products: [], total: 0 };
+  }
+
+  let query = supabase
+    .from("products")
+    .select("*, category:categories(*)", { count: "exact" })
+    .eq("status", "active")
+    .eq("category_id", firstCategory.id);
+
+  if (search?.trim()) {
+    query = query.ilike("name_ar", `%${search.trim()}%`);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) throw error;
+
+  return { products: data ?? [], total: count ?? 0 };
+}
+
 export async function searchProducts(
   search?: string,
   categoryId?: string,

@@ -28,7 +28,6 @@ export function HomeData() {
   const effectiveCategoryId = selectedCategoryId ?? sortedCategories[0]?.id ?? null;
 
   const { data: productsData, isLoading: productsLoading } = useProducts({
-    category_id: effectiveCategoryId,
     limit: 10,
   });
   const products = productsData?.products ?? [];

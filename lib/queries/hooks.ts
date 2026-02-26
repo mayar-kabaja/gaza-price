@@ -29,16 +29,12 @@ export function useCategories() {
   });
 }
 
-// ── Products ──
-export function useProducts(params: {
-  category_id?: string | null;
-  limit?: number;
-  offset?: number;
-}) {
-  const { category_id, limit = 10, offset = 0 } = params;
+// ── Products (first category only, newest first) ──
+export function useProducts(params?: { limit?: number; offset?: number }) {
+  const { limit = 10, offset = 0 } = params ?? {};
   return useQuery({
-    queryKey: queryKeys.products({ category_id: category_id ?? undefined, limit, offset }),
-    queryFn: () => fetchProducts({ category_id: category_id ?? undefined, limit, offset }),
+    queryKey: queryKeys.products({ limit, offset }),
+    queryFn: () => fetchProducts({ limit, offset }),
     enabled: true,
   });
 }

@@ -9,7 +9,7 @@ export const queryKeys = {
   areas: ["areas"] as const,
   areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]),
   categories: ["categories"] as const,
-  products: (filters?: { category_id?: string; limit?: number; offset?: number }) =>
+  products: (filters?: { limit?: number; offset?: number; search?: string }) =>
     ["products", filters ?? {}],
   product: (id: string) => ["products", id] as const,
   productsSearch: (search: string, limit?: number) =>
@@ -39,13 +39,11 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchProducts(params: {
-  category_id?: string;
   limit?: number;
   offset?: number;
   search?: string;
 }): Promise<{ products: Product[]; total: number }> {
   const sp = new URLSearchParams();
-  if (params.category_id) sp.set("category_id", params.category_id);
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
   if (params.search) sp.set("search", params.search);
