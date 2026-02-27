@@ -89,6 +89,8 @@ export interface Price {
   confirmed_by_me?: boolean;
   /** Set when GET /prices is called with optional auth. */
   is_mine?: boolean;
+  /** True when price is older than 24h (from GET /prices). */
+  is_stale?: boolean;
 }
 
 export interface PriceStats {

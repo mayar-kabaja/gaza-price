@@ -16,6 +16,9 @@ type BackendPrice = {
   is_lowest?: boolean;
   reported_at: string;
   expires_at: string;
+  confirmed_by_me?: boolean;
+  is_mine?: boolean;
+  is_stale?: boolean;
 };
 
 type BackendPricesResponse = {
@@ -41,6 +44,9 @@ function mapPrice(p: BackendPrice, productId: string): Price {
     is_lowest: p.is_lowest,
     reported_at: p.reported_at,
     expires_at: p.expires_at,
+    confirmed_by_me: p.confirmed_by_me,
+    is_mine: p.is_mine,
+    is_stale: p.is_stale,
   };
 }
 

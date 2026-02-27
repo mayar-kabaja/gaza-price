@@ -72,6 +72,7 @@ export async function fetchPrices(params: {
   sort?: string;
   limit?: number;
   offset?: number;
+  /** Pass from useSession(). If omitted, fetcher will use getStoredToken() in browser so token is always sent when available. */
   accessToken?: string | null;
 }): Promise<{
   prices: Price[];
@@ -84,7 +85,8 @@ export async function fetchPrices(params: {
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
   const headers: HeadersInit = {};
-  if (params.accessToken) headers["Authorization"] = `Bearer ${params.accessToken}`;
+  const token = params.accessToken ?? (typeof window !== "undefined" ? getStoredToken() : null);
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`/api/prices?${sp.toString()}`, { headers, credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };

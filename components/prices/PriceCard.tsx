@@ -62,11 +62,17 @@ export function PriceCard({ price }: PriceCardProps) {
             {formatRelativeTime(price.reported_at)}
           </div>
         </div>
-        <ConfirmButton
-          priceId={price.id}
-          initialCount={price.confirmation_count}
-          confirmedByMe={price.confirmed_by_me}
-        />
+        {price.is_mine ? (
+          <span className="px-3 py-1.5 rounded-lg text-xs font-semibold font-body bg-olive/15 text-olive border border-olive/30">
+            سعرك
+          </span>
+        ) : (
+          <ConfirmButton
+            priceId={price.id}
+            initialCount={price.confirmation_count}
+            confirmedByMe={price.confirmed_by_me}
+          />
+        )}
       </div>
     </div>
   );
