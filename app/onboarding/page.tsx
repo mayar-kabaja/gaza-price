@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AreaPicker } from "@/components/onboarding/AreaPicker";
 import { Area } from "@/types/app";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
+import { getStoredToken, setStoredToken } from "@/lib/auth/token";
 import { useAreas } from "@/lib/queries/hooks";
 
 export default function OnboardingPage() {
@@ -27,18 +27,22 @@ export default function OnboardingPage() {
       localStorage.setItem(LOCAL_STORAGE_KEYS.area, JSON.stringify(area));
       localStorage.setItem(LOCAL_STORAGE_KEYS.onboarding_done, "1");
 
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
-        await supabase.from("contributors").upsert({
-          id: session.user.id,
-          anon_session_id: session.user.id,
-          area_id: area.id,
-          trust_level: "new",
-          joined_at: new Date().toISOString(),
-          last_active_at: new Date().toISOString(),
-        }, { onConflict: "id" });
+      let token = getStoredToken();
+      if (!token) {
+        const res = await fetch("/api/auth/session", { method: "GET", credentials: "include" });
+        const data = await res.json();
+        if (data?.access_token) {
+          token = data.access_token;
+          setStoredToken(token);
+        }
+      }
+      if (token) {
+        await fetch("/api/contributors/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          credentials: "include",
+          body: JSON.stringify({ area_id: area.id }),
+        });
       }
 
       router.replace("/");

@@ -3,6 +3,7 @@
  */
 
 import type { Area, Category, Price, PriceStats, Product } from "@/types/app";
+import { getStoredToken } from "@/lib/auth/token";
 
 // ── Query keys ──
 export const queryKeys = {
@@ -91,5 +92,10 @@ export async function fetchPrices(params: {
 }
 
 export async function fetchContributorMe(headers?: Record<string, string>): Promise<{ contributor: unknown }> {
-  return getJson("/api/contributors/me", { headers });
+  const token = headers?.Authorization ?? (typeof window !== "undefined" ? getStoredToken() : null);
+  const authHeaders =
+    token && !headers?.Authorization
+      ? { ...headers, Authorization: `Bearer ${token}` }
+      : headers;
+  return getJson("/api/contributors/me", { headers: authHeaders });
 }

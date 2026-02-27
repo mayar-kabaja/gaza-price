@@ -1,12 +1,9 @@
 /**
- * API error handling for gaza-price frontend.
- * All API errors come from the backend in Arabic. Never hardcode or translate in frontend.
- *
- * Failed response shape:
- * { error: string, message: string, retry_after_seconds?: number, similar?: Array<...> }
+ * API error handling. All API errors come from the backend in Arabic.
+ * On 401 we clear the stored token and redirect (no Supabase on frontend).
  */
 
-import { createClient } from "@/lib/supabase/client";
+import { clearStoredToken } from "@/lib/auth/token";
 
 export interface ApiErrorResponse {
   error: string;
@@ -15,10 +12,9 @@ export interface ApiErrorResponse {
   similar?: Array<{ id: string; name_ar: string; similarity: number }>;
 }
 
-/** Clear Supabase session and redirect to home. Use on 401. */
-export async function clearSessionAndRedirect(router: { replace: (url: string) => void }): Promise<void> {
-  const supabase = createClient();
-  await supabase.auth.signOut();
+/** Clear stored auth token and redirect to home. Use on 401. */
+export function clearSessionAndRedirect(router: { replace: (url: string) => void }): void {
+  clearStoredToken();
   router.replace("/");
 }
 

@@ -16,9 +16,11 @@ export async function GET(req: NextRequest) {
       : await getProductsFirstCategory(limit, offset, search);
     return NextResponse.json(result);
   } catch (err) {
+    const message = err instanceof Error ? err.message : "خطأ في الخادم";
+    const status = message.includes("NEXT_PUBLIC_API_URL") ? 503 : 500;
     return NextResponse.json(
-      { error: "SERVER_ERROR", message: err instanceof Error ? err.message : "خطأ في الخادم" },
-      { status: 500 }
+      { error: "SERVER_ERROR", message },
+      { status }
     );
   }
 }

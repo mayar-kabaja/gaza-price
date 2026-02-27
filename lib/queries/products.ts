@@ -1,41 +1,23 @@
-import { createClient } from "@/lib/supabase/server";
-import { Product } from "@/types/app";
+/**
+ * Products data from backend only (no Supabase).
+ */
+import type { Product } from "@/types/app";
+import {
+  getProductById as apiGetProduct,
+  searchProducts as apiSearchProducts,
+  getProductsFirstCategory as apiGetProductsFirstCategory,
+} from "@/lib/api/products";
 
-/** First category = smallest sort_order (e.g. "حبوب ودقيق"). */
+export async function getProductById(id: string): Promise<Product | null> {
+  return apiGetProduct(id);
+}
+
 export async function getProductsFirstCategory(
   limit = 10,
   offset = 0,
   search?: string
 ): Promise<{ products: Product[]; total: number }> {
-  const supabase = await createClient();
-
-  const { data: firstCategory, error: catError } = await supabase
-    .from("categories")
-    .select("id")
-    .order("sort_order", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (catError || !firstCategory?.id) {
-    return { products: [], total: 0 };
-  }
-
-  let query = supabase
-    .from("products")
-    .select("*, category:categories(*)", { count: "exact" })
-    .eq("status", "active")
-    .eq("category_id", firstCategory.id);
-
-  if (search?.trim()) {
-    query = query.ilike("name_ar", `%${search.trim()}%`);
-  }
-
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-  if (error) throw error;
-
-  return { products: data ?? [], total: count ?? 0 };
+  return apiGetProductsFirstCategory(limit, offset, search);
 }
 
 export async function searchProducts(
@@ -44,84 +26,5 @@ export async function searchProducts(
   limit = 10,
   offset = 0
 ): Promise<{ products: Product[]; total: number }> {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("products")
-    .select("*, category:categories(*)", { count: "exact" })
-    .eq("status", "active")
-    .range(offset, offset + limit - 1);
-
-  if (search) {
-    query = query.ilike("name_ar", `%${search}%`);
-  }
-
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  }
-
-  const { data, count, error } = await query
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-  if (error) throw error;
-
-  return { products: data ?? [], total: count ?? 0 };
-}
-
-export async function getProductById(id: string): Promise<Product | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("*, category:categories(*)")
-    .eq("id", id)
-    .eq("status", "active")
-    .single();
-
-  if (error) return null;
-  return data;
-}
-
-export async function getPendingProducts(limit = 20, offset = 0) {
-  const supabase = await createClient();
-  const { data, count, error } = await supabase
-    .from("products")
-    .select("*, category:categories(*)", { count: "exact" })
-    .eq("status", "pending_review")
-    .order("created_at", { ascending: true })
-    .range(offset, offset + limit - 1);
-
-  if (error) throw error;
-  return { products: data ?? [], total: count ?? 0 };
-}
-
-export async function approveProduct(id: string, adminId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("products")
-    .update({ status: "active", reviewed_by: adminId, reviewed_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
-}
-
-export async function rejectProduct(id: string, adminId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("products")
-    .update({ status: "rejected", reviewed_by: adminId, reviewed_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
-}
-
-export async function mergeProduct(id: string, mergeInto: string, adminId: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("products")
-    .update({
-      status: "merged",
-      merge_into: mergeInto,
-      reviewed_by: adminId,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-  if (error) throw error;
+  return apiSearchProducts(search, categoryId, limit, offset);
 }

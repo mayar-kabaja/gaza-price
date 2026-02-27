@@ -1,11 +1,11 @@
 /**
- * Backend API client for https://gaza-price-backend.onrender.com
+ * Backend API client. Supabase is backend-only; frontend always uses this to talk to backend.
  * Set NEXT_PUBLIC_API_URL in .env (e.g. https://gaza-price-backend.onrender.com or .../api)
  */
 
 function getBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url) throw new Error("NEXT_PUBLIC_API_URL is not set");
+  if (!url?.trim()) throw new Error("NEXT_PUBLIC_API_URL is not set");
   return url.replace(/\/$/, "");
 }
 
@@ -49,7 +49,7 @@ export async function apiGet<T>(
 
 /** Use when API might not be configured (e.g. home page). Returns null if env missing. */
 export function getApiBaseUrl(): string | null {
-  const url = process.env.NEXT_PUBLIC_API_URL;
+  const url = process.env.NEXT_PUBLIC_API_URL?.trim();
   return url ? url.replace(/\/$/, "") : null;
 }
 
@@ -60,8 +60,7 @@ export async function apiPost<T = unknown>(
   headers?: Record<string, string>,
   opts?: { timeoutMs?: number }
 ): Promise<T> {
-  const base = getApiBaseUrl();
-  if (!base) throw new Error("NEXT_PUBLIC_API_URL is not set");
+  const base = getBaseUrl();
   const url = `${base}${path.startsWith("/") ? "" : "/"}${path}`;
   const timeoutMs = opts?.timeoutMs ?? 25000;
   const res = await fetch(url, {
@@ -86,8 +85,7 @@ async function fetchBackend<T>(
   path: string,
   opts?: { body?: object; headers?: Record<string, string> }
 ): Promise<T> {
-  const base = getApiBaseUrl();
-  if (!base) throw new Error("NEXT_PUBLIC_API_URL is not set");
+  const base = getBaseUrl();
   const url = `${base}${path.startsWith("/") ? "" : "/"}${path}`;
   const headers: Record<string, string> = {
     Accept: "application/json",

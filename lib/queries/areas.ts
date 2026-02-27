@@ -1,27 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
-import { Area } from "@/types/app";
+/**
+ * Areas data from backend only (no Supabase).
+ */
+import { getAreasFromBackend } from "@/lib/api/areas";
+import type { Area, Governorate } from "@/types/app";
 
-export async function getAreas(): Promise<Area[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("areas")
-    .select("*")
-    .eq("is_active", true)
-    .order("governorate")
-    .order("name_ar");
-
-  if (error) throw error;
-  return data ?? [];
+export async function getAreas(governorate?: Governorate): Promise<Area[]> {
+  return getAreasFromBackend(governorate as string | undefined);
 }
 
 export async function getAreaById(id: string): Promise<Area | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("areas")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) return null;
-  return data;
+  const areas = await getAreasFromBackend();
+  return areas.find((a) => a.id === id) ?? null;
 }

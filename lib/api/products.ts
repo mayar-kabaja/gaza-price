@@ -1,4 +1,5 @@
 import { apiGet } from "@/lib/api/client";
+import { getCategories } from "@/lib/api/categories";
 import type { Product } from "@/types/app";
 
 type BackendProduct = {
@@ -30,6 +31,18 @@ export async function getProductById(id: string): Promise<Product | null> {
   } catch {
     return null;
   }
+}
+
+/** First category by sort_order, then products for that category. */
+export async function getProductsFirstCategory(
+  limit = 10,
+  offset = 0,
+  search?: string
+): Promise<{ products: Product[]; total: number }> {
+  const categories = await getCategories();
+  const first = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+  if (!first) return { products: [], total: 0 };
+  return searchProducts(search, first.id, limit, offset);
 }
 
 export async function searchProducts(
