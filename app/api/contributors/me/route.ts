@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/get-token-from-request";
 import { getApiBaseUrl, apiGetWithHeaders, apiPatch, apiDelete } from "@/lib/api/client";
 
+// Error parsing: no regex /s flag (ES2018+) — use slice for body to support older targets
+
 function requireAuth(req: NextRequest): string | NextResponse {
   const token = getTokenFromRequest(req);
   if (!token) {
