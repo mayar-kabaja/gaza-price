@@ -32,7 +32,7 @@ export default function OnboardingPage() {
         const res = await fetch("/api/auth/session", { method: "GET", credentials: "include" });
         const data = await res.json();
         if (data?.access_token) {
-          token = data.access_token;
+          token = data.access_token as string;
           setStoredToken(token);
         }
       }
