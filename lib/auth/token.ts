@@ -17,12 +17,3 @@ export function clearStoredToken(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
 }
-
-/**
- * Get Bearer token from request (used in API routes to forward to backend).
- */
-export function getTokenFromRequest(req: Request): string | null {
-  const auth = req.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) return null;
-  return auth.slice(7).trim() || null;
-}

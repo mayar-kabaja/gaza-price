@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromRequest } from "@/lib/auth/token";
+import { getTokenFromRequest } from "@/lib/get-token-from-request";
 import { SubmitPriceRequest } from "@/types/api";
 import { getApiBaseUrl, apiPost } from "@/lib/api/client";
 

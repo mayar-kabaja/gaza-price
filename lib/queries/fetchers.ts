@@ -72,6 +72,7 @@ export async function fetchPrices(params: {
   sort?: string;
   limit?: number;
   offset?: number;
+  accessToken?: string | null;
 }): Promise<{
   prices: Price[];
   stats: Partial<PriceStats>;
@@ -82,8 +83,11 @@ export async function fetchPrices(params: {
   if (params.sort) sp.set("sort", params.sort);
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
-  const res = await fetch(`/api/prices?${sp.toString()}`, { credentials: "include" });
+  const headers: HeadersInit = {};
+  if (params.accessToken) headers["Authorization"] = `Bearer ${params.accessToken}`;
+  const res = await fetch(`/api/prices?${sp.toString()}`, { headers, credentials: "include" });
   const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
   return {
     prices: data?.prices ?? [],
     stats: data?.stats ?? {},

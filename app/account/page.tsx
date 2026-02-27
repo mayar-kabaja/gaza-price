@@ -80,6 +80,7 @@ function useProfile() {
 
 export default function AccountPage() {
   const { contributor, loading, trustScoreTotal } = useProfile();
+  const { accessToken, refreshContributor } = useSession();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -116,7 +117,11 @@ export default function AccountPage() {
     }
     setEditHandleError(null);
     try {
-      await updateMe.mutateAsync({ display_handle: val });
+      await updateMe.mutateAsync({
+        display_handle: val,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
+      await refreshContributor();
       setOpenEditHandle(false);
     } catch (err: unknown) {
       const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
@@ -128,7 +133,11 @@ export default function AccountPage() {
   const onSelectArea = async (selected: Area) => {
     setAreaError(null);
     try {
-      await updateMe.mutateAsync({ area_id: selected.id });
+      await updateMe.mutateAsync({
+        area_id: selected.id,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
+      await refreshContributor();
       saveArea(selected);
       setOpenAreaPicker(false);
     } catch (err: unknown) {
@@ -141,7 +150,10 @@ export default function AccountPage() {
   const confirmDelete = async () => {
     setDeleteError(null);
     try {
-      const res = await fetch("/api/contributors/me", { method: "DELETE", credentials: "include" });
+      const res = await fetch("/api/contributors/me", {
+        method: "DELETE",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       const data = await res.json();
       if (!res.ok) {
         setDeleteError((data?.message as string) || "حدث خطأ");

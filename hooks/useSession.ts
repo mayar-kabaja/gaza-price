@@ -43,64 +43,55 @@ function mapMeToContributor(me: MeResponse): Contributor {
 
 export function useSession() {
   const [contributor, setContributor] = useState<Contributor | null>(null);
-  const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadContributor = useCallback(async (token: string) => {
+    const res = await fetch("/api/contributors/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error("failed");
+    const data = await res.json();
+    setContributor(mapMeToContributor(data as MeResponse));
+  }, []);
 
   const load = useCallback(async () => {
-    let token = getStoredToken();
-
-    if (!token) {
-      try {
-        const res = await fetch("/api/auth/session", { method: "GET", credentials: "include" });
-        const data = await res.json();
-        if (!res.ok || !data?.access_token) {
-          setAccessToken(null);
-          setContributor(null);
-          return;
-        }
-        token = data.access_token;
-        setStoredToken(token);
-      } catch {
-        setAccessToken(null);
-        setContributor(null);
-        return;
-      }
-    }
-
-    setAccessToken(token);
-
     try {
-      const res = await fetch("/api/contributors/me", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        clearStoredToken();
-        setAccessToken(null);
-        setContributor(null);
-        return;
+      let token = getStoredToken();
+
+      if (!token) {
+        // No token — create anonymous session
+        const res = await fetch("/api/auth/session", { method: "GET" });
+        if (!res.ok) throw new Error("session failed");
+        const data = await res.json();
+        token = data.access_token;
+        setStoredToken(token!);
       }
-      if (!res.ok) {
-        setContributor(null);
-        return;
-      }
-      const data = await res.json();
-      const me = data?.id != null ? data : (data.contributor ?? data);
-      if (me?.id) {
-        setContributor(mapMeToContributor(me as MeResponse));
-      } else {
-        setContributor(null);
-      }
+
+      setAccessToken(token);
+      await loadContributor(token!);
     } catch {
+      clearStoredToken();
+      setAccessToken(null);
       setContributor(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadContributor]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  return { contributor, loading, accessToken };
+  const refreshContributor = useCallback(async () => {
+    const token = getStoredToken();
+    if (token) await loadContributor(token);
+  }, [loadContributor]);
+
+  return {
+    contributor,
+    accessToken,
+    loading,
+    refreshContributor,
+  };
 }

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
-import { getPricesByProduct } from "@/lib/queries/prices";
 import { getProductById } from "@/lib/queries/products";
-import { PriceList } from "@/components/prices/PriceList";
+import { ProductPricesSection } from "@/components/prices/ProductPricesSection";
 import { BottomNav } from "@/components/layout/BottomNav";
 import Link from "next/link";
 
@@ -16,8 +15,6 @@ export default async function ProductPage({ params, searchParams }: Props) {
 
   const product = await getProductById(id);
   if (!product) notFound();
-
-  const { prices, stats } = await getPricesByProduct(id, area);
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -40,9 +37,13 @@ export default async function ProductPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Prices */}
+      {/* Prices — client-fetched with optional auth for confirmed_by_me / is_mine */}
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
-        <PriceList prices={prices} stats={stats} productName={product.name_ar} />
+        <ProductPricesSection
+          productId={product.id}
+          productName={product.name_ar}
+          areaId={area ?? null}
+        />
       </div>
 
       {/* Submit FAB */}

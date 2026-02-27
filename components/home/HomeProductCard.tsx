@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Product } from "@/types/app";
+import { useSession } from "@/hooks/useSession";
 import { usePrices } from "@/lib/queries/hooks";
 import { PriceCard } from "@/components/prices/PriceCard";
 import { PriceStats } from "@/components/prices/PriceStats";
@@ -15,10 +16,13 @@ interface HomeProductCardProps {
 }
 
 export function HomeProductCard({ product }: HomeProductCardProps) {
+  const { accessToken, loading: sessionLoading } = useSession();
   const { data, isLoading, isError } = usePrices({
     productId: product.id,
     sort: "price_asc",
     limit: PRICES_PREVIEW,
+    sessionLoading,
+    accessToken,
   });
 
   const prices = (data?.prices ?? []) as Price[];

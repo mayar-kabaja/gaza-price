@@ -1,5 +1,6 @@
 "use client";
 
+import { getStoredToken } from "@/lib/auth/token";
 import { useConfirm } from "@/hooks/useConfirm";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ interface ConfirmButtonProps {
 }
 
 export function ConfirmButton({ priceId, initialCount, confirmedByMe = false }: ConfirmButtonProps) {
+  const hasToken = typeof window !== "undefined" ? !!getStoredToken() : false;
   const { count, confirmed, loading, error, setError, confirm } = useConfirm(initialCount, priceId);
   const isConfirmed = confirmedByMe || confirmed;
 
@@ -22,10 +24,9 @@ export function ConfirmButton({ priceId, initialCount, confirmedByMe = false }: 
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Run in next tick so click isn't swallowed by parent/link
           setTimeout(() => confirm(), 0);
         }}
-        disabled={isConfirmed || loading}
+        disabled={isConfirmed || loading || !hasToken}
         className={cn(
           "px-3 py-1.5 rounded-lg text-xs font-semibold font-body transition-all",
           isConfirmed

@@ -62,7 +62,11 @@ export function PriceCard({ price }: PriceCardProps) {
             {formatRelativeTime(price.reported_at)}
           </div>
         </div>
-        <ConfirmButton priceId={price.id} initialCount={price.confirmation_count} />
+        <ConfirmButton
+          priceId={price.id}
+          initialCount={price.confirmation_count}
+          confirmedByMe={price.confirmed_by_me}
+        />
       </div>
     </div>
   );

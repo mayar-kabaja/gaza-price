@@ -95,8 +95,11 @@ export function usePrices(params: {
   areaId?: string | null;
   sort?: string;
   limit?: number;
+  /** Pass from useSession(); wait for session loading to avoid confirmed_by_me flicker. */
+  sessionLoading?: boolean;
+  accessToken?: string | null;
 }) {
-  const { productId, areaId, sort = "price_asc", limit = 20 } = params;
+  const { productId, areaId, sort = "price_asc", limit = 20, sessionLoading = false, accessToken } = params;
   return useQuery({
     queryKey: queryKeys.prices(productId ?? "", areaId ?? undefined, sort, limit),
     queryFn: () =>
@@ -105,8 +108,9 @@ export function usePrices(params: {
         area_id: areaId ?? undefined,
         sort,
         limit,
+        accessToken,
       }),
-    enabled: !!productId,
+    enabled: !!productId && !sessionLoading,
   });
 }
 

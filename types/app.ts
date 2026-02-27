@@ -85,6 +85,10 @@ export interface Price {
   is_lowest?: boolean;
   reported_at: string;
   expires_at: string;
+  /** Set when GET /prices is called with optional auth. */
+  confirmed_by_me?: boolean;
+  /** Set when GET /prices is called with optional auth. */
+  is_mine?: boolean;
 }
 
 export interface PriceStats {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getStoredToken } from "@/lib/auth/token";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 
@@ -21,13 +22,16 @@ export function useConfirm(initialCount: number, priceId: string) {
     if (confirmed || loading) return;
     if (!priceId) return;
 
+    const accessToken = getStoredToken();
+    if (!accessToken) return;
+
     setError(null);
     setLoading(true);
 
     try {
       const res = await fetch(`/api/prices/${priceId}/confirm`, {
         method: "POST",
-        credentials: "include",
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       const data = await res.json();
 
@@ -36,12 +40,8 @@ export function useConfirm(initialCount: number, priceId: string) {
         return;
       }
 
-      setConfirmed(true);
-      setCount(
-        data && "new_confirmation_count" in data
-          ? toNumber(data.new_confirmation_count)
-          : toNumber(initialCount) + 1
-      );
+      setConfirmed(data?.confirmed ?? true);
+      setCount(toNumber(data?.confirmation_count ?? count));
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {

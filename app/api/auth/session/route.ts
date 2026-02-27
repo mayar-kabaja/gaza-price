@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api/client";
-import { getTokenFromRequest } from "@/lib/auth/token";
+import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/**
- * GET /api/auth/session
- * Proxies to backend POST /auth/session. Backend creates/validates anonymous Supabase session.
- * Optional: send Authorization: Bearer <token> to validate existing token; otherwise backend creates new session.
- */
+/** GET /api/auth/session — Proxy to backend POST /auth/session. No body when no token. */
 export async function GET(req: NextRequest) {
   const base = getApiBaseUrl();
   if (!base) {
