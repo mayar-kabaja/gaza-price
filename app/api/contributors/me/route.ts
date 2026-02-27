@@ -30,12 +30,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
-    // [\s\S]* matches any chars including newlines without ES2018 's' flag
-    const statusMatch = message.match(/^API (\d+):\s*([\s\S]*)/);
+    const statusMatch = message.match(/^API (\d+):/);
     const status = statusMatch
       ? parseInt(statusMatch[1], 10)
       : message.startsWith("API 4") ? 400 : 500;
-    const bodyStr = statusMatch?.[2]?.trim() ?? message.replace(/^API \d+: /, "");
+    const bodyStr = statusMatch
+      ? message.slice(message.indexOf(":") + 1).trim()
+      : message.replace(/^API \d+: /, "");
     let body: { error?: string; message?: string } = { error: "SERVER_ERROR", message: bodyStr };
     if (bodyStr) {
       try {
