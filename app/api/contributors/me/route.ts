@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
+    // [\s\S]* matches any chars including newlines without ES2018 's' flag
     const statusMatch = message.match(/^API (\d+):\s*([\s\S]*)/);
     const status = statusMatch
       ? parseInt(statusMatch[1], 10)
