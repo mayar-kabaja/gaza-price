@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
-    const statusMatch = message.match(/^API (\d+):\s*(.*)/s);
+    const statusMatch = message.match(/^API (\d+):\s*([\s\S]*)/);
     const status = statusMatch
       ? parseInt(statusMatch[1], 10)
       : message.startsWith("API 4") ? 400 : 500;
