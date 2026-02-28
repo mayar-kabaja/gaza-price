@@ -15,11 +15,11 @@ function toNumber(value: unknown): number {
 export function useConfirm(
   initialCount: number,
   priceId: string,
-  options?: { onSuccess?: (newCount: number) => void }
+  options?: { onSuccess?: (newCount: number) => void; initialConfirmed?: boolean }
 ) {
   const router = useRouter();
   const [count, setCount] = useState(() => toNumber(initialCount));
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmed, setConfirmed] = useState(() => !!options?.initialConfirmed);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ export function useConfirm(
   }, [options?.onSuccess]);
 
   async function confirm() {
-    if (confirmed || loading) return;
+    if (loading) return;
     if (!priceId) return;
 
     setError(null);
