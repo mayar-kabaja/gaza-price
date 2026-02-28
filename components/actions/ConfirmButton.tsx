@@ -43,7 +43,7 @@ export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe 
             : "bg-olive-pale border border-olive-mid text-olive hover:bg-olive-mid active:scale-95 disabled:opacity-70"
         )}
       >
-        {loading ? "جاري..." : confirmed ? `✓ أكّدت (${toArabicNumerals(count)})` : "✓ أكّد السعر"}
+        {loading ? "جاري..." : confirmed ? `✓ أكّدت ` : "✓ أكّد السعر"}
       </button>
       {error && (
         <ApiErrorBox message={error} onDismiss={() => setError(null)} />
