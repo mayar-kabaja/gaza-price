@@ -26,6 +26,7 @@ export function HomeData() {
   const {
     data: infiniteData,
     isLoading: productsLoading,
+    isFetching: productsFetching,
     isError: productsError,
     fetchNextPage,
     hasNextPage,
@@ -147,7 +148,7 @@ export function HomeData() {
         ) : (
           <>
             {products.map((product) => (
-              <HomeProductCard key={product.id} product={product} />
+              <HomeProductCard key={product.id} product={product} isRefetching={productsFetching} />
             ))}
             {hasNextPage && (
               <div className="px-4 pt-2 pb-4">

@@ -74,6 +74,7 @@ export function ReportCard({ report }: ReportCardProps) {
       <div className="flex justify-end mt-1">
         <ConfirmButton
           priceId={report.id}
+          productId={report.product_id}
           initialCount={report.confirmation_count}
           confirmedByMe={report.is_confirmed_by_me}
         />

@@ -6,9 +6,10 @@ interface PriceListProps {
   prices: Price[];
   stats: PriceStatsType;
   productName: string;
+  isRefetching?: boolean;
 }
 
-export function PriceList({ prices, stats, productName }: PriceListProps) {
+export function PriceList({ prices, stats, productName, isRefetching = false }: PriceListProps) {
   return (
     <div className="px-4">
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -17,7 +18,7 @@ export function PriceList({ prices, stats, productName }: PriceListProps) {
       </div>
       <div className="space-y-2">
         {prices.map((price) => (
-          <PriceCard key={price.id} price={price} />
+          <PriceCard key={price.id} price={price} isRefetching={isRefetching} />
         ))}
         {prices.length === 0 && (
           <p className="text-left py-4 text-mist text-xs w-fit max-w-full">

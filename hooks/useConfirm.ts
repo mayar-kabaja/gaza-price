@@ -12,7 +12,11 @@ function toNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function useConfirm(initialCount: number, priceId: string) {
+export function useConfirm(
+  initialCount: number,
+  priceId: string,
+  options?: { onSuccess?: () => void }
+) {
   const router = useRouter();
   const [count, setCount] = useState(() => toNumber(initialCount));
   const [confirmed, setConfirmed] = useState(false);
@@ -42,6 +46,7 @@ export function useConfirm(initialCount: number, priceId: string) {
       }
       setConfirmed(data?.confirmed ?? true);
       setCount(toNumber(data?.confirmation_count ?? count));
+      options?.onSuccess?.();
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {

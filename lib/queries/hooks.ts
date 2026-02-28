@@ -48,13 +48,14 @@ export function useProducts(params?: {
 
 const PRODUCTS_PAGE_SIZE = 10;
 
-/** Infinite products list for a category (cached per category). */
-export function useProductsInfinite(categoryId: string | null, search?: string) {
+/** Infinite products list for a category (cached per category). With embedPricePreview, each product includes price_preview (confirmation_count, confirmed_by_me) for home. */
+export function useProductsInfinite(categoryId: string | null, search?: string, embedPricePreview = true) {
   return useInfiniteQuery({
     queryKey: queryKeys.products({
       categoryId: categoryId ?? undefined,
       search,
       limit: PRODUCTS_PAGE_SIZE,
+      embedPricePreview,
     }),
     queryFn: async ({ pageParam = 0 }) => {
       return fetchProducts({
@@ -62,6 +63,7 @@ export function useProductsInfinite(categoryId: string | null, search?: string) 
         search,
         limit: PRODUCTS_PAGE_SIZE,
         offset: pageParam as number,
+        embedPricePreview,
       });
     },
     getNextPageParam: (lastPage, allPages) => {

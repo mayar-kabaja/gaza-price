@@ -1,15 +1,18 @@
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { ConfirmButton } from "@/components/actions/ConfirmButton";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
 import { cn } from "@/lib/utils";
 
 interface PriceCardProps {
   price: Price;
+  /** When true, show a small loader in the confirmation area until count updates. */
+  isRefetching?: boolean;
 }
 
-export function PriceCard({ price }: PriceCardProps) {
+export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
 
@@ -52,10 +55,16 @@ export function PriceCard({ price }: PriceCardProps) {
       <div className="flex items-center justify-between mt-2.5">
         <div>
           <div className="flex items-center gap-1.5">
-            <TrustDots confirmations={price.confirmation_count} />
-            <span className="text-[11px] text-mist">
-              {toArabicNumerals(price.confirmation_count)} تأكيد
-            </span>
+            {isRefetching ? (
+              <LoaderDots size="sm" className="inline-flex" />
+            ) : (
+              <>
+                <TrustDots confirmations={price.confirmation_count} />
+                <span className="text-[11px] text-mist">
+                  {toArabicNumerals(price.confirmation_count)} تأكيد
+                </span>
+              </>
+            )}
           </div>
           <div className={cn("text-[11px] mt-0.5", stale ? "text-sand" : "text-mist")}>
             {stale && "⚠️ "}
@@ -69,6 +78,7 @@ export function PriceCard({ price }: PriceCardProps) {
         ) : (
           <ConfirmButton
             priceId={price.id}
+            productId={price.product_id}
             initialCount={price.confirmation_count}
             confirmedByMe={price.confirmed_by_me}
           />

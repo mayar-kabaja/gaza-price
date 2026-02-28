@@ -10,7 +10,7 @@ export const queryKeys = {
   areas: ["areas"] as const,
   areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]),
   categories: ["categories"] as const,
-  products: (filters?: { limit?: number; offset?: number; search?: string; categoryId?: string }) =>
+  products: (filters?: { limit?: number; offset?: number; search?: string; categoryId?: string; embedPricePreview?: boolean }) =>
     ["products", filters ?? {}],
   product: (id: string) => ["products", id] as const,
   productsSearch: (search: string, limit?: number) =>
@@ -44,12 +44,15 @@ export async function fetchProducts(params: {
   offset?: number;
   search?: string;
   categoryId?: string;
+  /** When true, adds embed=price_preview so each product includes price_preview (confirmation_count, confirmed_by_me). */
+  embedPricePreview?: boolean;
 }): Promise<{ products: Product[]; total: number }> {
   const sp = new URLSearchParams();
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
   if (params.search) sp.set("search", params.search);
   if (params.categoryId) sp.set("category_id", params.categoryId);
+  if (params.embedPricePreview) sp.set("embed", "price_preview");
   const url = `/api/products?${sp.toString()}`;
   const res = await apiFetch(url, { credentials: "include" });
   const data = await res.json();

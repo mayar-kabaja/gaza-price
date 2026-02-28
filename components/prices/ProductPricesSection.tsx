@@ -14,7 +14,7 @@ interface ProductPricesSectionProps {
 
 export function ProductPricesSection({ productId, productName, areaId }: ProductPricesSectionProps) {
   const { accessToken, loading: sessionLoading } = useSession();
-  const { data, isLoading, isError } = usePrices({
+  const { data, isLoading, isError, isFetching } = usePrices({
     productId,
     areaId,
     sort: "price_asc",
@@ -45,5 +45,5 @@ export function ProductPricesSection({ productId, productName, areaId }: Product
     );
   }
 
-  return <PriceList prices={prices} stats={stats} productName={productName} />;
+  return <PriceList prices={prices} stats={stats} productName={productName} isRefetching={isFetching} />;
 }

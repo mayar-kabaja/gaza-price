@@ -52,9 +52,6 @@ export function trustScoreToColor(score: number): string {
 }
 
 export function confirmationsToDotsCount(confirmations: number): number {
-  if (confirmations >= 8) return 5;
-  if (confirmations >= 5) return 4;
-  if (confirmations >= 3) return 3;
-  if (confirmations >= 1) return 2;
-  return 1;
+  if (confirmations <= 0) return 0;
+  return Math.min(confirmations, 5);
 }

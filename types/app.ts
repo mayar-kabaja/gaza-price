@@ -36,6 +36,20 @@ export interface Product {
   suggested_by?: string;
   suggestion_note?: string;
   created_at: string;
+  /** When GET /api/products?embed=price_preview with auth; used on home for confirmations. */
+  price_preview?: PricePreviewItem[];
+}
+
+/** One price in product.price_preview (subset of Price for home card). */
+export interface PricePreviewItem {
+  id: string;
+  price: number;
+  confirmation_count: number;
+  confirmed_by_me: boolean;
+  is_mine?: boolean;
+  reported_at: string;
+  store?: { name_ar?: string };
+  area?: { name_ar?: string };
 }
 
 export interface Store {
