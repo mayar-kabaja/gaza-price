@@ -26,12 +26,13 @@ function previewToPrice(p: PricePreviewItem, product: Product, isLowest: boolean
     status: "confirmed",
     trust_score: 0,
     confirmation_count: p.confirmation_count,
-    flag_count: 0,
+    flag_count: p.flag_count ?? 0,
     has_receipt: false,
     is_lowest: isLowest,
     reported_at: p.reported_at,
     expires_at: "",
     confirmed_by_me: p.confirmed_by_me,
+    flagged_by_me: p.flagged_by_me,
     is_mine: p.is_mine,
   };
 }

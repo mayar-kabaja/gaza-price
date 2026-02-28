@@ -3,8 +3,10 @@
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { ConfirmButton } from "@/components/actions/ConfirmButton";
+import { FlagButton } from "@/components/actions/FlagButton";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
+import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
 import { cn } from "@/lib/utils";
@@ -21,9 +23,11 @@ interface PriceCardProps {
 
 export function PriceCard({ price, isRefetching = false, confirmationCountOverride, onConfirmationUpdate }: PriceCardProps) {
   const { overrides } = useConfirmationOverrides();
+  const { overrides: flagOverrides } = useFlagOverrides();
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
   const displayCount = overrides[price.id] ?? confirmationCountOverride ?? price.confirmation_count;
+  const displayFlagCount = flagOverrides[price.id] ?? price.flag_count;
 
   return (
     <div
@@ -72,6 +76,11 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
                 <span className="text-[11px] text-mist">
                   {toArabicNumerals(displayCount)} تأكيد
                 </span>
+                {displayFlagCount > 0 && (
+                  <span className="text-[11px] text-sand/80">
+                    · {toArabicNumerals(displayFlagCount)} إبلاغ
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -85,13 +94,20 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
             سعرك
           </span>
         ) : (
-          <ConfirmButton
-            priceId={price.id}
-            productId={price.product_id}
-            initialCount={price.confirmation_count}
-            confirmedByMe={price.confirmed_by_me}
-            onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
-          />
+          <div className="flex items-center gap-2">
+            <ConfirmButton
+              priceId={price.id}
+              productId={price.product_id}
+              initialCount={price.confirmation_count}
+              confirmedByMe={price.confirmed_by_me}
+              onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
+            />
+            <FlagButton
+              priceId={price.id}
+              initialCount={price.flag_count}
+              flaggedByMe={price.flagged_by_me}
+            />
+          </div>
         )}
       </div>
     </div>

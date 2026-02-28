@@ -46,6 +46,8 @@ export interface PricePreviewItem {
   price: number;
   confirmation_count: number;
   confirmed_by_me: boolean;
+  flag_count?: number;
+  flagged_by_me?: boolean;
   is_mine?: boolean;
   reported_at: string;
   store?: { name_ar?: string };
@@ -101,6 +103,8 @@ export interface Price {
   expires_at: string;
   /** Set when GET /prices is called with optional auth. */
   confirmed_by_me?: boolean;
+  /** Set when GET /prices is called with optional auth. */
+  flagged_by_me?: boolean;
   /** Set when GET /prices is called with optional auth. */
   is_mine?: boolean;
   /** True when price is older than 24h (from GET /prices). */

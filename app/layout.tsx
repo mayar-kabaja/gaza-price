@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
+import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 
 export const metadata: Metadata = {
   title: "غزة بريس — أسعار شفافة",
@@ -38,9 +39,11 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <QueryProvider>
           <ConfirmationOverridesProvider>
-            <div className="app-shell">
-              {children}
-            </div>
+            <FlagOverridesProvider>
+              <div className="app-shell">
+                {children}
+              </div>
+            </FlagOverridesProvider>
           </ConfirmationOverridesProvider>
         </QueryProvider>
       </body>
