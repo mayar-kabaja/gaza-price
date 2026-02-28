@@ -5,6 +5,7 @@ import { ReportCard } from "./ReportCard";
 import type { ReportFeedItem } from "@/types/app";
 import type { ReportFilterValue } from "./ReportFilters";
 import { useSession } from "@/hooks/useSession";
+import { apiFetch } from "@/lib/api/fetch";
 
 const PAGE_SIZE = 20;
 
@@ -20,7 +21,7 @@ interface ReportsResponse {
 }
 
 export function ReportFeed({ filter, areaId }: ReportFeedProps) {
-  const { accessToken } = useSession();
+  useSession(); // subscribe to session so token refresh (e.g. from apiFetch) updates state
   const [reports, setReports] = useState<ReportFeedItem[]>([]);
   const [total, setTotal] = useState(0);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
@@ -36,11 +37,8 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
       params.set("limit", String(PAGE_SIZE));
       params.set("offset", String(offset));
 
-      const headers: Record<string, string> = {};
-      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-      const res = await fetch(`/api/reports?${params.toString()}`, {
+      const res = await apiFetch(`/api/reports?${params.toString()}`, {
         credentials: "include",
-        headers,
       });
       const data = (await res.json()) as ReportsResponse | { error?: string; message?: string };
 
@@ -56,7 +54,7 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
       setNextOffset(payload.next_offset);
       setError(null);
     },
-    [filter, areaId, accessToken]
+    [filter, areaId]
   );
 
   useEffect(() => {

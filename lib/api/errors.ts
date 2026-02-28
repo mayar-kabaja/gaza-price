@@ -22,7 +22,7 @@ export function clearSessionAndRedirect(router: { replace: (url: string) => void
  * Handle a failed API response: set message for display, and on 401 clear session and redirect.
  * Call after: const data = await res.json(); if (!res.ok) { handleApiError(res, data, setError, router); return; }
  *
- * - 401 → clearSessionAndRedirect(router), then setError(message) so it shows briefly if redirect is slow
+ * - 401 → show generic message (never "session expired" / "reload"), then clearSessionAndRedirect(router)
  * - Other → setError(data.message)
  */
 export function handleApiError(
@@ -31,7 +31,12 @@ export function handleApiError(
   setError: (msg: string) => void,
   router: { replace: (url: string) => void }
 ): void {
-  const message = typeof (data as ApiErrorResponse).message === "string" ? (data as ApiErrorResponse).message : "حدث خطأ غير متوقع، جرّب مرة أخرى";
+  const message =
+    res.status === 401
+      ? "حدث خطأ، حاول مرة أخرى"
+      : typeof (data as ApiErrorResponse).message === "string"
+        ? (data as ApiErrorResponse).message
+        : "حدث خطأ غير متوقع، جرّب مرة أخرى";
   setError(message);
   if (res.status === 401) {
     clearSessionAndRedirect(router);

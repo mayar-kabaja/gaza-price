@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Contributor } from "@/types/app";
 import { getStoredToken, setStoredToken, clearStoredToken } from "@/lib/auth/token";
+import { apiFetch } from "@/lib/api/fetch";
 
 /** Backend /contributors/me shape. */
 type MeResponse = {
@@ -47,7 +48,7 @@ export function useSession() {
   const [loading, setLoading] = useState(true);
 
   const loadContributor = useCallback(async (token: string) => {
-    const res = await fetch("/api/contributors/me", {
+    const res = await apiFetch("/api/contributors/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("failed");
@@ -60,8 +61,7 @@ export function useSession() {
       let token = getStoredToken();
 
       if (!token) {
-        // No token — create anonymous session
-        const res = await fetch("/api/auth/session", { method: "GET" });
+        const res = await apiFetch("/api/auth/session", { method: "GET" });
         if (!res.ok) throw new Error("session failed");
         const data = await res.json();
         token = data.access_token;
@@ -82,6 +82,15 @@ export function useSession() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // When apiFetch refreshes the token and writes to localStorage, sync into state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const stored = getStoredToken();
+      setAccessToken((prev) => (stored !== prev ? stored : prev));
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshContributor = useCallback(async () => {
     const token = getStoredToken();

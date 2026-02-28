@@ -3,7 +3,7 @@
  */
 
 import type { Area, Category, Price, PriceStats, Product } from "@/types/app";
-import { getStoredToken } from "@/lib/auth/token";
+import { apiFetch } from "@/lib/api/fetch";
 
 // ── Query keys ──
 export const queryKeys = {
@@ -23,7 +23,7 @@ export const queryKeys = {
 // ── Fetchers (return parsed JSON, throw on !res.ok for mutations) ──
 
 async function getJson<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, { credentials: "include", ...opts });
+  const res = await apiFetch(url, { credentials: "include", ...opts });
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return data as T;
@@ -34,7 +34,7 @@ export async function fetchAreas(): Promise<{ areas: Area[] }> {
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const res = await fetch("/api/categories", { credentials: "include" });
+  const res = await apiFetch("/api/categories", { credentials: "include" });
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
@@ -51,7 +51,7 @@ export async function fetchProducts(params: {
   if (params.search) sp.set("search", params.search);
   if (params.categoryId) sp.set("category_id", params.categoryId);
   const url = `/api/products?${sp.toString()}`;
-  const res = await fetch(url, { credentials: "include" });
+  const res = await apiFetch(url, { credentials: "include" });
   const data = await res.json();
   return {
     products: data?.products ?? [],
@@ -60,7 +60,7 @@ export async function fetchProducts(params: {
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
-  const res = await fetch(`/api/products/${id}`, { credentials: "include" });
+  const res = await apiFetch(`/api/products/${id}`, { credentials: "include" });
   if (!res.ok) return null;
   const data = await res.json();
   return data ?? null;
@@ -72,7 +72,7 @@ export async function fetchPrices(params: {
   sort?: string;
   limit?: number;
   offset?: number;
-  /** Pass from useSession(). If omitted, fetcher will use getStoredToken() in browser so token is always sent when available. */
+  /** Pass from useSession(). If omitted, fetcher will use stored token via apiFetch. */
   accessToken?: string | null;
 }): Promise<{
   prices: Price[];
@@ -84,10 +84,7 @@ export async function fetchPrices(params: {
   if (params.sort) sp.set("sort", params.sort);
   if (params.limit != null) sp.set("limit", String(params.limit));
   if (params.offset != null) sp.set("offset", String(params.offset));
-  const headers: HeadersInit = {};
-  const token = params.accessToken ?? (typeof window !== "undefined" ? getStoredToken() : null);
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`/api/prices?${sp.toString()}`, { headers, credentials: "include" });
+  const res = await apiFetch(`/api/prices?${sp.toString()}`, { credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {
@@ -98,10 +95,5 @@ export async function fetchPrices(params: {
 }
 
 export async function fetchContributorMe(headers?: Record<string, string>): Promise<{ contributor: unknown }> {
-  const token = headers?.Authorization ?? (typeof window !== "undefined" ? getStoredToken() : null);
-  const authHeaders =
-    token && !headers?.Authorization
-      ? { ...headers, Authorization: `Bearer ${token}` }
-      : headers;
-  return getJson("/api/contributors/me", { headers: authHeaders });
+  return getJson("/api/contributors/me", { headers });
 }

@@ -6,6 +6,7 @@ import { AreaPicker } from "@/components/onboarding/AreaPicker";
 import { Area } from "@/types/app";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import { getStoredToken, setStoredToken } from "@/lib/auth/token";
+import { apiFetch } from "@/lib/api/fetch";
 import { useAreas } from "@/lib/queries/hooks";
 
 export default function OnboardingPage() {
@@ -29,7 +30,7 @@ export default function OnboardingPage() {
 
       let token = getStoredToken();
       if (!token) {
-        const res = await fetch("/api/auth/session", { method: "GET", credentials: "include" });
+        const res = await apiFetch("/api/auth/session", { method: "GET", credentials: "include" });
         const data = await res.json();
         if (data?.access_token) {
           token = data.access_token as string;
@@ -37,7 +38,7 @@ export default function OnboardingPage() {
         }
       }
       if (token) {
-        await fetch("/api/contributors/me", {
+        await apiFetch("/api/contributors/me", {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           credentials: "include",

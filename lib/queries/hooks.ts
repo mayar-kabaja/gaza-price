@@ -10,6 +10,8 @@ import {
   fetchPrices,
   fetchContributorMe,
 } from "@/lib/queries/fetchers";
+import { apiFetch } from "@/lib/api/fetch";
+import { setStoredToken } from "@/lib/auth/token";
 
 // ── Areas ──
 export function useAreas() {
@@ -132,7 +134,7 @@ export function useUpdateContributorMe() {
       headers?: Record<string, string>;
     }) => {
       const { headers: customHeaders, ...body } = payload;
-      const res = await fetch("/api/contributors/me", {
+      const res = await apiFetch("/api/contributors/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...customHeaders },
         credentials: "include",
@@ -160,7 +162,7 @@ export function useSubmitReport() {
       headers?: Record<string, string>;
     }) => {
       const { headers: customHeaders, ...body } = payload;
-      const res = await fetch("/api/reports", {
+      const res = await apiFetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...customHeaders },
         credentials: "include",
@@ -168,6 +170,9 @@ export function useSubmitReport() {
       });
       const data = await res.json();
       if (!res.ok) throw { status: res.status, data };
+      if (typeof (data as { access_token?: string }).access_token === "string") {
+        setStoredToken((data as { access_token: string }).access_token);
+      }
       return data;
     },
     onSuccess: (_, variables) => {
@@ -192,7 +197,7 @@ export function useSuggestProduct() {
       area_id: string;
       store_name_raw?: string;
     }) => {
-      const res = await fetch("/api/products/suggest", {
+      const res = await apiFetch("/api/products/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

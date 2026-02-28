@@ -7,10 +7,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: priceId } = await params;
-  const token = getTokenFromRequest(req);
-  if (!token) {
-    return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
-  }
+  let token = getTokenFromRequest(req);
+
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -18,6 +16,28 @@ export async function POST(
       { status: 503 }
     );
   }
+
+  // No token → create anonymous session so the user can confirm without reloading
+  let sessionCreated = false;
+  if (!token) {
+    try {
+      const sessionRes = await fetch(`${base}/auth/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(15000),
+      });
+      const sessionData = (await sessionRes.json()) as { access_token?: string };
+      token = sessionData?.access_token ?? null;
+      sessionCreated = !!token;
+    } catch {
+      // fall through
+    }
+    if (!token) {
+      return NextResponse.json({ error: "UNAUTHORIZED", message: "لا توجد جلسة" }, { status: 401 });
+    }
+  }
+
   const url = `${base}/prices/${priceId}/confirm`;
   try {
     const res = await fetch(url, {
@@ -29,8 +49,11 @@ export async function POST(
       },
       signal: AbortSignal.timeout(60000),
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const data = (await res.json()) as Record<string, unknown>;
+    const responsePayload = sessionCreated && token
+      ? { ...data, access_token: token }
+      : data;
+    return NextResponse.json(responsePayload, { status: res.status });
   } catch (err) {
     const rawMessage = err instanceof Error ? err.message : "خطأ في التأكيد";
     const isTimeout = rawMessage.includes("aborted") || rawMessage.includes("timeout");

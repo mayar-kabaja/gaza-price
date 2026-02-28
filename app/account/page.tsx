@@ -15,6 +15,7 @@ import { useArea } from "@/hooks/useArea";
 import Link from "next/link";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
+import { apiFetch } from "@/lib/api/fetch";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor } from "@/types/app";
 import type { Area } from "@/types/app";
@@ -150,7 +151,7 @@ export default function AccountPage() {
   const confirmDelete = async () => {
     setDeleteError(null);
     try {
-      const res = await fetch("/api/contributors/me", {
+      const res = await apiFetch("/api/contributors/me", {
         method: "DELETE",
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
