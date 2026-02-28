@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -15,13 +15,18 @@ function toNumber(value: unknown): number {
 export function useConfirm(
   initialCount: number,
   priceId: string,
-  options?: { onSuccess?: () => void }
+  options?: { onSuccess?: (newCount: number) => void }
 ) {
   const router = useRouter();
   const [count, setCount] = useState(() => toNumber(initialCount));
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const onSuccessRef = useRef(options?.onSuccess);
+  useEffect(() => {
+    onSuccessRef.current = options?.onSuccess;
+  }, [options?.onSuccess]);
 
   async function confirm() {
     if (confirmed || loading) return;
@@ -44,9 +49,10 @@ export function useConfirm(
       if (typeof (data as { access_token?: string }).access_token === "string") {
         setStoredToken((data as { access_token: string }).access_token);
       }
+      const newCount = toNumber(data?.confirmation_count ?? count);
       setConfirmed(data?.confirmed ?? true);
-      setCount(toNumber(data?.confirmation_count ?? count));
-      options?.onSuccess?.();
+      setCount(newCount);
+      onSuccessRef.current?.(newCount);
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {

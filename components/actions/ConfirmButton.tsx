@@ -1,26 +1,26 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useConfirm } from "@/hooks/useConfirm";
-import { queryKeys } from "@/lib/queries/fetchers";
+import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
 
 interface ConfirmButtonProps {
   priceId: string;
-  /** Required so we can invalidate the prices list and refresh confirmation_count on the card. */
   productId: string;
   initialCount: number;
   /** When true, show as already confirmed by current user (e.g. in feed). */
   confirmedByMe?: boolean;
+  /** Optional extra callback when confirm succeeds (e.g. for local state). */
+  onConfirmed?: (newCount: number) => void;
 }
 
-export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe = false }: ConfirmButtonProps) {
-  const queryClient = useQueryClient();
+export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe = false, onConfirmed }: ConfirmButtonProps) {
+  const { setOverride } = useConfirmationOverrides();
   const { count, confirmed, loading, error, setError, confirm } = useConfirm(initialCount, priceId, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.prices(productId) });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (newCount) => {
+      setOverride(priceId, newCount);
+      onConfirmed?.(newCount);
     },
   });
   const isConfirmed = confirmedByMe || confirmed;

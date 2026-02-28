@@ -1,7 +1,10 @@
+"use client";
+
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { ConfirmButton } from "@/components/actions/ConfirmButton";
 import { LoaderDots } from "@/components/ui/LoaderDots";
+import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
 import { cn } from "@/lib/utils";
@@ -10,11 +13,17 @@ interface PriceCardProps {
   price: Price;
   /** When true, show a small loader in the confirmation area until count updates. */
   isRefetching?: boolean;
+  /** Optional override (e.g. from parent state); context override takes precedence. */
+  confirmationCountOverride?: number;
+  /** Optional callback when user confirms (e.g. for parent state). */
+  onConfirmationUpdate?: (priceId: string, newCount: number) => void;
 }
 
-export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
+export function PriceCard({ price, isRefetching = false, confirmationCountOverride, onConfirmationUpdate }: PriceCardProps) {
+  const { overrides } = useConfirmationOverrides();
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
+  const displayCount = overrides[price.id] ?? confirmationCountOverride ?? price.confirmation_count;
 
   return (
     <div
@@ -59,9 +68,9 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
               <LoaderDots size="sm" className="inline-flex" />
             ) : (
               <>
-                <TrustDots confirmations={price.confirmation_count} />
+                <TrustDots confirmations={displayCount} />
                 <span className="text-[11px] text-mist">
-                  {toArabicNumerals(price.confirmation_count)} تأكيد
+                  {toArabicNumerals(displayCount)} تأكيد
                 </span>
               </>
             )}
@@ -81,6 +90,7 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
             productId={price.product_id}
             initialCount={price.confirmation_count}
             confirmedByMe={price.confirmed_by_me}
+            onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
           />
         )}
       </div>
