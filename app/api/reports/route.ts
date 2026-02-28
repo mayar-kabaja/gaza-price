@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/get-token-from-request";
-import { SubmitPriceRequest } from "@/types/api";
 import { getApiBaseUrl, apiPost } from "@/lib/api/client";
 
 const PAGE_SIZE = 20;
@@ -72,16 +71,17 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
-  const body: SubmitPriceRequest = await req.json();
+  const body = (await req.json()) as Record<string, unknown>;
 
+  const priceVal = body.price;
   const missing =
     !body.product_id ||
     !body.area_id ||
-    (body.price === undefined || body.price === null || body.price === "");
+    (priceVal === undefined || priceVal === null || priceVal === "");
   if (missing) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "بيانات ناقصة" }, { status: 400 });
   }
-  const priceNum = Number(body.price);
+  const priceNum = Number(priceVal);
   if (!Number.isFinite(priceNum) || priceNum <= 0) {
     return NextResponse.json(
       { error: "BAD_REQUEST", message: "السعر يجب أن يكون أكبر من صفر" },
@@ -93,13 +93,13 @@ export async function POST(req: NextRequest) {
     const data = await apiPost<{ id?: string; status?: string; trust_score?: number; expires_at?: string }>(
       "/reports",
       {
-        product_id: body.product_id,
+        product_id: String(body.product_id),
         price: priceNum,
-        currency: body.currency ?? "ILS",
-        area_id: body.area_id,
-        store_id: body.store_id ?? null,
-        store_name_raw: body.store_name_raw ?? null,
-        receipt_photo_url: body.receipt_photo_url ?? null,
+        currency: (body.currency as string) ?? "ILS",
+        area_id: String(body.area_id),
+        store_id: body.store_id != null ? String(body.store_id) : null,
+        store_name_raw: body.store_name_raw != null ? String(body.store_name_raw) : null,
+        receipt_photo_url: body.receipt_photo_url != null ? String(body.receipt_photo_url) : null,
       },
       { Authorization: `Bearer ${token}` }
     );
