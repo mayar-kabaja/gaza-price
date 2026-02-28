@@ -74,11 +74,19 @@ export async function POST(req: NextRequest) {
   }
   const body: SubmitPriceRequest = await req.json();
 
-  if (!body.product_id || !body.price || !body.area_id) {
+  const missing =
+    !body.product_id ||
+    !body.area_id ||
+    (body.price === undefined || body.price === null || body.price === "");
+  if (missing) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "بيانات ناقصة" }, { status: 400 });
   }
-  if (body.price <= 0) {
-    return NextResponse.json({ error: "BAD_REQUEST", message: "السعر يجب أن يكون أكبر من صفر" }, { status: 400 });
+  const priceNum = Number(body.price);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) {
+    return NextResponse.json(
+      { error: "BAD_REQUEST", message: "السعر يجب أن يكون أكبر من صفر" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -86,7 +94,7 @@ export async function POST(req: NextRequest) {
       "/reports",
       {
         product_id: body.product_id,
-        price: body.price,
+        price: priceNum,
         currency: body.currency ?? "ILS",
         area_id: body.area_id,
         store_id: body.store_id ?? null,

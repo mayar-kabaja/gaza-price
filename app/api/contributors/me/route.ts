@@ -91,11 +91,25 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ updated: true, ...(data as object) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
-    const status = message.startsWith("API 4") ? 400 : 500;
-    return NextResponse.json(
-      { error: "SERVER_ERROR", message: message.replace(/^API \d+: /, "") },
-      { status }
-    );
+    const statusMatch = message.match(/^API (\d+):/);
+    const status = statusMatch
+      ? parseInt(statusMatch[1], 10)
+      : message.startsWith("API 4") ? 400 : 500;
+    const bodyStr = statusMatch
+      ? message.slice(message.indexOf(":") + 1).trim()
+      : message.replace(/^API \d+: /, "");
+    let body: { error?: string; message?: string } = { error: "SERVER_ERROR", message: bodyStr };
+    if (bodyStr) {
+      try {
+        const parsed = JSON.parse(bodyStr) as { error?: string; message?: string };
+        if (parsed?.error != null || parsed?.message != null) {
+          body = { error: parsed.error ?? "SERVER_ERROR", message: parsed.message ?? bodyStr };
+        }
+      } catch {
+        body.message = bodyStr.length > 200 ? bodyStr.slice(0, 200) + "…" : bodyStr;
+      }
+    }
+    return NextResponse.json(body, { status });
   }
 }
 
