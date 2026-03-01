@@ -353,7 +353,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
                 </span>
               )}
             </span>
-            <span className="text-[9px]">Queue</span>
+            <span className="text-[9px]">Suggestions</span>
           </Link>
           <Link
             href="/admin/flags"
@@ -362,7 +362,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
             }`}
           >
             {iconMap.bell}
-            <span className="text-[9px]">Alerts</span>
+            <span className="text-[9px]">Flags</span>
           </Link>
           <button
             type="button"
