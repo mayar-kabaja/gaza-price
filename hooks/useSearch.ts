@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Product } from "@/types/app";
 import { useProductsSearch } from "@/lib/queries/hooks";
+import { useArea } from "@/hooks/useArea";
 
 const DEBOUNCE_MS = 300;
 
 export function useSearch() {
+  const { area } = useArea();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -29,7 +31,7 @@ export function useSearch() {
     };
   }, [query]);
 
-  const { data, isLoading } = useProductsSearch(debouncedQuery, 10);
+  const { data, isLoading } = useProductsSearch(debouncedQuery, 10, area?.id);
   const results = (data?.products ?? []) as Product[];
 
   function clear() {

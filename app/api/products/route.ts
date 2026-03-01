@@ -5,6 +5,31 @@ import { getProductsFirstCategory, searchProducts } from "@/lib/queries/products
 
 export const dynamic = "force-dynamic";
 
+/** Log a search to analytics. Fire-and-forget; does not block response. */
+async function logSearch(params: {
+  base: string;
+  query: string;
+  areaId: string;
+  countResult: number;
+  productId?: string | null;
+}) {
+  try {
+    await fetch(`${params.base}/analytics/search-logs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        query: params.query,
+        area_id: params.areaId,
+        count_result: params.countResult,
+        product_id: params.productId ?? null,
+      }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    // ignore
+  }
+}
+
 /** Fetch price preview for a product from backend (confirmation_count, confirmed_by_me, etc.). */
 async function fetchPricePreview(
   base: string,
@@ -23,18 +48,45 @@ async function fetchPricePreview(
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search") ?? undefined;
+  const search = searchParams.get("search")?.trim() ?? undefined;
+  const areaId = searchParams.get("area_id")?.trim() || undefined;
   const categoryId = searchParams.get("category_id") ?? undefined;
+  const allProducts = searchParams.get("all") === "1" || searchParams.get("all") === "true";
   const embedPricePreview = searchParams.get("embed") === "price_preview";
-  const limit = Math.min(Number(searchParams.get("limit") ?? 10), 30);
+  const limit = Math.min(Number(searchParams.get("limit") ?? 10), 50);
   const offset = Number(searchParams.get("offset") ?? 0);
   const token = getTokenFromRequest(req);
   const base = getApiBaseUrl();
 
   try {
-    const result = categoryId
-      ? await searchProducts(search, categoryId, limit, offset)
-      : await getProductsFirstCategory(limit, offset, search);
+    const result =
+      categoryId
+        ? await searchProducts(search, categoryId, limit, offset)
+        : allProducts
+          ? await searchProducts(search, undefined, limit, offset)
+          : await getProductsFirstCategory(limit, offset, search);
+
+    // Log search when we have a search term (for analytics)
+    if (base && search && search.length >= 1) {
+      let areaForLog = areaId;
+      if (!areaForLog) {
+        try {
+          const { getAreasFromBackend } = await import("@/lib/api/areas");
+          const areasList = await getAreasFromBackend();
+          areaForLog = areasList[0]?.id;
+        } catch {
+          // skip logging if we can't get area
+        }
+      }
+      if (areaForLog) {
+        logSearch({
+          base,
+          query: search,
+          areaId: areaForLog,
+          countResult: result.total,
+        }).catch(() => {});
+      }
+    }
 
     if (embedPricePreview && base && result.products.length > 0) {
       const enriched = await Promise.all(

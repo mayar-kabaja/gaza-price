@@ -86,10 +86,10 @@ export function useProduct(id: string | null) {
   });
 }
 
-export function useProductsSearch(search: string, limit = 10) {
+export function useProductsSearch(search: string, limit = 10, areaId?: string | null) {
   return useQuery({
-    queryKey: queryKeys.productsSearch(search, limit),
-    queryFn: () => fetchProducts({ search, limit }),
+    queryKey: queryKeys.productsSearch(search, limit, areaId ?? undefined),
+    queryFn: () => fetchProducts({ search, limit, areaId: areaId ?? undefined }),
     enabled: search.trim().length >= 1,
     staleTime: 2 * 60 * 1000,
   });

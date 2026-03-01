@@ -1,0 +1,52 @@
+/* Admin dashboard — dark theme, LTR. Matches gazaprice-admin HTML. */
+.admin-root {
+  --admin-bg: #0B0F14;
+  --admin-surface: #111820;
+  --admin-surface2: #18212C;
+  --admin-surface3: #1E2B38;
+  --admin-border: #243040;
+  --admin-border-l: #2E3D50;
+  --admin-olive: #4A7C59;
+  --admin-olive-l: #6BA880;
+  --admin-olive-d: #2D5C3C;
+  --admin-olive-glow: #4A7C5920;
+  --admin-sand: #C9A96E;
+  --admin-sand-l: #E8C98A;
+  --admin-sand-glow: #C9A96E18;
+  --admin-red: #E05A4E;
+  --admin-red-glow: #E05A4E18;
+  --admin-sky: #4A9FD4;
+  --admin-green: #3FB950;
+  --admin-orange: #D4913A;
+  --admin-text: #D8E4F0;
+  --admin-text2: #8FA3B8;
+  --admin-text3: #4E6070;
+  --admin-sidebar-w: 240px;
+  --admin-radius: 10px;
+}
+
+.admin-root body {
+  font-family: "Sora", var(--font-sans, sans-serif);
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-root .admin-sidebar {
+  width: var(--admin-sidebar-w);
+  background: var(--admin-surface);
+  border-right: 1px solid var(--admin-border);
+}
+
+.admin-root .admin-stat-card.olive::before { background: linear-gradient(90deg, var(--admin-olive), var(--admin-olive-l)); }
+.admin-root .admin-stat-card.sand::before { background: linear-gradient(90deg, var(--admin-sand), var(--admin-sand-l)); }
+.admin-root .admin-stat-card.red::before { background: linear-gradient(90deg, var(--admin-red), #F08070); }
+.admin-root .admin-stat-card.sky::before { background: linear-gradient(90deg, var(--admin-sky), #7AC4F0); }
+
+/* Mobile: extra bottom padding for safe area (iPhone notch) */
+@media (max-width: 640px) {
+  .admin-root .admin-content-area {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

@@ -10,11 +10,11 @@ export const queryKeys = {
   areas: ["areas"] as const,
   areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]),
   categories: ["categories"] as const,
-  products: (filters?: { limit?: number; offset?: number; search?: string; categoryId?: string; embedPricePreview?: boolean }) =>
+  products: (filters?: { limit?: number; offset?: number; search?: string; categoryId?: string; areaId?: string; embedPricePreview?: boolean }) =>
     ["products", filters ?? {}],
   product: (id: string) => ["products", id] as const,
-  productsSearch: (search: string, limit?: number) =>
-    ["products", "search", search, limit ?? 10],
+  productsSearch: (search: string, limit?: number, areaId?: string) =>
+    ["products", "search", search, limit ?? 10, areaId ?? ""],
   prices: (productId: string, areaId?: string, sort?: string, limit?: number) =>
     ["prices", productId, areaId, sort, limit],
   contributorMe: ["contributors", "me"] as const,
@@ -48,6 +48,8 @@ export async function fetchProducts(params: {
   offset?: number;
   search?: string;
   categoryId?: string;
+  /** Area for analytics (search logs). */
+  areaId?: string;
   /** When true, adds embed=price_preview so each product includes price_preview (confirmation_count, confirmed_by_me). */
   embedPricePreview?: boolean;
 }): Promise<{ products: Product[]; total: number }> {
@@ -56,6 +58,7 @@ export async function fetchProducts(params: {
   if (params.offset != null) sp.set("offset", String(params.offset));
   if (params.search) sp.set("search", params.search);
   if (params.categoryId) sp.set("category_id", params.categoryId);
+  if (params.areaId) sp.set("area_id", params.areaId);
   if (params.embedPricePreview) sp.set("embed", "price_preview");
   const url = `/api/products?${sp.toString()}`;
   const res = await apiFetch(url, { credentials: "include" });
