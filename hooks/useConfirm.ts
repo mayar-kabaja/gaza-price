@@ -15,7 +15,10 @@ function toNumber(value: unknown): number {
 export function useConfirm(
   initialCount: number,
   priceId: string,
-  options?: { onSuccess?: (newCount: number) => void; initialConfirmed?: boolean }
+  options?: {
+    onSuccess?: (newCount: number, extra?: { flag_count?: number; flagged?: boolean; confirmed?: boolean }) => void;
+    initialConfirmed?: boolean;
+  }
 ) {
   const router = useRouter();
   const [count, setCount] = useState(() => toNumber(initialCount));
@@ -52,7 +55,17 @@ export function useConfirm(
       const newCount = toNumber(data?.confirmation_count ?? count);
       setConfirmed(data?.confirmed ?? true);
       setCount(newCount);
-      onSuccessRef.current?.(newCount);
+      const extra =
+        typeof data?.flag_count === "number" ||
+        typeof data?.flagged === "boolean" ||
+        typeof data?.confirmed === "boolean"
+          ? {
+              flag_count: data?.flag_count as number | undefined,
+              flagged: data?.flagged as boolean | undefined,
+              confirmed: data?.confirmed as boolean | undefined,
+            }
+          : undefined;
+      onSuccessRef.current?.(newCount, extra);
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {

@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/actions/ConfirmButton";
 import { FlagButton } from "@/components/actions/FlagButton";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
+import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
 import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
@@ -24,6 +25,10 @@ interface PriceCardProps {
 export function PriceCard({ price, isRefetching = false, confirmationCountOverride, onConfirmationUpdate }: PriceCardProps) {
   const { overrides } = useConfirmationOverrides();
   const { overrides: flagOverrides } = useFlagOverrides();
+  const { confirmedByMe: confirmedOverrides, flaggedByMe: flaggedOverrides } = useConfirmFlagExclusivity();
+  const isConfirmedByMe = confirmedOverrides[price.id] ?? price.confirmed_by_me;
+  const isFlaggedByMe = flaggedOverrides[price.id] ?? price.flagged_by_me;
+  const showExclusivityHint = (isConfirmedByMe || isFlaggedByMe) && !price.is_mine;
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
   const displayCount = overrides[price.id] ?? confirmationCountOverride ?? price.confirmation_count;
@@ -94,19 +99,31 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
             سعرك
           </span>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-1.5">
+            {showExclusivityHint && (
+              <div
+                className="text-[11px] text-sand bg-sand-light/50 border border-sand/30 rounded-lg px-2.5 py-1.5 text-right"
+                role="status"
+              >
+                {isConfirmedByMe ? "أكّدت هذا السعر — لا يمكن الإبلاغ" : "أبلغت عن هذا السعر — لا يمكن التأكيد"}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
             <ConfirmButton
               priceId={price.id}
               productId={price.product_id}
               initialCount={price.confirmation_count}
               confirmedByMe={price.confirmed_by_me}
+              flaggedByMe={price.flagged_by_me}
               onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
             />
             <FlagButton
               priceId={price.id}
               initialCount={price.flag_count}
               flaggedByMe={price.flagged_by_me}
+              confirmedByMe={price.confirmed_by_me}
             />
+            </div>
           </div>
         )}
       </div>

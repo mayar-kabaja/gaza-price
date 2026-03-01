@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
+import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 
 export const metadata: Metadata = {
@@ -40,9 +41,11 @@ export default function RootLayout({
         <QueryProvider>
           <ConfirmationOverridesProvider>
             <FlagOverridesProvider>
+              <ConfirmFlagExclusivityProvider>
               <div className="app-shell">
                 {children}
               </div>
+              </ConfirmFlagExclusivityProvider>
             </FlagOverridesProvider>
           </ConfirmationOverridesProvider>
         </QueryProvider>

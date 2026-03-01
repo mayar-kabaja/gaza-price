@@ -15,7 +15,10 @@ function toNumber(value: unknown): number {
 export function useFlag(
   initialCount: number,
   priceId: string,
-  options?: { onSuccess?: (flagged: boolean, newCount: number) => void; initialFlagged?: boolean }
+  options?: {
+    onSuccess?: (flagged: boolean, newCount: number, extra?: { confirmation_count?: number; confirmed?: boolean }) => void;
+    initialFlagged?: boolean;
+  }
 ) {
   const router = useRouter();
   const [count, setCount] = useState(() => toNumber(initialCount));
@@ -55,7 +58,15 @@ export function useFlag(
       const newCount = toNumber((data as { flag_count?: number }).flag_count ?? count);
       setFlagged(newFlagged);
       setCount(newCount);
-      onSuccessRef.current?.(newFlagged, newCount);
+      const extra =
+        typeof (data as { confirmation_count?: number }).confirmation_count === "number" ||
+        typeof (data as { confirmed?: boolean }).confirmed === "boolean"
+          ? {
+              confirmation_count: (data as { confirmation_count?: number }).confirmation_count,
+              confirmed: (data as { confirmed?: boolean }).confirmed,
+            }
+          : undefined;
+      onSuccessRef.current?.(newFlagged, newCount, extra);
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {
