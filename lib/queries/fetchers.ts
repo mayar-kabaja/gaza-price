@@ -18,6 +18,8 @@ export const queryKeys = {
   prices: (productId: string, areaId?: string, sort?: string, limit?: number) =>
     ["prices", productId, areaId, sort, limit],
   contributorMe: ["contributors", "me"] as const,
+  contributorMeReports: (status?: string, limit?: number) =>
+    ["contributors", "me", "reports", status ?? "all", limit ?? 20] as const,
   reports: (filter: string, areaId?: string | null, limit?: number) =>
     ["reports", filter, areaId ?? "", limit ?? 20] as const,
 };
@@ -127,5 +129,35 @@ export async function fetchReports(params: {
     reports: data?.reports ?? [],
     total: data?.total ?? 0,
     next_offset: typeof data?.next_offset === "number" ? data.next_offset : null,
+  };
+}
+
+/** My (contributor) reports — requires auth. */
+export interface MyReportItem {
+  id: string;
+  product_id: string | null;
+  product: { id: string; name_ar: string } | null;
+  price: number;
+  status: string;
+  trust_score: number;
+  confirmation_count: number;
+  reported_at: string;
+}
+
+export async function fetchContributorMeReports(params: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ reports: MyReportItem[]; total: number }> {
+  const sp = new URLSearchParams();
+  sp.set("status", params.status ?? "all");
+  sp.set("limit", String(params.limit ?? 20));
+  sp.set("offset", String(params.offset ?? 0));
+  const res = await apiFetch(`/api/contributors/me/reports?${sp.toString()}`, { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    reports: data?.reports ?? [],
+    total: data?.total ?? 0,
   };
 }

@@ -12,12 +12,22 @@ export function TrustLevelBar({ level }: TrustLevelBarProps) {
   const currentIdx = LEVELS.indexOf(level);
 
   return (
-    <div>
-      <div className="flex items-center gap-0 mb-1.5">
-        {LEVELS.map((l, i) => (
-          <div key={l} className="flex items-center flex-1">
-            {/* Dot */}
+    <div dir="rtl">
+      {/* Track: new (right) → verified (left). Green fills from right (start) to current. */}
+      <div className="relative flex items-center mb-1.5">
+        {/* Background line (full width) */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-border rounded-full" aria-hidden />
+        {/* Filled portion: from right (new) to current level */}
+        <div
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-1 bg-olive rounded-full transition-all"
+          style={{ width: `${(currentIdx / (LEVELS.length - 1)) * 100}%` }}
+          aria-hidden
+        />
+        {/* Dots */}
+        <div className="relative flex w-full justify-between">
+          {LEVELS.map((l, i) => (
             <div
+              key={l}
               className={cn(
                 "w-2.5 h-2.5 rounded-full border-2 flex-shrink-0 z-10",
                 i < currentIdx
@@ -27,20 +37,11 @@ export function TrustLevelBar({ level }: TrustLevelBarProps) {
                   : "bg-white border-border"
               )}
             />
-            {/* Line between dots */}
-            {i < LEVELS.length - 1 && (
-              <div
-                className={cn(
-                  "flex-1 h-1",
-                  i < currentIdx ? "bg-olive" : "bg-border"
-                )}
-              />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Labels */}
+      {/* Labels — same LTR order so they align with dots */}
       <div className="flex justify-between">
         {LEVELS.map((l, i) => (
           <span

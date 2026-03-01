@@ -11,6 +11,7 @@ import { TRUST_LEVEL_LABELS, LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import { toArabicNumerals } from "@/lib/arabic";
 import { getReportsToNextLevel } from "@/lib/trust";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import { useArea } from "@/hooks/useArea";
 import Link from "next/link";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
@@ -66,22 +67,27 @@ function profileInitial(contributor: Contributor | null): string {
   return "م";
 }
 
-/** Prefer API contributor when available, else session contributor. */
+/** Profile data from React Query only. useContributorMe enabled after session (token) is ready. */
 function useProfile() {
-  const { contributor: sessionContributor, loading: sessionLoading } = useSession();
-  const { data: apiData } = useContributorMe();
+  const { loading: sessionLoading } = useSession();
+  const { data: apiData, isLoading: apiLoading, isFetching: apiFetching } = useContributorMe({
+    enabled: !sessionLoading,
+  });
 
-  const apiContributor = normalizeContributor(apiData);
-  const contributor: Contributor | null = apiContributor ?? sessionContributor;
-  const loading = sessionLoading;
+  const contributor = normalizeContributor(apiData);
   const trustScoreTotal = getTrustScoreTotal(apiData);
+  /** Show loader for مساهماتي only when no cached data. Use cached data when returning to profile. */
+  const contributionsLoading = sessionLoading || apiLoading;
 
-  return { contributor, loading, trustScoreTotal };
+  /** Show loader only when no cached data (initial load). When returning to profile, show cache immediately. */
+  const statsLoading = sessionLoading || apiLoading;
+
+  return { contributor, loading: sessionLoading, trustScoreTotal, contributionsLoading, statsLoading };
 }
 
 export default function AccountPage() {
-  const { contributor, loading, trustScoreTotal } = useProfile();
-  const { accessToken, refreshContributor } = useSession();
+  const { contributor, loading, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
+  const { accessToken } = useSession();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -90,8 +96,10 @@ export default function AccountPage() {
   const [openEditHandle, setOpenEditHandle] = useState(false);
   const [handleInput, setHandleInput] = useState("");
   const [editHandleError, setEditHandleError] = useState<string | null>(null);
+  const [isUpdatingHandle, setIsUpdatingHandle] = useState(false);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [areaError, setAreaError] = useState<string | null>(null);
+  const [isUpdatingArea, setIsUpdatingArea] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -110,42 +118,55 @@ export default function AccountPage() {
     setOpenEditHandle(true);
   };
 
-  const submitHandle = async () => {
+  const submitHandle = () => {
     const val = handleInput.trim() || null;
     if (val !== null && val.length > 30) {
       setEditHandleError("اللقب يجب أن يكون أقل من ٣٠ حرفاً");
       return;
     }
     setEditHandleError(null);
-    try {
-      await updateMe.mutateAsync({
+    setOpenEditHandle(false);
+    setIsUpdatingHandle(true);
+    updateMe.mutate(
+      {
         display_handle: val,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
-      await refreshContributor();
-      setOpenEditHandle(false);
-    } catch (err: unknown) {
-      const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
-      const msg = typeof (data as ApiErrorResponse)?.message === "string" ? (data as ApiErrorResponse).message : "حدث خطأ";
-      setEditHandleError(msg);
-    }
+      },
+      {
+        onSuccess: () => {
+          setIsUpdatingHandle(false);
+        },
+        onError: (err: unknown) => {
+          const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
+          setEditHandleError(typeof (data as ApiErrorResponse)?.message === "string" ? (data as ApiErrorResponse).message : "حدث خطأ");
+          setIsUpdatingHandle(false);
+        },
+      }
+    );
   };
 
-  const onSelectArea = async (selected: Area) => {
+  const onSelectArea = (selected: Area) => {
     setAreaError(null);
-    try {
-      await updateMe.mutateAsync({
+    setOpenAreaPicker(false);
+    saveArea(selected);
+    setIsUpdatingArea(true);
+    updateMe.mutate(
+      {
         area_id: selected.id,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
-      await refreshContributor();
-      saveArea(selected);
-      setOpenAreaPicker(false);
-    } catch (err: unknown) {
-      const res = err && typeof err === "object" && "status" in err ? { status: (err as { status: number }).status } : { status: 500 };
-      const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
-      handleApiError(res as Response, data, setAreaError, router);
-    }
+      },
+      {
+        onSuccess: () => {
+          setIsUpdatingArea(false);
+        },
+        onError: (err: unknown) => {
+          const res = err && typeof err === "object" && "status" in err ? { status: (err as { status: number }).status } : { status: 500 };
+          const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
+          handleApiError(res as Response, data, setAreaError, router);
+          setIsUpdatingArea(false);
+        },
+      }
+    );
   };
 
   const confirmDelete = async () => {
@@ -179,34 +200,46 @@ export default function AccountPage() {
 
   return (
     <div className="flex flex-col min-h-dvh">
-      {/* Header — always show avatar + name (never skeleton here so they're never missing) */}
+      {/* Header — avatar + name; show skeleton while loading */}
       <div className="bg-ink px-5 pt-5 pb-6 flex-shrink-0">
-        {/* Avatar + name — always visible with real content or fallbacks */}
         <div className="flex items-center gap-3 mb-4 min-h-[3rem]">
           <div
             className="w-12 h-12 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"
             aria-hidden
           >
-            {profileInitial(contributor)}
+            {statsLoading ? (
+              <Skeleton className="h-5 w-5 rounded-full bg-white/50" />
+            ) : (
+              profileInitial(contributor)
+            )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-display font-bold text-base text-white truncate">
-              {contributor?.display_handle
-                ? contributor.display_handle
-                : contributor
-                  ? "مساهم " + TRUST_LEVEL_LABELS[contributor.trust_level]
-                  : "مساهم مجهول"}
-            </div>
-            <div className="text-[11px] text-white/80 font-mono mt-0.5">
-              #{(typeof contributor?.anon_session_id === "string" ? contributor.anon_session_id : contributor?.id ?? "").slice(-4) || "----"}
-              {contributor?.joined_at
-                ? " · منذ " + new Date(contributor.joined_at).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
-                : ""}
-            </div>
+            {statsLoading ? (
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-32 bg-white/40 rounded" />
+                <Skeleton className="h-3 w-24 bg-white/30 rounded" />
+              </div>
+            ) : (
+              <>
+                <div className="font-display font-bold text-base text-white truncate">
+                  {contributor?.display_handle
+                    ? contributor.display_handle
+                    : contributor
+                      ? "مساهم " + TRUST_LEVEL_LABELS[contributor.trust_level]
+                      : "مساهم مجهول"}
+                </div>
+                <div className="text-[11px] text-white/80 font-mono mt-0.5">
+                  #{(typeof contributor?.anon_session_id === "string" ? contributor.anon_session_id : contributor?.id ?? "").slice(-4) || "----"}
+                  {contributor?.joined_at
+                    ? " · منذ " + new Date(contributor.joined_at).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
+                    : ""}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Stats — always show the 3 boxes with values (0 while loading), never skeleton */}
+        {/* Stats — show skeleton while loading to avoid old→new flash */}
         <div className="grid grid-cols-3 gap-2">
           {[
             { val: trustScoreTotal, label: "نقطة ثقة" },
@@ -215,12 +248,21 @@ export default function AccountPage() {
           ].map(({ val, label }) => (
             <div
               key={label}
-              className="rounded-xl border border-white/30 bg-white/25 p-2.5 text-center"
+              className="rounded-xl border border-white/30 bg-white/25 p-2.5 text-center min-h-[3.5rem]"
             >
-              <div className="font-display font-extrabold text-2xl leading-none text-white">
-                {toArabicNumerals(val)}
-              </div>
-              <div className="text-[10px] text-white/80 mt-1">{label}</div>
+              {statsLoading ? (
+                <div className="flex flex-col items-center gap-1">
+                  <Skeleton className="h-7 w-10 bg-white/40 rounded" />
+                  <div className="text-[10px] text-white/80">{label}</div>
+                </div>
+              ) : (
+                <>
+                  <div className="font-display font-extrabold text-2xl leading-none text-white">
+                    {toArabicNumerals(val)}
+                  </div>
+                  <div className="text-[10px] text-white/80 mt-1">{label}</div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -235,33 +277,54 @@ export default function AccountPage() {
           </div>
         )}
 
-        {/* Trust level */}
+        {/* Trust level — show skeleton while loading */}
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مستوى الثقة</div>
           <div className="bg-white rounded-2xl p-4 border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-display font-bold text-sm text-ink">
-                {TRUST_LEVEL_LABELS[contributor?.trust_level ?? "new"]}
-              </span>
-              <span className="text-xs text-mist bg-fog border border-border rounded-full px-2.5 py-0.5">
-                المستوى {contributor?.trust_level === "new" ? "1" : contributor?.trust_level === "regular" ? "2" : contributor?.trust_level === "trusted" ? "3" : "4"}
-              </span>
-            </div>
-            <TrustLevelBar level={contributor?.trust_level ?? "new"} />
-            {contributor && (
-              <div className="mt-3 text-xs text-mist text-center bg-fog rounded-lg px-3 py-2">
-                {getReportsToNextLevel(contributor.trust_level, contributor.report_count) > 0
-                  ? `أضف ${toArabicNumerals(getReportsToNextLevel(contributor.trust_level, contributor.report_count))} أسعار للانتقال للمستوى التالي`
-                  : "وصلت للمستوى الأعلى 🎉"}
+            {statsLoading ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                </div>
+                <Skeleton className="h-8 w-full rounded" />
+                <Skeleton className="h-8 w-3/4 mx-auto rounded-lg" />
               </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display font-bold text-sm text-ink">
+                    {TRUST_LEVEL_LABELS[contributor?.trust_level ?? "new"]}
+                  </span>
+                  <span className="text-xs text-mist bg-fog border border-border rounded-full px-2.5 py-0.5">
+                    المستوى {contributor?.trust_level === "new" ? "1" : contributor?.trust_level === "regular" ? "2" : contributor?.trust_level === "trusted" ? "3" : "4"}
+                  </span>
+                </div>
+                <TrustLevelBar level={contributor?.trust_level ?? "new"} />
+                {contributor && (
+                  <div className="mt-3 text-xs text-mist text-center bg-fog rounded-lg px-3 py-2">
+                    {getReportsToNextLevel(contributor.trust_level, contributor.report_count) > 0
+                      ? `أضف ${toArabicNumerals(getReportsToNextLevel(contributor.trust_level, contributor.report_count))} أسعار للانتقال للمستوى التالي`
+                      : "وصلت للمستوى الأعلى 🎉"}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        {/* My contributions — empty state */}
+        {/* My contributions — loader, empty state, or link */}
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مساهماتي</div>
-          {(contributor?.report_count ?? 0) === 0 ? (
+          {contributionsLoading ? (
+            <div className="bg-white rounded-2xl p-6 border border-border">
+              <div className="space-y-3 flex flex-col items-center">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-10 w-32 rounded-full" />
+              </div>
+            </div>
+          ) : (contributor?.report_count ?? 0) === 0 ? (
             <div className="bg-white rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
               <div className="text-3xl mb-2">📋</div>
               <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر بعد</div>
@@ -288,22 +351,46 @@ export default function AccountPage() {
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الإعدادات</div>
           <div className="bg-white rounded-2xl border border-border overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setOpenAreaPicker(true)}
-              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-fog text-right"
-            >
-              <span className="text-sm text-ink">منطقتي</span>
-              <span className="text-sm text-mist">{area?.name_ar ?? savedArea?.name_ar ?? "—"} ›</span>
-            </button>
-            <button
-              type="button"
-              onClick={openHandleModal}
-              className="w-full flex items-center justify-between px-4 py-3.5 border-b border-fog text-right"
-            >
-              <span className="text-sm text-ink">اسم العرض</span>
-              <span className="text-sm text-mist">{contributor?.display_handle ?? "غير محدد"} ›</span>
-            </button>
+            <div className="border-b border-fog">
+              <button
+                type="button"
+                onClick={() => !statsLoading && !isUpdatingArea && setOpenAreaPicker(true)}
+                disabled={statsLoading || isUpdatingArea}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-right disabled:opacity-90"
+              >
+                <span className="text-sm text-ink">منطقتي</span>
+                {(statsLoading || isUpdatingArea) ? (
+                  <LoaderDots size="sm" className="flex-shrink-0" />
+                ) : (
+                  <span className="text-sm text-mist">{area?.name_ar ?? savedArea?.name_ar ?? "—"} ›</span>
+                )}
+              </button>
+              {areaError && !openAreaPicker && (
+                <div className="px-4 pb-2">
+                  <ApiErrorBox message={areaError} onDismiss={() => setAreaError(null)} />
+                </div>
+              )}
+            </div>
+            <div className="border-b border-fog">
+              <button
+                type="button"
+                onClick={() => !statsLoading && !isUpdatingHandle && openHandleModal()}
+                disabled={statsLoading || isUpdatingHandle}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-right disabled:opacity-90"
+              >
+                <span className="text-sm text-ink">اسم العرض</span>
+                {(statsLoading || isUpdatingHandle) ? (
+                  <LoaderDots size="sm" className="flex-shrink-0" />
+                ) : (
+                  <span className="text-sm text-mist">{contributor?.display_handle ?? "غير محدد"} ›</span>
+                )}
+              </button>
+              {editHandleError && !openEditHandle && (
+                <div className="px-4 pb-2">
+                  <ApiErrorBox message={editHandleError} onDismiss={() => setEditHandleError(null)} />
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-fog">
               <span className="text-sm text-ink">الإشعارات</span>
               <span className="text-xs text-mist bg-fog px-2 py-0.5 rounded-full">قريباً</span>
@@ -367,9 +454,6 @@ export default function AccountPage() {
                 <h2 className="font-display font-bold text-ink">اختر المنطقة</h2>
                 <button type="button" onClick={() => setOpenAreaPicker(false)} className="text-mist hover:text-ink p-1 text-lg leading-none" aria-label="إغلاق">×</button>
               </div>
-              {areaError && (
-                <div className="mx-4 mt-2 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{areaError}</div>
-              )}
               <div className="overflow-y-auto no-scrollbar flex-1 px-4 py-3">
                 {govOrder.map((gov) => {
                   const govAreas = grouped[gov];

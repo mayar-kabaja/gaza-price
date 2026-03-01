@@ -9,6 +9,7 @@ import {
   fetchProduct,
   fetchPrices,
   fetchContributorMe,
+  fetchContributorMeReports,
   fetchReports,
 } from "@/lib/queries/fetchers";
 import { apiFetch } from "@/lib/api/fetch";
@@ -94,6 +95,28 @@ export function useProductsSearch(search: string, limit = 10) {
   });
 }
 
+// ── My reports (contributor's own, infinite) ──
+const MY_REPORTS_PAGE_SIZE = 20;
+
+export function useContributorMeReportsInfinite(status: string = "all") {
+  return useInfiniteQuery({
+    queryKey: queryKeys.contributorMeReports(status, MY_REPORTS_PAGE_SIZE),
+    queryFn: async ({ pageParam }) =>
+      fetchContributorMeReports({
+        status,
+        limit: MY_REPORTS_PAGE_SIZE,
+        offset: pageParam as number,
+      }),
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((acc, p) => acc + p.reports.length, 0);
+      if (lastPage.reports.length < MY_REPORTS_PAGE_SIZE) return undefined;
+      return loaded;
+    },
+    initialPageParam: 0,
+    staleTime: 60 * 1000,
+  });
+}
+
 // ── Reports (infinite, cached) ──
 const REPORTS_PAGE_SIZE = 20;
 
@@ -139,11 +162,12 @@ export function usePrices(params: {
 }
 
 // ── Contributor me (for PATCH we use mutation) ──
-export function useContributorMe() {
+export function useContributorMe(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.contributorMe,
     queryFn: () => fetchContributorMe(),
     staleTime: 60 * 1000,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -166,7 +190,19 @@ export function useUpdateContributorMe() {
       if (!res.ok) throw { status: res.status, data };
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      /** Merge PATCH response into cache so report_count etc. are preserved (PATCH only returns display_handle, area). */
+      queryClient.setQueryData(queryKeys.contributorMe, (old: unknown) => {
+        if (!old || typeof old !== "object") return old;
+        const o = old as Record<string, unknown>;
+        const patch = data as Record<string, unknown>;
+        return {
+          ...o,
+          handle: patch.display_handle ?? o.handle,
+          display_handle: patch.display_handle ?? o.display_handle,
+          area: patch.area ?? o.area,
+        };
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
     },
   });
@@ -201,6 +237,8 @@ export function useSubmitReport() {
       queryClient.invalidateQueries({ queryKey: queryKeys.prices(variables.product_id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.product(variables.product_id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
+      queryClient.invalidateQueries({ queryKey: ["contributors", "me", "reports"] });
       queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
@@ -233,6 +271,7 @@ export function useSuggestProduct() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
     },
   });
 }
