@@ -8,7 +8,6 @@ interface PriceStatsProps {
 export function PriceStats({ stats }: PriceStatsProps) {
   const items = [
     { label: "متوسط ₪", value: stats.avg_price.toFixed(2) },
-    { label: "وسيط ₪", value: stats.median_price.toFixed(2) },
     { label: "تقارير", value: toArabicNumerals(stats.report_count) },
   ];
 
