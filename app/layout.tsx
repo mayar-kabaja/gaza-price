@@ -5,7 +5,8 @@ import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesC
 import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gaza-price.vercel.app";
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL || "https://gaza-price-frontend.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -21,11 +22,20 @@ export const metadata: Metadata = {
     description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
     type: "website",
     locale: "ar_EG",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "غزة بريس — أسعار شفافة · قوة المجتمع",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "غزة بريس — أسعار شفافة",
     description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
+    images: ["/opengraph-image"],
   },
 };
 
