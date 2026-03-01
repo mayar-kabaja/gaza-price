@@ -62,7 +62,7 @@ export function HomeProductCard({ product, isRefetching = false }: HomeProductCa
     : [];
   const pricesFromFetch = (data?.prices ?? []) as Price[];
   const prices = hasPricePreview ? pricesFromPreview : pricesFromFetch;
-  const showLoading = !hasPricePreview && isLoading;
+  const showLoading = !hasPricePreview && (isLoading || sessionLoading);
 
   const total = data?.total ?? product.price_preview?.length ?? 0;
   const minPrice = prices.length > 0 ? Math.min(...prices.map((x) => x.price)) : 0;

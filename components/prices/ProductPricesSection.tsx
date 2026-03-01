@@ -14,7 +14,7 @@ interface ProductPricesSectionProps {
 
 export function ProductPricesSection({ productId, productName, areaId }: ProductPricesSectionProps) {
   const { accessToken, loading: sessionLoading } = useSession();
-  const { data, isLoading, isError, isFetching } = usePrices({
+  const { data, isLoading, isError, isFetching, isPending } = usePrices({
     productId,
     areaId,
     sort: "price_asc",
@@ -31,7 +31,7 @@ export function ProductPricesSection({ productId, productName, areaId }: Product
     report_count: data?.total ?? 0,
   };
 
-  if (sessionLoading || isLoading) {
+  if (sessionLoading || isLoading || (isPending && !data)) {
     return (
       <div className="px-4 flex justify-center py-12">
         <LoaderDots size="md" />

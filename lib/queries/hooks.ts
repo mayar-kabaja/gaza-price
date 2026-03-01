@@ -9,6 +9,7 @@ import {
   fetchProduct,
   fetchPrices,
   fetchContributorMe,
+  fetchReports,
 } from "@/lib/queries/fetchers";
 import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -90,6 +91,25 @@ export function useProductsSearch(search: string, limit = 10) {
     queryFn: () => fetchProducts({ search, limit }),
     enabled: search.trim().length >= 1,
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+// ── Reports (infinite, cached) ──
+const REPORTS_PAGE_SIZE = 20;
+
+export function useReportsInfinite(filter: string, areaId?: string | null) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.reports(filter, areaId, REPORTS_PAGE_SIZE),
+    queryFn: async ({ pageParam }) =>
+      fetchReports({
+        filter,
+        areaId,
+        limit: REPORTS_PAGE_SIZE,
+        offset: pageParam as number,
+      }),
+    staleTime: 60 * 1000,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.next_offset ?? undefined,
   });
 }
 
@@ -181,6 +201,7 @@ export function useSubmitReport() {
       queryClient.invalidateQueries({ queryKey: queryKeys.prices(variables.product_id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.product(variables.product_id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 }

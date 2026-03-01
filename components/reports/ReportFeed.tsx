@@ -1,85 +1,43 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { ReportCard } from "./ReportCard";
-import type { ReportFeedItem } from "@/types/app";
 import type { ReportFilterValue } from "./ReportFilters";
-import { useSession } from "@/hooks/useSession";
-import { apiFetch } from "@/lib/api/fetch";
-
-const PAGE_SIZE = 20;
+import { useReportsInfinite } from "@/lib/queries/hooks";
 
 interface ReportFeedProps {
   filter: ReportFilterValue;
   areaId: string | null;
 }
 
-interface ReportsResponse {
-  reports: ReportFeedItem[];
-  total: number;
-  next_offset: number | null;
-}
-
 export function ReportFeed({ filter, areaId }: ReportFeedProps) {
-  useSession(); // subscribe to session so token refresh (e.g. from apiFetch) updates state
-  const [reports, setReports] = useState<ReportFeedItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [nextOffset, setNextOffset] = useState<number | null>(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useReportsInfinite(filter, areaId);
 
-  const fetchPage = useCallback(
-    async (offset: number, append: boolean) => {
-      const params = new URLSearchParams();
-      params.set("filter", filter === "my_area" ? "all" : filter);
-      if (filter === "my_area" && areaId) params.set("area_id", areaId);
-      params.set("limit", String(PAGE_SIZE));
-      params.set("offset", String(offset));
+  const reports = data?.pages?.flatMap((p) => p.reports) ?? [];
 
-      const res = await apiFetch(`/api/reports?${params.toString()}`, {
-        credentials: "include",
-      });
-      const data = (await res.json()) as ReportsResponse | { error?: string; message?: string };
-
-      if (!res.ok) {
-        const err = data && typeof data === "object" && "message" in data ? (data.message as string) : "حدث خطأ غير متوقع";
-        setError(err);
-        return;
-      }
-
-      const payload = data as ReportsResponse;
-      setReports((prev) => (append ? [...prev, ...payload.reports] : payload.reports));
-      setTotal(payload.total);
-      setNextOffset(payload.next_offset);
-      setError(null);
-    },
-    [filter, areaId]
-  );
-
-  useEffect(() => {
-    setLoading(true);
-    setReports([]);
-    setNextOffset(0);
-    fetchPage(0, false).finally(() => setLoading(false));
-  }, [fetchPage]);
-
-  async function loadMore() {
-    if (nextOffset == null || loadingMore) return;
-    setLoadingMore(true);
-    await fetchPage(nextOffset, true);
-    setLoadingMore(false);
-  }
-
-  if (error) {
+  if (isError) {
+    const errObj = error as { data?: { message?: string } } | Error | undefined;
+    const message =
+      errObj && typeof errObj === "object" && "data" in errObj && errObj.data?.message
+        ? errObj.data.message
+        : error instanceof Error
+          ? error.message
+          : "حدث خطأ غير متوقع";
     return (
       <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 font-body">
-        {error}
+        {message}
       </div>
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -113,15 +71,15 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
       {reports.map((report) => (
         <ReportCard key={report.id} report={report} />
       ))}
-      {nextOffset != null && (
+      {hasNextPage && (
         <div className="py-4 flex justify-center">
           <button
             type="button"
-            onClick={loadMore}
-            disabled={loadingMore}
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
             className="px-5 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50"
           >
-            {loadingMore ? "جاري التحميل..." : "تحميل المزيد"}
+            {isFetchingNextPage ? "جاري التحميل..." : "تحميل المزيد"}
           </button>
         </div>
       )}

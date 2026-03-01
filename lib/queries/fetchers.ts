@@ -18,6 +18,8 @@ export const queryKeys = {
   prices: (productId: string, areaId?: string, sort?: string, limit?: number) =>
     ["prices", productId, areaId, sort, limit],
   contributorMe: ["contributors", "me"] as const,
+  reports: (filter: string, areaId?: string | null, limit?: number) =>
+    ["reports", filter, areaId ?? "", limit ?? 20] as const,
 };
 
 // ── Fetchers (return parsed JSON, throw on !res.ok for mutations) ──
@@ -99,4 +101,31 @@ export async function fetchPrices(params: {
 
 export async function fetchContributorMe(headers?: Record<string, string>): Promise<{ contributor: unknown }> {
   return getJson("/api/contributors/me", { headers });
+}
+
+export interface ReportsResponse {
+  reports: import("@/types/app").ReportFeedItem[];
+  total: number;
+  next_offset: number | null;
+}
+
+export async function fetchReports(params: {
+  filter: string;
+  areaId?: string | null;
+  limit?: number;
+  offset: number;
+}): Promise<ReportsResponse> {
+  const sp = new URLSearchParams();
+  sp.set("filter", params.filter === "my_area" ? "all" : params.filter);
+  if (params.filter === "my_area" && params.areaId) sp.set("area_id", params.areaId);
+  sp.set("limit", String(params.limit ?? 20));
+  sp.set("offset", String(params.offset));
+  const res = await apiFetch(`/api/reports?${sp.toString()}`, { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    reports: data?.reports ?? [],
+    total: data?.total ?? 0,
+    next_offset: typeof data?.next_offset === "number" ? data.next_offset : null,
+  };
 }

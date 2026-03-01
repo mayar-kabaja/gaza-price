@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
@@ -23,10 +23,18 @@ export function AppHeader() {
   const { accessToken } = useSession();
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [areaError, setAreaError] = useState<string | null>(null);
+  const [areaJustChanged, setAreaJustChanged] = useState(false);
 
   const { data: areasData, isError: areasError } = useAreas();
   const areas = areasData?.areas ?? [];
   const updateMe = useUpdateContributorMe();
+
+  useEffect(() => {
+    if (areaJustChanged) {
+      const t = setTimeout(() => setAreaJustChanged(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [areaJustChanged]);
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
     const g = a.governorate;
@@ -37,18 +45,21 @@ export function AppHeader() {
   const govOrder = ["north", "central", "south"];
 
   async function handleSelectArea(selected: Area) {
+    const wasDifferent = area?.id !== selected.id;
     saveArea(selected);
     setAreaError(null);
+    setOpenAreaPicker(false);
+    if (wasDifferent) setAreaJustChanged(true);
     try {
       await updateMe.mutateAsync({
         area_id: selected.id,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
-      setOpenAreaPicker(false);
     } catch (err: unknown) {
       const res = err && typeof err === "object" && "status" in err ? { status: (err as { status: number }).status } : { status: 500 };
       const data = err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {};
       handleApiError(res as Response, data, setAreaError, router);
+      setOpenAreaPicker(true);
     }
   }
 
@@ -69,10 +80,19 @@ export function AppHeader() {
           <button
             type="button"
             onClick={() => setOpenAreaPicker(true)}
-            className="flex items-center gap-1.5 bg-white/12 border border-white/20 rounded-full px-3 py-1 hover:bg-white/20 transition-colors text-right"
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-3 py-1 transition-all text-right cursor-pointer",
+              areaJustChanged
+                ? "bg-white/25 border-2 border-white shadow-[0_0_0_2px_rgba(255,255,255,0.3)]"
+                : "bg-white/12 border border-white/20 hover:bg-white/20"
+            )}
             aria-label="تغيير المنطقة"
           >
-            <div className="w-1.5 h-1.5 rounded-full bg-sand" />
+            {areaJustChanged ? (
+              <span className="text-white" aria-hidden></span>
+            ) : (
+              <div className="w-1.5 h-1.5 rounded-full bg-sand" />
+            )}
             <span className="text-[11px] text-white/90 font-body">{area.name_ar}</span>
           </button>
         ) : null}

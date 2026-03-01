@@ -33,8 +33,13 @@ export function HomeData() {
     isFetchingNextPage,
   } = useProductsInfinite(effectiveCategoryId);
 
-  const products =
-    infiniteData?.pages?.flatMap((p) => p.products) ?? [];
+  const rawProducts = infiniteData?.pages?.flatMap((p) => p.products) ?? [];
+  const products = [...rawProducts].sort((a, b) => {
+    const aHasPrices = Array.isArray(a.price_preview) && a.price_preview.length > 0;
+    const bHasPrices = Array.isArray(b.price_preview) && b.price_preview.length > 0;
+    if (aHasPrices === bHasPrices) return 0;
+    return aHasPrices ? -1 : 1;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
