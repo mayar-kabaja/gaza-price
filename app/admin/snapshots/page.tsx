@@ -75,24 +75,24 @@ export default function AdminSnapshotsPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="mb-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+          <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2 min-w-0">
             <input
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-3 py-1.5 text-sm text-[#D8E4F0]"
+              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
             />
-            <span className="text-[#4E6070]">–</span>
+            <span className="text-[#4E6070] text-xs flex-shrink-0">–</span>
             <input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-3 py-1.5 text-sm text-[#D8E4F0]"
+              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
             />
             <button
               onClick={handleApplyFilters}
-              className="rounded-lg bg-[#4A7C59] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#3A6347]"
+              className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
             >
               Apply
             </button>
@@ -100,7 +100,7 @@ export default function AdminSnapshotsPage() {
           <button
             onClick={handleRunSnapshotsJob}
             disabled={runningJob}
-            className="rounded-lg border border-[#4A7C59] bg-[#18212C] px-4 py-2 text-sm font-medium text-[#4A7C59] hover:bg-[#4A7C59]/20 disabled:opacity-50"
+            className="flex-shrink-0 rounded-lg border border-[#4A7C59] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[#4A7C59] hover:bg-[#4A7C59]/20 disabled:opacity-50"
           >
             {runningJob ? "Running…" : "Run snapshots now"}
           </button>

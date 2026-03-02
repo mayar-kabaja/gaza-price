@@ -50,28 +50,26 @@ export default function AdminLogsPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-3 py-1.5 text-sm text-[#D8E4F0]"
-            />
-            <span className="text-[#4E6070]">–</span>
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-3 py-1.5 text-sm text-[#D8E4F0]"
-            />
-            <button
-              onClick={handleApplyFilters}
-              className="rounded-lg bg-[#4A7C59] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#3A6347]"
-            >
-              Apply
-            </button>
-          </div>
+        <div className="mb-4 flex flex-nowrap items-center gap-1.5 sm:gap-2 min-w-0">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
+          />
+          <span className="text-[#4E6070] text-xs flex-shrink-0">–</span>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
+          />
+          <button
+            onClick={handleApplyFilters}
+            className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
+          >
+            Apply
+          </button>
         </div>
 
         <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">

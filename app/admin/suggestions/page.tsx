@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getStoredToken } from "@/lib/auth/token";
 import { apiFetch } from "@/lib/api/fetch";
 import { useAdminToast } from "@/components/admin/AdminToast";
@@ -24,6 +25,7 @@ const ADD_FORM_EMPTY = { name_ar: "", name_en: "", category_id: "", unit: "", un
 
 export default function AdminSuggestionsPage() {
   const { toast } = useAdminToast();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<PendingProduct[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,15 @@ export default function AdminSuggestionsPage() {
       .then((d) => setCategories(Array.isArray(d) ? d : []))
       .catch(() => setCategories([]));
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("add") === "1") {
+      setAddForm(ADD_FORM_EMPTY);
+      setShowAddConfirm(false);
+      setShowAddModal(true);
+      window.history.replaceState({}, "", "/admin/suggestions");
+    }
+  }, [searchParams]);
 
   const filteredProducts = search.trim()
     ? products.filter((p) => {
@@ -166,17 +177,17 @@ export default function AdminSuggestionsPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-wrap gap-3 items-center">
+        <div className="mb-4 flex flex-nowrap gap-2 sm:gap-3 items-center">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search product, category, or suggested by..."
-            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] min-w-[200px]"
+            placeholder="Search product, category..."
+            className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
           />
           <button
             onClick={openAddModal}
-            className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
+            className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
           >
             + Add Suggestion
           </button>

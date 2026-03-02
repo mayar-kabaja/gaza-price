@@ -289,33 +289,37 @@ export default function AdminReportsPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-wrap gap-3 items-center">
-          {(["all", "today", "trusted"] as const).map((f) => (
+        <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
+          <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
+            {(["all", "today", "trusted"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => { setFilter(f); setOffset(0); }}
+                className={`rounded-lg px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+                  filter === f
+                    ? "bg-[#4A7C59] text-white"
+                    : "border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:text-[#D8E4F0]"
+                }`}
+              >
+                {f === "all" ? "All" : f === "today" ? "Today" : "Trusted"}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-nowrap gap-2 sm:gap-3 items-center min-w-0">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search product, area or price..."
+              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+            />
             <button
-              key={f}
-              onClick={() => { setFilter(f); setOffset(0); }}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                filter === f
-                  ? "bg-[#4A7C59] text-white"
-                  : "border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:text-[#D8E4F0]"
-              }`}
+              onClick={openAddModal}
+              className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
             >
-              {f === "all" ? "All" : f === "today" ? "Today" : "Trusted"}
+              + Add Report
             </button>
-          ))}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search product, area or price..."
-            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] min-w-[200px]"
-          />
-          <button
-            onClick={openAddModal}
-            className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
-          >
-            + Add Report
-          </button>
+          </div>
         </div>
         <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
           {loading ? (

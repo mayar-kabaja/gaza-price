@@ -107,12 +107,20 @@ export default function AdminDashboardPage() {
                 <div className="text-[13px] font-semibold text-[#D8E4F0]">Recent Suggestions</div>
                 <div className="text-[11px] text-[#8FA3B8] mt-0.5">Product suggestions · <span className="text-[#E8C98A] font-medium">{stats.pending_products ?? pendingProducts.length}</span> pending</div>
               </div>
-              <Link
-                href="/admin/suggestions"
-                className="rounded-lg border border-[#C9A96E] bg-[#C9A96E20] px-3 py-1.5 text-xs font-medium text-[#E8C98A] hover:bg-[#C9A96E30] transition-colors inline-block"
-              >
-                View All
-              </Link>
+              <div className="flex gap-2 items-center">
+                <Link
+                  href="/admin/suggestions?add=1"
+                  className="rounded-lg bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] transition-colors inline-block"
+                >
+                  + Add Suggest
+                </Link>
+                <Link
+                  href="/admin/suggestions"
+                  className="rounded-lg border border-[#C9A96E] bg-[#C9A96E20] px-3 py-1.5 text-xs font-medium text-[#E8C98A] hover:bg-[#C9A96E30] transition-colors inline-block"
+                >
+                  View All
+                </Link>
+              </div>
             </div>
             <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
               {pendingProducts.length === 0 ? (
