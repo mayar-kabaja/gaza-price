@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getStoredToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Category = {
   id: string;
@@ -23,6 +24,7 @@ export default function AdminCategoriesPage() {
   const { toast } = useAdminToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   // Add / Edit modal
   const [showFormModal, setShowFormModal] = useState(false);
@@ -47,6 +49,14 @@ export default function AdminCategoriesPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const filteredCategories = search.trim()
+    ? categories.filter(
+        (c) =>
+          (c.name_ar?.toLowerCase() ?? "").includes(search.trim().toLowerCase()) ||
+          (c.name_en?.toLowerCase() ?? "").includes(search.trim().toLowerCase())
+      )
+    : categories;
 
   function openAddModal() {
     setFormMode("add");
@@ -166,10 +176,17 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-3 items-center">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search categories..."
+          className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] min-w-[200px]"
+        />
         <button
           onClick={openAddModal}
-          className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
+          className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
         >
           + Add Category
         </button>
@@ -180,13 +197,16 @@ export default function AdminCategoriesPage() {
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
           </div>
-        ) : categories.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[#4E6070]">No categories</div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="py-12 text-center text-sm text-[#4E6070]">
+            {search.trim() ? "No categories match your search." : "No categories"}
+          </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
             <table className="w-full min-w-[400px]">
               <thead>
                 <tr className="border-b border-[#243040]">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Icon</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Name</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Order</th>
@@ -194,8 +214,9 @@ export default function AdminCategoriesPage() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map((c) => (
+                {filteredCategories.map((c, i) => (
                   <tr key={c.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                    <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{i + 1}</td>
                     <td className="px-5 py-3 text-lg">{c.icon ?? "—"}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{c.name_ar}</td>
                     <td className="px-5 py-3 font-mono text-xs text-[#4E6070]">{c.sort_order ?? "—"}</td>
@@ -203,14 +224,16 @@ export default function AdminCategoriesPage() {
                       <div className="flex gap-2 items-center flex-wrap">
                         <button
                           onClick={() => openEditModal(c)}
-                          className="text-[11px] text-[#8FA3B8] hover:text-[#D8E4F0] hover:underline"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"
                         >
+                          <EditIcon />
                           Edit
                         </button>
                         <button
                           onClick={() => openDeleteModal(c)}
-                          className="text-[11px] text-[#E05A4E] hover:text-red-400 hover:underline"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"
                         >
+                          <RemoveIcon />
                           Remove
                         </button>
                       </div>
@@ -355,7 +378,7 @@ export default function AdminCategoriesPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleteLoading}
-                className="flex-1 rounded-lg bg-[#E05A4E] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors"
               >
                 {deleteLoading ? "..." : "Yes, Remove"}
               </button>

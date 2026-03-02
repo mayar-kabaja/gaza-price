@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getStoredToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { ViewIcon, EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Category = {
   id: string;
@@ -53,9 +54,10 @@ export default function AdminProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  function load() {
+  function load(overrideOffset?: number) {
     setLoading(true);
-    const params = new URLSearchParams({ limit: String(limit), offset: String(offset), all: "1" });
+    const off = overrideOffset ?? offset;
+    const params = new URLSearchParams({ limit: String(limit), offset: String(off), all: "1" });
     if (search.trim()) params.set("search", search.trim());
     fetch(`/api/products?${params.toString()}`)
       .then((r) => r.json())
@@ -77,6 +79,7 @@ export default function AdminProductsPage() {
     if (prevSearchRef.current !== search) {
       prevSearchRef.current = search;
       setOffset(0);
+      load(0);
       return;
     }
     load();
@@ -230,14 +233,8 @@ export default function AdminProductsPage() {
           className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
         />
         <button
-          onClick={() => load()}
-          className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
-        >
-          Search
-        </button>
-        <button
           onClick={openAddModal}
-          className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
+          className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
         >
           + Add Product
         </button>
@@ -257,6 +254,7 @@ export default function AdminProductsPage() {
             <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="border-b border-[#243040]">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Category</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Unit</th>
@@ -264,8 +262,9 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map((p) => (
+                {products.map((p, i) => (
                   <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                    <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{p.name_ar}</td>
                     <td className="px-5 py-3 text-xs text-[#8FA3B8]">{p.category?.name_ar ?? "—"}</td>
                     <td className="px-5 py-3 text-xs text-[#4E6070]">{p.unit ?? "—"} {p.unit_size ?? ""}</td>
@@ -274,20 +273,23 @@ export default function AdminProductsPage() {
                         <Link
                           href={`/product/${p.id}`}
                           target="_blank"
-                          className="text-[11px] text-[#6BA880] hover:underline"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6] bg-[#3B82F618] px-3 py-1.5 text-xs font-medium text-[#60A5FA] hover:bg-[#3B82F628] transition-colors"
                         >
+                          <ViewIcon />
                           View
                         </Link>
                         <button
                           onClick={() => openEditModal(p)}
-                          className="text-[11px] text-[#8FA3B8] hover:text-[#D8E4F0] hover:underline"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"
                         >
+                          <EditIcon />
                           Edit
                         </button>
                         <button
                           onClick={() => openDeleteModal(p)}
-                          className="text-[11px] text-[#E05A4E] hover:text-red-400 hover:underline"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"
                         >
+                          <RemoveIcon />
                           Remove
                         </button>
                       </div>
@@ -467,7 +469,7 @@ export default function AdminProductsPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={deleteLoading}
-                className="flex-1 rounded-lg bg-[#E05A4E] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors"
               >
                 {deleteLoading ? "..." : "Yes, Remove"}
               </button>

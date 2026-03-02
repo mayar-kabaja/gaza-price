@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { playNavSound } from "@/lib/sounds";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { clearStoredToken } from "@/lib/auth/token";
 
@@ -116,6 +117,7 @@ type AdminLayoutProps = {
   adminName?: string;
   pendingCount?: number;
   flagsCount?: number;
+  sidebarCounts?: Record<string, number>;
 };
 
 function NavLink({
@@ -124,6 +126,7 @@ function NavLink({
   icon,
   badge,
   badgeCount,
+  count,
   pathname,
   badgeType = "olive",
 }: {
@@ -132,6 +135,7 @@ function NavLink({
   icon: string;
   badge?: string;
   badgeCount?: number;
+  count?: number;
   pathname: string;
   badgeType?: "olive" | "sand" | "red";
 }) {
@@ -146,34 +150,33 @@ function NavLink({
       : badgeType === "sand"
         ? "bg-[#C9A96E] text-[#1a1a1a]"
         : "bg-[#4A7C59] text-white";
+  const displayCount = badgeCount ?? count;
+  const showBadge = badge && displayCount !== undefined && displayCount > 0;
+  const showCount = !badge && count !== undefined;
 
   return (
     <Link
       href={href}
       className={`${base} ${active ? activeCls : inactiveCls}`}
+      onClick={() => playNavSound()}
     >
       {iconMap[icon]}
       <span>{label}</span>
-      {badge === "pending" && badgeCount !== undefined && badgeCount > 0 && (
+      {showBadge && (
         <span className={`ml-auto ${badgeCls} text-[10px] font-semibold px-1.5 py-0.5 rounded-full`}>
-          {badgeCount}
+          {displayCount > 99 ? "99+" : displayCount}
         </span>
       )}
-      {badge === "red" && badgeCount !== undefined && badgeCount > 0 && (
-        <span className={`ml-auto ${badgeCls} text-[10px] font-semibold px-1.5 py-0.5 rounded-full`}>
-          {badgeCount}
-        </span>
-      )}
-      {badge === "sand" && (
-        <span className="ml-auto bg-[#C9A96E] text-[#1a1a1a] text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
-          1.2k
+      {showCount && (
+        <span className="ml-auto text-[10px] font-medium text-[#4E6070] tabular-nums">
+          ({count})
         </span>
       )}
     </Link>
   );
 }
 
-export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, flagsCount = 0 }: AdminLayoutProps) {
+export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, flagsCount = 0, sidebarCounts = {} }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -231,23 +234,23 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Content</div>
         <NavLink href="/admin/suggestions" label="Suggestions" icon="clipboard" badge="pending" badgeCount={pendingCount} pathname={pathname} />
-        <NavLink href="/admin/products" label="Products" icon="package" pathname={pathname} />
-        <NavLink href="/admin/categories" label="Categories" icon="tag" pathname={pathname} />
-        <NavLink href="/admin/areas" label="Areas" icon="map" pathname={pathname} />
-        <NavLink href="/admin/stores" label="Stores" icon="store" pathname={pathname} />
+        <NavLink href="/admin/products" label="Products" icon="package" count={sidebarCounts.products} pathname={pathname} />
+        <NavLink href="/admin/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
+        <NavLink href="/admin/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
+        <NavLink href="/admin/stores" label="Stores" icon="store" count={sidebarCounts.stores} pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Community</div>
-        <NavLink href="/admin/users" label="Users" icon="users" badge="sand" pathname={pathname} />
-        <NavLink href="/admin/flags" label="Flags" icon="bell" badge="red" badgeCount={flagsCount} pathname={pathname} />
-        <NavLink href="/admin/reports" label="Reports" icon="message" pathname={pathname} />
+        <NavLink href="/admin/users" label="Users" icon="users" count={sidebarCounts.users} pathname={pathname} />
+        <NavLink href="/admin/flags" label="Flags" icon="bell" badge="red" badgeType="red" badgeCount={flagsCount} pathname={pathname} />
+        <NavLink href="/admin/reports" label="Reports" icon="message" count={sidebarCounts.reports} pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">System</div>
-        <NavLink href="/admin/logs" label="Logs" icon="file" pathname={pathname} />
-        <NavLink href="/admin/snapshots" label="Price Snapshots" icon="chart" pathname={pathname} />
+        <NavLink href="/admin/logs" label="Logs" icon="file" count={sidebarCounts.logs} pathname={pathname} />
+        <NavLink href="/admin/snapshots" label="Price Snapshots" icon="chart" count={sidebarCounts.snapshots} pathname={pathname} />
       </nav>
 
       <div className="mt-auto p-3 border-t border-[#243040]">

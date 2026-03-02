@@ -86,6 +86,7 @@ export default function AdminLogsPage() {
               <table className="w-full min-w-[480px]">
                 <thead>
                   <tr className="border-b border-[#243040]">
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Query</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
@@ -94,8 +95,9 @@ export default function AdminLogsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {searchLogs.map((log) => (
+                  {searchLogs.map((log, i) => (
                     <tr key={log.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                      <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                       <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{log.query}</td>
                       <td className="px-5 py-3 text-xs text-[#8FA3B8]">{log.product?.name_ar ?? "—"}</td>
                       <td className="px-5 py-3 text-xs text-[#8FA3B8]">{log.area?.name_ar ?? "—"}</td>

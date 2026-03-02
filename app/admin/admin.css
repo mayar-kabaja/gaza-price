@@ -13,8 +13,8 @@
   --admin-sand: #C9A96E;
   --admin-sand-l: #E8C98A;
   --admin-sand-glow: #C9A96E18;
-  --admin-red: #E05A4E;
-  --admin-red-glow: #E05A4E18;
+  --admin-red: #A85852;
+  --admin-red-glow: #A8585218;
   --admin-sky: #4A9FD4;
   --admin-green: #3FB950;
   --admin-orange: #D4913A;
@@ -39,10 +39,58 @@
   border-right: 1px solid var(--admin-border);
 }
 
-.admin-root .admin-stat-card.olive::before { background: linear-gradient(90deg, var(--admin-olive), var(--admin-olive-l)); }
-.admin-root .admin-stat-card.sand::before { background: linear-gradient(90deg, var(--admin-sand), var(--admin-sand-l)); }
-.admin-root .admin-stat-card.red::before { background: linear-gradient(90deg, var(--admin-red), #F08070); }
-.admin-root .admin-stat-card.sky::before { background: linear-gradient(90deg, var(--admin-sky), #7AC4F0); }
+.admin-root .admin-stat-card {
+  position: relative;
+}
+.admin-root .admin-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 10px 10px 0 0;
+}
+.admin-root .admin-stat-card.olive::before {
+  background: linear-gradient(90deg, var(--admin-olive), var(--admin-olive-l));
+}
+.admin-root .admin-stat-card.olive {
+  background: linear-gradient(135deg, #111820 0%, #0f1a14 100%);
+  border-color: rgba(74, 124, 89, 0.3);
+}
+.admin-root .admin-stat-card.sand::before {
+  background: linear-gradient(90deg, var(--admin-sand), var(--admin-sand-l));
+}
+.admin-root .admin-stat-card.sand {
+  background: linear-gradient(135deg, #111820 0%, #1a1814 100%);
+  border-color: rgba(201, 169, 110, 0.25);
+}
+.admin-root .admin-stat-card.red::before {
+  background: linear-gradient(90deg, var(--admin-red), #F08070);
+}
+.admin-root .admin-stat-card.red {
+  background: linear-gradient(135deg, #111820 0%, #1a1414 100%);
+  border-color: rgba(168, 88, 82, 0.35);
+}
+.admin-root .admin-stat-card.sky::before {
+  background: linear-gradient(90deg, var(--admin-sky), #7AC4F0);
+}
+.admin-root .admin-stat-card.sky {
+  background: linear-gradient(135deg, #111820 0%, #0f141a 100%);
+  border-color: rgba(74, 159, 212, 0.3);
+}
+.admin-root .admin-stat-card:hover {
+  border-color: rgba(74, 124, 89, 0.5);
+}
+.admin-root .admin-stat-card.sand:hover {
+  border-color: rgba(201, 169, 110, 0.45);
+}
+.admin-root .admin-stat-card.red:hover {
+  border-color: rgba(168, 88, 82, 0.55);
+}
+.admin-root .admin-stat-card.sky:hover {
+  border-color: rgba(74, 159, 212, 0.5);
+}
 
 /* Custom scrollbar — dark theme */
 .admin-root ::-webkit-scrollbar {

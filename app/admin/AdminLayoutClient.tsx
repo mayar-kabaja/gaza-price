@@ -43,24 +43,78 @@ function useAdminAuth() {
     }
   }, []);
 
+  const [sidebarCounts, setSidebarCounts] = useState<Record<string, number>>({});
+
   const fetchCounts = useCallback(async (token: string) => {
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" as const };
     try {
-      const [pendingRes, flagsRes] = await Promise.all([
-        fetch("/api/admin/products/pending?limit=1&offset=0", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/admin/flags?limit=1&offset=0", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+      const [
+        pendingRes,
+        flagsRes,
+        productsRes,
+        categoriesRes,
+        areasRes,
+        storesRes,
+        contributorsRes,
+        reportsRes,
+        logsRes,
+        snapshotsRes,
+      ] = await Promise.all([
+        fetch("/api/admin/products/pending?limit=1&offset=0", { headers }),
+        fetch("/api/admin/flags?limit=1&offset=0", { headers }),
+        fetch("/api/products?limit=1&all=1", { headers: { Accept: "application/json" } }),
+        fetch("/api/categories", { headers: { Accept: "application/json" } }),
+        fetch("/api/areas", { headers: { Accept: "application/json" } }),
+        fetch("/api/stores", { headers: { Accept: "application/json" } }),
+        fetch("/api/admin/contributors?limit=1&offset=0", { headers }),
+        fetch("/api/reports?limit=1&offset=0", { headers }),
+        fetch("/api/admin/logs/search?limit=1&offset=0", { headers }),
+        fetch("/api/admin/logs/snapshots?limit=1&offset=0", { headers }),
       ]);
+      const counts: Record<string, number> = {};
       if (pendingRes.ok) {
         const d = (await pendingRes.json()) as { total?: number };
         setPendingCount(d.total ?? 0);
+        counts.suggestions = d.total ?? 0;
       }
       if (flagsRes.ok) {
         const d = (await flagsRes.json()) as { total?: number };
         setFlagsCount(d.total ?? 0);
+        counts.flags = d.total ?? 0;
       }
+      if (productsRes.ok) {
+        const d = (await productsRes.json()) as { total?: number };
+        counts.products = d.total ?? 0;
+      }
+      if (categoriesRes.ok) {
+        const d = await categoriesRes.json();
+        counts.categories = Array.isArray(d) ? d.length : 0;
+      }
+      if (areasRes.ok) {
+        const d = (await areasRes.json()) as { areas?: unknown[] };
+        counts.areas = d?.areas?.length ?? 0;
+      }
+      if (storesRes.ok) {
+        const d = await storesRes.json();
+        counts.stores = Array.isArray(d) ? d.length : 0;
+      }
+      if (contributorsRes.ok) {
+        const d = (await contributorsRes.json()) as { total?: number };
+        counts.users = d.total ?? 0;
+      }
+      if (reportsRes.ok) {
+        const d = (await reportsRes.json()) as { total?: number };
+        counts.reports = d.total ?? 0;
+      }
+      if (logsRes.ok) {
+        const d = (await logsRes.json()) as { total?: number };
+        counts.logs = d.total ?? 0;
+      }
+      if (snapshotsRes.ok) {
+        const d = (await snapshotsRes.json()) as { total?: number };
+        counts.snapshots = d.total ?? 0;
+      }
+      setSidebarCounts(counts);
     } catch {
       // ignore
     }
@@ -75,14 +129,14 @@ function useAdminAuth() {
     });
   }, [checkAuth, fetchCounts]);
 
-  return { admin, loading, pendingCount, flagsCount, refetch: checkAuth };
+  return { admin, loading, pendingCount, flagsCount, sidebarCounts, refetch: checkAuth };
 }
 
 export function AdminLayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isLoginPage = pathname === ADMIN_LOGIN;
-  const { admin, loading, pendingCount, flagsCount } = useAdminAuth();
+  const { admin, loading, pendingCount, flagsCount, sidebarCounts } = useAdminAuth();
 
   useEffect(() => {
     document.documentElement.dir = "ltr";
@@ -126,6 +180,7 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
         adminName={admin.email ?? "Admin"}
         pendingCount={pendingCount}
         flagsCount={flagsCount}
+        sidebarCounts={sidebarCounts}
       >
         {children}
       </AdminLayout>

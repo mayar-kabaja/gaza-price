@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getStoredToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { EditIcon, BanIcon, UnbanIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Area = { id: string; name_ar: string };
 type Contributor = {
@@ -28,6 +29,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
+  const prevSearchRef = useRef(search);
   const [banningId, setBanningId] = useState<string | null>(null);
 
   // Edit modal
@@ -56,11 +58,12 @@ export default function AdminUsersPage() {
 
   const limit = 20;
 
-  function load() {
+  function load(overrideOffset?: number) {
     const token = getStoredToken();
     if (!token) return;
     setLoading(true);
-    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    const off = overrideOffset ?? offset;
+    const params = new URLSearchParams({ limit: String(limit), offset: String(off) });
     if (search.trim()) params.set("search", search.trim());
     fetch(`/api/admin/contributors?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -75,8 +78,14 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
+    if (prevSearchRef.current !== search) {
+      prevSearchRef.current = search;
+      setOffset(0);
+      load(0);
+      return;
+    }
     load();
-  }, [offset]);
+  }, [search, offset]);
 
   useEffect(() => {
     fetch("/api/areas")
@@ -84,12 +93,6 @@ export default function AdminUsersPage() {
       .then((d) => setAreas(d?.areas ?? []))
       .catch(() => setAreas([]));
   }, []);
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setOffset(0);
-    load();
-  }
 
   function openAddModal() {
     setAddForm(FORM_EMPTY);
@@ -266,27 +269,27 @@ export default function AdminUsersPage() {
     verified: "Verified",
   };
 
+  const trustStyles: Record<string, string> = {
+    new: "border-[#64748B35] bg-[#334155] text-[#94A3B8]",
+    regular: "border-[#3B82F635] bg-[#3B82F618] text-[#60A5FA]",
+    trusted: "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]",
+    verified: "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]",
+  };
+
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
         <div className="mb-4 flex flex-wrap gap-3 items-center">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by handle..."
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-            />
-            <button
-              type="submit"
-              className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
-            >
-              Search
-            </button>
-          </form>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (setOffset(0), load(0))}
+            placeholder="Search by handle..."
+            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+          />
           <button
             onClick={openAddModal}
-            className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
+            className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
           >
             + Add User
           </button>
@@ -303,6 +306,7 @@ export default function AdminUsersPage() {
               <table className="w-full min-w-[480px]">
                 <thead>
                   <tr className="border-b border-[#243040]">
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Handle</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Trust</th>
@@ -312,51 +316,56 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contributors.map((c) => (
+                  {contributors.map((c, i) => (
                     <tr key={c.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                      <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                       <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{c.display_handle ?? "—"}</td>
                       <td className="px-5 py-3 text-xs text-[#8FA3B8]">{c.area?.name_ar ?? "—"}</td>
                       <td className="px-5 py-3">
-                        <span className="rounded-full border border-[#4A7C5935] bg-[#4A7C5920] px-2 py-0.5 text-[10px] text-[#6BA880]">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${trustStyles[c.trust_level] ?? trustStyles.new}`}>
                           {trustLabel[c.trust_level] ?? c.trust_level}
                         </span>
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-[#D8E4F0]">{c.report_count}</td>
                       <td className="px-5 py-3">
                         {c.is_banned ? (
-                          <span className="text-[10px] font-medium text-[#E05A4E]">Banned</span>
+                          <span className="inline-flex items-center rounded-full border border-[#A8585235] bg-[#A8585218] px-2.5 py-0.5 text-[10px] font-medium text-[#D49088]">Banned</span>
                         ) : (
-                          <span className="text-[10px] text-[#6BA880]">Active</span>
+                          <span className="inline-flex items-center rounded-full border border-[#4A7C5935] bg-[#4A7C5920] px-2.5 py-0.5 text-[10px] font-medium text-[#6BA880]">Active</span>
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-2 flex-wrap items-center">
                           <button
                             onClick={() => openEditModal(c)}
-                            className="text-[11px] text-[#8FA3B8] hover:text-[#D8E4F0] hover:underline"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"
                           >
+                            <EditIcon />
                             Edit
                           </button>
                           {c.is_banned ? (
                             <button
                               onClick={() => setUnbanTarget(c)}
-                              className="text-[11px] text-[#6BA880] hover:text-[#8FD9A0] hover:underline"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] transition-colors"
                             >
+                              <UnbanIcon />
                               Unban
                             </button>
                           ) : (
                             <button
                               onClick={() => setBanTarget(c)}
                               disabled={banningId === c.id}
-                              className="rounded border border-[#E05A4E50] bg-[#E05A4E25] px-2 py-1 text-[11px] text-[#E05A4E] hover:bg-[#E05A4E35] disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-3 py-1.5 text-xs font-medium text-[#E8B870] hover:bg-[#D4913A28] hover:border-[#D4913A] disabled:opacity-50 transition-colors"
                             >
+                              <BanIcon />
                               Ban
                             </button>
                           )}
                           <button
                             onClick={() => setRemoveTarget(c)}
-                            className="text-[11px] text-[#E05A4E] hover:underline"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"
                           >
+                            <RemoveIcon />
                             Remove
                           </button>
                         </div>
@@ -529,7 +538,7 @@ export default function AdminUsersPage() {
             </p>
             <div className="flex gap-2">
               <button type="button" onClick={() => setBanTarget(null)} disabled={!!banningId} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmBan} disabled={!!banningId} className="flex-1 rounded-lg bg-[#E05A4E] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50">{banningId ? "..." : "Yes, Ban"}</button>
+              <button type="button" onClick={confirmBan} disabled={!!banningId} className="flex-1 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-4 py-2 text-sm font-medium text-[#E8B870] hover:bg-[#D4913A28] disabled:opacity-50 transition-colors">{banningId ? "..." : "Yes, Ban"}</button>
             </div>
           </div>
         </>
@@ -563,7 +572,7 @@ export default function AdminUsersPage() {
             </p>
             <div className="flex gap-2">
               <button type="button" onClick={() => setRemoveTarget(null)} disabled={removeLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmRemove} disabled={removeLoading} className="flex-1 rounded-lg bg-[#E05A4E] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50">{removeLoading ? "..." : "Yes, Remove"}</button>
+              <button type="button" onClick={confirmRemove} disabled={removeLoading} className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors">{removeLoading ? "..." : "Yes, Remove"}</button>
             </div>
           </div>
         </>

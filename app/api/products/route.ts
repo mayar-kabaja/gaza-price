@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTokenFromRequest } from "@/lib/get-token-from-request";
 import { getApiBaseUrl } from "@/lib/api/client";
 import { getProductsFirstCategory, searchProducts } from "@/lib/queries/products";
+import type { Product } from "@/types/app";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,14 @@ async function fetchPricePreview(
 }
 
 export async function GET(req: NextRequest) {
+  const base = getApiBaseUrl();
+  if (!base) {
+    return NextResponse.json(
+      { error: "CONFIG", message: "NEXT_PUBLIC_API_URL is not set" },
+      { status: 503 }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search")?.trim() ?? undefined;
   const areaId = searchParams.get("area_id")?.trim() || undefined;
@@ -56,15 +65,29 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Number(searchParams.get("limit") ?? 10), 50);
   const offset = Number(searchParams.get("offset") ?? 0);
   const token = getTokenFromRequest(req);
-  const base = getApiBaseUrl();
 
   try {
-    const result =
-      categoryId
-        ? await searchProducts(search, categoryId, limit, offset)
-        : allProducts
-          ? await searchProducts(search, undefined, limit, offset)
-          : await getProductsFirstCategory(limit, offset, search);
+    let result: { products: Product[]; total: number };
+    try {
+      result =
+        categoryId
+          ? await searchProducts(search, categoryId, limit, offset)
+          : allProducts
+            ? await searchProducts(search, undefined, limit, offset)
+            : await getProductsFirstCategory(limit, offset, search);
+    } catch (backendErr) {
+      if (allProducts) {
+        try {
+          result = await getProductsFirstCategory(limit, offset, search);
+        } catch {
+          return NextResponse.json({ products: [], total: 0 });
+        }
+      } else {
+        // Backend failed (categories/products); return empty to avoid 500 for admin dropdowns
+        console.warn("[products] backend failed:", backendErr instanceof Error ? backendErr.message : backendErr);
+        return NextResponse.json({ products: [], total: 0 });
+      }
+    }
 
     // Log search when we have a search term (for analytics)
     if (base && search && search.length >= 1) {

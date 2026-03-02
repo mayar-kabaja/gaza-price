@@ -120,6 +120,7 @@ export default function AdminSnapshotsPage() {
               <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="border-b border-[#243040]">
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Date</th>
@@ -130,8 +131,9 @@ export default function AdminSnapshotsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {snapshots.map((s) => (
+                  {snapshots.map((s, i) => (
                     <tr key={s.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                      <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                       <td className="px-5 py-3 text-sm text-[#D8E4F0]">{s.product?.name_ar ?? "—"}</td>
                       <td className="px-5 py-3 text-xs text-[#8FA3B8]">{s.area?.name_ar ?? "—"}</td>
                       <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{s.snapshot_date}</td>

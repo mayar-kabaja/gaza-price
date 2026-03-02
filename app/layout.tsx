@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     locale: "ar_EG",
     images: [
       {
-        url: "/opengraph-image",
-        width: 1200,
-        height: 630,
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
         alt: "غزة بريس — أسعار شفافة · قوة المجتمع",
       },
     ],
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "غزة بريس — أسعار شفافة",
     description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
-    images: ["/opengraph-image"],
+    images: ["/icons/icon-512.png"],
   },
 };
 

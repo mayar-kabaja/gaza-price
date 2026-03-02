@@ -46,16 +46,20 @@ export async function getProductsFirstCategory(
   return searchProducts(search, first.id, limit, offset);
 }
 
+/** Backend accepts limit 1–30; we cap to avoid 400. */
+const BACKEND_LIMIT_MAX = 30;
+
 export async function searchProducts(
   search?: string,
   categoryId?: string,
   limit = 10,
   offset = 0
 ): Promise<{ products: Product[]; total: number }> {
+  const cappedLimit = Math.min(Math.max(1, limit), BACKEND_LIMIT_MAX);
   const data = await apiGet<{ products: BackendProduct[]; total: number }>("/products", {
     search: search?.trim() || undefined,
     category_id: categoryId,
-    limit,
+    limit: cappedLimit,
     offset,
   });
   const products: Product[] = (data.products ?? []).map((p) => ({

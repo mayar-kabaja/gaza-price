@@ -22,6 +22,12 @@ export const queryKeys = {
     ["contributors", "me", "reports", status ?? "all", limit ?? 20] as const,
   reports: (filter: string, areaId?: string | null, limit?: number) =>
     ["reports", filter, areaId ?? "", limit ?? 20] as const,
+  // Admin dashboard
+  adminStats: ["admin", "stats"] as const,
+  adminPendingProducts: (limit: number, offset: number) =>
+    ["admin", "pending-products", limit, offset] as const,
+  adminFlags: (limit: number, offset: number) =>
+    ["admin", "flags", limit, offset] as const,
 };
 
 // ── Fetchers (return parsed JSON, throw on !res.ok for mutations) ──
@@ -157,6 +163,63 @@ export async function fetchContributorMeReports(params: {
   sp.set("limit", String(params.limit ?? 20));
   sp.set("offset", String(params.offset ?? 0));
   const res = await apiFetch(`/api/contributors/me/reports?${sp.toString()}`, { credentials: "include" });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    reports: data?.reports ?? [],
+    total: data?.total ?? 0,
+  };
+}
+
+// ── Admin dashboard ──
+export async function fetchAdminStats(): Promise<Record<string, unknown>> {
+  return getJson("/api/admin/stats");
+}
+
+export interface AdminPendingProduct {
+  id: string;
+  name_ar: string;
+  unit?: string;
+  unit_size?: number;
+  category?: { name_ar: string };
+  suggested_by_handle?: string | null;
+  pending_price?: number | null;
+  created_at?: string;
+}
+
+export async function fetchAdminPendingProducts(limit: number, offset: number): Promise<{
+  products: AdminPendingProduct[];
+  total: number;
+}> {
+  const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const res = await apiFetch(`/api/admin/products/pending?${sp.toString()}`, {
+    credentials: "include",
+  });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    products: data?.products ?? [],
+    total: data?.total ?? 0,
+  };
+}
+
+export interface AdminFlaggedReport {
+  id: string;
+  price: number;
+  product?: { name_ar?: string };
+  flag_count: number;
+  flags?: { reason?: string; flagged_at?: string }[];
+  reported_at?: string;
+}
+
+export async function fetchAdminFlags(limit: number, offset: number): Promise<{
+  reports: AdminFlaggedReport[];
+  total: number;
+}> {
+  const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const res = await apiFetch(`/api/admin/flags?${sp.toString()}`, {
+    credentials: "include",
+  });
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {

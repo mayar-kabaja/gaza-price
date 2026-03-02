@@ -11,6 +11,9 @@ import {
   fetchContributorMe,
   fetchContributorMeReports,
   fetchReports,
+  fetchAdminStats,
+  fetchAdminPendingProducts,
+  fetchAdminFlags,
 } from "@/lib/queries/fetchers";
 import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -272,6 +275,52 @@ export function useSuggestProduct() {
       queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
+    },
+  });
+}
+
+// ── Admin dashboard ──
+export function useAdminStats() {
+  return useQuery({
+    queryKey: queryKeys.adminStats,
+    queryFn: () => fetchAdminStats(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAdminPendingProducts(limit = 6, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.adminPendingProducts(limit, offset),
+    queryFn: () => fetchAdminPendingProducts(limit, offset),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAdminFlags(limit = 5, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.adminFlags(limit, offset),
+    queryFn: () => fetchAdminFlags(limit, offset),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useReviewProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: "approve" | "reject" }) => {
+      const res = await apiFetch(`/api/admin/products/${id}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw { status: res.status, data };
+      return { id, action };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminStats });
+      queryClient.invalidateQueries({ queryKey: ["admin", "pending-products"] });
     },
   });
 }

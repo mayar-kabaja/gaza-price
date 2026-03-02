@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getStoredToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Area = {
   id: string;
@@ -185,7 +186,7 @@ export default function AdminStoresPage() {
         />
         <button
           onClick={openAddModal}
-          className="rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
+          className="ml-auto rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
         >
           + Add Store
         </button>
@@ -205,6 +206,7 @@ export default function AdminStoresPage() {
             <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-[#243040]">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Store</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Verified</th>
@@ -212,15 +214,24 @@ export default function AdminStoresPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStores.map((s) => (
+                {filteredStores.map((s, i) => (
                   <tr key={s.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                    <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{i + 1}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{s.name_ar}</td>
                     <td className="px-5 py-3 text-xs text-[#8FA3B8]">{s.area?.name_ar ?? "—"}</td>
-                    <td className="px-5 py-3 text-xs">{s.is_verified ? "✓" : "—"}</td>
                     <td className="px-5 py-3">
-                      <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => openEditModal(s)} className="text-[11px] text-[#8FA3B8] hover:text-[#D8E4F0] hover:underline">Edit</button>
-                        <button onClick={() => setDeleteTarget(s)} className="text-[11px] text-[#E05A4E] hover:text-red-400 hover:underline">Remove</button>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
+                        s.is_verified
+                          ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
+                          : "border-[#64748B35] bg-[#334155] text-[#94A3B8]"
+                      }`}>
+                        {s.is_verified ? "✓ Verified" : "—"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <button onClick={() => openEditModal(s)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"><EditIcon />Edit</button>
+                        <button onClick={() => setDeleteTarget(s)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"><RemoveIcon />Remove</button>
                       </div>
                     </td>
                   </tr>
@@ -285,7 +296,7 @@ export default function AdminStoresPage() {
             <p className="text-sm text-[#8FA3B8] mb-4">Are you sure you want to delete &ldquo;{deleteTarget.name_ar}&rdquo;? This action cannot be undone.</p>
             <div className="flex gap-2">
               <button type="button" onClick={() => setDeleteTarget(null)} disabled={deleteLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmDelete} disabled={deleteLoading} className="flex-1 rounded-lg bg-[#E05A4E] px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50">{deleteLoading ? "..." : "Yes, Remove"}</button>
+              <button type="button" onClick={confirmDelete} disabled={deleteLoading} className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors">{deleteLoading ? "..." : "Yes, Remove"}</button>
             </div>
           </div>
         </>
