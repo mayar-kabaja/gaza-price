@@ -44,6 +44,36 @@
 .admin-root .admin-stat-card.red::before { background: linear-gradient(90deg, var(--admin-red), #F08070); }
 .admin-root .admin-stat-card.sky::before { background: linear-gradient(90deg, var(--admin-sky), #7AC4F0); }
 
+/* Custom scrollbar — dark theme */
+.admin-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-root ::-webkit-scrollbar-track {
+  background: var(--admin-surface3);
+  border-radius: 4px;
+}
+
+.admin-root ::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 4px;
+}
+
+.admin-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-border-l);
+}
+
+.admin-root ::-webkit-scrollbar-thumb:active {
+  background: var(--admin-olive);
+}
+
+/* Firefox */
+.admin-root * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-border) var(--admin-surface3);
+}
+
 /* Mobile: extra bottom padding for safe area (iPhone notch) */
 @media (max-width: 640px) {
   .admin-root .admin-content-area {

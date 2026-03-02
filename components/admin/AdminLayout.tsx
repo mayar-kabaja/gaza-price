@@ -10,11 +10,13 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/suggestions": "Suggestions",
   "/admin/products": "Products",
   "/admin/categories": "Categories",
-  "/admin/areas-stores": "Areas & Stores",
+  "/admin/areas": "Areas",
+  "/admin/stores": "Stores",
   "/admin/users": "Users",
   "/admin/flags": "Flags",
   "/admin/reports": "Reports",
   "/admin/logs": "Logs",
+  "/admin/snapshots": "Price Snapshots",
 };
 
 const navItems = [
@@ -22,7 +24,8 @@ const navItems = [
   { href: "/admin/suggestions", label: "Suggestions", icon: "clipboard", badge: "pending" },
   { href: "/admin/products", label: "Products", icon: "package" },
   { href: "/admin/categories", label: "Categories", icon: "tag" },
-  { href: "/admin/areas-stores", label: "Areas & Stores", icon: "map" },
+  { href: "/admin/areas", label: "Areas", icon: "map" },
+  { href: "/admin/stores", label: "Stores", icon: "store" },
   { href: "/admin/users", label: "Users", icon: "users", badge: "sand" },
   { href: "/admin/flags", label: "Flags", icon: "bell", badge: "red" },
   { href: "/admin/reports", label: "Reports", icon: "message" },
@@ -60,6 +63,11 @@ const iconMap: Record<string, ReactNode> = {
       <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
+  store: (
+    <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
+      <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
   users: (
     <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M9 7a4 4 0 100 8 4 4 0 000-8z" />
@@ -80,6 +88,14 @@ const iconMap: Record<string, ReactNode> = {
     <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
       <rect x={2} y={3} width={20} height={14} rx={2} />
       <path d="M8 21h8M12 17v4" />
+    </svg>
+  ),
+  chart: (
+    <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
+      <path d="M3 3v18h18" />
+      <path d="M18 17V9" />
+      <path d="M13 17V5" />
+      <path d="M8 17v-3" />
     </svg>
   ),
   menu: (
@@ -217,7 +233,8 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
         <NavLink href="/admin/suggestions" label="Suggestions" icon="clipboard" badge="pending" badgeCount={pendingCount} pathname={pathname} />
         <NavLink href="/admin/products" label="Products" icon="package" pathname={pathname} />
         <NavLink href="/admin/categories" label="Categories" icon="tag" pathname={pathname} />
-        <NavLink href="/admin/areas-stores" label="Areas & Stores" icon="map" pathname={pathname} />
+        <NavLink href="/admin/areas" label="Areas" icon="map" pathname={pathname} />
+        <NavLink href="/admin/stores" label="Stores" icon="store" pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
@@ -230,6 +247,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">System</div>
         <NavLink href="/admin/logs" label="Logs" icon="file" pathname={pathname} />
+        <NavLink href="/admin/snapshots" label="Price Snapshots" icon="chart" pathname={pathname} />
       </nav>
 
       <div className="mt-auto p-3 border-t border-[#243040]">

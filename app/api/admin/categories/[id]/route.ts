@@ -4,8 +4,11 @@ import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/admin/contributors — Create a contributor. Requires admin JWT. */
-export async function POST(req: NextRequest) {
+/** PATCH /api/admin/categories/[id] — Update a category. Requires admin JWT. */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -17,19 +20,33 @@ export async function POST(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "Login required" }, { status: 401 });
   }
+  const { id } = await params;
   let body: Record<string, unknown>;
   try {
-    body = await req.json().catch(() => ({}));
+    body = await req.json();
   } catch {
-    body = {};
+    return NextResponse.json(
+      { error: "BAD_REQUEST", message: "Invalid JSON body" },
+      { status: 400 }
+    );
   }
   const payload: Record<string, unknown> = {};
-  if (body?.display_handle != null) payload.display_handle = body.display_handle;
-  if (body?.area_id != null) payload.area_id = body.area_id;
-  if (body?.trust_level != null) payload.trust_level = body.trust_level;
+  if (body?.name_ar != null && typeof body.name_ar === "string") payload.name_ar = body.name_ar;
+  if (body?.name_en != null && typeof body.name_en === "string") payload.name_en = body.name_en;
+  if (body?.icon != null && typeof body.icon === "string") payload.icon = body.icon;
+  if (body?.sort_order != null) {
+    const n = Number(body.sort_order);
+    if (!Number.isNaN(n) && n >= 0) payload.sort_order = Math.floor(n);
+  }
+  if (Object.keys(payload).length === 0) {
+    return NextResponse.json(
+      { error: "BAD_REQUEST", message: "No valid fields to update" },
+      { status: 400 }
+    );
+  }
   try {
-    const res = await fetch(`${base}/admin/contributors`, {
-      method: "POST",
+    const res = await fetch(`${base}/categories/${id}`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -55,8 +72,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** GET /api/admin/contributors — List contributors. Requires admin JWT. */
-export async function GET(req: NextRequest) {
+/** DELETE /api/admin/categories/[id] — Remove a category. Requires admin JWT. */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -68,25 +88,24 @@ export async function GET(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "Login required" }, { status: 401 });
   }
-  const { searchParams } = new URL(req.url);
-  const limit = searchParams.get("limit") ?? "20";
-  const offset = searchParams.get("offset") ?? "0";
-  const search = searchParams.get("search") ?? "";
-  const params = new URLSearchParams({ limit, offset });
-  if (search) params.set("search", search);
+  const { id } = await params;
   try {
-    const res = await fetch(`${base}/admin/contributors?${params}`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    const res = await fetch(`${base}/categories/${id}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       signal: AbortSignal.timeout(15000),
     });
-    const data = await res.json();
     if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
       return NextResponse.json(
         data?.message ? { error: data.error ?? "API_ERROR", message: data.message } : data,
         { status: res.status }
       );
     }
-    return NextResponse.json(data);
+    return new NextResponse(null, { status: 204 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Request failed";
     return NextResponse.json(

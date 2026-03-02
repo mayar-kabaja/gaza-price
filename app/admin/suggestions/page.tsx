@@ -84,7 +84,7 @@ export default function AdminSuggestionsPage() {
           ) : products.length === 0 ? (
             <div className="py-12 text-center text-sm text-[#4E6070]">No pending suggestions</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
               <table className="w-full min-w-[480px]">
                 <thead>
                   <tr className="border-b border-[#243040]">

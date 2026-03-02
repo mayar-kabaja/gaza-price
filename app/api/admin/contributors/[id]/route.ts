@@ -4,8 +4,11 @@ import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/admin/contributors — Create a contributor. Requires admin JWT. */
-export async function POST(req: NextRequest) {
+/** DELETE /api/admin/contributors/[id] — Remove contributor and all their data. Requires admin JWT. */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -17,25 +20,11 @@ export async function POST(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "Login required" }, { status: 401 });
   }
-  let body: Record<string, unknown>;
+  const { id } = await params;
   try {
-    body = await req.json().catch(() => ({}));
-  } catch {
-    body = {};
-  }
-  const payload: Record<string, unknown> = {};
-  if (body?.display_handle != null) payload.display_handle = body.display_handle;
-  if (body?.area_id != null) payload.area_id = body.area_id;
-  if (body?.trust_level != null) payload.trust_level = body.trust_level;
-  try {
-    const res = await fetch(`${base}/admin/contributors`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
+    const res = await fetch(`${base}/admin/contributors/${id}`, {
+      method: "DELETE",
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(15000),
     });
     const data = await res.json();
@@ -55,8 +44,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** GET /api/admin/contributors — List contributors. Requires admin JWT. */
-export async function GET(req: NextRequest) {
+/** PATCH /api/admin/contributors/[id] — Update contributor (display_handle, area_id, trust_level, is_banned). Requires admin JWT. */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -68,15 +60,37 @@ export async function GET(req: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "UNAUTHORIZED", message: "Login required" }, { status: 401 });
   }
-  const { searchParams } = new URL(req.url);
-  const limit = searchParams.get("limit") ?? "20";
-  const offset = searchParams.get("offset") ?? "0";
-  const search = searchParams.get("search") ?? "";
-  const params = new URLSearchParams({ limit, offset });
-  if (search) params.set("search", search);
+  const { id } = await params;
+  let body: Record<string, unknown>;
   try {
-    const res = await fetch(`${base}/admin/contributors?${params}`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "BAD_REQUEST", message: "Invalid JSON body" },
+      { status: 400 }
+    );
+  }
+  const payload: Record<string, unknown> = {};
+  if (body?.display_handle !== undefined) payload.display_handle = body.display_handle;
+  if (body?.area_id !== undefined) payload.area_id = body.area_id;
+  if (body?.trust_level != null && typeof body.trust_level === "string") payload.trust_level = body.trust_level;
+  if (body?.is_banned !== undefined) payload.is_banned = Boolean(body.is_banned);
+  if (body?.ban_reason !== undefined) payload.ban_reason = body.ban_reason;
+  if (Object.keys(payload).length === 0) {
+    return NextResponse.json(
+      { error: "BAD_REQUEST", message: "No valid fields to update" },
+      { status: 400 }
+    );
+  }
+  try {
+    const res = await fetch(`${base}/admin/contributors/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(15000),
     });
     const data = await res.json();

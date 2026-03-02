@@ -167,7 +167,7 @@ export default function AdminDashboardPage() {
                 View All
               </Link>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
               {pendingProducts.length === 0 ? (
                 <div className="py-12 text-center text-sm text-[#4E6070]">No pending suggestions</div>
               ) : (
@@ -385,8 +385,8 @@ export default function AdminDashboardPage() {
           <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
             <div className="flex items-center justify-between border-b border-[#243040] px-5 py-4">
               <div className="text-[13px] font-semibold text-[#D8E4F0]">Regional Coverage</div>
-              <Link href="/admin/areas-stores" className="text-[11px] font-medium text-[#6BA880] hover:underline cursor-pointer">
-                Map View
+              <Link href="/admin/areas" className="text-[11px] font-medium text-[#6BA880] hover:underline cursor-pointer">
+                View Areas
               </Link>
             </div>
             <div className="divide-y divide-[#243040]">

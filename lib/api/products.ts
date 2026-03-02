@@ -15,16 +15,17 @@ type BackendProduct = {
 export async function getProductById(id: string): Promise<Product | null> {
   try {
     const data = await apiGet<BackendProduct>(`/products/${id}`);
+    const categoryId = (data.category as { id?: string } | undefined)?.id ?? "";
     return {
       id: data.id,
       name_ar: data.name_ar,
       name_en: data.name_en ?? undefined,
-      category_id: "", // not always in response
+      category_id: categoryId,
       unit: data.unit ?? "",
       unit_size: data.unit_size,
       status: "active",
       category: data.category
-        ? { id: "", name_ar: data.category.name_ar, name_en: "", icon: data.category.icon ?? "", sort_order: 0 }
+        ? { id: categoryId, name_ar: data.category.name_ar, name_en: "", icon: data.category.icon ?? "", sort_order: 0 }
         : undefined,
       created_at: "",
     };
