@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { ViewIcon, EditIcon, ApproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
+import { ViewIcon, EditIcon, ApproveIcon, UnapproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Report = {
   id: string;
@@ -33,6 +33,7 @@ export default function AdminReportsPage() {
 
   // Confirmation modals
   const [approveTarget, setApproveTarget] = useState<Report | null>(null);
+  const [unapproveTarget, setUnapproveTarget] = useState<Report | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Report | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -93,7 +94,7 @@ export default function AdminReportsPage() {
 
   async function confirmApprove() {
     if (!approveTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -108,8 +109,36 @@ export default function AdminReportsPage() {
       if (res.ok) {
         toast("Report approved", "success");
         setApproveTarget(null);
-        setReports((prev) => prev.filter((r) => r.id !== approveTarget.id));
-        setTotal((t) => Math.max(0, t - 1));
+        load();
+      } else {
+        const d = await res.json();
+        toast(d?.message ?? "Action failed", "error");
+      }
+    } catch {
+      toast("Action failed", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function confirmUnapprove() {
+    if (!unapproveTarget) return;
+    const token = getAdminToken();
+    if (!token) {
+      toast("Login required", "error");
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/prices/${unapproveTarget.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      if (res.ok) {
+        toast("Approve removed", "success");
+        setUnapproveTarget(null);
+        load();
       } else {
         const d = await res.json();
         toast(d?.message ?? "Action failed", "error");
@@ -123,7 +152,7 @@ export default function AdminReportsPage() {
 
   async function confirmRemove() {
     if (!removeTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -138,8 +167,7 @@ export default function AdminReportsPage() {
       if (res.ok) {
         toast("Report removed", "success");
         setRemoveTarget(null);
-        setReports((prev) => prev.filter((r) => r.id !== removeTarget.id));
-        setTotal((t) => Math.max(0, t - 1));
+        load();
       } else {
         const d = await res.json();
         toast(d?.message ?? "Action failed", "error");
@@ -182,7 +210,7 @@ export default function AdminReportsPage() {
 
   async function handleEditSubmit() {
     if (!editTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -223,7 +251,7 @@ export default function AdminReportsPage() {
   }
 
   async function handleAddSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -390,6 +418,15 @@ export default function AdminReportsPage() {
                               Approve
                             </button>
                           )}
+                          {r.status === "confirmed" && (
+                            <button
+                              onClick={() => setUnapproveTarget(r)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-3 py-1.5 text-xs font-medium text-[#E8B870] hover:bg-[#D4913A28] hover:border-[#D4913A] disabled:opacity-50 transition-colors"
+                            >
+                              <UnapproveIcon />
+                              Unapprove
+                            </button>
+                          )}
                           <button
                             onClick={() => setRemoveTarget(r)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] disabled:opacity-50 transition-colors"
@@ -427,6 +464,23 @@ export default function AdminReportsPage() {
             </button>
           </div>
         )}
+
+      {/* Unapprove confirmation */}
+      {unapproveTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !actionLoading && setUnapproveTarget(null)} />
+          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Approve</h3>
+            <p className="text-sm text-[#8FA3B8] mb-4">
+              Are you sure you want to remove the approval from &ldquo;{unapproveTarget.product?.name_ar ?? "—"}&rdquo; (₪{unapproveTarget.price})? The report will go back to pending.
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setUnapproveTarget(null)} disabled={actionLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={confirmUnapprove} disabled={actionLoading} className="flex-1 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-4 py-2 text-sm font-medium text-[#E8B870] hover:bg-[#D4913A28] disabled:opacity-50">{actionLoading ? "..." : "Yes, Unapprove"}</button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Approve confirmation */}
       {approveTarget && (
@@ -511,8 +565,11 @@ export default function AdminReportsPage() {
                       value={editForm.price}
                       onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
                       placeholder="0.00"
+                      dir="ltr"
+                      lang="en"
                       className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
                     />
+                    <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -568,8 +625,11 @@ export default function AdminReportsPage() {
                   value={addForm.price}
                   onChange={(e) => setAddForm((f) => ({ ...f, price: e.target.value }))}
                   placeholder="0.00"
+                  dir="ltr"
+                  lang="en"
                   className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
                 />
+                <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
               </div>
             </div>
             <div className="flex gap-2 mt-4">

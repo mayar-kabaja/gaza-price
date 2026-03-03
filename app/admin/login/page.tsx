@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { setStoredToken, clearStoredToken } from "@/lib/auth/token";
+import { setAdminToken, clearAdminToken } from "@/lib/auth/token";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -31,12 +31,12 @@ export default function AdminLoginPage() {
         setError("Login succeeded but no token received");
         return;
       }
-      setStoredToken(token);
+      setAdminToken(token);
       const meRes = await fetch("/api/admin/me", {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
       if (!meRes.ok) {
-        clearStoredToken();
+        clearAdminToken();
         setError("Login succeeded but admin check failed. Please try again.");
         return;
       }

@@ -4,7 +4,7 @@ import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/** PATCH /api/admin/products/[id] — Update a product. Requires admin JWT. */
+/** PATCH /api/admin/sections/[id] — Update a section. Requires admin JWT. */
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,14 +32,10 @@ export async function PATCH(
   }
   const payload: Record<string, unknown> = {};
   if (body?.name_ar != null && typeof body.name_ar === "string") payload.name_ar = body.name_ar;
-  if (body?.name_en != null && typeof body.name_en === "string") payload.name_en = body.name_en;
-  if (body?.category_id != null && typeof body.category_id === "string") payload.category_id = body.category_id;
-  if (body?.unit != null && typeof body.unit === "string") payload.unit = body.unit;
-  if (body?.barcode != null && typeof body.barcode === "string") payload.barcode = body.barcode;
-  if (body?.status != null && typeof body.status === "string") payload.status = body.status;
-  if (body?.unit_size != null) {
-    const n = Number(body.unit_size);
-    if (!Number.isNaN(n) && n >= 0) payload.unit_size = Math.floor(n);
+  if (body?.icon != null && typeof body.icon === "string") payload.icon = body.icon;
+  if (body?.sort_order != null) {
+    const n = Number(body.sort_order);
+    if (!Number.isNaN(n) && n >= 0) payload.sort_order = Math.floor(n);
   }
   if (Object.keys(payload).length === 0) {
     return NextResponse.json(
@@ -48,7 +44,7 @@ export async function PATCH(
     );
   }
   try {
-    const res = await fetch(`${base}/products/${id}`, {
+    const res = await fetch(`${base}/sections/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -75,7 +71,7 @@ export async function PATCH(
   }
 }
 
-/** DELETE /api/admin/products/[id] — Remove a product. Requires admin JWT. */
+/** DELETE /api/admin/sections/[id] — Remove a section. Requires admin JWT. */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -93,7 +89,7 @@ export async function DELETE(
   }
   const { id } = await params;
   try {
-    const res = await fetch(`${base}/products/${id}`, {
+    const res = await fetch(`${base}/sections/${id}`, {
       method: "DELETE",
       headers: {
         Accept: "application/json",

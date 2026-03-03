@@ -12,18 +12,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 
-const UNITS = [
-  { value: "غرام", label: "غرام" },
-  { value: "كغ", label: "كغ" },
-  { value: "لتر", label: "لتر" },
-  { value: "مل", label: "مل" },
-  { value: "علبة", label: "علبة" },
-  { value: "قطعة", label: "قطعة" },
-  { value: "باكيت", label: "باكيت" },
-  { value: "كرتون", label: "كرتون" },
-  { value: "كوب", label: "كوب" },
-  { value: "أخرى", label: "أخرى" },
-];
+import { PRODUCT_UNITS } from "@/lib/constants";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -228,7 +217,7 @@ function SuggestContent() {
                 onChange={(e) => setUnit(e.target.value)}
                 className="bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               >
-                {UNITS.map((u) => (
+                {PRODUCT_UNITS.map((u) => (
                   <option key={u.value} value={u.value}>{u.label}</option>
                 ))}
               </select>
@@ -254,6 +243,7 @@ function SuggestContent() {
 
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر الذي رأيته</label>
+            <p className="text-xs text-mist mb-2 font-body">أرقام إنجليزية (0-9) فقط</p>
             <div className="bg-white border border-border rounded-2xl flex items-center overflow-hidden">
               <span className="px-4 text-mist text-sm">ش ₪</span>
               <input

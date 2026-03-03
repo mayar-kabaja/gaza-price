@@ -75,12 +75,12 @@ export async function GET(req: NextRequest) {
         categoryId
           ? await searchProducts(search, categoryId, limit, offset)
           : allProducts
-            ? await searchProducts(search, undefined, limit, offset)
+            ? await searchProducts(search, undefined, limit, offset, { noCache: true })
             : await getProductsFirstCategory(limit, offset, search);
     } catch (backendErr) {
       if (allProducts) {
         try {
-          result = await getProductsFirstCategory(limit, offset, search);
+          result = await getProductsFirstCategory(limit, offset, search, { noCache: true });
         } catch {
           return NextResponse.json({ products: [], total: 0 });
         }

@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
   const payload: Record<string, unknown> = { name_ar: body.name_ar };
   if (body.name_en != null && typeof body.name_en === "string") payload.name_en = body.name_en;
   if (body.icon != null && typeof body.icon === "string") payload.icon = body.icon;
+  if (body.section_id != null) {
+    payload.section_id = body.section_id === "" || body.section_id === null ? null : body.section_id;
+  }
   if (body.sort_order != null) {
     const n = Number(body.sort_order);
     if (!Number.isNaN(n) && n >= 0) payload.sort_order = Math.floor(n);

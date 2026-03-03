@@ -38,12 +38,13 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function getProductsFirstCategory(
   limit = 10,
   offset = 0,
-  search?: string
+  search?: string,
+  opts?: { noCache?: boolean }
 ): Promise<{ products: Product[]; total: number }> {
   const categories = await getCategories();
   const first = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   if (!first) return { products: [], total: 0 };
-  return searchProducts(search, first.id, limit, offset);
+  return searchProducts(search, first.id, limit, offset, opts);
 }
 
 /** Backend accepts limit 1–30; we cap to avoid 400. */
@@ -53,15 +54,15 @@ export async function searchProducts(
   search?: string,
   categoryId?: string,
   limit = 10,
-  offset = 0
+  offset = 0,
+  opts?: { noCache?: boolean }
 ): Promise<{ products: Product[]; total: number }> {
   const cappedLimit = Math.min(Math.max(1, limit), BACKEND_LIMIT_MAX);
-  const data = await apiGet<{ products: BackendProduct[]; total: number }>("/products", {
-    search: search?.trim() || undefined,
-    category_id: categoryId,
-    limit: cappedLimit,
-    offset,
-  });
+  const data = await apiGet<{ products: BackendProduct[]; total: number }>(
+    "/products",
+    { search: search?.trim() || undefined, category_id: categoryId, limit: cappedLimit, offset },
+    opts
+  );
   const products: Product[] = (data.products ?? []).map((p) => ({
     id: p.id,
     name_ar: p.name_ar,

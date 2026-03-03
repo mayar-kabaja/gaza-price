@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { ViewIcon, EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
+import { PRODUCT_UNITS } from "@/lib/constants";
 
 type Category = {
   id: string;
@@ -27,7 +28,7 @@ const EMPTY_FORM = {
   name_ar: "",
   name_en: "",
   category_id: "",
-  unit: "",
+  unit: "كغ",
   unit_size: 1,
 };
 
@@ -59,7 +60,7 @@ export default function AdminProductsPage() {
     const off = overrideOffset ?? offset;
     const params = new URLSearchParams({ limit: String(limit), offset: String(off), all: "1" });
     if (search.trim()) params.set("search", search.trim());
-    fetch(`/api/products?${params.toString()}`)
+    fetch(`/api/products?${params.toString()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setProducts(d?.products ?? []);
@@ -106,16 +107,16 @@ export default function AdminProductsPage() {
         name_ar: p.name_ar ?? "",
         name_en: p.name_en ?? "",
         category_id: p.category_id ?? "",
-        unit: p.unit ?? "",
-        unit_size: typeof p.unit_size === "number" ? p.unit_size : 1,
+        unit: p.unit ?? "كغ",
+        unit_size: typeof p.unit_size === "number" ? Math.floor(p.unit_size) : 1,
       });
     } catch {
       setForm({
         name_ar: product.name_ar ?? "",
         name_en: product.name_en ?? "",
         category_id: "",
-        unit: product.unit ?? "",
-        unit_size: product.unit_size ?? 1,
+        unit: product.unit ?? "كغ",
+        unit_size: typeof product.unit_size === "number" ? Math.floor(product.unit_size) : 1,
       });
     }
   }
@@ -129,16 +130,16 @@ export default function AdminProductsPage() {
       toast("يرجى اختيار التصنيف", "error");
       return;
     }
-    const unitSize = Number(form.unit_size);
+    const unitSize = Math.floor(Number(form.unit_size));
     if (Number.isNaN(unitSize) || unitSize < 0) {
-      toast("وحدة القياس يجب أن تكون رقماً موجباً", "error");
+      toast("الكمية يجب أن تكون رقماً صحيحاً موجباً", "error");
       return;
     }
     setShowFormConfirm(true);
   }
 
   async function confirmFormSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;
@@ -147,7 +148,7 @@ export default function AdminProductsPage() {
     const payload = {
       name_ar: form.name_ar.trim(),
       category_id: form.category_id,
-      unit_size: Number(form.unit_size),
+      unit_size: Math.max(0, Math.floor(Number(form.unit_size) || 0)),
     };
     if (form.name_en?.trim()) (payload as Record<string, unknown>).name_en = form.name_en.trim();
     if (form.unit?.trim()) (payload as Record<string, unknown>).unit = form.unit.trim();
@@ -166,6 +167,13 @@ export default function AdminProductsPage() {
           return;
         }
         toast("تمت إضافة المنتج بنجاح", "success");
+        const created = data as Product;
+        const cat = categories.find((c) => c.id === form.category_id);
+        setProducts((prev) => [
+          { ...created, category: cat ? { name_ar: cat.name_ar, icon: cat.icon } : undefined },
+          ...prev,
+        ]);
+        setTotal((t) => t + 1);
       } else if (editingProduct) {
         const res = await fetch(`/api/admin/products/${editingProduct.id}`, {
           method: "PATCH",
@@ -178,10 +186,18 @@ export default function AdminProductsPage() {
           return;
         }
         toast("تم تحديث المنتج بنجاح", "success");
+        const updated = data as Product;
+        const cat = categories.find((c) => c.id === form.category_id);
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === editingProduct.id
+              ? { ...p, ...updated, category: cat ? { name_ar: cat.name_ar, icon: cat.icon } : p.category }
+              : p
+          )
+        );
       }
       setShowFormConfirm(false);
       setShowFormModal(false);
-      load();
     } catch {
       toast("حدث خطأ في الاتصال", "error");
     } finally {
@@ -195,7 +211,7 @@ export default function AdminProductsPage() {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;
@@ -208,8 +224,10 @@ export default function AdminProductsPage() {
       });
       if (res.ok) {
         toast("تم حذف المنتج بنجاح", "success");
+        const removedId = deleteTarget.id;
         setDeleteTarget(null);
-        load();
+        setProducts((prev) => prev.filter((p) => p.id !== removedId));
+        setTotal((t) => Math.max(0, t - 1));
       } else {
         const data = await res.json();
         toast(data?.message ?? "فشل الحذف", "error");
@@ -267,7 +285,7 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{p.name_ar}</td>
                     <td className="px-5 py-3 text-xs text-[#8FA3B8]">{p.category?.name_ar ?? "—"}</td>
-                    <td className="px-5 py-3 text-xs text-[#4E6070]">{p.unit ?? "—"} {p.unit_size ?? ""}</td>
+                    <td className="px-5 py-3 text-xs text-[#4E6070]">{p.unit ?? "—"} {p.unit_size != null ? Math.floor(Number(p.unit_size)) : "—"}</td>
                     <td className="px-5 py-3">
                       <div className="flex gap-2 items-center flex-wrap">
                         <Link
@@ -374,25 +392,34 @@ export default function AdminProductsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-[#4E6070] mb-1">Unit (e.g. kg, L)</label>
-                    <input
-                      type="text"
-                      value={form.unit}
+                    <label className="block text-xs text-[#4E6070] mb-1">Unit</label>
+                    <select
+                      value={form.unit || "كغ"}
                       onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
                       className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-                      placeholder="وحدة القياس"
-                    />
+                    >
+                      {PRODUCT_UNITS.map((u) => (
+                        <option key={u.value} value={u.value}>{u.label}</option>
+                      ))}
+                      {form.unit && !PRODUCT_UNITS.some((u) => u.value === form.unit) && (
+                        <option value={form.unit}>{form.unit}</option>
+                      )}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-[#4E6070] mb-1">Unit size *</label>
+                    <label className="block text-xs text-[#4E6070] mb-1">Quantity *</label>
                     <input
                       type="number"
                       min={0}
-                      step={0.01}
+                      step={1}
                       value={form.unit_size}
-                      onChange={(e) => setForm((f) => ({ ...f, unit_size: parseFloat(e.target.value) || 0 }))}
+                      onChange={(e) => setForm((f) => ({ ...f, unit_size: parseInt(e.target.value, 10) || 0 }))}
+                      placeholder="0-9"
+                      dir="ltr"
+                      lang="en"
                       className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
                     />
+                    <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-5">

@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
-import { apiFetch } from "@/lib/api/fetch";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { ViewIcon, EditIcon, ApproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
+import { ViewIcon, EditIcon, ApproveIcon, UnapproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type FlaggedReport = {
   id: string;
@@ -13,6 +12,7 @@ type FlaggedReport = {
   flag_count: number;
   flags?: { reason?: string; flagged_at?: string }[];
   reported_at?: string;
+  status?: string;
 };
 
 type Product = { id: string; name_ar: string };
@@ -26,10 +26,12 @@ export default function AdminFlagsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"flagged" | "all">("flagged");
 
   // Confirmation modals
   const [approveTarget, setApproveTarget] = useState<FlaggedReport | null>(null);
   const [removeTarget, setRemoveTarget] = useState<FlaggedReport | null>(null);
+  const [unapproveTarget, setUnapproveTarget] = useState<FlaggedReport | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // +Add modal
@@ -50,13 +52,15 @@ export default function AdminFlagsPage() {
   const [viewLoadingId, setViewLoadingId] = useState<string | null>(null);
 
   function load() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    apiFetch("/api/admin/flags?status=flagged&limit=50&offset=0")
+    fetch(`/api/admin/flags?status=${filter}&limit=50&offset=0`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    })
       .then((r) => r.json())
       .then((d) => {
         setReports(d?.reports ?? []);
@@ -71,7 +75,7 @@ export default function AdminFlagsPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     if (!showAddModal && !editTarget) return;
@@ -96,7 +100,7 @@ export default function AdminFlagsPage() {
 
   async function confirmApprove() {
     if (!approveTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setActionLoading(true);
     try {
@@ -108,8 +112,7 @@ export default function AdminFlagsPage() {
       if (res.ok) {
         toast("Report approved", "success");
         setApproveTarget(null);
-        setReports((prev) => prev.filter((r) => r.id !== approveTarget.id));
-        setTotal((t) => Math.max(0, t - 1));
+        load();
       } else {
         toast("Action failed", "error");
       }
@@ -122,7 +125,7 @@ export default function AdminFlagsPage() {
 
   async function confirmRemove() {
     if (!removeTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setActionLoading(true);
     try {
@@ -134,8 +137,32 @@ export default function AdminFlagsPage() {
       if (res.ok) {
         toast("Report removed", "success");
         setRemoveTarget(null);
-        setReports((prev) => prev.filter((r) => r.id !== removeTarget.id));
-        setTotal((t) => Math.max(0, t - 1));
+        load();
+      } else {
+        toast("Action failed", "error");
+      }
+    } catch {
+      toast("Action failed", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function confirmUnapprove() {
+    if (!unapproveTarget) return;
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/prices/${unapproveTarget.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      if (res.ok) {
+        toast("Approve removed", "success");
+        setUnapproveTarget(null);
+        load();
       } else {
         toast("Action failed", "error");
       }
@@ -177,7 +204,7 @@ export default function AdminFlagsPage() {
 
   async function handleEditSubmit() {
     if (!editTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -218,7 +245,7 @@ export default function AdminFlagsPage() {
   }
 
   async function handleAddSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -295,9 +322,26 @@ export default function AdminFlagsPage() {
           </button>
         </div>
         <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
-          <div className="border-b border-[#243040] px-5 py-4">
-            <div className="text-[13px] font-semibold text-[#D8E4F0]">Flagged Price Reports</div>
-            <div className="text-[11px] text-[#4E6070] mt-0.5">{total} reports flagged by users</div>
+          <div className="flex items-center justify-between border-b border-[#243040] px-5 py-4">
+            <div>
+              <div className="text-[13px] font-semibold text-[#D8E4F0]">Flagged Price Reports</div>
+              <div className="text-[11px] text-[#4E6070] mt-0.5">{total} reports {filter === "flagged" ? "awaiting review" : "with flags"}</div>
+            </div>
+            <div className="flex gap-1.5">
+              {(["flagged", "all"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    filter === f
+                      ? "border border-[#4A7C59] bg-[#4A7C59] text-white"
+                      : "border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:text-[#D8E4F0]"
+                  }`}
+                >
+                  {f === "flagged" ? "Awaiting" : "All"}
+                </button>
+              ))}
+            </div>
           </div>
           {loading ? (
             <div className="flex justify-center py-12">
@@ -330,7 +374,15 @@ export default function AdminFlagsPage() {
                       </td>
                       <td className="px-5 py-3 font-mono text-xs">₪ {r.price}</td>
                       <td className="px-5 py-3">
-                        <span className="inline-flex items-center rounded-full border border-[#D4913A35] bg-[#D4913A18] px-2.5 py-0.5 text-[10px] font-medium text-[#E8B870]">Flagged</span>
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
+                          r.status === "confirmed"
+                            ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
+                            : r.status === "rejected"
+                              ? "border-[#64748B35] bg-[#334155] text-[#94A3B8]"
+                              : "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]"
+                        }`}>
+                          {r.status === "confirmed" ? "Approved" : r.status === "rejected" ? "Rejected" : "Flagged"}
+                        </span>
                       </td>
                       <td className="px-5 py-3">
                         <div className="space-y-1">
@@ -365,13 +417,23 @@ export default function AdminFlagsPage() {
                             <EditIcon />
                             Edit
                           </button>
-                          <button
-                            onClick={() => setApproveTarget(r)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] disabled:opacity-50 transition-colors"
-                          >
-                            <ApproveIcon />
-                            Approve
-                          </button>
+                          {r.status === "confirmed" ? (
+                            <button
+                              onClick={() => setUnapproveTarget(r)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-3 py-1.5 text-xs font-medium text-[#E8B870] hover:bg-[#D4913A28] hover:border-[#D4913A] disabled:opacity-50 transition-colors"
+                            >
+                              <UnapproveIcon />
+                              Unapprove
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setApproveTarget(r)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] disabled:opacity-50 transition-colors"
+                            >
+                              <ApproveIcon />
+                              Approve
+                            </button>
+                          )}
                           <button
                             onClick={() => setRemoveTarget(r)}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] disabled:opacity-50 transition-colors"
@@ -388,6 +450,23 @@ export default function AdminFlagsPage() {
             </div>
           )}
         </div>
+
+      {/* Unapprove confirmation */}
+      {unapproveTarget && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !actionLoading && setUnapproveTarget(null)} />
+          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Approve</h3>
+            <p className="text-sm text-[#8FA3B8] mb-4">
+              Remove approval from &ldquo;{unapproveTarget.product?.name_ar ?? "—"}&rdquo; (₪{unapproveTarget.price})? It will go back to pending.
+            </p>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setUnapproveTarget(null)} disabled={actionLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={confirmUnapprove} disabled={actionLoading} className="flex-1 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-4 py-2 text-sm font-medium text-[#E8B870] hover:bg-[#D4913A28] disabled:opacity-50">{actionLoading ? "..." : "Yes, Unapprove"}</button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Approve confirmation */}
       {approveTarget && (
@@ -472,8 +551,11 @@ export default function AdminFlagsPage() {
                       value={editForm.price}
                       onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
                       placeholder="0.00"
+                      dir="ltr"
+                      lang="en"
                       className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
                     />
+                    <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -529,8 +611,11 @@ export default function AdminFlagsPage() {
                   value={addForm.price}
                   onChange={(e) => setAddForm((f) => ({ ...f, price: e.target.value }))}
                   placeholder="0.00"
+                  dir="ltr"
+                  lang="en"
                   className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
                 />
+                <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
               </div>
             </div>
             <div className="flex gap-2 mt-4">

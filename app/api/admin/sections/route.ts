@@ -4,7 +4,7 @@ import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/** POST /api/admin/products — Create a product. Requires admin JWT. */
+/** POST /api/admin/sections — Create a section. Requires admin JWT. */
 export async function POST(req: NextRequest) {
   const base = getApiBaseUrl();
   if (!base) {
@@ -32,30 +32,14 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!body?.category_id || typeof body.category_id !== "string") {
-    return NextResponse.json(
-      { error: "BAD_REQUEST", message: "category_id is required" },
-      { status: 400 }
-    );
+  const payload: Record<string, unknown> = { name_ar: body.name_ar };
+  if (body.icon != null && typeof body.icon === "string") payload.icon = body.icon;
+  if (body.sort_order != null) {
+    const n = Number(body.sort_order);
+    if (!Number.isNaN(n) && n >= 0) payload.sort_order = Math.floor(n);
   }
-  const unitSizeNum = Number(body.unit_size);
-  if (Number.isNaN(unitSizeNum) || unitSizeNum < 0) {
-    return NextResponse.json(
-      { error: "BAD_REQUEST", message: "unit_size must be a non-negative integer" },
-      { status: 400 }
-    );
-  }
-  const payload: Record<string, unknown> = {
-    name_ar: body.name_ar,
-    category_id: body.category_id,
-    unit_size: Math.floor(unitSizeNum),
-  };
-  if (body.name_en != null && typeof body.name_en === "string") payload.name_en = body.name_en;
-  if (body.unit != null && typeof body.unit === "string") payload.unit = body.unit;
-  if (body.barcode != null && typeof body.barcode === "string") payload.barcode = body.barcode;
-  if (body.status != null && typeof body.status === "string") payload.status = body.status;
   try {
-    const res = await fetch(`${base}/products`, {
+    const res = await fetch(`${base}/sections`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

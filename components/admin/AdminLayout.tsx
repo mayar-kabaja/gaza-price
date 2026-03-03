@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { playNavSound } from "@/lib/sounds";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
-import { clearStoredToken } from "@/lib/auth/token";
+import { clearAdminToken } from "@/lib/auth/token";
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
   "/admin/suggestions": "Suggestions",
   "/admin/products": "Products",
+  "/admin/sections": "Sections",
   "/admin/categories": "Categories",
   "/admin/areas": "Areas",
   "/admin/stores": "Stores",
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "grid" },
   { href: "/admin/suggestions", label: "Suggestions", icon: "clipboard", badge: "pending" },
   { href: "/admin/products", label: "Products", icon: "package" },
+  { href: "/admin/sections", label: "Sections", icon: "layers" },
   { href: "/admin/categories", label: "Categories", icon: "tag" },
   { href: "/admin/areas", label: "Areas", icon: "map" },
   { href: "/admin/stores", label: "Stores", icon: "store" },
@@ -56,6 +58,11 @@ const iconMap: Record<string, ReactNode> = {
   tag: (
     <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
       <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  ),
+  layers: (
+    <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-[18px] h-[18px] shrink-0">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
     </svg>
   ),
   map: (
@@ -208,7 +215,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
   }, [drawerOpen, isMobile]);
 
   function handleLogout() {
-    clearStoredToken();
+    clearAdminToken();
     router.replace("/admin/login");
   }
 
@@ -235,6 +242,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Content</div>
         <NavLink href="/admin/suggestions" label="Suggestions" icon="clipboard" badge="pending" badgeCount={pendingCount} pathname={pathname} />
         <NavLink href="/admin/products" label="Products" icon="package" count={sidebarCounts.products} pathname={pathname} />
+        <NavLink href="/admin/sections" label="Sections" icon="layers" count={sidebarCounts.sections} pathname={pathname} />
         <NavLink href="/admin/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
         <NavLink href="/admin/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
         <NavLink href="/admin/stores" label="Stores" icon="store" count={sidebarCounts.stores} pathname={pathname} />

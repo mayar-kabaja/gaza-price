@@ -128,3 +128,98 @@
     padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* Admin date picker — olive theme, compact size */
+.rdp-root-admin .rdp-root {
+  --rdp-accent-color: #4A7C59;
+  --rdp-accent-background-color: rgba(74, 124, 89, 0.2);
+  --rdp-day-height: 28px;
+  --rdp-day-width: 28px;
+  --rdp-day_button-height: 26px;
+  --rdp-day_button-width: 26px;
+  --rdp-day_button-border: 1px solid transparent;
+  --rdp-day_button-border-radius: 6px;
+  --rdp-selected-border: 1px solid #4A7C59;
+  --rdp-today-color: #6BA880;
+  --rdp-range_middle-background-color: rgba(74, 124, 89, 0.15);
+  --rdp-range_middle-color: #D8E4F0;
+  --rdp-range_start-date-background-color: #4A7C59;
+  --rdp-range_end-date-background-color: #4A7C59;
+  --rdp-range_start-color: #fff;
+  --rdp-range_end-color: #fff;
+  --rdp-outside-opacity: 0.45;
+  --rdp-disabled-opacity: 0.35;
+  --rdp-weekday-opacity: 1;
+  --rdp-nav_height: 1.75rem;
+  --rdp-nav_button-height: 1.5rem;
+  --rdp-nav_button-width: 1.5rem;
+}
+
+.rdp-root-admin .rdp-root {
+  background: transparent;
+  color: #D8E4F0;
+}
+
+.rdp-root-admin .rdp-day_button {
+  color: #D8E4F0;
+  font-size: 12px;
+}
+.rdp-root-admin .rdp-day_button:hover:not([disabled]):not([data-selected]) {
+  background: #18212C;
+  color: #D8E4F0;
+}
+.rdp-root-admin .rdp-day_button[data-selected],
+.rdp-root-admin .rdp-range_start .rdp-day_button,
+.rdp-root-admin .rdp-range_end .rdp-day_button {
+  background: #4A7C59 !important;
+  color: #fff !important;
+  border-color: #4A7C59 !important;
+}
+.rdp-root-admin .rdp-day_button[data-selected]:hover,
+.rdp-root-admin .rdp-range_start .rdp-day_button:hover,
+.rdp-root-admin .rdp-range_end .rdp-day_button:hover {
+  background: #3A6347 !important;
+  color: #fff !important;
+}
+.rdp-root-admin .rdp-caption_label,
+.rdp-root-admin .rdp-month_caption {
+  color: #D8E4F0;
+  font-weight: 600;
+  font-size: 13px;
+}
+.rdp-root-admin .rdp-chevron {
+  fill: #6BA880;
+}
+.rdp-root-admin .rdp-button_previous,
+.rdp-root-admin .rdp-button_next {
+  color: #8FA3B8;
+}
+.rdp-root-admin .rdp-button_previous:hover:not(:disabled),
+.rdp-root-admin .rdp-button_next:hover:not(:disabled) {
+  color: #D8E4F0;
+  background: #18212C;
+  border-radius: 6px;
+}
+.rdp-root-admin .rdp-weekday {
+  color: #4E6070;
+  font-weight: 500;
+  font-size: 10px;
+  padding: 0.25rem 0;
+}
+.rdp-root-admin .rdp-day[data-outside] .rdp-day_button {
+  color: rgba(216, 228, 240, 0.45);
+}
+.rdp-root-admin .rdp-today .rdp-day_button:not([data-selected]) {
+  color: #6BA880;
+  font-weight: 600;
+  border-color: rgba(107, 168, 128, 0.5);
+  font-size: 12px;
+}
+.rdp-root-admin .rdp-range_middle .rdp-day_button {
+  background-color: rgba(74, 124, 89, 0.15) !important;
+  color: #D8E4F0 !important;
+}
+.rdp-root-admin .rdp-selected {
+  font-size: inherit;
+  font-weight: inherit;
+}

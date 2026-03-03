@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getStoredToken } from "@/lib/auth/token";
-import { apiFetch } from "@/lib/api/fetch";
+import { getAdminToken } from "@/lib/auth/token";
+import { apiFetchAdmin } from "@/lib/api/fetch";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { ApproveIcon, RejectIcon } from "@/components/admin/AdminActionIcons";
+import { PRODUCT_UNITS } from "@/lib/constants";
 
 type PendingProduct = {
   id: string;
@@ -21,7 +22,7 @@ type PendingProduct = {
 type Category = { id: string; name_ar: string };
 
 const PAGE_SIZE = 50;
-const ADD_FORM_EMPTY = { name_ar: "", name_en: "", category_id: "", unit: "", unit_size: 1 };
+const ADD_FORM_EMPTY = { name_ar: "", name_en: "", category_id: "", unit: "كغ", unit_size: 1 };
 
 export default function AdminSuggestionsPage() {
   const { toast } = useAdminToast();
@@ -38,14 +39,14 @@ export default function AdminSuggestionsPage() {
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
-  function load() {
-    const token = getStoredToken();
+  function load(showSpinner = true) {
+    const token = getAdminToken();
     if (!token) {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    apiFetch(`/api/admin/products/pending?limit=${PAGE_SIZE}&offset=${offset}`)
+    if (showSpinner) setLoading(true);
+    apiFetchAdmin(`/api/admin/products/pending?limit=${PAGE_SIZE}&offset=${offset}`)
       .then((r) => r.json())
       .then((d) => {
         setProducts(d?.products ?? []);
@@ -90,7 +91,7 @@ export default function AdminSuggestionsPage() {
     : products;
 
   async function handleReview(id: string, action: "approve" | "reject") {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setReviewingId(id);
     try {
@@ -104,7 +105,10 @@ export default function AdminSuggestionsPage() {
       });
       if (res.ok) {
         toast(action === "approve" ? "Product approved" : "Product rejected", "success");
-        load();
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        setTotal((t) => Math.max(0, t - 1));
+        load(false); // Sync with server in background (no spinner)
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts")); // Update sidebar counts
       } else {
         toast("Action failed", "error");
       }
@@ -139,7 +143,7 @@ export default function AdminSuggestionsPage() {
   }
 
   async function confirmAddSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("Login required", "error");
       return;
@@ -154,7 +158,7 @@ export default function AdminSuggestionsPage() {
           name_en: addForm.name_en?.trim() || undefined,
           category_id: addForm.category_id,
           unit: addForm.unit?.trim() || undefined,
-          unit_size: Math.max(0, Number(addForm.unit_size) || 0),
+          unit_size: Math.max(0, Math.floor(Number(addForm.unit_size) || 0)),
           status: "pending_review",
         }),
       });
@@ -165,6 +169,7 @@ export default function AdminSuggestionsPage() {
         setShowAddConfirm(false);
         setAddForm(ADD_FORM_EMPTY);
         load();
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts")); // Update sidebar counts
       } else {
         toast(data?.message ?? "Failed to add", "error");
       }
@@ -332,23 +337,30 @@ export default function AdminSuggestionsPage() {
                   </div>
                   <div>
                     <label className="block text-xs text-[#4E6070] mb-1">Unit</label>
-                    <input
-                      type="text"
-                      value={addForm.unit}
+                    <select
+                      value={addForm.unit || "كغ"}
                       onChange={(e) => setAddForm((f) => ({ ...f, unit: e.target.value }))}
                       className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-                      placeholder="kg"
-                    />
+                    >
+                      {PRODUCT_UNITS.map((u) => (
+                        <option key={u.value} value={u.value}>{u.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-[#4E6070] mb-1">Unit size</label>
+                    <label className="block text-xs text-[#4E6070] mb-1">Quantity *</label>
                     <input
                       type="number"
                       min={0}
+                      step={1}
                       value={addForm.unit_size}
                       onChange={(e) => setAddForm((f) => ({ ...f, unit_size: parseInt(e.target.value, 10) || 0 }))}
+                      placeholder="0-9"
+                      dir="ltr"
+                      lang="en"
                       className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
                     />
+                    <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-5">

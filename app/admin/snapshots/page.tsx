@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
+import { useAdminToast } from "@/components/admin/AdminToast";
+import { AdminDateRangePicker } from "@/components/admin/AdminDateRangePicker";
+import { validateDateRange, DATE_RANGE_MESSAGES } from "@/lib/admin/date-utils";
 
 type PriceSnapshot = {
   id: string;
@@ -18,6 +21,7 @@ type PriceSnapshot = {
 };
 
 export default function AdminSnapshotsPage() {
+  const { toast } = useAdminToast();
   const [snapshots, setSnapshots] = useState<PriceSnapshot[]>([]);
   const [snapshotsTotal, setSnapshotsTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -28,34 +32,50 @@ export default function AdminSnapshotsPage() {
   const limit = 30;
 
   function loadSnapshots() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setLoading(true);
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
+    if (from?.trim()) params.set("from", from.trim());
+    if (to?.trim()) params.set("to", to.trim());
     fetch(`/api/admin/logs/snapshots?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) {
+          toast(d?.message ?? "فشل تحميل اللقطات", "error");
+          setSnapshots([]);
+          setSnapshotsTotal(0);
+          return;
+        }
         setSnapshots(d?.snapshots ?? []);
         setSnapshotsTotal(d?.total ?? 0);
       })
+      .catch(() => toast("فشل تحميل اللقطات", "error"))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
+    if (from?.trim() || to?.trim()) {
+      const err = validateDateRange(from, to);
+      if (err) return;
+    }
     loadSnapshots();
   }, [offset]);
 
   function handleApplyFilters() {
+    const err = validateDateRange(from, to);
+    if (err) {
+      toast(DATE_RANGE_MESSAGES[err], "error");
+      return;
+    }
     setOffset(0);
     loadSnapshots();
   }
 
   async function handleRunSnapshotsJob() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setRunningJob(true);
     try {
@@ -76,23 +96,21 @@ export default function AdminSnapshotsPage() {
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
         <div className="mb-4 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-          <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2 min-w-0">
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
-            />
-            <span className="text-[#4E6070] text-xs flex-shrink-0">–</span>
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-[#D8E4F0]"
-            />
+          <div className="flex flex-nowrap items-center gap-2 min-w-0">
+            <div className="flex-1 min-w-0 max-w-[280px]">
+              <AdminDateRangePicker
+                from={from}
+                to={to}
+                onChange={(f, t) => {
+                  setFrom(f);
+                  setTo(t);
+                }}
+                placeholder="From – To"
+              />
+            </div>
             <button
               onClick={handleApplyFilters}
-              className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
+              className="flex-shrink-0 min-h-[36px] rounded-lg bg-[#4A7C59] px-3 py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347] transition-colors"
             >
               Apply
             </button>

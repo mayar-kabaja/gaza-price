@@ -254,6 +254,7 @@ function SubmitForm() {
         {/* Price — LTR so digits stay English (0-9) */}
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر</label>
+          <p className="text-xs text-mist mb-2 font-body">أرقام إنجليزية (0-9) فقط</p>
           <div className="bg-white border border-border rounded-2xl flex items-center overflow-hidden">
             <input
               type="text"

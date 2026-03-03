@@ -31,9 +31,9 @@ export async function PATCH(
     );
   }
   const status = body?.status;
-  if (status !== "confirmed" && status !== "rejected") {
+  if (status !== "confirmed" && status !== "rejected" && status !== "pending") {
     return NextResponse.json(
-      { error: "BAD_REQUEST", message: "status must be confirmed or rejected" },
+      { error: "BAD_REQUEST", message: "status must be confirmed, rejected, or pending" },
       { status: 400 }
     );
   }

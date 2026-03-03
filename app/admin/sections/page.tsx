@@ -5,55 +5,40 @@ import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
-type Category = {
-  id: string;
-  name_ar: string;
-  name_en?: string;
-  icon?: string;
-  sort_order?: number;
-  section_id?: string | null;
-  section?: { id: string; name_ar: string; icon?: string | null } | null;
-};
-
 type Section = {
   id: string;
   name_ar: string;
   icon?: string | null;
   sort_order?: number;
+  categories?: { id: string }[];
 };
 
 const EMPTY_FORM = {
   name_ar: "",
-  name_en: "",
   icon: "",
-  section_id: "",
   sort_order: 0,
 };
 
-export default function AdminCategoriesPage() {
+export default function AdminSectionsPage() {
   const { toast } = useAdminToast();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Add / Edit modal
   const [showFormModal, setShowFormModal] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formSaving, setFormSaving] = useState(false);
   const [showFormConfirm, setShowFormConfirm] = useState(false);
-
-  // Delete modal
-  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Section | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [sections, setSections] = useState<Section[]>([]);
 
   function load() {
     setLoading(true);
-    fetch("/api/categories")
+    fetch("/api/sections")
       .then((r) => r.json())
-      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .then((d) => setSections(Array.isArray(d) ? d : []))
       .finally(() => setLoading(false));
   }
 
@@ -61,38 +46,27 @@ export default function AdminCategoriesPage() {
     load();
   }, []);
 
-  useEffect(() => {
-    fetch("/api/sections")
-      .then((r) => r.json())
-      .then((d) => setSections(Array.isArray(d) ? d : []))
-      .catch(() => setSections([]));
-  }, []);
-
-  const filteredCategories = search.trim()
-    ? categories.filter(
-        (c) =>
-          (c.name_ar?.toLowerCase() ?? "").includes(search.trim().toLowerCase()) ||
-          (c.name_en?.toLowerCase() ?? "").includes(search.trim().toLowerCase())
+  const filteredSections = search.trim()
+    ? sections.filter((s) =>
+        (s.name_ar?.toLowerCase() ?? "").includes(search.trim().toLowerCase())
       )
-    : categories;
+    : sections;
 
   function openAddModal() {
     setFormMode("add");
-    setEditingCategory(null);
+    setEditingSection(null);
     setForm(EMPTY_FORM);
     setShowFormConfirm(false);
     setShowFormModal(true);
   }
 
-  function openEditModal(category: Category) {
+  function openEditModal(section: Section) {
     setFormMode("edit");
-    setEditingCategory(category);
+    setEditingSection(section);
     setForm({
-      name_ar: category.name_ar ?? "",
-      name_en: category.name_en ?? "",
-      icon: category.icon ?? "",
-      section_id: category.section_id ?? category.section?.id ?? "",
-      sort_order: typeof category.sort_order === "number" ? category.sort_order : 0,
+      name_ar: section.name_ar ?? "",
+      icon: section.icon ?? "",
+      sort_order: typeof section.sort_order === "number" ? section.sort_order : 0,
     });
     setShowFormConfirm(false);
     setShowFormModal(true);
@@ -122,14 +96,11 @@ export default function AdminCategoriesPage() {
       name_ar: form.name_ar.trim(),
       sort_order: Math.floor(Number(form.sort_order) || 0),
     };
-    if (form.name_en?.trim()) payload.name_en = form.name_en.trim();
     if (form.icon?.trim()) payload.icon = form.icon.trim();
-    if (form.section_id?.trim()) payload.section_id = form.section_id.trim();
-    else payload.section_id = null;
 
     try {
       if (formMode === "add") {
-        const res = await fetch("/api/admin/categories", {
+        const res = await fetch("/api/admin/sections", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(payload),
@@ -139,17 +110,14 @@ export default function AdminCategoriesPage() {
           toast(data?.message ?? "فشل الإضافة", "error");
           return;
         }
-        toast("تمت إضافة التصنيف بنجاح", "success");
-        const created = data as Category;
-        const enriched: Category = {
-          ...created,
-          section: created.section ?? (created.section_id ? sections.find((s) => s.id === created.section_id) ?? null : null),
-        };
-        setCategories((prev) =>
-          [...prev, enriched].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        toast("تمت إضافة القسم بنجاح", "success");
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts"));
+        const created = data as Section;
+        setSections((prev) =>
+          [...prev, created].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
         );
-      } else if (editingCategory) {
-        const res = await fetch(`/api/admin/categories/${editingCategory.id}`, {
+      } else if (editingSection) {
+        const res = await fetch(`/api/admin/sections/${editingSection.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(payload),
@@ -159,15 +127,12 @@ export default function AdminCategoriesPage() {
           toast(data?.message ?? "فشل التحديث", "error");
           return;
         }
-        toast("تم تحديث التصنيف بنجاح", "success");
-        const updated = data as Category;
-        const enriched: Category = {
-          ...updated,
-          section: updated.section ?? (updated.section_id ? sections.find((s) => s.id === updated.section_id) ?? null : null),
-        };
-        setCategories((prev) =>
+        toast("تم تحديث القسم بنجاح", "success");
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts"));
+        const updated = data as Section;
+        setSections((prev) =>
           prev
-            .map((c) => (c.id === editingCategory.id ? { ...c, ...enriched } : c))
+            .map((s) => (s.id === editingSection.id ? { ...s, ...updated } : s))
             .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
         );
       }
@@ -180,10 +145,6 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  function openDeleteModal(category: Category) {
-    setDeleteTarget(category);
-  }
-
   async function confirmDelete() {
     if (!deleteTarget) return;
     const token = getAdminToken();
@@ -193,15 +154,16 @@ export default function AdminCategoriesPage() {
     }
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/admin/categories/${deleteTarget.id}`, {
+      const res = await fetch(`/api/admin/sections/${deleteTarget.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        toast("تم حذف التصنيف بنجاح", "success");
+        toast("تم حذف القسم بنجاح", "success");
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts"));
         const removedId = deleteTarget.id;
         setDeleteTarget(null);
-        setCategories((prev) => prev.filter((c) => c.id !== removedId));
+        setSections((prev) => prev.filter((s) => s.id !== removedId));
       } else {
         const data = await res.json();
         toast(data?.message ?? "فشل الحذف", "error");
@@ -220,14 +182,14 @@ export default function AdminCategoriesPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search categories..."
+          placeholder="Search sections..."
           className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
         />
         <button
           onClick={openAddModal}
           className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
         >
-          + Add Category
+          + Add Section
         </button>
       </div>
 
@@ -236,9 +198,9 @@ export default function AdminCategoriesPage() {
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
           </div>
-        ) : filteredCategories.length === 0 ? (
+        ) : filteredSections.length === 0 ? (
           <div className="py-12 text-center text-sm text-[#4E6070]">
-            {search.trim() ? "No categories match your search." : "No categories"}
+            {search.trim() ? "No sections match your search." : "No sections"}
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
@@ -247,31 +209,31 @@ export default function AdminCategoriesPage() {
                 <tr className="border-b border-[#243040]">
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Icon</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Name</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Section</th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Categories</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Order</th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredCategories.map((c, i) => (
-                  <tr key={c.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                {filteredSections.map((s, i) => (
+                  <tr key={s.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                     <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{i + 1}</td>
-                    <td className="px-5 py-3 text-lg">{c.icon ?? "—"}</td>
-                    <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{c.name_ar}</td>
-                    <td className="px-5 py-3 text-xs text-[#8FA3B8]">{c.section?.name_ar ?? "—"}</td>
-                    <td className="px-5 py-3 font-mono text-xs text-[#4E6070]">{c.sort_order ?? "—"}</td>
+                    <td className="px-5 py-3 text-lg">{s.icon ?? "—"}</td>
+                    <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{s.name_ar}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-[#4E6070]">{s.categories?.length ?? 0}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-[#4E6070]">{s.sort_order ?? "—"}</td>
                     <td className="px-5 py-3">
                       <div className="flex gap-2 items-center flex-wrap">
                         <button
-                          onClick={() => openEditModal(c)}
+                          onClick={() => openEditModal(s)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"
                         >
                           <EditIcon />
                           Edit
                         </button>
                         <button
-                          onClick={() => openDeleteModal(c)}
+                          onClick={() => setDeleteTarget(s)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"
                         >
                           <RemoveIcon />
@@ -287,19 +249,12 @@ export default function AdminCategoriesPage() {
         )}
       </div>
 
-      {/* Add / Edit form modal */}
+      {/* Add / Edit modal */}
       {showFormModal && (
         <>
-          <div
-            className="fixed inset-0 bg-black/60 z-40"
-            aria-hidden
-            onClick={() => !showFormConfirm && setShowFormModal(false)}
-          />
+          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !showFormConfirm && setShowFormModal(false)} />
           <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-4">
-              {formMode === "add" ? "Add Category" : "Edit Category"}
-            </h3>
-
+            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-4">{formMode === "add" ? "Add Section" : "Edit Section"}</h3>
             {!showFormConfirm ? (
               <>
                 <div className="space-y-3">
@@ -310,32 +265,7 @@ export default function AdminCategoriesPage() {
                       value={form.name_ar}
                       onChange={(e) => setForm((f) => ({ ...f, name_ar: e.target.value }))}
                       className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-                      placeholder="اسم التصنيف"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-[#4E6070] mb-1">Section</label>
-                    <select
-                      value={form.section_id}
-                      onChange={(e) => setForm((f) => ({ ...f, section_id: e.target.value }))}
-                      className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-                    >
-                      <option value="">No section</option>
-                      {[...sections]
-                        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>{s.icon ? `${s.icon} ` : ""}{s.name_ar}</option>
-                        ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-[#4E6070] mb-1">Name (English)</label>
-                    <input
-                      type="text"
-                      value={form.name_en}
-                      onChange={(e) => setForm((f) => ({ ...f, name_en: e.target.value }))}
-                      className="w-full rounded-lg border border-[#243040] bg-[#111820] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-                      placeholder="Category name"
+                      placeholder="اسم القسم"
                     />
                   </div>
                   <div>
@@ -365,46 +295,16 @@ export default function AdminCategoriesPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setShowFormModal(false)}
-                    className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFormSubmit}
-                    className="flex-1 rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]"
-                  >
-                    {formMode === "add" ? "Add Category" : "Save Changes"}
-                  </button>
+                  <button type="button" onClick={() => setShowFormModal(false)} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040]">Cancel</button>
+                  <button type="button" onClick={handleFormSubmit} className="flex-1 rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347]">{formMode === "add" ? "Add Section" : "Save Changes"}</button>
                 </div>
               </>
             ) : (
               <>
-                <p className="text-sm text-[#D8E4F0] mb-4">
-                  {formMode === "add"
-                    ? "Are you sure you want to add this category?"
-                    : "Are you sure you want to save these changes?"}
-                </p>
+                <p className="text-sm text-[#D8E4F0] mb-4">{formMode === "add" ? "Are you sure you want to add this section?" : "Are you sure you want to save these changes?"}</p>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowFormConfirm(false)}
-                    disabled={formSaving}
-                    className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={confirmFormSubmit}
-                    disabled={formSaving}
-                    className="flex-1 rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347] disabled:opacity-50"
-                  >
-                    {formSaving ? "..." : formMode === "add" ? "Yes, Add" : "Yes, Save"}
-                  </button>
+                  <button type="button" onClick={() => setShowFormConfirm(false)} disabled={formSaving} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Back</button>
+                  <button type="button" onClick={confirmFormSubmit} disabled={formSaving} className="flex-1 rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347] disabled:opacity-50">{formSaving ? "..." : formMode === "add" ? "Yes, Add" : "Yes, Save"}</button>
                 </div>
               </>
             )}
@@ -412,36 +312,16 @@ export default function AdminCategoriesPage() {
         </>
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Delete modal */}
       {deleteTarget && (
         <>
-          <div
-            className="fixed inset-0 bg-black/60 z-40"
-            aria-hidden
-            onClick={() => !deleteLoading && setDeleteTarget(null)}
-          />
+          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !deleteLoading && setDeleteTarget(null)} />
           <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Category</h3>
-            <p className="text-sm text-[#8FA3B8] mb-4">
-              Are you sure you want to delete &ldquo;{deleteTarget.name_ar}&rdquo;? This action cannot be undone.
-            </p>
+            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Section</h3>
+            <p className="text-sm text-[#8FA3B8] mb-4">Are you sure you want to delete &ldquo;{deleteTarget.name_ar}&rdquo;? Categories in this section will become unassigned.</p>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleteLoading}
-                className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDelete}
-                disabled={deleteLoading}
-                className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors"
-              >
-                {deleteLoading ? "..." : "Yes, Remove"}
-              </button>
+              <button type="button" onClick={() => setDeleteTarget(null)} disabled={deleteLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={confirmDelete} disabled={deleteLoading} className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50">{deleteLoading ? "..." : "Yes, Remove"}</button>
             </div>
           </div>
         </>

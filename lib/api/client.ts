@@ -21,24 +21,32 @@ function buildUrl(base: string, path: string, params?: Record<string, string | n
 
 export async function apiGet<T>(
   path: string,
-  params?: Record<string, string | number | undefined>
+  params?: Record<string, string | number | undefined>,
+  opts?: { noCache?: boolean }
 ): Promise<T> {
   const base = getBaseUrl();
   let url = buildUrl(base, path, params);
-  let res = await fetch(url, {
+  const fetchOpts: RequestInit = {
     headers: { Accept: "application/json" },
-    next: { revalidate: 60 },
     signal: AbortSignal.timeout(25000), // 25s for Render cold start
-  });
+  };
+  if (opts?.noCache) {
+    (fetchOpts as RequestInit & { cache?: string }).cache = "no-store";
+  } else {
+    (fetchOpts as RequestInit & { next?: { revalidate: number } }).next = { revalidate: 60 };
+  }
+  let res = await fetch(url, fetchOpts);
   // If 404 and base ends with /api, retry without /api (backend might be at root)
   if (res.status === 404 && base.endsWith("/api")) {
     const baseRoot = base.replace(/\/api\/?$/, "");
     url = buildUrl(baseRoot, path, params);
-    res = await fetch(url, {
+    const retryOpts: RequestInit = {
       headers: { Accept: "application/json" },
-      next: { revalidate: 60 },
       signal: AbortSignal.timeout(25000),
-    });
+    };
+    if (opts?.noCache) (retryOpts as RequestInit & { cache?: string }).cache = "no-store";
+    else (retryOpts as RequestInit & { next?: { revalidate: number } }).next = { revalidate: 60 };
+    res = await fetch(url, retryOpts);
   }
   if (!res.ok) {
     const text = await res.text();

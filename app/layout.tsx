@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     siteName: "غزة بريس",
     images: [
       {
-        url: `${appUrl}/icons/icon-512.png`,
-        width: 512,
-        height: 512,
+        url: `${appUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
         alt: "غزة بريس — أسعار شفافة · قوة المجتمع",
       },
     ],
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "غزة بريس — أسعار شفافة",
     description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
-    images: [`${appUrl}/icons/icon-512.png`],
+    images: [`${appUrl}/og-image.png`],
   },
 };
 

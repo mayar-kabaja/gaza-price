@@ -17,7 +17,7 @@ import {
   fetchAdminPendingProducts,
   fetchAdminFlags,
 } from "@/lib/queries/fetchers";
-import { apiFetch } from "@/lib/api/fetch";
+import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
 
 // ── Areas ──
@@ -340,10 +340,9 @@ export function useReviewProduct() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, action }: { id: string; action: "approve" | "reject" }) => {
-      const res = await apiFetch(`/api/admin/products/${id}/review`, {
+      const res = await apiFetchAdmin(`/api/admin/products/${id}/review`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ action }),
       });
       const data = await res.json();

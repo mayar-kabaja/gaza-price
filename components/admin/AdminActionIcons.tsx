@@ -21,6 +21,13 @@ export function ApproveIcon({ className = "w-3.5 h-3.5 shrink-0" }: { className?
     </svg>
   );
 }
+export function UnapproveIcon({ className = "w-3.5 h-3.5 shrink-0" }: { className?: string }) {
+  return (
+    <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+    </svg>
+  );
+}
 export function RemoveIcon({ className = "w-3.5 h-3.5 shrink-0" }: { className?: string }) {
   return (
     <svg fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" className={className}>

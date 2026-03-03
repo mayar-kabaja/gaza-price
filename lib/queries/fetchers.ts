@@ -3,7 +3,7 @@
  */
 
 import type { Area, Category, Price, PriceStats, Product, Section } from "@/types/app";
-import { apiFetch } from "@/lib/api/fetch";
+import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 
 // ── Query keys ──
 export const queryKeys = {
@@ -197,7 +197,10 @@ export async function fetchContributorMeReports(params: {
 
 // ── Admin dashboard ──
 export async function fetchAdminStats(): Promise<Record<string, unknown>> {
-  return getJson("/api/admin/stats");
+  const res = await apiFetchAdmin("/api/admin/stats");
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return data as Record<string, unknown>;
 }
 
 export interface AdminPendingProduct {
@@ -216,9 +219,7 @@ export async function fetchAdminPendingProducts(limit: number, offset: number): 
   total: number;
 }> {
   const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  const res = await apiFetch(`/api/admin/products/pending?${sp.toString()}`, {
-    credentials: "include",
-  });
+  const res = await apiFetchAdmin(`/api/admin/products/pending?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {
@@ -241,9 +242,7 @@ export async function fetchAdminFlags(limit: number, offset: number): Promise<{
   total: number;
 }> {
   const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  const res = await apiFetch(`/api/admin/flags?${sp.toString()}`, {
-    credentials: "include",
-  });
+  const res = await apiFetchAdmin(`/api/admin/flags?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {

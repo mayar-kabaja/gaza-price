@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getStoredToken, setStoredToken, clearStoredToken } from "@/lib/auth/token";
+import { getAdminToken, clearAdminToken } from "@/lib/auth/token";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminToastProvider } from "@/components/admin/AdminToast";
 
@@ -16,7 +16,7 @@ function useAdminAuth() {
   const checkIdRef = useRef(0);
 
   const checkAuth = useCallback(async () => {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       setAdmin(null);
       setLoading(false);
@@ -30,7 +30,7 @@ function useAdminAuth() {
       // Ignore result if a newer check started (e.g. React Strict Mode double-mount)
       if (id !== checkIdRef.current) return null;
       if (!res.ok) {
-        clearStoredToken();
+        clearAdminToken();
         setAdmin(null);
         setLoading(false);
         return null;
@@ -58,6 +58,7 @@ function useAdminAuth() {
         pendingRes,
         flagsRes,
         productsRes,
+        sectionsRes,
         categoriesRes,
         areasRes,
         storesRes,
@@ -69,11 +70,12 @@ function useAdminAuth() {
         fetch("/api/admin/products/pending?limit=1&offset=0", { headers }),
         fetch("/api/admin/flags?limit=1&offset=0", { headers }),
         fetch("/api/products?limit=1&all=1", { headers: { Accept: "application/json" } }),
+        fetch("/api/sections", { headers: { Accept: "application/json" } }),
         fetch("/api/categories", { headers: { Accept: "application/json" } }),
         fetch("/api/areas", { headers: { Accept: "application/json" } }),
         fetch("/api/stores", { headers: { Accept: "application/json" } }),
         fetch("/api/admin/contributors?limit=1&offset=0", { headers }),
-        fetch("/api/reports?limit=1&offset=0", { headers }),
+        fetch("/api/reports?limit=1&offset=0", { headers: { Accept: "application/json" } }),
         fetch("/api/admin/logs/search?limit=1&offset=0", { headers }),
         fetch("/api/admin/logs/snapshots?limit=1&offset=0", { headers }),
       ]);
@@ -91,6 +93,10 @@ function useAdminAuth() {
       if (productsRes.ok) {
         const d = (await productsRes.json()) as { total?: number };
         counts.products = d.total ?? 0;
+      }
+      if (sectionsRes.ok) {
+        const d = await sectionsRes.json();
+        counts.sections = Array.isArray(d) ? d.length : 0;
       }
       if (categoriesRes.ok) {
         const d = await categoriesRes.json();
@@ -129,11 +135,20 @@ function useAdminAuth() {
   useEffect(() => {
     checkAuth().then((a) => {
       if (a) {
-        const token = getStoredToken();
+        const token = getAdminToken();
         if (token) fetchCounts(token);
       }
     });
   }, [checkAuth, fetchCounts]);
+
+  useEffect(() => {
+    const onRefetch = () => {
+      const token = getAdminToken();
+      if (token) fetchCounts(token);
+    };
+    window.addEventListener("admin:refetch-counts", onRefetch as EventListener);
+    return () => window.removeEventListener("admin:refetch-counts", onRefetch as EventListener);
+  }, [fetchCounts]);
 
   return { admin, loading, pendingCount, flagsCount, sidebarCounts, refetch: checkAuth };
 }

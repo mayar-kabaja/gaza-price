@@ -5,7 +5,7 @@
  * User never sees "reload" or "session expired" — we retry silently.
  */
 
-import { getStoredToken, setStoredToken, clearStoredToken } from "@/lib/auth/token";
+import { getStoredToken, setStoredToken, clearStoredToken, getAdminToken } from "@/lib/auth/token";
 
 export async function refreshToken(): Promise<string | null> {
   try {
@@ -49,6 +49,25 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
       ...(options.headers as Record<string, string>),
       Authorization: `Bearer ${newToken}`,
     },
+    credentials: options.credentials ?? "include",
+  });
+}
+
+/** Use for admin API routes. Sends admin JWT instead of contributor token. */
+export async function apiFetchAdmin(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = getAdminToken();
+  const mergedHeaders: HeadersInit = {
+    Accept: "application/json",
+    ...(options.headers as Record<string, string>),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  if (options.method !== "GET" && options.body !== undefined) {
+    (mergedHeaders as Record<string, string>)["Content-Type"] =
+      (options.headers as Record<string, string>)?.["Content-Type"] ?? "application/json";
+  }
+  return fetch(url, {
+    ...options,
+    headers: mergedHeaders,
     credentials: options.credentials ?? "include",
   });
 }

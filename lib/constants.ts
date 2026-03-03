@@ -35,6 +35,20 @@ export const AREAS_CACHE_SECONDS = 86400; // 24h
 
 export const CURRENCIES = ["ILS", "USD", "EGP"] as const;
 
+/** Unit options for products (used in suggest + admin). */
+export const PRODUCT_UNITS = [
+  { value: "غرام", label: "غرام" },
+  { value: "كغ", label: "كغ" },
+  { value: "لتر", label: "لتر" },
+  { value: "مل", label: "مل" },
+  { value: "علبة", label: "علبة" },
+  { value: "قطعة", label: "قطعة" },
+  { value: "باكيت", label: "باكيت" },
+  { value: "كرتون", label: "كرتون" },
+  { value: "كوب", label: "كوب" },
+  { value: "أخرى", label: "أخرى" },
+] as const;
+
 export const FLAG_REASONS = [
   { value: "wrong_price",  label: "السعر غير صحيح" },
   { value: "wrong_store",  label: "المتجر غير صحيح" },

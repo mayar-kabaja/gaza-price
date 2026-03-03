@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
@@ -90,7 +90,7 @@ export default function AdminStoresPage() {
   }
 
   async function confirmFormSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;
@@ -140,7 +140,7 @@ export default function AdminStoresPage() {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;

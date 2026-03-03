@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { EditIcon, BanIcon, UnbanIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
@@ -59,7 +59,7 @@ export default function AdminUsersPage() {
   const limit = 20;
 
   function load(overrideOffset?: number) {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setLoading(true);
     const off = overrideOffset ?? offset;
@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
   }
 
   async function confirmAddSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setAddSaving(true);
     const payload: Record<string, unknown> = {
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
 
   async function confirmEditSubmit() {
     if (!editingContributor) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setEditSaving(true);
     const payload: Record<string, unknown> = {
@@ -186,7 +186,7 @@ export default function AdminUsersPage() {
 
   async function confirmBan() {
     if (!banTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setBanningId(banTarget.id);
     try {
@@ -212,7 +212,7 @@ export default function AdminUsersPage() {
 
   async function confirmUnban() {
     if (!unbanTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setUnbanLoading(true);
     try {
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
 
   async function confirmRemove() {
     if (!removeTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) return;
     setRemoveLoading(true);
     try {

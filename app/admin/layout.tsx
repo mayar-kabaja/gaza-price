@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import "react-day-picker/style.css";
 import "./admin.css";
 import { AdminLayoutClient } from "./AdminLayoutClient";
 

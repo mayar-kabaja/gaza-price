@@ -15,16 +15,18 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function getProductsFirstCategory(
   limit = 10,
   offset = 0,
-  search?: string
+  search?: string,
+  opts?: { noCache?: boolean }
 ): Promise<{ products: Product[]; total: number }> {
-  return apiGetProductsFirstCategory(limit, offset, search);
+  return apiGetProductsFirstCategory(limit, offset, search, opts);
 }
 
 export async function searchProducts(
   search?: string,
   categoryId?: string,
   limit = 10,
-  offset = 0
+  offset = 0,
+  opts?: { noCache?: boolean }
 ): Promise<{ products: Product[]; total: number }> {
-  return apiSearchProducts(search, categoryId, limit, offset);
+  return apiSearchProducts(search, categoryId, limit, offset, opts);
 }

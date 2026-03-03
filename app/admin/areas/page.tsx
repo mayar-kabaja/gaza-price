@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoredToken } from "@/lib/auth/token";
+import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
@@ -72,7 +72,7 @@ export default function AdminAreasPage() {
   }
 
   async function confirmFormSubmit() {
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;
@@ -122,7 +122,7 @@ export default function AdminAreasPage() {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    const token = getStoredToken();
+    const token = getAdminToken();
     if (!token) {
       toast("يجب تسجيل الدخول", "error");
       return;
@@ -135,8 +135,9 @@ export default function AdminAreasPage() {
       });
       if (res.ok) {
         toast("تم حذف المنطقة بنجاح", "success");
+        const removedId = deleteTarget.id;
         setDeleteTarget(null);
-        load();
+        setAreas((prev) => prev.filter((a) => a.id !== removedId));
       } else {
         const data = await res.json();
         toast(data?.message ?? "فشل الحذف", "error");
