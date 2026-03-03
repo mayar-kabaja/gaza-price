@@ -11,6 +11,22 @@ export function Skeleton({ className }: { className?: string }) {
   );
 }
 
+/** Skeleton for home page product card (product name + price rows). */
+export function HomeProductCardSkeleton() {
+  return (
+    <section className="mb-6">
+      <div className="flex items-center justify-between gap-2 mb-2 px-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+      <div className="space-y-2 px-4">
+        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </div>
+    </section>
+  );
+}
+
 export function PriceCardSkeleton() {
   return (
     <div className="bg-white rounded-2xl p-4 border border-border">

@@ -160,6 +160,8 @@ export interface ReportFeedItem {
   reported_at: string;
   has_receipt: boolean;
   is_confirmed_by_me: boolean;
+  /** True when this report was submitted by the current user. */
+  is_mine?: boolean;
   product?: {
     id: string;
     name_ar: string;

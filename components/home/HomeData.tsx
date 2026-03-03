@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { HomeProductCard } from "@/components/home/HomeProductCard";
 import { LoaderDots } from "@/components/ui/LoaderDots";
+import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
@@ -62,7 +63,7 @@ export function HomeData() {
   }
 
   const hasCategories = sortedCategories.length > 0;
-  const loading = categoriesLoading || (effectiveCategoryId && productsLoading);
+  const showSkeletons = categoriesLoading || (!!effectiveCategoryId && productsLoading);
   const error = productsError ? "تعذر تحميل البيانات" : null;
 
   return (
@@ -91,7 +92,7 @@ export function HomeData() {
         </div>
       )}
 
-      {/* Category tabs — scrollable, first active by default */}
+      {/* Category tabs — show immediately; skeleton chips while categories load */}
       <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-border">
         {hasCategories ? (
           sortedCategories.map((c: Category) => {
@@ -112,6 +113,13 @@ export function HomeData() {
               </button>
             );
           })
+        ) : categoriesLoading ? (
+          [...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="h-8 w-16 rounded-full bg-border/50 animate-pulse flex-shrink-0"
+            />
+          ))
         ) : (
           FALLBACK_CHIPS.map((chip) => (
             <span
@@ -125,12 +133,11 @@ export function HomeData() {
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="font-display font-bold text-ink flex items-center justify-center gap-2">
-              جاري التحميل
-              <LoaderDots size="sm" />
-            </div>
+        {showSkeletons ? (
+          <div className="px-4">
+            {[...Array(5)].map((_, i) => (
+              <HomeProductCardSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="mx-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">

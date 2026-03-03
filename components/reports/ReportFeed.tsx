@@ -53,14 +53,17 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
   }
 
   if (reports.length === 0) {
+    const noArea = filter === "my_area" && !areaId;
     return (
       <div className="rounded-2xl border-2 border-dashed border-border bg-fog/30 p-8 text-center">
-        <p className="font-display font-bold text-ink mb-1">لا توجد تقارير في هذه المنطقة بعد</p>
+        <p className="font-display font-bold text-ink mb-1">
+          {noArea ? "لم تختر منطقة بعد. حدد منطقتك من الصفحة الرئيسية" : "لا توجد تقارير"}
+        </p>
         <a
-          href="/submit"
+          href={noArea ? "/" : "/submit"}
           className="inline-block mt-3 bg-olive-pale border border-olive-mid rounded-full px-4 py-2 text-sm font-semibold text-olive font-body"
         >
-          ➕ كن أول من يضيف سعراً
+          {noArea ? "اختر المنطقة" : "➕ أضف سعراً"}
         </a>
       </div>
     );

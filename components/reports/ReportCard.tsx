@@ -54,31 +54,48 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       </div>
 
-      {/* Row 4 left: trust dots + count + receipt */}
+      {/* Row 4: سعرك badge for my reports, else trust dots + count + receipt */}
       <div className="flex justify-between gap-2 mb-1">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <TrustDots confirmations={report.confirmation_count} />
-          <span className="text-[11px] text-mist">
-            {toArabicNumerals(report.confirmation_count)} {report.confirmation_count === 1 ? "تأكيد" : "تأكيدات"}
-          </span>
-          {report.has_receipt && (
-            <span className="text-olive text-xs" title="يوجد إيصال">
-              📷
-            </span>
+          {report.is_mine ? (
+            <>
+              <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
+                سعرك
+              </span>
+              <TrustDots confirmations={report.confirmation_count} />
+              <span className="text-[11px] text-mist">
+                {toArabicNumerals(report.confirmation_count)} {report.confirmation_count === 1 ? "تأكيد" : "تأكيدات"}
+              </span>
+              {report.has_receipt && (
+                <span className="text-olive text-xs" title="يوجد إيصال">📷</span>
+              )}
+            </>
+          ) : (
+            <>
+              <TrustDots confirmations={report.confirmation_count} />
+              <span className="text-[11px] text-mist">
+                {toArabicNumerals(report.confirmation_count)} {report.confirmation_count === 1 ? "تأكيد" : "تأكيدات"}
+              </span>
+              {report.has_receipt && (
+                <span className="text-olive text-xs" title="يوجد إيصال">📷</span>
+              )}
+            </>
           )}
         </div>
       </div>
       </Link>
 
-      {/* Confirm outside Link so click always sends API request */}
-      <div className="flex justify-end mt-1">
-        <ConfirmButton
-          priceId={report.id}
-          productId={report.product_id}
-          initialCount={report.confirmation_count}
-          confirmedByMe={report.is_confirmed_by_me}
-        />
-      </div>
+      {/* Confirm outside Link — hide for my own reports (can't confirm self) */}
+      {!report.is_mine && (
+        <div className="flex justify-end mt-1">
+          <ConfirmButton
+            priceId={report.id}
+            productId={report.product_id}
+            initialCount={report.confirmation_count}
+            confirmedByMe={report.is_confirmed_by_me}
+          />
+        </div>
+      )}
     </div>
   );
 }
