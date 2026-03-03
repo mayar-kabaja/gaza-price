@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { HomeProductCard } from "@/components/home/HomeProductCard";
@@ -9,20 +10,29 @@ import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
-import { useCategories, useProductsInfinite } from "@/lib/queries/hooks";
-
-const FALLBACK_CHIPS = ["🌾 دقيق", "🍚 أرز", "🫒 زيت", "🍬 سكر", "🥛 حليب", "🧂 ملح"];
+import { useSectionsWithCategories, useProductsInfinite } from "@/lib/queries/hooks";
 
 export function HomeData() {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryFromUrl = searchParams?.get("category") ?? null;
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const { area } = useArea();
 
-  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
-  const sortedCategories = [...categories].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
+  // Sync from URL when navigating from /categories
+  useEffect(() => {
+    if (categoryFromUrl) setSelectedCategoryId(categoryFromUrl);
+  }, [categoryFromUrl]);
+
+  function selectCategory(id: string) {
+    setSelectedCategoryId(id);
+    router.replace(`/?category=${id}`);
+  }
+
+  const { data: sections, isLoading: categoriesLoading } = useSectionsWithCategories();
+  // Flatten categories from sections (same order as /categories page)
+  const sortedCategories = (sections ?? []).flatMap((s) => s.categories ?? []);
   const effectiveCategoryId =
     selectedCategoryId ?? sortedCategories[0]?.id ?? null;
 
@@ -102,7 +112,7 @@ export function HomeData() {
               <button
                 key={c.id}
                 type="button"
-                onClick={() => setSelectedCategoryId(c.id)}
+                onClick={() => selectCategory(c.id)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
                   isSelected
                     ? "bg-olive-pale border-olive text-olive font-semibold"
@@ -121,14 +131,7 @@ export function HomeData() {
             />
           ))
         ) : (
-          FALLBACK_CHIPS.map((chip) => (
-            <span
-              key={chip}
-              className="px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 bg-white border-border text-slate"
-            >
-              {chip}
-            </span>
-          ))
+          <div className="text-xs text-mist font-body px-2">لا توجد تصنيفات</div>
         )}
       </div>
 

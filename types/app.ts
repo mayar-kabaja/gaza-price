@@ -16,12 +16,22 @@ export interface Area {
   active_reports_count?: number;
 }
 
+export interface Section {
+  id: string;
+  name_ar: string;
+  icon: string | null;
+  sort_order: number;
+  categories?: Category[];
+}
+
 export interface Category {
   id: string;
   name_ar: string;
   name_en: string;
   icon: string;
   sort_order: number;
+  section_id?: string | null;
+  section?: Section | null;
 }
 
 export interface Product {

@@ -2,7 +2,7 @@
  * React Query keys and fetchers. Use with useQuery/useMutation for caching and fewer requests.
  */
 
-import type { Area, Category, Price, PriceStats, Product } from "@/types/app";
+import type { Area, Category, Price, PriceStats, Product, Section } from "@/types/app";
 import { apiFetch } from "@/lib/api/fetch";
 
 // ── Query keys ──
@@ -10,6 +10,8 @@ export const queryKeys = {
   areas: ["areas"] as const,
   areasPicker: (gov?: string) => (gov ? ["areas", "picker", gov] : ["areas", "picker"]),
   categories: ["categories"] as const,
+  sections: ["sections"] as const,
+  stats: ["stats"] as const,
   products: (filters?: { limit?: number; offset?: number; search?: string; categoryId?: string; areaId?: string; embedPricePreview?: boolean }) =>
     ["products", filters ?? {}],
   product: (id: string) => ["products", id] as const,
@@ -47,6 +49,28 @@ export async function fetchCategories(): Promise<Category[]> {
   const res = await apiFetch("/api/categories", { credentials: "include" });
   const data = await res.json();
   return Array.isArray(data) ? data : [];
+}
+
+export async function fetchSectionsWithCategories(): Promise<Section[]> {
+  const res = await apiFetch("/api/sections", { credentials: "include" });
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export interface PublicStats {
+  categories: number;
+  products: number;
+  prices: number;
+}
+
+export async function fetchPublicStats(): Promise<PublicStats> {
+  const res = await apiFetch("/api/stats", { credentials: "include" });
+  const data = await res.json();
+  return {
+    categories: data?.categories ?? 0,
+    products: data?.products ?? 0,
+    prices: data?.prices ?? 0,
+  };
 }
 
 export async function fetchProducts(params: {

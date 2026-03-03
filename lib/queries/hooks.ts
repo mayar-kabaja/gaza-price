@@ -5,6 +5,8 @@ import {
   queryKeys,
   fetchAreas,
   fetchCategories,
+  fetchSectionsWithCategories,
+  fetchPublicStats,
   fetchProducts,
   fetchProduct,
   fetchPrices,
@@ -33,6 +35,24 @@ export function useCategories() {
     queryKey: queryKeys.categories,
     queryFn: fetchCategories,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ── Sections (with nested categories) ──
+export function useSectionsWithCategories() {
+  return useQuery({
+    queryKey: queryKeys.sections,
+    queryFn: fetchSectionsWithCategories,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ── Public stats (categories, products, prices counts) ──
+export function usePublicStats() {
+  return useQuery({
+    queryKey: queryKeys.stats,
+    queryFn: fetchPublicStats,
+    staleTime: 2 * 60 * 1000, // 2 min
   });
 }
 
