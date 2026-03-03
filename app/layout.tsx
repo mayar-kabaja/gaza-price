@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${appUrl}/og-image.png`,
-        width: 1200,
+        width: 630,
         height: 630,
         alt: "غزة بريس — أسعار شفافة · قوة المجتمع",
       },
