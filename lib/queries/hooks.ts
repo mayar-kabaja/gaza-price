@@ -227,6 +227,7 @@ export function useSubmitReport() {
       price: number;
       area_id: string;
       store_name_raw?: string;
+      receipt_photo_url?: string | null;
       headers?: Record<string, string>;
     }) => {
       const { headers: customHeaders, ...body } = payload;
@@ -258,7 +259,7 @@ export function useSubmitReport() {
 export function useSuggestProduct() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: {
+    mutationFn: async (payload: {
       name_ar: string;
       category_id: string;
       unit?: string;
@@ -267,10 +268,13 @@ export function useSuggestProduct() {
       price: number;
       area_id: string;
       store_name_raw?: string;
+      receipt_photo_url?: string | null;
+      headers?: Record<string, string>;
     }) => {
+      const { headers: customHeaders, ...body } = payload;
       const res = await apiFetch("/api/products/suggest", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...customHeaders },
         credentials: "include",
         body: JSON.stringify(body),
       });
@@ -282,6 +286,7 @@ export function useSuggestProduct() {
       queryClient.invalidateQueries({ queryKey: queryKeys.products({}) });
       queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
+      queryClient.invalidateQueries({ queryKey: ["contributors", "me", "reports"] });
     },
   });
 }

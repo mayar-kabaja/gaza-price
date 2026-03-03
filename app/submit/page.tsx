@@ -12,6 +12,8 @@ import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import { validateSubmitPrice } from "@/lib/validation/submit-price";
 import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
+import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
+import { uploadReceiptPhoto } from "@/lib/api/upload";
 
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
 const ARABIC_DIGITS = /[٠-٩]/g;
@@ -43,6 +45,7 @@ function SubmitForm() {
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
+  const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
   const [showNewProductInput, setShowNewProductInput] = useState(false);
@@ -114,6 +117,7 @@ function SubmitForm() {
         price: parseFloat(price),
         area_id: areaId,
         store_name_raw: storeNameRaw || undefined,
+        receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
       router.push(`/product/${id}?submitted=1`);
@@ -301,6 +305,14 @@ function SubmitForm() {
             dir="rtl"
           />
         </div>
+
+        <ReceiptUpload
+          value={receiptPhotoUrl}
+          onChange={setReceiptPhotoUrl}
+          onError={setError}
+          uploadFn={(file) => uploadReceiptPhoto(file, accessToken)}
+          disabled={submitting}
+        />
 
         {error && (
           <ApiErrorBox

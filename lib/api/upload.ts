@@ -1,0 +1,31 @@
+/**
+ * Upload receipt photo. Returns public URL or throws.
+ */
+export async function uploadReceiptPhoto(
+  file: File,
+  accessToken?: string | null
+): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const headers: Record<string, string> = {};
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: formData,
+    signal: AbortSignal.timeout(30000),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = typeof data?.message === "string" ? data.message : "فشل رفع الصورة";
+    throw new Error(msg);
+  }
+  if (typeof data?.url !== "string") {
+    throw new Error("لم يُرجَع رابط الصورة");
+  }
+  return data.url;
+}

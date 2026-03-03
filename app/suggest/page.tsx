@@ -4,7 +4,10 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCategories, useAreas, useSuggestProduct } from "@/lib/queries/hooks";
+import { useSession } from "@/hooks/useSession";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
+import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
+import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
@@ -34,12 +37,14 @@ function hasArabicDigits(value: string): boolean {
   return ARABIC_DIGITS.test(value);
 }
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
+const UNIT_SIZE_TOAST_MSG = "الكمية: استخدم الأرقام الإنجليزية (0-9) فقط";
 
 function SuggestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nameFromUrl = searchParams.get("name")?.trim() ?? "";
 
+  const { accessToken } = useSession();
   const { data: categoriesData } = useCategories();
   const { data: areasData } = useAreas();
   const suggestProduct = useSuggestProduct();
@@ -55,9 +60,12 @@ function SuggestContent() {
   const [price, setPrice] = useState("");
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
+  const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
+  const [unitSizeToast, setUnitSizeToast] = useState<string | null>(null);
   const priceToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unitSizeToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const successToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Array<{ id: string; name_ar: string; similarity: number }>>([]);
@@ -87,8 +95,18 @@ function SuggestContent() {
     }, 3000);
   }, []);
 
+  const showUnitSizeToast = useCallback((msg: string) => {
+    if (unitSizeToastRef.current) clearTimeout(unitSizeToastRef.current);
+    setUnitSizeToast(msg);
+    unitSizeToastRef.current = setTimeout(() => {
+      setUnitSizeToast(null);
+      unitSizeToastRef.current = null;
+    }, 3000);
+  }, []);
+
   useEffect(() => () => {
     if (priceToastRef.current) clearTimeout(priceToastRef.current);
+    if (unitSizeToastRef.current) clearTimeout(unitSizeToastRef.current);
     if (successToastRef.current) clearTimeout(successToastRef.current);
   }, []);
 
@@ -122,6 +140,8 @@ function SuggestContent() {
         price: Number(price),
         area_id,
         store_name_raw: store_name_raw.trim() || undefined,
+        receipt_photo_url: receipt_photo_url || undefined,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
       setSuccessToast("تم إرسال الاقتراح بنجاح");
       if (successToastRef.current) clearTimeout(successToastRef.current);
@@ -191,6 +211,7 @@ function SuggestContent() {
 
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">الوحدة والكمية</label>
+            <p className="text-xs text-mist mb-2 font-body">الكمية بأرقام إنجليزية (0-9) فقط</p>
             <div className="flex gap-2 flex-wrap">
               <select
                 value={category_id}
@@ -215,8 +236,16 @@ function SuggestContent() {
                 type="text"
                 inputMode="decimal"
                 dir="ltr"
+                lang="en"
                 value={unit_size}
-                onChange={(e) => setUnitSize(e.target.value)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (hasArabicDigits(raw)) {
+                    showUnitSizeToast(UNIT_SIZE_TOAST_MSG);
+                    setUnitSize(normalizePriceInput(raw));
+                  } else setUnitSize(raw);
+                  setError("");
+                }}
                 placeholder="250"
                 className="w-24 bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none text-left"
               />
@@ -273,15 +302,13 @@ function SuggestContent() {
             />
           </div>
 
-          {/* Receipt placeholder */}
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">صورة الإيصال (اختياري)</label>
-            <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center bg-fog/50">
-              <span className="text-2xl block mb-2">📸</span>
-              <p className="text-sm text-mist font-body">اضغط لرفع صورة</p>
-              <p className="text-xs text-mist mt-1">يساعد في التحقق من المنتج · قريباً</p>
-            </div>
-          </div>
+          <ReceiptUpload
+            value={receipt_photo_url}
+            onChange={setReceiptPhotoUrl}
+            onError={setError}
+            uploadFn={(file) => uploadReceiptPhoto(file, accessToken)}
+            disabled={suggestProduct.isPending}
+          />
 
           {error && (
             <ApiErrorBox message={error} onDismiss={() => setError("")} />
@@ -304,9 +331,9 @@ function SuggestContent() {
             </div>
           )}
 
-          {priceToast && (
+          {(priceToast || unitSizeToast) && (
             <div className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white shadow-lg">
-              {priceToast}
+              {priceToast || unitSizeToast}
             </div>
           )}
           {successToast && (

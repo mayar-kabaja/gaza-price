@@ -110,7 +110,7 @@ export default function AccountReportsPage() {
         </div>
         <h1 className="font-display font-bold text-lg text-white mt-2">مساهماتي</h1>
         <p className="text-sm text-white/70 mt-0.5 font-body">
-          الأسعار التي أضفتها ({toArabicNumerals(total)})
+          أسعاري والمنتجات التي اقترحتها ({toArabicNumerals(total)})
         </p>
       </div>
 
@@ -164,12 +164,12 @@ export default function AccountReportsPage() {
             {status === "all" ? (
               <>
                 <p className="font-display font-bold text-ink mb-1">لا توجد مساهمات بعد</p>
-                <p className="text-sm text-mist mb-3">ابدأ بمشاركة سعر رأيته اليوم</p>
+                <p className="text-sm text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</p>
                 <Link
                   href="/submit"
                   className="inline-block bg-olive-pale border border-olive-mid rounded-full px-4 py-2 text-sm font-semibold text-olive font-body"
                 >
-                  ➕ أضف سعرك الأول
+                  ➕ أضف سعرك أو اقترح منتجاً
                 </Link>
               </>
             ) : (
