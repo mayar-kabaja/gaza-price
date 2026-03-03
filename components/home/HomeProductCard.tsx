@@ -39,15 +39,17 @@ function previewToPrice(p: PricePreviewItem, product: Product, isLowest: boolean
 
 interface HomeProductCardProps {
   product: Product;
+  areaId?: string | null;
   isRefetching?: boolean;
 }
 
-export function HomeProductCard({ product, isRefetching = false }: HomeProductCardProps) {
+export function HomeProductCard({ product, areaId = null, isRefetching = false }: HomeProductCardProps) {
   const { accessToken, loading: sessionLoading } = useSession();
   const hasPricePreview = Array.isArray(product.price_preview) && product.price_preview.length > 0;
 
   const { data, isLoading, isError } = usePrices({
     productId: product.id,
+    areaId,
     sort: "price_asc",
     limit: PRICES_PREVIEW,
     sessionLoading: hasPricePreview ? true : sessionLoading,
@@ -66,9 +68,12 @@ export function HomeProductCard({ product, isRefetching = false }: HomeProductCa
 
   const total = data?.total ?? product.price_preview?.length ?? 0;
   const minPrice = prices.length > 0 ? Math.min(...prices.map((x) => x.price)) : 0;
+  const computedAvg = prices.length > 0
+    ? prices.reduce((s, p) => s + Number(p.price), 0) / prices.length
+    : 0;
   const stats: PriceStatsType = {
-    avg_price: data?.stats?.avg_price ?? 0,
-    median_price: data?.stats?.median_price ?? 0,
+    avg_price: data?.stats?.avg_price ?? computedAvg,
+    median_price: data?.stats?.median_price ?? computedAvg,
     min_price: data?.stats?.min_price ?? minPrice,
     report_count: total,
   };

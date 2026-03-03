@@ -31,14 +31,16 @@ async function logSearch(params: {
   }
 }
 
-/** Fetch price preview for a product from backend (confirmation_count, confirmed_by_me, etc.). */
+/** Fetch price preview for a product from backend. Optionally filter by area_id. */
 async function fetchPricePreview(
   base: string,
   productId: string,
   token: string | null,
-  limit = 5
+  limit = 5,
+  areaId?: string
 ): Promise<{ id: string; price: number; confirmation_count: number; confirmed_by_me: boolean; flag_count?: number; flagged_by_me?: boolean; is_mine?: boolean; reported_at: string; store?: { name_ar?: string }; area?: { name_ar?: string } }[]> {
   const params = new URLSearchParams({ product_id: productId, sort: "price_asc", limit: String(limit), offset: "0" });
+  if (areaId) params.set("area_id", areaId);
   const headers: HeadersInit = { Accept: "application/json" };
   if (token) (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${base}/prices?${params.toString()}`, { headers, signal: AbortSignal.timeout(15000) });
@@ -114,7 +116,7 @@ export async function GET(req: NextRequest) {
     if (embedPricePreview && base && result.products.length > 0) {
       const enriched = await Promise.all(
         result.products.map(async (p) => {
-          const pricePreview = await fetchPricePreview(base, p.id, token, 5);
+          const pricePreview = await fetchPricePreview(base, p.id, token, 5, areaId);
           return { ...p, price_preview: pricePreview };
         })
       );

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AreaPicker } from "@/components/onboarding/AreaPicker";
 import { Area } from "@/types/app";
+import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import { getStoredToken, setStoredToken } from "@/lib/auth/token";
 import { apiFetch } from "@/lib/api/fetch";
@@ -12,6 +13,7 @@ import { LoaderDots } from "@/components/ui/LoaderDots";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { saveArea } = useArea();
   const [loading, setLoading] = useState(false);
 
   const { data: areasData, isError: areasError, isLoading: areasLoading } = useAreas();
@@ -26,7 +28,7 @@ export default function OnboardingPage() {
   async function handleSelect(area: Area) {
     setLoading(true);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.area, JSON.stringify(area));
+      saveArea(area);
       localStorage.setItem(LOCAL_STORAGE_KEYS.onboarding_done, "1");
 
       let token = getStoredToken();

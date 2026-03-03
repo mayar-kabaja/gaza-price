@@ -69,62 +69,64 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
         </div>
       </div>
 
-      {/* Footer row */}
+      {/* Stats row */}
       <div className="flex items-center justify-between mt-2.5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            {isRefetching ? (
-              <LoaderDots size="sm" className="inline-flex" />
-            ) : (
-              <>
-                <TrustDots confirmations={displayCount} />
-                <span className="text-[11px] text-mist">
-                  {toArabicNumerals(displayCount)} تأكيد
+        <div className="flex items-center gap-1.5">
+          {isRefetching ? (
+            <LoaderDots size="sm" className="inline-flex" />
+          ) : (
+            <>
+              <TrustDots confirmations={displayCount} />
+              <span className="text-[11px] text-mist">
+                {toArabicNumerals(displayCount)} تأكيد
+              </span>
+              {displayFlagCount > 0 && (
+                <span className="text-[11px] text-sand/80">
+                  · {toArabicNumerals(displayFlagCount)} إبلاغ
                 </span>
-                {displayFlagCount > 0 && (
-                  <span className="text-[11px] text-sand/80">
-                    · {toArabicNumerals(displayFlagCount)} إبلاغ
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-          <div className={cn("text-[11px] mt-0.5", stale ? "text-sand" : "text-mist")}>
-            {stale && "⚠️ "}
-            {formatRelativeTime(price.reported_at)}
-          </div>
+              )}
+            </>
+          )}
         </div>
+        <div className={cn("text-[11px]", stale ? "text-sand" : "text-mist")}>
+          {stale && "⚠️ "}
+          {formatRelativeTime(price.reported_at)}
+        </div>
+      </div>
+
+      {/* Actions row */}
+      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
         {price.is_mine ? (
-          <span className="px-3 py-1.5 rounded-lg text-xs font-semibold font-body bg-olive/15 text-olive border border-olive/30">
+          <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
             سعرك
           </span>
         ) : (
-          <div className="flex flex-col items-end gap-1.5">
+          <>
             {showExclusivityHint && (
               <div
-                className="text-[11px] text-sand bg-sand-light/50 border border-sand/30 rounded-lg px-2.5 py-1.5 text-right"
+                className="text-[10px] text-sand bg-sand-light/50 border border-sand/30 rounded-md px-2 py-1 text-right flex-1"
                 role="status"
               >
-                {isConfirmedByMe ? "أكّدت هذا السعر — لا يمكن الإبلاغ" : "أبلغت عن هذا السعر — لا يمكن التأكيد"}
+                {isConfirmedByMe ? "أكّدت — لا يمكن الإبلاغ" : "أبلغت — لا يمكن التأكيد"}
               </div>
             )}
-            <div className="flex items-center gap-2">
-            <ConfirmButton
-              priceId={price.id}
-              productId={price.product_id}
-              initialCount={price.confirmation_count}
-              confirmedByMe={price.confirmed_by_me}
-              flaggedByMe={price.flagged_by_me}
-              onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
-            />
-            <FlagButton
-              priceId={price.id}
-              initialCount={price.flag_count}
-              flaggedByMe={price.flagged_by_me}
-              confirmedByMe={price.confirmed_by_me}
-            />
+            <div className="flex items-center gap-2 mr-auto">
+              <ConfirmButton
+                priceId={price.id}
+                productId={price.product_id}
+                initialCount={price.confirmation_count}
+                confirmedByMe={price.confirmed_by_me}
+                flaggedByMe={price.flagged_by_me}
+                onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
+              />
+              <FlagButton
+                priceId={price.id}
+                initialCount={price.flag_count}
+                flaggedByMe={price.flagged_by_me}
+                confirmedByMe={price.confirmed_by_me}
+              />
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

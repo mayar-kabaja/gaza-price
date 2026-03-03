@@ -24,11 +24,25 @@ export function ProductPricesSection({ productId, productName, areaId }: Product
   });
 
   const prices = data?.prices ?? [];
+
+  // Compute from loaded prices as fallback when backend stats are missing/zero
+  const priceValues = prices.map((p: { price: number | string }) => Number(p.price)).filter((v) => v > 0);
+  const fallbackAvg = priceValues.length > 0
+    ? priceValues.reduce((sum, v) => sum + v, 0) / priceValues.length
+    : 0;
+  const fallbackMin = priceValues.length > 0
+    ? Math.min(...priceValues)
+    : 0;
+
+  const backendAvg = Number(data?.stats?.avg_price) || 0;
+  const backendMedian = Number(data?.stats?.median_price) || 0;
+  const backendMin = Number(data?.stats?.min_price) || 0;
+
   const stats: PriceStatsType = {
-    avg_price: data?.stats?.avg_price ?? 0,
-    median_price: data?.stats?.median_price ?? 0,
-    min_price: data?.stats?.min_price ?? 0,
-    report_count: data?.total ?? 0,
+    avg_price: backendAvg > 0 ? backendAvg : fallbackAvg,
+    median_price: backendMedian > 0 ? backendMedian : fallbackAvg,
+    min_price: backendMin > 0 ? backendMin : fallbackMin,
+    report_count: data?.total ?? prices.length ?? 0,
   };
 
   if (sessionLoading || isLoading || (isPending && !data)) {

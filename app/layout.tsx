@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { AreaProvider } from "@/contexts/AreaContext";
+import { SessionProvider } from "@/contexts/SessionContext";
 import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
 import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
@@ -65,6 +67,8 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <QueryProvider>
+          <SessionProvider>
+          <AreaProvider>
           <ConfirmationOverridesProvider>
             <FlagOverridesProvider>
               <ConfirmFlagExclusivityProvider>
@@ -74,6 +78,8 @@ export default function RootLayout({
               </ConfirmFlagExclusivityProvider>
             </FlagOverridesProvider>
           </ConfirmationOverridesProvider>
+          </AreaProvider>
+          </SessionProvider>
         </QueryProvider>
       </body>
     </html>
