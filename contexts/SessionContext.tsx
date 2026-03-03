@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { Contributor } from "@/types/app";
 import {
   getStoredToken,
@@ -62,6 +63,7 @@ type SessionContextValue = {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [contributor, setContributor] = useState<Contributor | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const load = useCallback(async () => {
+    // Skip contributor load on admin routes — admin uses same token key but JWT auth.
+    // Loading contributors/me with admin JWT would 404 and clear the token.
+    if (pathname?.startsWith("/admin")) {
+      setLoading(false);
+      return;
+    }
     try {
       let token = getStoredToken();
 
@@ -96,7 +104,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [loadContributor]);
+  }, [loadContributor, pathname]);
 
   useEffect(() => {
     load();

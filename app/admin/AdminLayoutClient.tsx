@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, ReactNode } from "react";
+import { useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getStoredToken, setStoredToken, clearStoredToken } from "@/lib/auth/token";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -13,6 +13,7 @@ function useAdminAuth() {
   const [admin, setAdmin] = useState<{ email?: string; id?: string } | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [flagsCount, setFlagsCount] = useState(0);
+  const checkIdRef = useRef(0);
 
   const checkAuth = useCallback(async () => {
     const token = getStoredToken();
@@ -21,10 +22,13 @@ function useAdminAuth() {
       setLoading(false);
       return null;
     }
+    const id = ++checkIdRef.current;
     try {
       const res = await fetch("/api/admin/me", {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
+      // Ignore result if a newer check started (e.g. React Strict Mode double-mount)
+      if (id !== checkIdRef.current) return null;
       if (!res.ok) {
         clearStoredToken();
         setAdmin(null);
@@ -32,14 +36,16 @@ function useAdminAuth() {
         return null;
       }
       const data = (await res.json()) as { email?: string; id?: string };
+      if (id !== checkIdRef.current) return null;
       setAdmin({ email: data.email ?? "Admin", id: data.id });
       return data;
     } catch {
+      if (id !== checkIdRef.current) return null;
       setAdmin(null);
       setLoading(false);
       return null;
     } finally {
-      setLoading(false);
+      if (id === checkIdRef.current) setLoading(false);
     }
   }, []);
 

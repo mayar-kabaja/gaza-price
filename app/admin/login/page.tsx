@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { setStoredToken } from "@/lib/auth/token";
+import { setStoredToken, clearStoredToken } from "@/lib/auth/token";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +14,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    let willRedirect = false;
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -23,25 +24,28 @@ export default function AdminLoginPage() {
       const data = (await res.json()) as { access_token?: string; accessToken?: string; error?: string; message?: string };
       if (!res.ok) {
         setError(data.message ?? "Invalid credentials");
-        setLoading(false);
         return;
       }
       const token = data.access_token ?? data.accessToken;
-      if (token) {
-        setStoredToken(token);
-        const meRes = await fetch("/api/admin/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (meRes.ok) {
-          window.location.href = "/admin/dashboard";
-          return;
-        }
+      if (!token) {
+        setError("Login succeeded but no token received");
+        return;
       }
-      setError("Login succeeded but admin check failed");
+      setStoredToken(token);
+      const meRes = await fetch("/api/admin/me", {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!meRes.ok) {
+        clearStoredToken();
+        setError("Login succeeded but admin check failed. Please try again.");
+        return;
+      }
+      willRedirect = true;
+      window.location.replace("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
-      setLoading(false);
+      if (!willRedirect) setLoading(false);
     }
   }
 
