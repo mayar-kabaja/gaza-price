@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Slowly-changing API data: areas, categories, sections, bootstrap
+        source: "/api/:path(areas|categories|sections|bootstrap)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=3600, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
         // Service worker — must not be cached long
         source: "/sw.js",
         headers: [

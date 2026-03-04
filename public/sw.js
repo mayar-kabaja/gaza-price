@@ -9,7 +9,7 @@ const PAGES_CACHE = `pages-v${CACHE_VERSION}`;
 const ALL_CACHES = [STATIC_CACHE, API_CACHE, PAGES_CACHE];
 
 // API endpoints to prefetch on install (rarely change, slow on 2G)
-const API_PREFETCH = ['/api/areas', '/api/categories', '/api/sections'];
+const API_PREFETCH = ['/api/bootstrap', '/api/areas', '/api/categories', '/api/sections'];
 
 // App shell to pre-cache on install
 const APP_SHELL = [
@@ -18,6 +18,7 @@ const APP_SHELL = [
   '/submit',
   '/reports',
   '/onboarding',
+  '/offline.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/manifest.json',
@@ -166,6 +167,10 @@ async function networkFirst(request, cacheName) {
     const fallback = await caches.match('/');
     if (fallback) return fallback;
 
+    // Last resort: styled offline page
+    const offline = await caches.match('/offline.html');
+    if (offline) return offline;
+
     return new Response('Offline', {
       status: 503,
       statusText: 'Service Unavailable',
@@ -233,6 +238,7 @@ async function staleWhileRevalidate(request, cacheName, maxAgeMs) {
 
 // ─── API max-age table ──────────────────────────────────────────────────────
 function getApiMaxAge(pathname) {
+  if (pathname === '/api/bootstrap') return 60 * 60 * 1000; // 1h
   if (pathname === '/api/areas') return 24 * 60 * 60 * 1000; // 24h
   if (pathname.startsWith('/api/categories') || pathname.startsWith('/api/sections'))
     return 60 * 60 * 1000; // 1h

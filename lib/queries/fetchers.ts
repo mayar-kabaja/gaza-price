@@ -41,6 +41,21 @@ async function getJson<T>(url: string, opts?: RequestInit): Promise<T> {
   return data as T;
 }
 
+export interface BootstrapData {
+  areas: { areas: Area[] };
+  categories: Category[];
+  sections: Section[];
+}
+
+export async function fetchBootstrap(): Promise<BootstrapData> {
+  const data = await getJson<{ areas: unknown[]; categories: unknown[]; sections: unknown[] }>("/api/bootstrap");
+  return {
+    areas: { areas: (data.areas ?? []) as Area[] },
+    categories: (data.categories ?? []) as Category[],
+    sections: (data.sections ?? []) as Section[],
+  };
+}
+
 export async function fetchAreas(): Promise<{ areas: Area[] }> {
   return getJson("/api/areas");
 }

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tansta
 import {
   queryKeys,
   fetchAreas,
+  fetchBootstrap,
   fetchCategories,
   fetchSectionsWithCategories,
   fetchPublicStats,
@@ -19,6 +20,23 @@ import {
 } from "@/lib/queries/fetchers";
 import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
+
+// ── Bootstrap (combined areas + categories + sections in one request) ──
+export function useBootstrap() {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: ["bootstrap"],
+    queryFn: async () => {
+      const data = await fetchBootstrap();
+      // Seed individual caches so useAreas/useCategories/useSectionsWithCategories find data already there
+      queryClient.setQueryData(queryKeys.areas, data.areas);
+      queryClient.setQueryData(queryKeys.categories, data.categories);
+      queryClient.setQueryData(queryKeys.sections, data.sections);
+      return data;
+    },
+    staleTime: 60 * 60 * 1000, // 1h
+  });
+}
 
 // ── Areas ──
 export function useAreas() {
