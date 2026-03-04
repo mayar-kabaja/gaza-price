@@ -11,6 +11,7 @@ import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
 import { useSectionsWithCategories, useProductsInfinite } from "@/lib/queries/hooks";
+import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 
 export function HomeData() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export function HomeData() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const { area } = useArea();
+  const connection = useConnectionQuality();
+  const isSlow = connection === "slow";
 
   // Sync from URL when navigating from /categories
   useEffect(() => {
@@ -44,7 +47,7 @@ export function HomeData() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useProductsInfinite(effectiveCategoryId, undefined, true, area?.id ?? null);
+  } = useProductsInfinite(effectiveCategoryId, undefined, true, area?.id ?? null, isSlow ? 5 : undefined);
 
   const rawProducts = infiniteData?.pages?.flatMap((p) => p.products) ?? [];
   // When user has area selected, only show products that have prices in that area
@@ -138,7 +141,7 @@ export function HomeData() {
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
         {showSkeletons ? (
           <div className="px-4">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(isSlow ? 3 : 5)].map((_, i) => (
               <HomeProductCardSkeleton key={i} />
             ))}
           </div>

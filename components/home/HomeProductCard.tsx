@@ -8,8 +8,10 @@ import { PriceCard } from "@/components/prices/PriceCard";
 import { PriceStats } from "@/components/prices/PriceStats";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import type { Price, PriceStats as PriceStatsType } from "@/types/app";
+import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 
 const PRICES_PREVIEW = 5;
+const PRICES_PREVIEW_SLOW = 2;
 
 /** Build a Price-like object from price_preview item for PriceCard. */
 function previewToPrice(p: PricePreviewItem, product: Product, isLowest: boolean): Price {
@@ -45,19 +47,21 @@ interface HomeProductCardProps {
 
 export function HomeProductCard({ product, areaId = null, isRefetching = false }: HomeProductCardProps) {
   const { accessToken, loading: sessionLoading } = useSession();
+  const connection = useConnectionQuality();
+  const priceLimit = connection === "slow" ? PRICES_PREVIEW_SLOW : PRICES_PREVIEW;
   const hasPricePreview = Array.isArray(product.price_preview) && product.price_preview.length > 0;
 
   const { data, isLoading, isError } = usePrices({
-    productId: product.id,
+    productId: hasPricePreview ? null : product.id,
     areaId,
     sort: "price_asc",
-    limit: PRICES_PREVIEW,
-    sessionLoading: hasPricePreview ? true : sessionLoading,
+    limit: priceLimit,
+    sessionLoading,
     accessToken,
   });
 
   const pricesFromPreview = hasPricePreview
-    ? (product.price_preview!.map((p, i) => {
+    ? (product.price_preview!.slice(0, priceLimit).map((p, i) => {
         const minPrice = Math.min(...product.price_preview!.map((x) => x.price));
         return previewToPrice(p, product, p.price === minPrice);
       }) as Price[])

@@ -78,13 +78,14 @@ export function useProductsInfinite(
   categoryId: string | null,
   search?: string,
   embedPricePreview = true,
-  areaId?: string | null
+  areaId?: string | null,
+  pageSize: number = PRODUCTS_PAGE_SIZE
 ) {
   return useInfiniteQuery({
     queryKey: queryKeys.products({
       categoryId: categoryId ?? undefined,
       search,
-      limit: PRODUCTS_PAGE_SIZE,
+      limit: pageSize,
       embedPricePreview,
       areaId: areaId ?? undefined,
     }),
@@ -92,7 +93,7 @@ export function useProductsInfinite(
       return fetchProducts({
         categoryId: categoryId ?? undefined,
         search,
-        limit: PRODUCTS_PAGE_SIZE,
+        limit: pageSize,
         offset: pageParam as number,
         embedPricePreview,
         areaId: areaId ?? undefined,
@@ -100,7 +101,7 @@ export function useProductsInfinite(
     },
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((acc, p) => acc + p.products.length, 0);
-      if (lastPage.products.length < PRODUCTS_PAGE_SIZE) return undefined;
+      if (lastPage.products.length < pageSize) return undefined;
       return loaded;
     },
     initialPageParam: 0,
