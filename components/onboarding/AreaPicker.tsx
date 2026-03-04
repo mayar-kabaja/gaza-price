@@ -21,15 +21,16 @@ const GOV_LABELS: Record<string, string> = {
 export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerProps) {
   const [selected, setSelected] = useState<Area | null>(null);
 
-  // Group by governorate
+  // Group by governorate (API returns Arabic names: "شمال غزة", "الوسطى", "خان يونس", "رفح", "غزة")
   const grouped = areas.reduce<Record<string, Area[]>>((acc, area) => {
-    const g = area.governorate;
+    const g = area.governorate ?? "آخر";
     if (!acc[g]) acc[g] = [];
     acc[g].push(area);
     return acc;
   }, {});
 
-  const govOrder = ["north", "central", "south"];
+  // Use actual governorate keys (API returns Arabic) — govOrder was for non-existent "north"/"central"/"south"
+  const govKeys = Object.keys(grouped);
 
   return (
     <div className="flex flex-col h-dvh bg-white">
@@ -54,16 +55,16 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
             {loadError}
           </div>
         )}
-        {govOrder.map((gov) => {
+        {govKeys.map((gov) => {
           const govAreas = grouped[gov];
           if (!govAreas?.length) return null;
           return (
             <div key={gov} className="mb-4">
-              {/* Gov label */}
+              {/* Gov label — gov is the Arabic governorate name from API */}
               <div className="flex items-center gap-2 mb-2">
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-[11px] font-bold text-mist uppercase tracking-widest">
-                  {GOV_LABELS[gov]}
+                  {GOV_LABELS[gov] ?? gov}
                 </span>
               </div>
 
@@ -102,7 +103,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
                       {area.name_ar}
                     </div>
                     <div className="text-xs text-mist mt-0.5">
-                      {GOV_LABELS[area.governorate]}
+                      {GOV_LABELS[area.governorate ?? ""] ?? area.governorate ?? ""}
                     </div>
                   </div>
 
