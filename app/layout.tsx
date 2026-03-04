@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${appUrl}/og-image.png`,
-        width: 630,
+        width: 1200,
         height: 630,
         alt: "غزة بريس — أسعار شفافة · قوة المجتمع",
       },
