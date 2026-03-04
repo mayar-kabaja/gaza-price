@@ -14,6 +14,8 @@ import { validateSubmitPrice } from "@/lib/validation/submit-price";
 import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
+import { enqueueReport } from "@/lib/offline/queue";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
 const ARABIC_DIGITS = /[٠-٩]/g;
@@ -40,6 +42,7 @@ function SubmitForm() {
   const { data: productFromUrl } = useProduct(productIdFromUrl);
   const { data: areasData } = useAreas();
   const submitReport = useSubmitReport();
+  const { refreshCount: refreshQueueCount } = useOfflineQueue();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [price, setPrice] = useState("");
@@ -51,7 +54,9 @@ function SubmitForm() {
   const [showNewProductInput, setShowNewProductInput] = useState(false);
   const [newProductName, setNewProductName] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
+  const [queuedToast, setQueuedToast] = useState<string | null>(null);
   const priceToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queuedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const areas = areasData?.areas ?? [];
   const effectiveProduct = product ?? (productFromUrl as Product | null) ?? null;
@@ -69,6 +74,7 @@ function SubmitForm() {
   useEffect(() => {
     return () => {
       if (priceToastTimeoutRef.current) clearTimeout(priceToastTimeoutRef.current);
+      if (queuedToastTimeoutRef.current) clearTimeout(queuedToastTimeoutRef.current);
     };
   }, []);
 
@@ -122,6 +128,44 @@ function SubmitForm() {
       });
       router.push(`/product/${id}?submitted=1`);
     } catch (err: unknown) {
+      // Network error (TypeError from fetch) or device offline → queue for later
+      const isNetworkError =
+        err instanceof TypeError || !navigator.onLine;
+
+      if (isNetworkError) {
+        try {
+          await enqueueReport({
+            product_id: id!,
+            product_name_ar: effectiveProduct?.name_ar ?? "",
+            price: parseFloat(price),
+            area_id: areaId,
+            store_name_raw: storeNameRaw || undefined,
+            receipt_photo_url: receiptPhotoUrl || undefined,
+          });
+          await refreshQueueCount();
+
+          // Reset form
+          setProduct(null);
+          setPrice("");
+          setStoreNameRaw("");
+          setReceiptPhotoUrl(null);
+          setError("");
+          clear();
+
+          // Show success toast
+          if (queuedToastTimeoutRef.current) clearTimeout(queuedToastTimeoutRef.current);
+          setQueuedToast("تم حفظ السعر — سيُرسل تلقائياً عند عودة الاتصال");
+          queuedToastTimeoutRef.current = setTimeout(() => {
+            setQueuedToast(null);
+            queuedToastTimeoutRef.current = null;
+          }, 4000);
+        } catch {
+          setError("تعذر حفظ البيانات — حاول مرة أخرى");
+        }
+        return;
+      }
+
+      // Server error (4xx/5xx) — existing handling
       const status = (err && typeof err === "object" && "status" in err ? (err as { status: number }).status : 500) as number;
       const data = (err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {}) as ApiErrorResponse;
       const res = new Response(null, { status });
@@ -331,6 +375,18 @@ function SubmitForm() {
             aria-live="polite"
           >
             {priceToast}
+          </div>
+        )}
+
+        {/* Toast when report queued for offline sync */}
+        {queuedToast && (
+          <div
+            className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl px-4 py-2.5 text-center text-sm text-white shadow-lg"
+            style={{ background: "#166534" }}
+            role="status"
+            aria-live="polite"
+          >
+            {queuedToast}
           </div>
         )}
 

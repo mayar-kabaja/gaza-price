@@ -8,6 +8,7 @@ import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesC
 import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 import { RegisterSW } from "@/components/sw/RegisterSW";
+import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -84,6 +85,7 @@ export default function RootLayout({
               <div className="app-shell">
                 {children}
               </div>
+              <OfflineQueueSync />
               </ConfirmFlagExclusivityProvider>
             </FlagOverridesProvider>
           </ConfirmationOverridesProvider>
