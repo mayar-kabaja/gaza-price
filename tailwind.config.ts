@@ -23,8 +23,9 @@ const config: Config = {
         fog:        "#F4F7F9",
       },
       fontFamily: {
-        display: ["var(--font-tajawal)", "sans-serif"],
-        body:    ["var(--font-ibm-arabic)", "sans-serif"],
+        display: ["var(--font-tajawal)", "Segoe UI", "Tahoma", "sans-serif"],
+        body:    ["var(--font-noto-arabic)", "Segoe UI", "Tahoma", "sans-serif"],
+        mono:    ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       borderRadius: {
         "4xl": "2rem",

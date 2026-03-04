@@ -17,8 +17,8 @@
 }
 
 :root {
-  --font-tajawal: "Tajawal";
-  --font-ibm-arabic: "IBM Plex Sans Arabic";
+  --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
+  --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
 }
 
 * {
@@ -30,7 +30,7 @@ html {
 }
 
 body {
-  font-family: var(--font-ibm-arabic), sans-serif;
+  font-family: var(--font-body);
   background-color: #F4F7F9;
   color: #1A1F2E;
   -webkit-font-smoothing: antialiased;

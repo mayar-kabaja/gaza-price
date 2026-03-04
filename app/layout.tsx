@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Sans_Arabic, Tajawal } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AreaProvider } from "@/contexts/AreaContext";
@@ -6,6 +7,20 @@ import { SessionProvider } from "@/contexts/SessionContext";
 import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
 import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
+
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-noto-arabic",
+});
+
+const tajawal = Tajawal({
+  subsets: ["arabic", "latin"],
+  weight: ["500", "700", "800"],
+  display: "swap",
+  variable: "--font-tajawal",
+});
 
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL || "https://gaza-price-frontend.vercel.app";
@@ -56,15 +71,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Tajawal:wght@500;700;800&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="ar" dir="rtl" className={`${notoSansArabic.variable} ${tajawal.variable}`} suppressHydrationWarning>
+      <head />
       <body suppressHydrationWarning>
         <QueryProvider>
           <SessionProvider>

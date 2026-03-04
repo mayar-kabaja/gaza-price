@@ -26,7 +26,7 @@
 }
 
 .admin-root body {
-  font-family: "Sora", var(--font-sans, sans-serif);
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: var(--admin-bg);
   color: var(--admin-text);
   direction: ltr;
