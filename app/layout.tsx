@@ -7,6 +7,7 @@ import { SessionProvider } from "@/contexts/SessionContext";
 import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
 import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
+import { RegisterSW } from "@/components/sw/RegisterSW";
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -89,6 +90,7 @@ export default function RootLayout({
           </AreaProvider>
           </SessionProvider>
         </QueryProvider>
+        <RegisterSW />
       </body>
     </html>
   );
