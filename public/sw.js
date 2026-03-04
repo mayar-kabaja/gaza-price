@@ -8,6 +8,9 @@ const PAGES_CACHE = `pages-v${CACHE_VERSION}`;
 
 const ALL_CACHES = [STATIC_CACHE, API_CACHE, PAGES_CACHE];
 
+// API endpoints to prefetch on install (rarely change, slow on 2G)
+const API_PREFETCH = ['/api/areas', '/api/categories', '/api/sections'];
+
 // App shell to pre-cache on install
 const APP_SHELL = [
   '/',
@@ -30,6 +33,28 @@ self.addEventListener('install', (event) => {
       })
     )
   );
+  // Prefetch API data so first visit on 2G has cached responses
+  event.waitUntil(
+    caches.open(API_CACHE).then((cache) =>
+      Promise.all(
+        API_PREFETCH.map((url) =>
+          fetch(url)
+            .then((response) => {
+              if (!response.ok) return;
+              const headers = new Headers(response.headers);
+              headers.set('sw-cached-at', Date.now().toString());
+              return cache.put(url, new Response(response.body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers,
+              }));
+            })
+            .catch(() => {}) // Non-blocking — offline or network error is fine
+        )
+      )
+    )
+  );
+
   // Activate immediately without waiting for old SW to finish
   self.skipWaiting();
 });
