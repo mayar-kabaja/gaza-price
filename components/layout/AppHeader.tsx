@@ -112,7 +112,7 @@ export function AppHeader() {
             aria-hidden
             onClick={() => setOpenAreaPicker(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[75vh] xl:max-w-[430px] mx-auto overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[75vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
             <div className="px-4 py-3 border-b border-border flex-shrink-0 flex items-center justify-between">
               <h2 className="font-display font-bold text-ink">اختر المنطقة</h2>
               <button
