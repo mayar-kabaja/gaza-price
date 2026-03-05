@@ -35,7 +35,10 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(url, { headers, signal: AbortSignal.timeout(25000) });
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(data, {
+      status: res.status,
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
     return NextResponse.json(

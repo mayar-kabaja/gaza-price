@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
 import { handleApiError } from "@/lib/api/errors";
@@ -21,6 +22,7 @@ export function useConfirm(
   }
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [count, setCount] = useState(() => toNumber(initialCount));
   const [confirmed, setConfirmed] = useState(() => !!options?.initialConfirmed);
   const [loading, setLoading] = useState(false);
@@ -66,6 +68,10 @@ export function useConfirm(
             }
           : undefined;
       onSuccessRef.current?.(newCount, extra);
+
+      // Invalidate cache so next reload shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["prices"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {

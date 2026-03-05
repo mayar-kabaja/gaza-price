@@ -28,7 +28,9 @@ export async function GET(
         { status: res.status }
       );
     }
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Request failed";
     return NextResponse.json(

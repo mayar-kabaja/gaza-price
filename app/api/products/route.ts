@@ -120,10 +120,15 @@ export async function GET(req: NextRequest) {
           return { ...p, price_preview: pricePreview };
         })
       );
-      return NextResponse.json({ products: enriched, total: result.total });
+      return NextResponse.json(
+        { products: enriched, total: result.total },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
     const status = message.includes("NEXT_PUBLIC_API_URL") ? 503 : 500;

@@ -1,7 +1,7 @@
 // Gaza Price — Service Worker v1
 // Pure manual SW: cache-first for static, stale-while-revalidate for API, network-first for pages
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const STATIC_CACHE = `static-v${CACHE_VERSION}`;
 const API_CACHE = `api-v${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-v${CACHE_VERSION}`;
@@ -115,7 +115,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API routes → stale-while-revalidate with varying max ages
+  // Prices & products API → network-first (contain user-specific data like confirmed_by_me)
+  if (url.pathname.startsWith('/api/prices') || url.pathname.startsWith('/api/products')) {
+    event.respondWith(networkFirst(request, API_CACHE));
+    return;
+  }
+
+  // Other API routes → stale-while-revalidate with varying max ages
   if (url.pathname.startsWith('/api/')) {
     const maxAge = getApiMaxAge(url.pathname);
     event.respondWith(staleWhileRevalidate(request, API_CACHE, maxAge));

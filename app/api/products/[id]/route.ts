@@ -10,5 +10,7 @@ export async function GET(
   const { id } = await params;
   const product = await getProductById(id);
   if (!product) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
-  return NextResponse.json(product);
+  return NextResponse.json(product, {
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 }

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
 import { handleApiError } from "@/lib/api/errors";
@@ -21,6 +22,7 @@ export function useFlag(
   }
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [count, setCount] = useState(() => toNumber(initialCount));
   const [flagged, setFlagged] = useState(() => !!options?.initialFlagged);
   const [loading, setLoading] = useState(false);
@@ -67,6 +69,10 @@ export function useFlag(
             }
           : undefined;
       onSuccessRef.current?.(newFlagged, newCount, extra);
+
+      // Invalidate cache so next reload shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["prices"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {
