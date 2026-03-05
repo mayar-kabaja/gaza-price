@@ -54,7 +54,7 @@ export function DesktopFilterBar({ filter, sort, onFilterChange, onSortChange }:
               "px-3.5 py-1.5 rounded-full text-xs font-body border-[1.5px] transition-colors cursor-pointer",
               filter === f.value
                 ? "bg-olive-pale border-olive text-olive font-semibold"
-                : "bg-white border-border text-slate hover:border-olive/50"
+                : "bg-surface border-border text-slate hover:border-olive/50"
             )}
           >
             {f.label}
@@ -67,7 +67,7 @@ export function DesktopFilterBar({ filter, sort, onFilterChange, onSortChange }:
         <button
           type="button"
           onClick={() => setSortOpen((prev) => !prev)}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-body border-[1.5px] border-border bg-white text-slate hover:border-olive/50 transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-body border-[1.5px] border-border bg-surface text-slate hover:border-olive/50 transition-colors cursor-pointer"
         >
           {currentSortLabel}
           <svg
@@ -81,7 +81,7 @@ export function DesktopFilterBar({ filter, sort, onFilterChange, onSortChange }:
         </button>
 
         {sortOpen && (
-          <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-40 min-w-[140px]">
+          <div className="absolute top-full left-0 mt-1.5 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-40 min-w-[140px]">
             {SORT_OPTIONS.map((s) => (
               <button
                 key={s.value}

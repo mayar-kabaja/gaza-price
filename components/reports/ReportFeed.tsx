@@ -41,7 +41,7 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl p-3.5 border border-border animate-pulse">
+          <div key={i} className="bg-surface rounded-2xl p-3.5 border border-border animate-pulse">
             <div className="h-4 bg-fog rounded w-3/4 mb-2" />
             <div className="h-3 bg-fog rounded w-1/2 mb-2" />
             <div className="h-5 bg-fog rounded w-1/4 mb-2" />

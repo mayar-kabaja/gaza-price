@@ -60,7 +60,7 @@ export function DesktopSidebar({
   })).filter((g) => g.areas.length > 0);
 
   return (
-    <aside className="w-[280px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full overflow-hidden">
+    <aside className="w-[280px] flex-shrink-0 bg-surface border-l border-border flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* Area filter — grouped by governorate */}
         <div className="p-5 border-b border-border">

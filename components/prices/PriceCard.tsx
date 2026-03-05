@@ -37,9 +37,9 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
   return (
     <div
       className={cn(
-        "bg-white rounded-2xl p-3.5 border-[1.5px] relative",
+        "bg-surface rounded-2xl p-3.5 border-[1.5px] relative",
         price.is_lowest
-          ? "border-confirm bg-[#F2FBF6]"
+          ? "border-confirm bg-confirm/10"
           : "border-border"
       )}
     >

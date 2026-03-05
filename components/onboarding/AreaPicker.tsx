@@ -33,7 +33,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
   const govKeys = Object.keys(grouped);
 
   return (
-    <div className="flex flex-col h-dvh bg-white">
+    <div className="flex flex-col h-dvh bg-surface">
       {/* Header */}
       <div className="bg-olive px-5 pt-6 pb-7 relative overflow-hidden flex-shrink-0">
         <div className="absolute w-48 h-48 rounded-full bg-white/5 -bottom-16 -left-14 pointer-events-none" />
@@ -76,7 +76,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
                     "w-full flex items-center gap-3 p-3.5 rounded-2xl border-[1.5px] mb-2 transition-all text-right",
                     selected?.id === area.id
                       ? "border-olive bg-olive-pale"
-                      : "border-border bg-white hover:border-olive-mid"
+                      : "border-border bg-surface hover:border-olive-mid"
                   )}
                 >
                   {/* Radio */}
@@ -122,7 +122,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
       </div>
 
       {/* Footer CTA */}
-      <div className="px-4 pb-5 pt-3 border-t border-border bg-white flex-shrink-0">
+      <div className="px-4 pb-5 pt-3 border-t border-border bg-surface flex-shrink-0">
         <button
           onClick={() => selected && onSelect(selected)}
           disabled={!selected || loading}

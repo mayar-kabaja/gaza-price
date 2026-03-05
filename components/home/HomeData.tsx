@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { HomeProductCard } from "@/components/home/HomeProductCard";
@@ -14,17 +15,18 @@ import { useSectionsWithCategories, useProductsInfinite, useAreas } from "@/lib/
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { isStale as checkStale } from "@/lib/price";
+import type { DesktopFilter, DesktopSort } from "@/components/desktop/DesktopFilterBar";
 
-// Desktop components
-import { DesktopHeader } from "@/components/desktop/DesktopHeader";
-import { DesktopSidebar } from "@/components/desktop/DesktopSidebar";
-import { DesktopBreadcrumb } from "@/components/desktop/DesktopBreadcrumb";
-import { DesktopStatsStrip } from "@/components/desktop/DesktopStatsStrip";
-import { DesktopFilterBar, type DesktopFilter, type DesktopSort } from "@/components/desktop/DesktopFilterBar";
-import { DesktopPriceGrid } from "@/components/desktop/DesktopPriceGrid";
-import { DesktopSubmitModal } from "@/components/desktop/DesktopSubmitModal";
-import { DesktopSuggestModal } from "@/components/desktop/DesktopSuggestModal";
-import { DesktopProfilePanel } from "@/components/desktop/DesktopProfilePanel";
+// Desktop components — lazy-loaded so mobile never downloads them
+const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
+const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebar })), { ssr: false });
+const DesktopBreadcrumb = dynamic(() => import("@/components/desktop/DesktopBreadcrumb").then(m => ({ default: m.DesktopBreadcrumb })), { ssr: false });
+const DesktopStatsStrip = dynamic(() => import("@/components/desktop/DesktopStatsStrip").then(m => ({ default: m.DesktopStatsStrip })), { ssr: false });
+const DesktopFilterBar = dynamic(() => import("@/components/desktop/DesktopFilterBar").then(m => ({ default: m.DesktopFilterBar })), { ssr: false });
+const DesktopPriceGrid = dynamic(() => import("@/components/desktop/DesktopPriceGrid").then(m => ({ default: m.DesktopPriceGrid })), { ssr: false });
+const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
+const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
+const DesktopProfilePanel = dynamic(() => import("@/components/desktop/DesktopProfilePanel").then(m => ({ default: m.DesktopProfilePanel })), { ssr: false });
 
 export function HomeData() {
   const router = useRouter();
@@ -193,7 +195,7 @@ export function HomeData() {
       <AppHeader />
 
       {showWelcomeToast && (
-        <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-xl bg-ink px-3.5 py-3 animate-slide-down flex-shrink-0">
+        <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-xl bg-[#1A1F2E] px-3.5 py-3 animate-slide-down flex-shrink-0">
           <span className="text-lg">👋</span>
           <div className="flex-1 min-w-0">
             <div className="font-display font-bold text-[13px] text-white leading-snug">
@@ -215,7 +217,7 @@ export function HomeData() {
       )}
 
       {/* Category tabs — show immediately; skeleton chips while categories load */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-white border-b border-border">
+      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-surface border-b border-border">
         {hasCategories ? (
           sortedCategories.map((c: Category) => {
             const label = c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar;
@@ -228,7 +230,7 @@ export function HomeData() {
                 className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
                   isSelected
                     ? "bg-olive-pale border-olive text-olive font-semibold"
-                    : "bg-white border-border text-slate hover:border-olive/50"
+                    : "bg-surface border-border text-slate hover:border-olive/50"
                 }`}
               >
                 {label}

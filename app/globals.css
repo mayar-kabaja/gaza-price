@@ -1,24 +1,48 @@
 @import "tailwindcss";
 
-/* Tailwind v4: custom theme in @theme {}, not tailwind.config */
+/* ── Light / Dark CSS variables ─────────────────────────────── */
+:root {
+  --raw-fog: #F4F7F9;
+  --raw-surface: #FFFFFF;
+  --raw-ink: #1A1F2E;
+  --raw-slate: #556070;
+  --raw-mist: #96A3AF;
+  --raw-border: #E4EAF0;
+  --raw-olive-pale: #EBF3EE;
+  --raw-olive-mid: #C2DBC9;
+  --raw-sand-light: #F7F0E4;
+
+  --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
+  --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
+}
+
+.dark {
+  --raw-fog: #0B0F14;
+  --raw-surface: #111820;
+  --raw-ink: #D8E4F0;
+  --raw-slate: #8FA3B8;
+  --raw-mist: #8FA3B8;
+  --raw-border: #243040;
+  --raw-olive-pale: #1a2e22;
+  --raw-olive-mid: #2D5C3C;
+  --raw-sand-light: #2a2318;
+}
+
+/* Tailwind v4: @theme generates --color-* custom properties */
 @theme {
   --color-olive: #4A7C59;
   --color-olive-deep: #3A6347;
-  --color-olive-pale: #EBF3EE;
-  --color-olive-mid: #C2DBC9;
+  --color-olive-pale: var(--raw-olive-pale);
+  --color-olive-mid: var(--raw-olive-mid);
   --color-sand: #C9A96E;
-  --color-sand-light: #F7F0E4;
+  --color-sand-light: var(--raw-sand-light);
   --color-confirm: #2D9E5F;
-  --color-ink: #1A1F2E;
-  --color-slate: #556070;
-  --color-mist: #96A3AF;
-  --color-border: #E4EAF0;
-  --color-fog: #F4F7F9;
-}
-
-:root {
-  --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
-  --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
+  --color-ink: var(--raw-ink);
+  --color-slate: var(--raw-slate);
+  --color-mist: var(--raw-mist);
+  --color-border: var(--raw-border);
+  --color-fog: var(--raw-fog);
+  --color-surface: var(--raw-surface);
 }
 
 * {
@@ -27,13 +51,18 @@
 
 html {
   direction: rtl;
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 body {
   font-family: var(--font-body);
   font-weight: 400;
-  background-color: #F4F7F9;
-  color: #2D3748;
+  background-color: var(--raw-fog);
+  color: var(--raw-ink);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -47,11 +76,59 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar { width: 8px; height: 8px; }
+.dark ::-webkit-scrollbar-track { background: #18212C; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb { background: #243040; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #2E3D50; }
+.dark { scrollbar-color: #243040 #18212C; }
+
+/* Dark mode: form controls inherit surface bg */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--raw-surface);
+  color: var(--raw-ink);
+  border-color: var(--raw-border);
+}
+.dark option {
+  background-color: var(--raw-surface);
+  color: var(--raw-ink);
+}
+
+/* Dark mode: override Tailwind built-in red-50 (error boxes) */
+.dark .bg-red-50 {
+  background-color: #2a1515 !important;
+}
+.dark .border-red-200 {
+  border-color: #5c2828 !important;
+}
+.dark .text-red-700 {
+  color: #f0a0a0 !important;
+}
+.dark .text-red-800 {
+  color: #f0a0a0 !important;
+}
+.dark .bg-red-50\/50 {
+  background-color: rgba(42, 21, 21, 0.5) !important;
+}
+
+/* Dark mode: shadows should be darker */
+.dark .shadow-lg {
+  --tw-shadow-color: rgba(0, 0, 0, 0.4);
+}
+.dark .shadow-xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.5);
+}
+.dark .shadow-2xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.6);
+}
+
 /* App shell — full viewport on all devices (phone, tablet, desktop) */
 .app-shell {
   width: 100%;
   min-height: 100dvh;
-  background: #F4F7F9;
+  background: var(--raw-fog);
   position: relative;
   overflow: hidden;
 }

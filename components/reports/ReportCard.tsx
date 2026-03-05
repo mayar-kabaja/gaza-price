@@ -24,7 +24,7 @@ export function ReportCard({ report }: ReportCardProps) {
   return (
     <div
       className={cn(
-        "block bg-white rounded-2xl p-3.5 border-[1.5px] border-border",
+        "block bg-surface rounded-2xl p-3.5 border-[1.5px] border-border",
         "hover:border-olive-mid transition-colors"
       )}
     >

@@ -15,7 +15,7 @@ export default function ProductError({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center bg-white">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center bg-surface">
       <div className="text-5xl mb-4">📦</div>
       <h1 className="font-display font-bold text-lg text-ink mb-2">
         تعذر تحميل المنتج

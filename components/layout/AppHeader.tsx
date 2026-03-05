@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
+import { useTheme } from "@/hooks/useTheme";
 import { SearchBar } from "@/components/search/SearchBar";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function AppHeader() {
   const [areaError, setAreaError] = useState<string | null>(null);
   const [areaJustChanged, setAreaJustChanged] = useState(false);
 
+  const { theme, toggle: toggleTheme } = useTheme();
   const { data: areasData, isError: areasError } = useAreas();
   const areas = areasData?.areas ?? [];
   const updateMe = useUpdateContributorMe();
@@ -76,7 +78,8 @@ export function AppHeader() {
         <div className="font-display font-extrabold text-xl text-white leading-none">
           غزة <span className="text-sand">بريس</span>
         </div>
-        {area ? (
+        <div className="flex items-center gap-2">
+          {area ? (
           <button
             type="button"
             onClick={() => setOpenAreaPicker(true)}
@@ -96,6 +99,27 @@ export function AppHeader() {
             <span className="text-[11px] text-white/90 font-body">{area.name_ar}</span>
           </button>
         ) : null}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 transition-colors cursor-pointer"
+            aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+          >
+            {theme === "dark" ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       <p className="text-[13px] text-white/60 font-body mb-3 relative z-10">
@@ -112,7 +136,7 @@ export function AppHeader() {
             aria-hidden
             onClick={() => setOpenAreaPicker(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[75vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-2xl max-h-[75vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
             <div className="px-4 py-3 border-b border-border flex-shrink-0 flex items-center justify-between">
               <h2 className="font-display font-bold text-ink">اختر المنطقة</h2>
               <button
@@ -150,7 +174,7 @@ export function AppHeader() {
                           "w-full flex items-center gap-3 p-3.5 rounded-2xl border-[1.5px] mb-2 transition-all text-right",
                           area?.id === a.id
                             ? "border-olive bg-olive-pale"
-                            : "border-border bg-white hover:border-olive-mid"
+                            : "border-border bg-surface hover:border-olive-mid"
                         )}
                       >
                         <div

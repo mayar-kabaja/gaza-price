@@ -13,7 +13,7 @@ export default function ReportsLoading() {
       </div>
       <div className="px-4 py-4 space-y-2">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="bg-white rounded-2xl p-3.5 border border-border animate-pulse">
+          <div key={i} className="bg-surface rounded-2xl p-3.5 border border-border animate-pulse">
             <div className="h-4 bg-fog rounded w-3/4 mb-2" />
             <div className="h-3 bg-fog rounded w-1/2 mb-2" />
             <div className="h-5 bg-fog rounded w-1/4 mb-2" />

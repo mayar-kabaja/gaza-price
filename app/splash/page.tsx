@@ -21,7 +21,7 @@ export default function SplashPage() {
   }, [router]);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-ink overflow-hidden">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#1A1F2E] overflow-hidden">
       {/* Decorative circles */}
       <div className="absolute w-[200px] h-[200px] rounded-full bg-olive/15 -top-14 -left-14" />
       <div className="absolute w-[150px] h-[150px] rounded-full bg-sand/10 -bottom-8 -right-10" />

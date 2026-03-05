@@ -6,6 +6,7 @@ import { DesktopSearchBar } from "./DesktopSearchBar";
 import type { Area, Governorate } from "@/types/app";
 import { useAreas } from "@/lib/queries/hooks";
 import { useArea } from "@/hooks/useArea";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 const GOV_LABELS: Record<Governorate, string> = {
@@ -24,6 +25,7 @@ interface DesktopHeaderProps {
 
 export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
   const { area, saveArea, clearArea } = useArea();
+  const { theme, toggle: toggleTheme } = useTheme();
   const { data: areasData } = useAreas();
   const areas = (areasData as { areas?: Area[] })?.areas ?? [];
 
@@ -77,7 +79,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, i
           </button>
 
           {open && (
-            <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-fade-up">
+            <div className="absolute top-full left-0 mt-2 w-80 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50 animate-fade-up">
               <div className="max-h-64 overflow-y-auto no-scrollbar p-2">
                 {/* Clear area option */}
                 {area && (
@@ -159,6 +161,28 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, i
             className="px-4 py-2 rounded-lg bg-transparent border border-sand text-sand font-display font-bold text-sm hover:bg-sand/10 transition-colors whitespace-nowrap cursor-pointer"
           >
             + اضف سعر
+          </button>
+
+          {/* Dark mode toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white/70 hover:bg-white/20 transition-colors cursor-pointer flex-shrink-0"
+            aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+          >
+            {theme === "dark" ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
           </button>
 
           {/* Avatar — profile toggle */}

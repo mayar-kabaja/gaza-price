@@ -26,7 +26,7 @@ function MyReportCard({ report }: { report: MyReportItem }) {
   const card = (
     <div
       className={cn(
-        "block bg-white rounded-2xl p-3.5 border-[1.5px] border-border",
+        "block bg-surface rounded-2xl p-3.5 border-[1.5px] border-border",
         productId && "hover:border-olive-mid transition-colors"
       )}
     >
@@ -99,7 +99,7 @@ export default function AccountReportsPage() {
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Header */}
-      <div className="bg-ink px-5 pt-4 pb-5 flex-shrink-0">
+      <div className="bg-[#1A1F2E] px-5 pt-4 pb-5 flex-shrink-0">
         <div className="flex items-center gap-3 mb-1">
           <Link href="/account" className="text-white/60 hover:text-white font-body text-sm">
             ←
@@ -130,7 +130,7 @@ export default function AccountReportsPage() {
               "px-4 py-2 rounded-full text-sm font-body font-medium shrink-0 transition-colors",
               status === val
                 ? "bg-olive text-white"
-                : "bg-white border border-border text-ink hover:border-olive-mid"
+                : "bg-surface border border-border text-ink hover:border-olive-mid"
             )}
           >
             {label}
@@ -149,7 +149,7 @@ export default function AccountReportsPage() {
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-3.5 border border-border animate-pulse">
+              <div key={i} className="bg-surface rounded-2xl p-3.5 border border-border animate-pulse">
                 <div className="h-4 bg-fog rounded w-3/4 mb-2" />
                 <div className="h-3 bg-fog rounded w-1/2 mb-2" />
                 <div className="h-5 bg-fog rounded w-1/4 mb-2" />

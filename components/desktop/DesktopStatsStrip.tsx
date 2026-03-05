@@ -40,7 +40,7 @@ export function DesktopStatsStrip({ products, isLoading = false }: DesktopStatsS
     return (
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl px-5 py-5 flex flex-col items-center justify-center text-center gap-3 shadow-sm">
+          <div key={i} className="bg-surface rounded-xl px-5 py-5 flex flex-col items-center justify-center text-center gap-3 shadow-sm">
             <div className="w-8 h-8 rounded-full bg-fog animate-pulse" />
             <div className="w-16 h-3 rounded bg-fog animate-pulse" />
             <div className="w-12 h-5 rounded bg-fog animate-pulse" />
@@ -55,7 +55,7 @@ export function DesktopStatsStrip({ products, isLoading = false }: DesktopStatsS
       {cards.map((card) => (
         <div
           key={card.label}
-          className="bg-white rounded-xl px-5 py-5 flex flex-col items-center justify-center text-center gap-2 shadow-sm"
+          className="bg-surface rounded-xl px-5 py-5 flex flex-col items-center justify-center text-center gap-2 shadow-sm"
         >
           <span className="text-3xl">{card.icon}</span>
           <div className="text-xs text-mist font-body">{card.label}</div>

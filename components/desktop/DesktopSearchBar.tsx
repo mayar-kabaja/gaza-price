@@ -42,7 +42,7 @@ export function DesktopSearchBar() {
       </div>
 
       {showDropdown && hasResults && (
-        <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50">
+        <div className="absolute top-full mt-2 w-full bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50">
           {results.map((product) => (
             <button
               key={product.id}
@@ -63,7 +63,7 @@ export function DesktopSearchBar() {
       )}
 
       {showNoResults && (
-        <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50">
+        <div className="absolute top-full mt-2 w-full bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50">
           <button
             type="button"
             onClick={handleSuggest}

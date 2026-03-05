@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { Product } from "@/types/app";
 import { useSession } from "@/hooks/useSession";
@@ -20,7 +21,7 @@ interface HomeProductCardProps {
   isRefetching?: boolean;
 }
 
-export function HomeProductCard({ product, areaId = null, isRefetching = false }: HomeProductCardProps) {
+export const HomeProductCard = memo(function HomeProductCard({ product, areaId = null, isRefetching = false }: HomeProductCardProps) {
   const { accessToken, loading: sessionLoading } = useSession();
   const connection = useConnectionQuality();
   const priceLimit = connection === "slow" ? PRICES_PREVIEW_SLOW : PRICES_PREVIEW;
@@ -87,4 +88,4 @@ export function HomeProductCard({ product, areaId = null, isRefetching = false }
       </div>
     </section>
   );
-}
+});

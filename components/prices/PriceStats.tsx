@@ -16,7 +16,7 @@ export function PriceStats({ stats }: PriceStatsProps) {
       {items.map(({ label, value }) => (
         <div
           key={label}
-          className="bg-white border border-border rounded px-1.5 py-0.5 text-center shrink-0"
+          className="bg-surface border border-border rounded px-1.5 py-0.5 text-center shrink-0"
         >
           <div className="price-number font-display font-semibold text-[10px] text-ink leading-tight">{value}</div>
           <div className="text-[9px] text-mist leading-tight">{label}</div>

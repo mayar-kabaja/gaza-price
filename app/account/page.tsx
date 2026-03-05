@@ -201,7 +201,7 @@ export default function AccountPage() {
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Header — avatar + name; show skeleton while loading */}
-      <div className="bg-ink px-5 pt-5 pb-6 flex-shrink-0">
+      <div className="bg-[#1A1F2E] px-5 pt-5 pb-6 flex-shrink-0">
         <div className="flex items-center gap-3 mb-4 min-h-[3rem]">
           <div
             className="w-12 h-12 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"
@@ -280,7 +280,7 @@ export default function AccountPage() {
         {/* Trust level — show skeleton while loading */}
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مستوى الثقة</div>
-          <div className="bg-white rounded-2xl p-4 border border-border">
+          <div className="bg-surface rounded-2xl p-4 border border-border">
             {statsLoading ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -317,7 +317,7 @@ export default function AccountPage() {
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مساهماتي</div>
           {contributionsLoading ? (
-            <div className="bg-white rounded-2xl p-6 border border-border">
+            <div className="bg-surface rounded-2xl p-6 border border-border">
               <div className="space-y-3 flex flex-col items-center">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-3 w-28" />
@@ -325,7 +325,7 @@ export default function AccountPage() {
               </div>
             </div>
           ) : (contributor?.report_count ?? 0) === 0 ? (
-            <div className="bg-white rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
+            <div className="bg-surface rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
               <div className="text-3xl mb-2">📋</div>
               <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر أو منتج بعد</div>
               <div className="text-xs text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</div>
@@ -339,7 +339,7 @@ export default function AccountPage() {
           ) : (
             <Link
               href="/account/reports"
-              className="bg-white rounded-2xl px-4 py-3 border border-border flex items-center justify-between"
+              className="bg-surface rounded-2xl px-4 py-3 border border-border flex items-center justify-between"
             >
               <span className="text-sm font-display font-bold text-ink">عرض أسعاري ومنتجاتي</span>
               <span className="text-mist text-sm">‹</span>
@@ -350,7 +350,7 @@ export default function AccountPage() {
         {/* Settings — editable: display_handle, area; delete with confirm */}
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الإعدادات</div>
-          <div className="bg-white rounded-2xl border border-border overflow-hidden">
+          <div className="bg-surface rounded-2xl border border-border overflow-hidden">
             <div className="border-b border-fog">
               <button
                 type="button"
@@ -410,7 +410,7 @@ export default function AccountPage() {
         {openEditHandle && (
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setOpenEditHandle(false)} />
-            <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl p-4 shadow-xl">
+            <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-4 shadow-xl">
               <h3 className="font-display font-bold text-ink mb-3">تغيير اسم العرض</h3>
               <input
                 type="text"
@@ -449,7 +449,7 @@ export default function AccountPage() {
         {openAreaPicker && (
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setOpenAreaPicker(false)} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[75vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-2xl max-h-[75vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
               <div className="px-4 py-3 border-b border-border flex-shrink-0 flex items-center justify-between">
                 <h2 className="font-display font-bold text-ink">اختر المنطقة</h2>
                 <button type="button" onClick={() => setOpenAreaPicker(false)} className="text-mist hover:text-ink p-1 text-lg leading-none" aria-label="إغلاق">×</button>
@@ -471,7 +471,7 @@ export default function AccountPage() {
                           onClick={() => onSelectArea(a)}
                           className={cn(
                             "w-full flex items-center gap-3 p-3.5 rounded-2xl border-[1.5px] mb-2 transition-all text-right",
-                            (area?.id ?? savedArea?.id) === a.id ? "border-olive bg-olive-pale" : "border-border bg-white hover:border-olive-mid"
+                            (area?.id ?? savedArea?.id) === a.id ? "border-olive bg-olive-pale" : "border-border bg-surface hover:border-olive-mid"
                           )}
                         >
                           <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0", (area?.id ?? savedArea?.id) === a.id ? "border-olive bg-olive" : "border-border")}>
@@ -495,7 +495,7 @@ export default function AccountPage() {
         {showDeleteConfirm && (
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setShowDeleteConfirm(false)} />
-            <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl p-4 shadow-xl">
+            <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-4 shadow-xl">
               <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف جميع بياناتك نهائياً</p>
               {deleteError && <ApiErrorBox message={deleteError} onDismiss={() => setDeleteError(null)} />}
               <div className="flex gap-2">

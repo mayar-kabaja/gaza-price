@@ -68,7 +68,7 @@ function CategoriesContent() {
       </div>
 
       {/* Stats strip */}
-      <div className="flex bg-white border-b border-border">
+      <div className="flex bg-surface border-b border-border">
         <div className="flex-1 py-3 px-2 text-center border-l border-border">
           <div className="font-display font-bold text-base text-olive-deep">{formatCount(totalCategories)}</div>
           <div className="text-[10px] text-mist mt-0.5">تصنيف</div>
@@ -84,7 +84,7 @@ function CategoriesContent() {
       </div>
 
       {/* Search */}
-      <div className="sticky top-0 z-10 px-4 py-3 bg-white border-b border-border">
+      <div className="sticky top-0 z-10 px-4 py-3 bg-surface border-b border-border">
         <div className="flex items-center gap-2 bg-fog border border-border rounded-xl px-3.5 py-2.5 focus-within:border-olive-mid transition-colors">
           <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" className="text-mist shrink-0" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8" />
@@ -152,7 +152,7 @@ function CategoriesContent() {
                         key={cat.id}
                         href={`/?category=${cat.id}`}
                         className={cn(
-                          "block rounded-2xl border-[1.5px] border-border bg-white transition-all active:scale-[0.96]",
+                          "block rounded-2xl border-[1.5px] border-border bg-surface transition-all active:scale-[0.96]",
                           "hover:border-olive-mid hover:shadow-md",
                           wide && "col-span-3 flex-row flex items-center gap-3 px-4 py-3.5 text-right"
                         )}

@@ -173,7 +173,7 @@ function SuggestContent() {
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-y-auto pb-24">
         {/* Product not found card */}
         <div className="px-4 pt-4">
-          <div className="bg-white rounded-2xl border border-border p-5 text-center shadow-sm">
+          <div className="bg-surface rounded-2xl border border-border p-5 text-center shadow-sm">
             <div className="text-3xl mb-2">🔍</div>
             <p className="font-display font-bold text-ink text-lg">
               «{productDisplayName}» غير موجود
@@ -193,7 +193,7 @@ function SuggestContent() {
               value={name_ar}
               onChange={(e) => { setNameAr(e.target.value); setError(""); }}
               placeholder="مثال: شاي أحمد ٢٥٠غ"
-              className="w-full bg-white border border-olive-mid rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-olive-mid rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               dir="rtl"
             />
           </div>
@@ -205,7 +205,7 @@ function SuggestContent() {
               <select
                 value={category_id}
                 onChange={(e) => { setCategoryId(e.target.value); setError(""); }}
-                className="flex-1 min-w-[100px] bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+                className="flex-1 min-w-[100px] bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               >
                 <option value="">التصنيف</option>
                 {sortedCategories.map((c) => (
@@ -215,7 +215,7 @@ function SuggestContent() {
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+                className="bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               >
                 {PRODUCT_UNITS.map((u) => (
                   <option key={u.value} value={u.value}>{u.label}</option>
@@ -236,7 +236,7 @@ function SuggestContent() {
                   setError("");
                 }}
                 placeholder="250"
-                className="w-24 bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none text-left"
+                className="w-24 bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none text-left"
               />
             </div>
           </div>
@@ -244,7 +244,7 @@ function SuggestContent() {
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر الذي رأيته</label>
             <p className="text-xs text-mist mb-2 font-body">أرقام إنجليزية (0-9) فقط</p>
-            <div className="bg-white border border-border rounded-2xl flex items-center overflow-hidden">
+            <div className="bg-surface border border-border rounded-2xl flex items-center overflow-hidden">
               <span className="px-4 text-mist text-sm">ش ₪</span>
               <input
                 type="text"
@@ -271,7 +271,7 @@ function SuggestContent() {
             <select
               value={area_id}
               onChange={(e) => { setAreaId(e.target.value); setError(""); }}
-              className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
             >
               <option value="">اختر المنطقة</option>
               {areas.map((a) => (
@@ -287,7 +287,7 @@ function SuggestContent() {
               value={store_name_raw}
               onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
               placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               dir="rtl"
             />
           </div>
@@ -312,7 +312,7 @@ function SuggestContent() {
                   <Link
                     key={s.id}
                     href={`/submit?product_id=${s.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-white border border-olive text-olive text-sm font-body"
+                    className="px-3 py-1.5 rounded-lg bg-surface border border-olive text-olive text-sm font-body"
                   >
                     {s.name_ar}
                   </Link>
@@ -322,7 +322,7 @@ function SuggestContent() {
           )}
 
           {(priceToast || unitSizeToast) && (
-            <div className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white shadow-lg">
+            <div className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white shadow-lg">
               {priceToast || unitSizeToast}
             </div>
           )}

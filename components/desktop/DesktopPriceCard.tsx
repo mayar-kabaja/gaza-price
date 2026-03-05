@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import Link from "next/link";
 import type { Product, Price } from "@/types/app";
 import { previewToPrice, isStale, calcStats, getAverage } from "@/lib/price";
@@ -46,7 +47,7 @@ const TREND_TEXT_COLORS: Record<Trend, string> = {
   stable: "text-olive bg-olive-pale",
 };
 
-export function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) {
+export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) {
   const { overrides } = useConfirmationOverrides();
   const previews = product.price_preview ?? [];
   if (previews.length === 0) return null;
@@ -56,7 +57,7 @@ export function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) 
     previewToPrice(p, product, p.price === minPrice)
   );
 
-  const trend = getTrend(prices);
+  const trend = useMemo(() => getTrend(prices), [prices]);
   const stats = calcStats(prices);
   const latest = prices.reduce((a, b) =>
     new Date(b.reported_at) > new Date(a.reported_at) ? b : a
@@ -72,7 +73,7 @@ export function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) 
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-border overflow-hidden hover:border-olive/40 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 animate-fade-up",
+        "bg-surface rounded-xl border border-border overflow-hidden hover:border-olive/40 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 animate-fade-up",
         staggerClass
       )}
     >
@@ -113,7 +114,7 @@ export function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) 
           <div className="mb-3">
             <div className="h-1.5 bg-fog rounded-full relative">
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-olive border-2 border-white shadow-sm"
+                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-olive border-2 border-surface shadow-sm"
                 style={{ right: `${markerPos}%`, transform: "translate(50%, -50%)" }}
               />
             </div>
@@ -150,4 +151,4 @@ export function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) 
       </div>
     </div>
   );
-}
+});

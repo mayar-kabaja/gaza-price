@@ -51,7 +51,7 @@ export function FlagButton({ priceId, initialCount, flaggedByMe = false, confirm
           "px-2.5 py-1 rounded-md text-[11px] font-semibold font-body transition-all leading-tight",
           flagged
             ? "bg-sand/20 text-sand border border-sand/40"
-            : "bg-white border border-border text-mist hover:border-sand hover:bg-sand/5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            : "bg-surface border border-border text-mist hover:border-sand hover:bg-sand/5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
         {loading ? "جاري..." : flagged ? `🚩 أبلغت (${toArabicNumerals(count)})` : "🚩 إبلاغ"}

@@ -196,7 +196,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => { if (e.target === backdropRef.current) handleClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fade-up">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fade-up">
         {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-olive-pale/50">
           <h2 className="font-display font-extrabold text-lg text-ink">إضافة سعر جديد</h2>
@@ -233,7 +233,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
               </div>
             ) : (
               <div className="relative">
-                <div className="bg-white border border-border rounded-xl flex items-center gap-2.5 px-3.5 py-2.5">
+                <div className="bg-surface border border-border rounded-xl flex items-center gap-2.5 px-3.5 py-2.5">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-ink/40 flex-shrink-0">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
                     <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -250,7 +250,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
                 </div>
 
                 {searchOpen && query.trim().length >= 1 && !loading && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-50 max-h-48 overflow-y-auto">
                     {results.length > 0 ? (
                       results.map((p) => (
                         <button
@@ -290,7 +290,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
           {/* Price */}
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر</label>
-            <div className="bg-white border border-border rounded-xl flex items-center overflow-hidden">
+            <div className="bg-surface border border-border rounded-xl flex items-center overflow-hidden">
               <input
                 type="text"
                 inputMode="decimal"
@@ -320,7 +320,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
             <select
               value={areaId}
               onChange={(e) => { setAreaId(e.target.value); setError(""); }}
-              className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none appearance-none cursor-pointer"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none appearance-none cursor-pointer"
             >
               <option value="">اختر المنطقة</option>
               {areas.map((area) => (
@@ -337,7 +337,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
               value={storeNameRaw}
               onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
               placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
             />
           </div>
@@ -362,7 +362,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
 
           {/* Toasts */}
           {priceToast && (
-            <div className="rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white" role="status">
+            <div className="rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white" role="status">
               {priceToast}
             </div>
           )}
@@ -383,7 +383,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
           <button
             type="button"
             onClick={handleClose}
-            className="px-5 py-2.5 rounded-xl border border-border text-sm font-display font-bold text-slate hover:bg-white transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl border border-border text-sm font-display font-bold text-slate hover:bg-surface transition-colors cursor-pointer"
           >
             إلغاء
           </button>

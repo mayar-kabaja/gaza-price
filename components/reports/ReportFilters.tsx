@@ -34,7 +34,7 @@ export function ReportFilters({ value, onChange, hasArea }: ReportFiltersProps) 
                 ? "bg-olive text-white"
                 : disabled
                 ? "bg-fog text-mist cursor-not-allowed"
-                : "bg-white border border-border text-ink hover:border-olive-mid hover:text-olive"
+                : "bg-surface border border-border text-ink hover:border-olive-mid hover:text-olive"
             )}
           >
             {f.label}

@@ -33,8 +33,8 @@ export function TrustLevelBar({ level }: TrustLevelBarProps) {
                 i < currentIdx
                   ? "bg-olive border-olive"
                   : i === currentIdx
-                  ? "bg-white border-olive shadow-[0_0_0_3px_#EBF3EE]"
-                  : "bg-white border-border"
+                  ? "bg-surface border-olive shadow-[0_0_0_3px_var(--raw-olive-pale)]"
+                  : "bg-surface border-border"
               )}
             />
           ))}

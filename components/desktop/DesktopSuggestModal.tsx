@@ -179,7 +179,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => { if (e.target === backdropRef.current) handleClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fade-up">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-fade-up">
         {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-olive-pale/50">
           <div>
@@ -205,7 +205,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               value={name_ar}
               onChange={(e) => { setNameAr(e.target.value); setError(""); }}
               placeholder="مثال: شاي أحمد ٢٥٠غ"
-              className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
               autoFocus
             />
@@ -218,7 +218,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               <select
                 value={category_id}
                 onChange={(e) => { setCategoryId(e.target.value); setError(""); }}
-                className="flex-1 min-w-[100px] bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
+                className="flex-1 min-w-[100px] bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
               >
                 <option value="">التصنيف</option>
                 {sortedCategories.map((c) => (
@@ -228,7 +228,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
+                className="bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
               >
                 {PRODUCT_UNITS.map((u) => (
                   <option key={u.value} value={u.value}>{u.label}</option>
@@ -249,7 +249,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
                   setError("");
                 }}
                 placeholder="250"
-                className="w-20 bg-white border border-border rounded-xl px-3 py-3 text-sm font-body text-ink outline-none text-left"
+                className="w-20 bg-surface border border-border rounded-xl px-3 py-3 text-sm font-body text-ink outline-none text-left"
               />
             </div>
           </div>
@@ -257,7 +257,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
           {/* Price */}
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر الذي رأيته</label>
-            <div className="bg-white border border-border rounded-xl flex items-center overflow-hidden">
+            <div className="bg-surface border border-border rounded-xl flex items-center overflow-hidden">
               <input
                 type="text"
                 inputMode="decimal"
@@ -285,7 +285,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
             <select
               value={area_id}
               onChange={(e) => { setAreaId(e.target.value); setError(""); }}
-              className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none cursor-pointer"
             >
               <option value="">اختر المنطقة</option>
               {areas.map((a) => (
@@ -302,7 +302,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               value={store_name_raw}
               onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
               placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
             />
           </div>
@@ -329,7 +329,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
                     key={s.id}
                     href={`/submit?product_id=${s.id}`}
                     onClick={handleClose}
-                    className="px-3 py-1.5 rounded-lg bg-white border border-olive text-olive text-sm font-body cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-surface border border-olive text-olive text-sm font-body cursor-pointer"
                   >
                     {s.name_ar}
                   </Link>
@@ -340,7 +340,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
 
           {/* Toasts */}
           {(priceToast || unitSizeToast) && (
-            <div className="rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white" role="status">
+            <div className="rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white" role="status">
               {priceToast || unitSizeToast}
             </div>
           )}
@@ -357,7 +357,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-2.5 rounded-xl border border-border text-sm font-display font-bold text-slate hover:bg-white transition-colors cursor-pointer"
+              className="px-5 py-2.5 rounded-xl border border-border text-sm font-display font-bold text-slate hover:bg-surface transition-colors cursor-pointer"
             >
               إلغاء
             </button>

@@ -27,7 +27,7 @@ export function DesktopPriceGrid({
     return (
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm">
+          <div key={i} className="bg-surface rounded-xl overflow-hidden shadow-sm">
             <div className="h-[3px] bg-fog animate-pulse" />
             <div className="p-4 space-y-3">
               <div className="flex items-center gap-2">

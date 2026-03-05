@@ -226,7 +226,7 @@ function SubmitForm() {
             </div>
           ) : (
             <div className="relative">
-              <div className="bg-white border border-border rounded-2xl flex items-center gap-2.5 px-3.5 py-2.5">
+              <div className="bg-surface border border-border rounded-2xl flex items-center gap-2.5 px-3.5 py-2.5">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-ink/40 flex-shrink-0">
                   <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
                   <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -242,7 +242,7 @@ function SubmitForm() {
               </div>
 
               {open && query.trim().length >= 1 && !loading && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-30 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-30 max-h-60 overflow-y-auto">
                   {results.length > 0 ? (
                     results.map((p) => (
                       <button
@@ -280,7 +280,7 @@ function SubmitForm() {
                     value={newProductName}
                     onChange={(e) => setNewProductName(e.target.value)}
                     placeholder="اسم المنتج المقترح"
-                    className="w-full bg-white border border-border rounded-2xl px-4 py-3 text-sm font-body text-ink outline-none"
+                    className="w-full bg-surface border border-border rounded-2xl px-4 py-3 text-sm font-body text-ink outline-none"
                     dir="rtl"
                   />
                   <Link
@@ -299,7 +299,7 @@ function SubmitForm() {
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">السعر</label>
           <p className="text-xs text-mist mb-2 font-body">أرقام إنجليزية (0-9) فقط</p>
-          <div className="bg-white border border-border rounded-2xl flex items-center overflow-hidden">
+          <div className="bg-surface border border-border rounded-2xl flex items-center overflow-hidden">
             <input
               type="text"
               inputMode="decimal"
@@ -329,7 +329,7 @@ function SubmitForm() {
           <select
             value={areaId}
             onChange={e => { setAreaId(e.target.value); setError(""); }}
-            className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none appearance-none"
+            className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none appearance-none"
           >
             <option value="">اختر المنطقة</option>
             {areas.map(area => (
@@ -346,7 +346,7 @@ function SubmitForm() {
             value={storeNameRaw}
             onChange={e => { setStoreNameRaw(e.target.value); setError(""); }}
             placeholder="مثال: بقالة أبو رامي"
-            className="w-full bg-white border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+            className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
             dir="rtl"
           />
         </div>
@@ -370,7 +370,7 @@ function SubmitForm() {
         {/* Small toast when user enters Arabic numerals in price */}
         {priceToast && (
           <div
-            className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-ink/95 px-4 py-2.5 text-center text-sm text-white shadow-lg"
+            className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white shadow-lg"
             role="status"
             aria-live="polite"
           >
