@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -10,8 +10,21 @@ import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
-import { useSectionsWithCategories, useProductsInfinite } from "@/lib/queries/hooks";
+import { useSectionsWithCategories, useProductsInfinite, useAreas } from "@/lib/queries/hooks";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { isStale as checkStale } from "@/lib/price";
+
+// Desktop components
+import { DesktopHeader } from "@/components/desktop/DesktopHeader";
+import { DesktopSidebar } from "@/components/desktop/DesktopSidebar";
+import { DesktopBreadcrumb } from "@/components/desktop/DesktopBreadcrumb";
+import { DesktopStatsStrip } from "@/components/desktop/DesktopStatsStrip";
+import { DesktopFilterBar, type DesktopFilter, type DesktopSort } from "@/components/desktop/DesktopFilterBar";
+import { DesktopPriceGrid } from "@/components/desktop/DesktopPriceGrid";
+import { DesktopSubmitModal } from "@/components/desktop/DesktopSubmitModal";
+import { DesktopSuggestModal } from "@/components/desktop/DesktopSuggestModal";
+import { DesktopProfilePanel } from "@/components/desktop/DesktopProfilePanel";
 
 export function HomeData() {
   const router = useRouter();
@@ -19,9 +32,17 @@ export function HomeData() {
   const categoryFromUrl = searchParams?.get("category") ?? null;
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
-  const { area } = useArea();
+  const { area, saveArea } = useArea();
   const connection = useConnectionQuality();
   const isSlow = connection === "slow";
+  const isDesktop = useIsDesktop();
+
+  // Desktop filter/sort state
+  const [desktopFilter, setDesktopFilter] = useState<DesktopFilter>("all");
+  const [desktopSort, setDesktopSort] = useState<DesktopSort>("newest");
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [suggestModalOpen, setSuggestModalOpen] = useState(false);
+  const [desktopView, setDesktopView] = useState<"prices" | "profile">("prices");
 
   // Sync from URL when navigating from /categories
   useEffect(() => {
@@ -30,10 +51,13 @@ export function HomeData() {
 
   function selectCategory(id: string) {
     setSelectedCategoryId(id);
+    setDesktopView("prices");
     router.replace(`/?category=${id}`);
   }
 
   const { data: sections, isLoading: categoriesLoading } = useSectionsWithCategories();
+  useAreas(); // pre-warm cache for sidebar/modals
+
   // Flatten categories from sections (same order as /categories page)
   const sortedCategories = (sections ?? []).flatMap((s) => s.categories ?? []);
   const effectiveCategoryId =
@@ -61,6 +85,40 @@ export function HomeData() {
     return aHasPrices ? -1 : 1;
   });
 
+  // Desktop filtered/sorted products
+  const desktopProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Apply desktop filter
+    if (desktopFilter === "confirmed") {
+      filtered = filtered.filter((p) =>
+        (p.price_preview ?? []).some((pp) => pp.confirmation_count > 0)
+      );
+    } else if (desktopFilter === "recent") {
+      filtered = filtered.filter((p) =>
+        (p.price_preview ?? []).some((pp) => !checkStale(pp.reported_at))
+      );
+    }
+
+    // Apply desktop sort
+    if (desktopSort === "cheapest") {
+      filtered.sort((a, b) => {
+        const aMin = Math.min(...(a.price_preview ?? []).map((pp) => pp.price));
+        const bMin = Math.min(...(b.price_preview ?? []).map((pp) => pp.price));
+        return aMin - bMin;
+      });
+    } else {
+      // newest — sort by latest reported_at
+      filtered.sort((a, b) => {
+        const aLatest = Math.max(...(a.price_preview ?? []).map((pp) => new Date(pp.reported_at).getTime()));
+        const bLatest = Math.max(...(b.price_preview ?? []).map((pp) => new Date(pp.reported_at).getTime()));
+        return bLatest - aLatest;
+      });
+    }
+
+    return filtered;
+  }, [products, desktopFilter, desktopSort]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const dismissed = localStorage.getItem(
@@ -79,6 +137,57 @@ export function HomeData() {
   const showSkeletons = categoriesLoading || (!!effectiveCategoryId && productsLoading);
   const error = productsError ? "تعذر تحميل البيانات" : null;
 
+  // ── Desktop layout ──
+  if (isDesktop) {
+    return (
+      <div className="h-screen grid grid-rows-[64px_1fr]">
+        <DesktopHeader
+          onSubmitClick={() => setSubmitModalOpen(true)}
+          onSuggestClick={() => setSuggestModalOpen(true)}
+          onProfileClick={() => setDesktopView((v) => v === "profile" ? "prices" : "profile")}
+          isProfileActive={desktopView === "profile"}
+        />
+        <div className="flex overflow-hidden">
+          <DesktopSidebar
+            selectedAreaId={area?.id ?? null}
+            selectedCategoryId={effectiveCategoryId}
+            onAreaSelect={(a) => saveArea(a)}
+            onCategorySelect={selectCategory}
+            onSubmitClick={() => setSubmitModalOpen(true)}
+          />
+          <main className="flex-1 overflow-y-auto p-8 bg-fog">
+            {desktopView === "profile" ? (
+              <DesktopProfilePanel />
+            ) : (
+              <>
+                <DesktopBreadcrumb categoryId={effectiveCategoryId} />
+                <DesktopStatsStrip products={products} isLoading={showSkeletons} />
+                <DesktopFilterBar
+                  filter={desktopFilter}
+                  sort={desktopSort}
+                  onFilterChange={setDesktopFilter}
+                  onSortChange={setDesktopSort}
+                />
+                <DesktopPriceGrid
+                  products={desktopProducts}
+                  sections={sections ?? []}
+                  selectedCategoryId={effectiveCategoryId}
+                  hasNextPage={hasNextPage ?? false}
+                  isFetchingNextPage={isFetchingNextPage}
+                  onLoadMore={() => fetchNextPage()}
+                  isLoading={showSkeletons}
+                />
+              </>
+            )}
+          </main>
+        </div>
+        <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
+        <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
+      </div>
+    );
+  }
+
+  // ── Mobile layout (unchanged) ──
   return (
     <div className="flex flex-col min-h-dvh">
       <AppHeader />

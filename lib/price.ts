@@ -1,4 +1,4 @@
-import { Price } from "@/types/app";
+import { Price, PricePreviewItem, Product } from "@/types/app";
 import { OUTLIER_STD_DEV, STALE_HOURS } from "./constants";
 
 export function getMedian(prices: number[]): number {
@@ -71,4 +71,30 @@ export function currencySymbol(currency: string): string {
     EGP: "ج.م",
   };
   return map[currency] ?? currency;
+}
+
+/** Build a Price-like object from price_preview item for PriceCard. */
+export function previewToPrice(p: PricePreviewItem, product: Product, isLowest: boolean): Price {
+  return {
+    id: p.id,
+    product_id: product.id,
+    product: { id: product.id, name_ar: product.name_ar, category_id: product.category_id, unit: product.unit, unit_size: product.unit_size, status: "active", created_at: product.created_at },
+    store: p.store ? { id: "", name_ar: p.store.name_ar ?? "", area_id: "", is_verified: false } : undefined,
+    store_name_raw: undefined,
+    area_id: "",
+    area: p.area ? { id: "", name_ar: p.area.name_ar ?? "", governorate: "central", is_active: true } : undefined,
+    price: p.price,
+    currency: "ILS",
+    status: "confirmed",
+    trust_score: 0,
+    confirmation_count: p.confirmation_count,
+    flag_count: p.flag_count ?? 0,
+    has_receipt: false,
+    is_lowest: isLowest,
+    reported_at: p.reported_at,
+    expires_at: "",
+    confirmed_by_me: p.confirmed_by_me,
+    flagged_by_me: p.flagged_by_me,
+    is_mine: p.is_mine,
+  };
 }

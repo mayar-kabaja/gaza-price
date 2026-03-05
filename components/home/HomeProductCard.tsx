@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Product, PricePreviewItem } from "@/types/app";
+import { Product } from "@/types/app";
 import { useSession } from "@/hooks/useSession";
 import { usePrices } from "@/lib/queries/hooks";
 import { PriceCard } from "@/components/prices/PriceCard";
@@ -9,35 +9,10 @@ import { PriceStats } from "@/components/prices/PriceStats";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import type { Price, PriceStats as PriceStatsType } from "@/types/app";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
+import { previewToPrice } from "@/lib/price";
 
 const PRICES_PREVIEW = 5;
 const PRICES_PREVIEW_SLOW = 2;
-
-/** Build a Price-like object from price_preview item for PriceCard. */
-function previewToPrice(p: PricePreviewItem, product: Product, isLowest: boolean): Price {
-  return {
-    id: p.id,
-    product_id: product.id,
-    product: { id: product.id, name_ar: product.name_ar, category_id: product.category_id, unit: product.unit, unit_size: product.unit_size, status: "active", created_at: product.created_at },
-    store: p.store ? { id: "", name_ar: p.store.name_ar ?? "", area_id: "", is_verified: false } : undefined,
-    store_name_raw: undefined,
-    area_id: "",
-    area: p.area ? { id: "", name_ar: p.area.name_ar ?? "", governorate: "central", is_active: true } : undefined,
-    price: p.price,
-    currency: "ILS",
-    status: "confirmed",
-    trust_score: 0,
-    confirmation_count: p.confirmation_count,
-    flag_count: p.flag_count ?? 0,
-    has_receipt: false,
-    is_lowest: isLowest,
-    reported_at: p.reported_at,
-    expires_at: "",
-    confirmed_by_me: p.confirmed_by_me,
-    flagged_by_me: p.flagged_by_me,
-    is_mine: p.is_mine,
-  };
-}
 
 interface HomeProductCardProps {
   product: Product;
