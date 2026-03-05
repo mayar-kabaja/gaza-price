@@ -83,17 +83,25 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover { background: #2E3D50; }
 .dark { scrollbar-color: #243040 #18212C; }
 
-/* Dark mode: form controls inherit surface bg */
-.dark input,
-.dark select,
-.dark textarea {
-  background-color: var(--raw-surface);
-  color: var(--raw-ink);
-  border-color: var(--raw-border);
+/* Dark mode: desktop search bar — solid dark bg, no green bleed */
+.dark .desktop-search-wrap {
+  background: #18212C !important;
+  border-color: #243040 !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
+
+/* Dark mode: select/option need explicit dark bg */
+.dark select,
 .dark option {
   background-color: var(--raw-surface);
   color: var(--raw-ink);
+}
+/* Dark mode: reset browser-default bg on inputs so bg-transparent works */
+.dark input,
+.dark textarea {
+  background: transparent;
+  color: inherit;
 }
 
 /* Dark mode: override Tailwind built-in red-50 (error boxes) */

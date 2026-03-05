@@ -201,7 +201,7 @@ export default function AccountPage() {
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Header — avatar + name; show skeleton while loading */}
-      <div className="bg-[#1A1F2E] px-5 pt-5 pb-6 flex-shrink-0">
+      <div className="px-5 pt-5 pb-6 flex-shrink-0" style={{ background: "#1A1F2E" }}>
         <div className="flex items-center gap-3 mb-4 min-h-[3rem]">
           <div
             className="w-12 h-12 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"

@@ -26,7 +26,7 @@ export function DesktopSearchBar() {
 
   return (
     <div className="relative flex-1 max-w-[520px]">
-      <div className="flex items-center gap-2.5 px-3.5 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm">
+      <div className="desktop-search-wrap flex items-center gap-2.5 px-3.5 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/50 flex-shrink-0">
           <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
           <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

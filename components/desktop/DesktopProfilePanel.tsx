@@ -190,7 +190,7 @@ export function DesktopProfilePanel() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Profile header */}
-      <div className="bg-[#1A1F2E] rounded-2xl px-6 pt-6 pb-5">
+      <div className="rounded-2xl px-6 pt-6 pb-5" style={{ background: "#1A1F2E" }}>
         <div className="flex items-center gap-4 mb-5">
           <div
             className="w-14 h-14 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-2xl font-display font-bold text-white"

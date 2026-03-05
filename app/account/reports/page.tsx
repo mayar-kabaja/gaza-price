@@ -99,7 +99,7 @@ export default function AccountReportsPage() {
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Header */}
-      <div className="bg-[#1A1F2E] px-5 pt-4 pb-5 flex-shrink-0">
+      <div className="px-5 pt-4 pb-5 flex-shrink-0" style={{ background: "#1A1F2E" }}>
         <div className="flex items-center gap-3 mb-1">
           <Link href="/account" className="text-white/60 hover:text-white font-body text-sm">
             ←
