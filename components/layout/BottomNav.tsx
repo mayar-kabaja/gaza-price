@@ -61,8 +61,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 w-full bg-white border-t border-border flex z-40" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <div className="w-full max-w-lg mx-auto flex">
+    <nav className="fixed bottom-0 inset-x-0 w-full xl:max-w-[430px] mx-auto bg-white border-t border-border flex z-40 xl:rounded-b-[44px] xl:bottom-[20px]" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="w-full flex">
         {NAV_ITEMS.map(({ href, icon, label }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(href));
           return (

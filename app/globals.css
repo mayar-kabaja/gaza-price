@@ -47,13 +47,47 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* App shell — full viewport on all devices (phone, tablet, desktop) */
+/* App shell — phone-frame layout on desktop */
 .app-shell {
   width: 100%;
   min-height: 100dvh;
   background: #F4F7F9;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
+}
+
+/* Desktop only: iPhone-style frame (1024px+ excludes mobile & iPad) */
+@media (min-width: 1280px) {
+  body {
+    background: #f5f7f5;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(67,160,71,0.12) 0%, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(46,125,50,0.09) 0%, transparent 50%);
+  }
+  .app-shell {
+    max-width: 430px;
+    min-height: auto;
+    height: calc(100dvh - 40px);
+    margin: 20px auto;
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 0 0 4px rgba(0, 0, 0, 0.3),
+      0 8px 24px rgba(0, 0, 0, 0.5),
+      0 24px 48px rgba(0, 0, 0, 0.4),
+      0 48px 80px rgba(0, 0, 0, 0.3),
+      0 0 120px rgba(74, 124, 89, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Override min-h-dvh inside the frame so children fill the shell, not the viewport */
+  .app-shell > * {
+    min-height: 100% !important;
+    max-height: 100%;
+    overflow-y: auto;
+  }
 }
 
 /* Loader dots (3-point) — used by LoaderDots component */
