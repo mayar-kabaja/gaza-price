@@ -362,7 +362,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
 
           {/* Toasts */}
           {priceToast && (
-            <div className="rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white" role="status">
+            <div className="rounded-xl px-4 py-2.5 text-center text-sm text-white" style={{ background: "rgba(26,31,46,0.95)" }} role="status">
               {priceToast}
             </div>
           )}

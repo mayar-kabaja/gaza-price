@@ -195,7 +195,7 @@ export function HomeData() {
       <AppHeader />
 
       {showWelcomeToast && (
-        <div className="mx-4 mt-3 flex items-center gap-2.5 rounded-xl bg-[#1A1F2E] px-3.5 py-3 animate-slide-down flex-shrink-0">
+        <div className="mx-4 mt-3 mb-3 flex items-center gap-2.5 rounded-xl px-3.5 py-3 animate-slide-down flex-shrink-0" style={{ background: "#1A1F2E" }}>
           <span className="text-lg">👋</span>
           <div className="flex-1 min-w-0">
             <div className="font-display font-bold text-[13px] text-white leading-snug">

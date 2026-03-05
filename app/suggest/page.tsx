@@ -322,7 +322,7 @@ function SuggestContent() {
           )}
 
           {(priceToast || unitSizeToast) && (
-            <div className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl bg-[#1A1F2E]/95 px-4 py-2.5 text-center text-sm text-white shadow-lg">
+            <div className="fixed left-4 right-4 bottom-24 z-50 mx-auto max-w-sm rounded-xl px-4 py-2.5 text-center text-sm text-white shadow-lg" style={{ background: "rgba(26,31,46,0.95)" }}>
               {priceToast || unitSizeToast}
             </div>
           )}
