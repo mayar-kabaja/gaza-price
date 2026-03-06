@@ -48,6 +48,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
+  const [storePhone, setStorePhone] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
@@ -105,6 +106,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
     setProduct(null);
     setPrice("");
     setStoreNameRaw("");
+    setStorePhone("");
     setReceiptPhotoUrl(null);
     setError("");
     setRetryAfterSeconds(undefined);
@@ -142,6 +144,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
         price: parseFloat(price),
         area_id: areaId,
         store_name_raw: storeNameRaw || undefined,
+        store_phone: storePhone.trim() || undefined,
         receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -161,6 +164,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
             price: parseFloat(price),
             area_id: areaId,
             store_name_raw: storeNameRaw || undefined,
+            store_phone: storePhone.trim() || undefined,
             receipt_photo_url: receiptPhotoUrl || undefined,
           });
           await refreshQueueCount();
@@ -331,7 +335,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
 
           {/* Store name */}
           <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر (اختياري)</label>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
             <input
               type="text"
               value={storeNameRaw}
@@ -339,6 +343,20 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
               placeholder="مثال: بقالة أبو رامي"
               className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
+            />
+          </div>
+
+          {/* Store phone (optional) */}
+          <div>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">رقم هاتف المتجر (اختياري)</label>
+            <input
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              value={storePhone}
+              onChange={(e) => setStorePhone(e.target.value)}
+              placeholder="مثال: 0599123456"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none text-left"
             />
           </div>
 

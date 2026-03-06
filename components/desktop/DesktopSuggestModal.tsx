@@ -48,6 +48,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
   const [price, setPrice] = useState("");
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
+  const [storePhone, setStorePhone] = useState("");
   const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
@@ -110,6 +111,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
     setUnitSize("");
     setPrice("");
     setStoreNameRaw("");
+    setStorePhone("");
     setReceiptPhotoUrl(null);
     setError("");
     setSimilarProducts([]);
@@ -128,7 +130,8 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
     const priceNum = Number(price);
     if (!price.trim() || isNaN(priceNum) || priceNum <= 0) return "يرجى إدخال سعر صحيح";
     if (!area_id) return "يرجى اختيار المنطقة";
-    if (store_name_raw.trim().length === 1) return "اسم المتجر يجب أن يكون حرفين على الأقل";
+    if (!store_name_raw.trim()) return "يرجى إدخال اسم المتجر";
+    if (store_name_raw.trim().length < 2) return "اسم المتجر يجب أن يكون حرفين على الأقل";
     return null;
   }
 
@@ -148,6 +151,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         price: Number(price),
         area_id,
         store_name_raw: store_name_raw.trim() || undefined,
+        store_phone: storePhone.trim() || undefined,
         receipt_photo_url: receipt_photo_url || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -296,7 +300,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
 
           {/* Store name */}
           <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر (اختياري)</label>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
             <input
               type="text"
               value={store_name_raw}
@@ -304,6 +308,20 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               placeholder="مثال: بقالة أبو رامي"
               className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
+            />
+          </div>
+
+          {/* Store phone */}
+          <div>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">رقم هاتف المتجر (اختياري)</label>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={storePhone}
+              onChange={(e) => setStorePhone(e.target.value)}
+              placeholder="مثال: 0599123456"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
+              dir="ltr"
             />
           </div>
 

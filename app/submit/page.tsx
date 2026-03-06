@@ -54,6 +54,7 @@ function SubmitForm() {
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
+  const [storePhone, setStorePhone] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
@@ -129,6 +130,7 @@ function SubmitForm() {
         price: parseFloat(price),
         area_id: areaId,
         store_name_raw: storeNameRaw || undefined,
+        store_phone: storePhone.trim() || undefined,
         receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -146,6 +148,7 @@ function SubmitForm() {
             price: parseFloat(price),
             area_id: areaId,
             store_name_raw: storeNameRaw || undefined,
+            store_phone: storePhone.trim() || undefined,
             receipt_photo_url: receiptPhotoUrl || undefined,
           });
           await refreshQueueCount();
@@ -344,7 +347,7 @@ function SubmitForm() {
           </select>
         </div>
 
-        {/* Store name — if provided, at least 2 characters */}
+        {/* Store name */}
         <div>
           <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
           <input
@@ -354,6 +357,20 @@ function SubmitForm() {
             placeholder="مثال: بقالة أبو رامي"
             className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
             dir="rtl"
+          />
+        </div>
+
+        {/* Store phone (optional) */}
+        <div>
+          <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">رقم هاتف المتجر (اختياري)</label>
+          <input
+            type="tel"
+            inputMode="tel"
+            dir="ltr"
+            value={storePhone}
+            onChange={e => setStorePhone(e.target.value)}
+            placeholder="مثال: 0599123456"
+            className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none text-left"
           />
         </div>
 
