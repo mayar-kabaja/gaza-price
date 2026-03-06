@@ -75,8 +75,11 @@ export function AppHeader() {
 
       {/* Top row */}
       <div className="flex items-center justify-between mb-3 relative z-10">
-        <div className="font-display font-extrabold text-xl text-white leading-none">
-          غزة <span className="text-sand">بريس</span>
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="" className="w-8 h-8 rounded-lg" />
+          <span className="font-display font-extrabold text-xl text-white leading-none">
+            غزة <span className="text-sand">بريس</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {area ? (

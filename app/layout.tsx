@@ -33,7 +33,10 @@ export const metadata: Metadata = {
   description: "مقارنة أسعار المواد الأساسية في غزة — قوة المجتمع",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icons/icon-192.png",
   },
   openGraph: {

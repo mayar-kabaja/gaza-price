@@ -36,8 +36,11 @@ export default function ReportsPage() {
           <Link href="/" className="text-white/60 hover:text-white font-body text-sm">
             ←
           </Link>
-          <div className="font-display font-extrabold text-xl text-white leading-none">
-            غزة <span className="text-sand">بريس</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="" className="w-8 h-8 rounded-lg" />
+            <span className="font-display font-extrabold text-xl text-white leading-none">
+              غزة <span className="text-sand">بريس</span>
+            </span>
           </div>
         </div>
         <h1 className="font-display font-bold text-lg text-white mt-2">تقارير</h1>

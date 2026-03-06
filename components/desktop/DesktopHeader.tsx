@@ -52,7 +52,8 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, i
     <header className="h-16 bg-olive-deep border-b border-sand/30 grid grid-cols-[280px_1fr] items-center z-40">
       {/* Brand */}
       <div className="flex items-center gap-3 px-6">
-        <Link href="/" className="flex items-center gap-1.5">
+        <Link href="/" className="flex items-center gap-2">
+          <img src="/logo.svg" alt="" className="w-8 h-8 rounded-lg" />
           <span className="font-display font-extrabold text-lg text-white">
             غزة<span className="text-sand">بريس</span>
           </span>
