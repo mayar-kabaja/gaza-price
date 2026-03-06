@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -32,7 +32,13 @@ export function HomeData() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams?.get("category") ?? null;
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("category");
+    }
+    return categoryFromUrl;
+  });
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const { area, saveArea } = useArea();
   const connection = useConnectionQuality();
@@ -135,6 +141,10 @@ export function HomeData() {
       localStorage.setItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed, "1");
   }
 
+  const scrollToSelected = useCallback((el: HTMLButtonElement | null) => {
+    if (el) el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, []);
+
   const hasCategories = sortedCategories.length > 0;
   const showSkeletons = categoriesLoading || (!!effectiveCategoryId && productsLoading);
   const error = productsError ? "تعذر تحميل البيانات" : null;
@@ -225,6 +235,7 @@ export function HomeData() {
             return (
               <button
                 key={c.id}
+                ref={isSelected ? scrollToSelected : undefined}
                 type="button"
                 onClick={() => selectCategory(c.id)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
