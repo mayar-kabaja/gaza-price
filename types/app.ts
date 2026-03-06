@@ -165,11 +165,13 @@ export interface ReportFeedItem {
   currency: Currency;
   store_name_raw?: string | null;
   confirmation_count: number;
+  flag_count: number;
   trust_score: number;
   status: PriceStatus;
   reported_at: string;
   has_receipt: boolean;
   is_confirmed_by_me: boolean;
+  is_flagged_by_me: boolean;
   /** True when this report was submitted by the current user. */
   is_mine?: boolean;
   product?: {
