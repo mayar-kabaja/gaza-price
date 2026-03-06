@@ -21,6 +21,9 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor } from "@/types/app";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { DesktopProfilePanel } from "@/components/desktop/DesktopProfilePanel";
+import { DesktopLayout } from "@/components/desktop/DesktopLayout";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -86,6 +89,20 @@ function useProfile() {
 }
 
 export default function AccountPage() {
+  const isDesktop = useIsDesktop();
+
+  if (isDesktop) {
+    return (
+      <DesktopLayout>
+        <DesktopProfilePanel />
+      </DesktopLayout>
+    );
+  }
+
+  return <MobileAccountPage />;
+}
+
+function MobileAccountPage() {
   const { contributor, loading, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
   const { accessToken } = useSession();
   const router = useRouter();
@@ -201,14 +218,14 @@ export default function AccountPage() {
   return (
     <div className="flex flex-col min-h-dvh">
       {/* Header — avatar + name; show skeleton while loading */}
-      <div className="px-5 pt-5 pb-6 flex-shrink-0" style={{ background: "#1A1F2E" }}>
+      <div className="px-5 pt-5 pb-6 flex-shrink-0 bg-olive">
         <div className="flex items-center gap-3 mb-4 min-h-[3rem]">
           <div
-            className="w-12 h-12 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"
+            className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/30 shrink-0 flex items-center justify-center text-xl font-display font-bold text-white"
             aria-hidden
           >
             {statsLoading ? (
-              <Skeleton className="h-5 w-5 rounded-full bg-white/50" />
+              <Skeleton className="h-5 w-5 rounded-full bg-white/40" />
             ) : (
               profileInitial(contributor)
             )}
@@ -216,8 +233,8 @@ export default function AccountPage() {
           <div className="min-w-0 flex-1">
             {statsLoading ? (
               <div className="space-y-1.5">
-                <Skeleton className="h-4 w-32 bg-white/40 rounded" />
-                <Skeleton className="h-3 w-24 bg-white/30 rounded" />
+                <Skeleton className="h-4 w-32 bg-white/30 rounded" />
+                <Skeleton className="h-3 w-24 bg-white/20 rounded" />
               </div>
             ) : (
               <>
@@ -228,7 +245,7 @@ export default function AccountPage() {
                       ? "مساهم " + TRUST_LEVEL_LABELS[contributor.trust_level]
                       : "مساهم مجهول"}
                 </div>
-                <div className="text-[11px] text-white/80 font-mono mt-0.5">
+                <div className="text-[11px] text-white/70 font-mono mt-0.5">
                   #{(typeof contributor?.anon_session_id === "string" ? contributor.anon_session_id : contributor?.id ?? "").slice(-4) || "----"}
                   {contributor?.joined_at
                     ? " · منذ " + new Date(contributor.joined_at).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
@@ -248,19 +265,19 @@ export default function AccountPage() {
           ].map(({ val, label }) => (
             <div
               key={label}
-              className="rounded-xl border border-white/30 bg-white/25 p-2.5 text-center min-h-[3.5rem]"
+              className="rounded-xl border border-white/20 bg-white/15 p-2.5 text-center min-h-[3.5rem]"
             >
               {statsLoading ? (
                 <div className="flex flex-col items-center gap-1">
-                  <Skeleton className="h-7 w-10 bg-white/40 rounded" />
-                  <div className="text-[10px] text-white/80">{label}</div>
+                  <Skeleton className="h-7 w-10 bg-white/30 rounded" />
+                  <div className="text-[10px] text-white/70">{label}</div>
                 </div>
               ) : (
                 <>
                   <div className="font-display font-extrabold text-2xl leading-none text-white">
                     {toArabicNumerals(val)}
                   </div>
-                  <div className="text-[10px] text-white/80 mt-1">{label}</div>
+                  <div className="text-[10px] text-white/70 mt-1">{label}</div>
                 </>
               )}
             </div>

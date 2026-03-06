@@ -190,14 +190,14 @@ export function DesktopProfilePanel() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Profile header */}
-      <div className="rounded-2xl px-6 pt-6 pb-5" style={{ background: "#1A1F2E" }}>
+      <div className="rounded-2xl px-6 pt-6 pb-5 bg-olive">
         <div className="flex items-center gap-4 mb-5">
           <div
-            className="w-14 h-14 rounded-full bg-white/30 border-2 border-white/40 shrink-0 flex items-center justify-center text-2xl font-display font-bold text-white"
+            className="w-14 h-14 rounded-full bg-white/20 border-2 border-white/30 shrink-0 flex items-center justify-center text-2xl font-display font-bold text-white"
             aria-hidden
           >
             {statsLoading ? (
-              <Skeleton className="h-6 w-6 rounded-full bg-white/50" />
+              <Skeleton className="h-6 w-6 rounded-full bg-white/40" />
             ) : (
               profileInitial(contributor)
             )}
@@ -205,8 +205,8 @@ export function DesktopProfilePanel() {
           <div className="min-w-0 flex-1">
             {statsLoading ? (
               <div className="space-y-1.5">
-                <Skeleton className="h-5 w-36 bg-white/40 rounded" />
-                <Skeleton className="h-3 w-28 bg-white/30 rounded" />
+                <Skeleton className="h-5 w-36 bg-white/30 rounded" />
+                <Skeleton className="h-3 w-28 bg-white/20 rounded" />
               </div>
             ) : (
               <>
@@ -217,7 +217,7 @@ export function DesktopProfilePanel() {
                       ? "مساهم " + TRUST_LEVEL_LABELS[contributor.trust_level]
                       : "مساهم مجهول"}
                 </div>
-                <div className="text-xs text-white/80 font-mono mt-0.5">
+                <div className="text-xs text-white/70 font-mono mt-0.5">
                   #{(typeof contributor?.anon_session_id === "string" ? contributor.anon_session_id : contributor?.id ?? "").slice(-4) || "----"}
                   {contributor?.joined_at
                     ? " · منذ " + new Date(contributor.joined_at).toLocaleDateString("ar-EG", { month: "long", year: "numeric" })
@@ -237,19 +237,19 @@ export function DesktopProfilePanel() {
           ].map(({ val, label }) => (
             <div
               key={label}
-              className="rounded-xl border border-white/30 bg-white/25 p-3 text-center"
+              className="rounded-xl border border-white/20 bg-white/15 p-3 text-center"
             >
               {statsLoading ? (
                 <div className="flex flex-col items-center gap-1">
-                  <Skeleton className="h-7 w-10 bg-white/40 rounded" />
-                  <div className="text-[10px] text-white/80">{label}</div>
+                  <Skeleton className="h-7 w-10 bg-white/30 rounded" />
+                  <div className="text-[10px] text-white/70">{label}</div>
                 </div>
               ) : (
                 <>
                   <div className="font-display font-extrabold text-2xl leading-none text-white">
                     {toArabicNumerals(val)}
                   </div>
-                  <div className="text-[10px] text-white/80 mt-1">{label}</div>
+                  <div className="text-[10px] text-white/70 mt-1">{label}</div>
                 </>
               )}
             </div>

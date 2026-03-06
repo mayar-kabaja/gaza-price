@@ -26,34 +26,40 @@ const DesktopFilterBar = dynamic(() => import("@/components/desktop/DesktopFilte
 const DesktopPriceGrid = dynamic(() => import("@/components/desktop/DesktopPriceGrid").then(m => ({ default: m.DesktopPriceGrid })), { ssr: false });
 const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
 const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
-const DesktopProfilePanel = dynamic(() => import("@/components/desktop/DesktopProfilePanel").then(m => ({ default: m.DesktopProfilePanel })), { ssr: false });
 
 export function HomeData() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams?.get("category") ?? null;
+  const areaFromUrl = searchParams?.get("area") ?? null;
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
-  const { area, saveArea } = useArea();
+  const { area } = useArea();
   const connection = useConnectionQuality();
   const isSlow = connection === "slow";
   const isDesktop = useIsDesktop();
+
+  // Desktop: sidebar area is browse-only (doesn't save to profile)
+  const [browseAreaId, setBrowseAreaId] = useState<string | null>(areaFromUrl);
+  const activeAreaId = (isDesktop ? browseAreaId : null) ?? area?.id ?? null;
 
   // Desktop filter/sort state
   const [desktopFilter, setDesktopFilter] = useState<DesktopFilter>("all");
   const [desktopSort, setDesktopSort] = useState<DesktopSort>("newest");
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [suggestModalOpen, setSuggestModalOpen] = useState(false);
-  const [desktopView, setDesktopView] = useState<"prices" | "profile">("prices");
 
-  // Sync from URL when navigating from /categories
+  // Sync from URL when navigating from /categories or /account
   useEffect(() => {
     if (categoryFromUrl) setSelectedCategoryId(categoryFromUrl);
   }, [categoryFromUrl]);
 
+  useEffect(() => {
+    if (areaFromUrl) setBrowseAreaId(areaFromUrl);
+  }, [areaFromUrl]);
+
   function selectCategory(id: string) {
     setSelectedCategoryId(id);
-    setDesktopView("prices");
     router.replace(`/?category=${id}`);
   }
 
@@ -73,11 +79,11 @@ export function HomeData() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useProductsInfinite(effectiveCategoryId, undefined, true, area?.id ?? null, isSlow ? 5 : undefined);
+  } = useProductsInfinite(effectiveCategoryId, undefined, true, activeAreaId, isSlow ? 5 : undefined);
 
   const rawProducts = infiniteData?.pages?.flatMap((p) => p.products) ?? [];
   // When user has area selected, only show products that have prices in that area
-  const filteredProducts = area?.id
+  const filteredProducts = activeAreaId
     ? rawProducts.filter((p) => Array.isArray(p.price_preview) && p.price_preview.length > 0)
     : rawProducts;
   const products = [...filteredProducts].sort((a, b) => {
@@ -150,41 +156,34 @@ export function HomeData() {
         <DesktopHeader
           onSubmitClick={() => setSubmitModalOpen(true)}
           onSuggestClick={() => setSuggestModalOpen(true)}
-          onProfileClick={() => setDesktopView((v) => v === "profile" ? "prices" : "profile")}
-          isProfileActive={desktopView === "profile"}
+          onProfileClick={() => router.push("/account")}
         />
         <div className="flex overflow-hidden">
           <DesktopSidebar
-            selectedAreaId={area?.id ?? null}
+            selectedAreaId={activeAreaId}
             selectedCategoryId={effectiveCategoryId}
-            onAreaSelect={(a) => saveArea(a)}
+            onAreaSelect={(a) => setBrowseAreaId(a.id)}
             onCategorySelect={selectCategory}
             onSubmitClick={() => setSubmitModalOpen(true)}
           />
           <main className="flex-1 overflow-y-auto p-8 bg-fog">
-            {desktopView === "profile" ? (
-              <DesktopProfilePanel />
-            ) : (
-              <>
-                <DesktopBreadcrumb categoryId={effectiveCategoryId} />
-                <DesktopStatsStrip products={products} isLoading={showSkeletons} />
-                <DesktopFilterBar
-                  filter={desktopFilter}
-                  sort={desktopSort}
-                  onFilterChange={setDesktopFilter}
-                  onSortChange={setDesktopSort}
-                />
-                <DesktopPriceGrid
-                  products={desktopProducts}
-                  sections={sections ?? []}
-                  selectedCategoryId={effectiveCategoryId}
-                  hasNextPage={hasNextPage ?? false}
-                  isFetchingNextPage={isFetchingNextPage}
-                  onLoadMore={() => fetchNextPage()}
-                  isLoading={showSkeletons}
-                />
-              </>
-            )}
+            <DesktopBreadcrumb categoryId={effectiveCategoryId} />
+            <DesktopStatsStrip products={products} isLoading={showSkeletons} />
+            <DesktopFilterBar
+              filter={desktopFilter}
+              sort={desktopSort}
+              onFilterChange={setDesktopFilter}
+              onSortChange={setDesktopSort}
+            />
+            <DesktopPriceGrid
+              products={desktopProducts}
+              sections={sections ?? []}
+              selectedCategoryId={effectiveCategoryId}
+              hasNextPage={hasNextPage ?? false}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+              isLoading={showSkeletons}
+            />
           </main>
         </div>
         <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
@@ -279,10 +278,10 @@ export function HomeData() {
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
             <div className="text-4xl mb-3">🔍</div>
             <div className="font-display font-bold text-ink mb-1">
-              {area?.id ? "لا أسعار في منطقتك لهذه الفئة" : "لا منتجات في هذه الفئة"}
+              {activeAreaId ? "لا أسعار في منطقتك لهذه الفئة" : "لا منتجات في هذه الفئة"}
             </div>
             <div className="text-sm text-mist">
-              {area?.id ? "جرب فئة أخرى أو غيّر المنطقة أعلاه" : "جرب فئة أخرى أو ابحث عن منتج أعلاه"}
+              {activeAreaId ? "جرب فئة أخرى أو غيّر المنطقة أعلاه" : "جرب فئة أخرى أو ابحث عن منتج أعلاه"}
             </div>
           </div>
         ) : (
@@ -291,7 +290,7 @@ export function HomeData() {
               <HomeProductCard
                 key={product.id}
                 product={product}
-                areaId={area?.id ?? null}
+                areaId={activeAreaId}
                 isRefetching={productsFetching}
               />
             ))}
