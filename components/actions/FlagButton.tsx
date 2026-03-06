@@ -7,6 +7,7 @@ import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityCont
 import { toArabicNumerals } from "@/lib/arabic";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
+import { playSound } from "@/lib/sounds";
 
 interface FlagButtonProps {
   priceId: string;
@@ -43,6 +44,7 @@ export function FlagButton({ priceId, initialCount, flaggedByMe = false, confirm
           e.preventDefault();
           e.stopPropagation();
           if (disabled) return;
+          playSound("flag");
           setTimeout(() => toggle(flagged ? undefined : "other"), 0);
         }}
         disabled={disabled}

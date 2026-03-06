@@ -15,6 +15,7 @@ import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
+import { playSound } from "@/lib/sounds";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
@@ -134,6 +135,7 @@ function SubmitForm() {
         receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
+      playSound("submitted");
       router.push(`/product/${id}?submitted=1`);
     } catch (err: unknown) {
       // Network error (TypeError from fetch) or device offline → queue for later

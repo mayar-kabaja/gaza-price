@@ -15,6 +15,7 @@ import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { playSound } from "@/lib/sounds";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -148,6 +149,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
         receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
+      playSound("submitted");
       setSuccessToast("تم إرسال السعر بنجاح");
       resetForm();
       setTimeout(() => {

@@ -18,6 +18,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor, Area } from "@/types/app";
 import { cn } from "@/lib/utils";
+import { useSoundMuted } from "@/hooks/useSoundMuted";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -103,6 +104,7 @@ export function DesktopProfilePanel() {
   const [isUpdatingArea, setIsUpdatingArea] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [soundMuted, setSoundMuted] = useSoundMuted();
 
   const areas = areasData?.areas ?? [];
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
@@ -423,6 +425,27 @@ export function DesktopProfilePanel() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-fog">
             <span className="text-sm text-ink">الإشعارات</span>
             <span className="text-xs text-mist bg-fog px-2 py-0.5 rounded-full">قريباً</span>
+          </div>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-fog">
+            <div>
+              <span className="text-sm text-ink">أصوات التطبيق</span>
+              <p className="text-[11px] text-mist mt-0.5">أصوات عند التأكيد والإبلاغ</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSoundMuted(!soundMuted)}
+              className={cn(
+                "relative w-10 h-[22px] rounded-full transition-colors",
+                soundMuted ? "bg-fog border border-border" : "bg-olive"
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white shadow transition-all",
+                  soundMuted ? "left-0.5" : "left-[calc(100%-20px)]"
+                )}
+              />
+            </button>
           </div>
           <button
             type="button"

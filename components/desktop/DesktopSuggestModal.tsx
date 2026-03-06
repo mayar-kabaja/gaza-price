@@ -12,6 +12,7 @@ import { useCategories, useAreas, useSuggestProduct } from "@/lib/queries/hooks"
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { PRODUCT_UNITS } from "@/lib/constants";
+import { playSound } from "@/lib/sounds";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -155,6 +156,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         receipt_photo_url: receipt_photo_url || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
+      playSound("submitted");
       setSuccessToast("تم إرسال الاقتراح بنجاح");
       if (successToastRef.current) clearTimeout(successToastRef.current);
       successToastRef.current = setTimeout(() => {

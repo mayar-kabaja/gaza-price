@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
+import { playSound } from "@/lib/sounds";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -49,6 +50,7 @@ export function useFlag(
       const data = await res.json();
 
       if (!res.ok) {
+        playSound("error");
         handleApiError(res, data as ApiErrorResponse, setError, router);
         return;
       }
@@ -74,6 +76,7 @@ export function useFlag(
       queryClient.invalidateQueries({ queryKey: ["prices"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
+      playSound("error");
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
     } finally {
       setLoading(false);

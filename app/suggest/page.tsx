@@ -8,6 +8,7 @@ import { useSession } from "@/hooks/useSession";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
+import { playSound } from "@/lib/sounds";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
@@ -141,6 +142,7 @@ function SuggestContent() {
         receipt_photo_url: receipt_photo_url || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
+      playSound("submitted");
       setSuccessToast("تم إرسال الاقتراح بنجاح");
       if (successToastRef.current) clearTimeout(successToastRef.current);
       successToastRef.current = setTimeout(() => {

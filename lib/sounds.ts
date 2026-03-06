@@ -23,7 +23,8 @@ function playTone(
   freq: number,
   duration: number,
   type: OscillatorType = "sine",
-  ramp?: { start: number; end: number }
+  ramp?: { start: number; end: number },
+  volume = 0.15,
 ) {
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -37,8 +38,8 @@ function playTone(
     osc.frequency.exponentialRampToValueAtTime(ramp.end, ctx.currentTime + duration * 0.8);
   }
 
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
   osc.connect(gain);
   gain.connect(ctx.destination);
@@ -71,5 +72,38 @@ export function playNavSound() {
   ensureContextReady().then((ctx) => {
     if (!ctx) return;
     playTone(440, 0.06, "sine");
+  });
+}
+
+// ── User-facing sounds ──
+
+const userSounds = {
+  confirm: () => {
+    playTone(440, 0.06, "sine", undefined, 0.25);
+    setTimeout(() => playTone(660, 0.1, "sine", undefined, 0.2), 60);
+  },
+  flag: () => {
+    playTone(380, 0.1, "triangle", undefined, 0.2);
+  },
+  submitted: () => {
+    playTone(440, 0.08, "sine", undefined, 0.2);
+    setTimeout(() => playTone(550, 0.08, "sine", undefined, 0.18), 80);
+    setTimeout(() => playTone(660, 0.15, "sine", undefined, 0.15), 160);
+  },
+  error: () => {
+    playTone(300, 0.08, "sine", undefined, 0.2);
+    setTimeout(() => playTone(220, 0.12, "sine", undefined, 0.15), 80);
+  },
+};
+
+/** Play a named sound, respecting user mute preference and prefers-reduced-motion. */
+export function playSound(name: keyof typeof userSounds) {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem("sounds_muted") === "true") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  ensureContextReady().then((ctx) => {
+    if (!ctx) return;
+    userSounds[name]();
   });
 }

@@ -7,6 +7,7 @@ import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { toArabicNumerals } from "@/lib/arabic";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
+import { playSound } from "@/lib/sounds";
 
 interface ConfirmButtonProps {
   priceId: string;
@@ -46,6 +47,7 @@ export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe 
           e.preventDefault();
           e.stopPropagation();
           if (disabled) return;
+          playSound("confirm");
           setTimeout(() => confirm(), 0);
         }}
         disabled={disabled}
