@@ -32,13 +32,7 @@ export function HomeData() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams?.get("category") ?? null;
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search);
-      return p.get("category");
-    }
-    return categoryFromUrl;
-  });
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const { area, saveArea } = useArea();
   const connection = useConnectionQuality();
@@ -69,7 +63,7 @@ export function HomeData() {
   // Flatten categories from sections (same order as /categories page)
   const sortedCategories = (sections ?? []).flatMap((s) => s.categories ?? []);
   const effectiveCategoryId =
-    selectedCategoryId ?? sortedCategories[0]?.id ?? null;
+    categoryFromUrl ?? selectedCategoryId ?? sortedCategories[0]?.id ?? null;
 
   const {
     data: infiniteData,

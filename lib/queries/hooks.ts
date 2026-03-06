@@ -240,19 +240,8 @@ export function useUpdateContributorMe() {
       return data;
     },
     onSuccess: (data) => {
-      /** Merge PATCH response into cache so report_count etc. are preserved (PATCH only returns display_handle, area). */
-      queryClient.setQueryData(queryKeys.contributorMe, (old: unknown) => {
-        if (!old || typeof old !== "object") return old;
-        const o = old as Record<string, unknown>;
-        const patch = data as Record<string, unknown>;
-        return {
-          ...o,
-          handle: patch.display_handle ?? o.handle,
-          display_handle: patch.display_handle ?? o.display_handle,
-          area: patch.area ?? o.area,
-        };
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
+      // PATCH now returns full profile — replace cache directly
+      queryClient.setQueryData(queryKeys.contributorMe, data);
     },
   });
 }

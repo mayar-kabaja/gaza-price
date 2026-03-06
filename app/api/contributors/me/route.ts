@@ -83,12 +83,16 @@ export async function PATCH(req: NextRequest) {
   }
   if (body.area_id !== undefined) patchBody.area_id = body.area_id;
   try {
-    const data = await apiPatch(
+    await apiPatch(
       "/contributors/me",
       patchBody,
       { Authorization: `Bearer ${token}` }
     );
-    return NextResponse.json({ updated: true, ...(data as object) });
+    // Re-fetch full profile so the client gets the updated data immediately
+    const updated = await apiGetWithHeaders("/contributors/me", {
+      Authorization: `Bearer ${token}`,
+    });
+    return NextResponse.json(updated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";
     const statusMatch = message.match(/^API (\d+):/);
