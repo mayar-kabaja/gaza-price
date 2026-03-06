@@ -16,6 +16,7 @@ import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
 const ARABIC_DIGITS = /[٠-٩]/g;
@@ -34,9 +35,14 @@ function hasArabicDigits(value: string): boolean {
 
 function SubmitForm() {
   const router = useRouter();
+  const isDesktop = useIsDesktop();
   const searchParams = useSearchParams();
   const productIdFromUrl = searchParams.get("product_id");
   const { accessToken } = useSession();
+
+  useEffect(() => {
+    if (isDesktop) router.replace("/?modal=submit");
+  }, [isDesktop, router]);
 
   const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
   const { data: productFromUrl } = useProduct(productIdFromUrl);
@@ -340,7 +346,7 @@ function SubmitForm() {
 
         {/* Store name — if provided, at least 2 characters */}
         <div>
-          <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر (اختياري)</label>
+          <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
           <input
             type="text"
             value={storeNameRaw}
@@ -400,6 +406,13 @@ function SubmitForm() {
         </button>
 
         <p className="text-center text-xs text-mist">مجهول الهوية تماماً · لا اسم · لا هاتف</p>
+
+        <Link
+          href="/suggest"
+          className="block text-center text-sm text-olive font-body font-semibold py-2"
+        >
+          لم تجد المنتج؟ اقترح منتجاً جديداً +
+        </Link>
       </form>
     </div>
   );

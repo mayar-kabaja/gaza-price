@@ -46,8 +46,9 @@ export function HomeData() {
   // Desktop filter/sort state
   const [desktopFilter, setDesktopFilter] = useState<DesktopFilter>("all");
   const [desktopSort, setDesktopSort] = useState<DesktopSort>("newest");
-  const [submitModalOpen, setSubmitModalOpen] = useState(false);
-  const [suggestModalOpen, setSuggestModalOpen] = useState(false);
+  const modalFromUrl = searchParams?.get("modal") ?? null;
+  const [submitModalOpen, setSubmitModalOpen] = useState(modalFromUrl === "submit");
+  const [suggestModalOpen, setSuggestModalOpen] = useState(modalFromUrl === "suggest");
 
   // Sync from URL when navigating from /categories or /account
   useEffect(() => {
@@ -57,6 +58,11 @@ export function HomeData() {
   useEffect(() => {
     if (areaFromUrl) setBrowseAreaId(areaFromUrl);
   }, [areaFromUrl]);
+
+  useEffect(() => {
+    if (modalFromUrl === "submit") setSubmitModalOpen(true);
+    if (modalFromUrl === "suggest") setSuggestModalOpen(true);
+  }, [modalFromUrl]);
 
   function selectCategory(id: string) {
     setSelectedCategoryId(id);

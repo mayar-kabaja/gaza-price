@@ -29,7 +29,10 @@ export function validateSubmitPrice(params: {
   }
 
   const storeTrimmed = (storeNameRaw ?? "").trim();
-  if (storeTrimmed.length > 0 && storeTrimmed.length < 2) {
+  if (!storeTrimmed) {
+    return "يرجى إدخال اسم المتجر";
+  }
+  if (storeTrimmed.length < 2) {
     return "اسم المتجر يجب أن يكون حرفين على الأقل";
   }
 

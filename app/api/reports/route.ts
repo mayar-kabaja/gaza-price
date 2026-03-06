@@ -101,6 +101,13 @@ export async function POST(req: NextRequest) {
   if (missing) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "بيانات ناقصة" }, { status: 400 });
   }
+  const storeRaw = typeof body.store_name_raw === "string" ? body.store_name_raw.trim() : "";
+  if (!storeRaw) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "يرجى إدخال اسم المتجر" }, { status: 400 });
+  }
+  if (storeRaw.length < 2) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "اسم المتجر يجب أن يكون حرفين على الأقل" }, { status: 400 });
+  }
   const priceNum = Number(priceVal);
   if (!Number.isFinite(priceNum) || priceNum <= 0) {
     return NextResponse.json(

@@ -22,6 +22,18 @@ export async function POST(req: NextRequest) {
   const url = `${base}${base.endsWith("/") ? "" : "/"}products/suggest`;
   try {
     const body = await req.json();
+
+    // Validate required fields
+    if (!body.name_ar || typeof body.name_ar !== "string" || !body.name_ar.trim()) {
+      return NextResponse.json({ error: "BAD_REQUEST", message: "يرجى إدخال اسم المنتج" }, { status: 400 });
+    }
+    const storeRaw = typeof body.store_name_raw === "string" ? body.store_name_raw.trim() : "";
+    if (!storeRaw) {
+      return NextResponse.json({ error: "BAD_REQUEST", message: "يرجى إدخال اسم المتجر" }, { status: 400 });
+    }
+    if (storeRaw.length < 2) {
+      return NextResponse.json({ error: "BAD_REQUEST", message: "اسم المتجر يجب أن يكون حرفين على الأقل" }, { status: 400 });
+    }
     const res = await fetch(url, {
       method: "POST",
       headers,
