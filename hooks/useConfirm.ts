@@ -70,10 +70,6 @@ export function useConfirm(
             }
           : undefined;
       onSuccessRef.current?.(newCount, extra);
-
-      // Invalidate cache so next reload shows fresh data
-      queryClient.invalidateQueries({ queryKey: ["prices"] });
-      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch {
       playSound("error");
       setError("حدث خطأ غير متوقع، جرّب مرة أخرى");
