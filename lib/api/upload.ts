@@ -1,20 +1,20 @@
 /**
- * Upload receipt photo. Returns public URL or throws.
+ * Upload receipt photo directly to backend. Returns public URL or throws.
  */
 export async function uploadReceiptPhoto(
   file: File,
   accessToken?: string | null
 ): Promise<string> {
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
   const formData = new FormData();
   formData.append("file", file);
 
   const headers: Record<string, string> = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
-  const res = await fetch("/api/upload", {
+  const res = await fetch(`${base}/upload/receipt`, {
     method: "POST",
     headers,
-    credentials: "include",
     body: formData,
     signal: AbortSignal.timeout(30000),
   });

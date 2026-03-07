@@ -1,20 +1,47 @@
-import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/queries/products";
+"use client";
+
+import { use } from "react";
+import Link from "next/link";
+import { useProduct } from "@/lib/queries/hooks";
 import { ProductPricesSection } from "@/components/prices/ProductPricesSection";
 import { BottomNav } from "@/components/layout/BottomNav";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ area?: string }>;
 }
 
-export default async function ProductPage({ params, searchParams }: Props) {
-  const { id } = await params;
-  const { area } = await searchParams;
+export default function ProductPage({ params }: Props) {
+  const { id } = use(params);
+  const searchParams = useSearchParams();
+  const area = searchParams.get("area") ?? null;
 
-  const product = await getProductById(id);
-  if (!product) notFound();
+  const { data: product, isLoading, isError } = useProduct(id);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-dvh">
+        <div className="bg-olive px-5 pt-4 pb-5 flex-shrink-0">
+          <div className="flex items-center gap-3 mb-3">
+            <Link href="/" className="text-white/60 hover:text-white">←</Link>
+            <div className="font-display font-extrabold text-xl text-white leading-none">
+              غزة <span className="text-sand">بريس</span>
+            </div>
+          </div>
+          <div className="h-5 w-32 bg-white/20 rounded animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="flex flex-col min-h-dvh items-center justify-center">
+        <p className="text-mist font-body">المنتج غير موجود</p>
+        <Link href="/" className="text-olive mt-2 font-body">← الرئيسية</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -37,12 +64,12 @@ export default async function ProductPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Prices — client-fetched with optional auth for confirmed_by_me / is_mine */}
+      {/* Prices */}
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
         <ProductPricesSection
           productId={product.id}
           productName={product.name_ar}
-          areaId={area ?? null}
+          areaId={area}
         />
       </div>
 

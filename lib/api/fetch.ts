@@ -1,15 +1,35 @@
 /**
- * Central API fetch wrapper. All /api calls should go through this.
+ * Central API fetch wrapper. All API calls go through this.
+ * Calls the backend directly (no Next.js proxy).
  * - Adds stored token to Authorization when available.
- * - On 401: clears token, gets new one from GET /api/auth/session, retries request once.
- * User never sees "reload" or "session expired" — we retry silently.
+ * - On 401: clears token, creates new session, retries request once.
  */
 
 import { getStoredToken, setStoredToken, clearStoredToken, getAdminToken } from "@/lib/auth/token";
 
+function getBackendUrl(): string {
+  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+  return url;
+}
+
+/** Convert relative paths like "/api/areas" or "/areas" to full backend URL */
+function resolveUrl(url: string): string {
+  if (url.startsWith("http")) return url;
+  const base = getBackendUrl();
+  // "/api/areas" → strip "/api" prefix → "/areas" → base + "/areas"
+  if (url.startsWith("/api/")) return `${base}${url.slice(4)}`;
+  // "/areas" → base + "/areas"
+  return `${base}${url}`;
+}
+
 export async function refreshToken(): Promise<string | null> {
   try {
-    const res = await fetch("/api/auth/session", { method: "GET", credentials: "include" });
+    const base = getBackendUrl();
+    const res = await fetch(`${base}/auth/session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({}),
+    });
     if (!res.ok) return null;
     const data = await res.json();
     const token = data?.access_token;
@@ -22,6 +42,7 @@ export async function refreshToken(): Promise<string | null> {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const fullUrl = resolveUrl(url);
   const token = getStoredToken();
 
   const mergedHeaders: HeadersInit = {
@@ -30,10 +51,9 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const firstRes = await fetch(url, {
+  const firstRes = await fetch(fullUrl, {
     ...options,
     headers: mergedHeaders,
-    credentials: options.credentials ?? "include",
   });
 
   if (firstRes.status !== 401) return firstRes;
@@ -42,19 +62,19 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   const newToken = await refreshToken();
   if (!newToken) return firstRes;
 
-  return fetch(url, {
+  return fetch(fullUrl, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
       Authorization: `Bearer ${newToken}`,
     },
-    credentials: options.credentials ?? "include",
   });
 }
 
 /** Use for admin API routes. Sends admin JWT instead of contributor token. */
 export async function apiFetchAdmin(url: string, options: RequestInit = {}): Promise<Response> {
+  const fullUrl = resolveUrl(url);
   const token = getAdminToken();
   const mergedHeaders: HeadersInit = {
     Accept: "application/json",
@@ -65,9 +85,8 @@ export async function apiFetchAdmin(url: string, options: RequestInit = {}): Pro
     (mergedHeaders as Record<string, string>)["Content-Type"] =
       (options.headers as Record<string, string>)?.["Content-Type"] ?? "application/json";
   }
-  return fetch(url, {
+  return fetch(fullUrl, {
     ...options,
     headers: mergedHeaders,
-    credentials: options.credentials ?? "include",
   });
 }
