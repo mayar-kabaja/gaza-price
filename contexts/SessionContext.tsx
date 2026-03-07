@@ -88,7 +88,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       let token = getStoredToken();
 
       if (!token) {
-        const res = await apiFetch("/api/auth/session", { method: "GET" });
+        const res = await apiFetch("/api/auth/session", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
         if (!res.ok) throw new Error("session failed");
         const data = await res.json();
         token = data.access_token;
