@@ -124,6 +124,7 @@ export function useProductsInfinite(
     },
     initialPageParam: 0,
     enabled: !!categoryId,
+    staleTime: 2 * 60 * 1000, // 2 min — show cached data instantly on category switch
   });
 }
 
@@ -207,6 +208,7 @@ export function usePrices(params: {
         accessToken,
       }),
     enabled: !!productId && !sessionLoading,
+    staleTime: 60 * 1000, // 1 min
   });
 }
 
