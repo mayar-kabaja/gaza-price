@@ -88,32 +88,14 @@ export async function fetchPublicStats(): Promise<PublicStats> {
   };
 }
 
-/** Fetch price preview for a single product. */
-async function fetchPricePreviewForProduct(
-  productId: string,
-  areaId?: string,
-  limit = 5
-): Promise<unknown[]> {
-  try {
-    const sp = new URLSearchParams({ product_id: productId, sort: "price_asc", limit: String(limit), offset: "0" });
-    if (areaId) sp.set("area_id", areaId);
-    const res = await apiFetch(`/api/prices?${sp.toString()}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.prices ?? [];
-  } catch {
-    return [];
-  }
-}
-
 export async function fetchProducts(params: {
   limit?: number;
   offset?: number;
   search?: string;
   categoryId?: string;
-  /** Area for analytics (search logs). */
+  /** Area for price_preview filtering. */
   areaId?: string;
-  /** When true, fetches price_preview for each product (confirmation_count, confirmed_by_me). */
+  /** When true, backend returns price_preview for each product. */
   embedPricePreview?: boolean;
 }): Promise<{ products: Product[]; total: number }> {
   const sp = new URLSearchParams();
@@ -121,21 +103,15 @@ export async function fetchProducts(params: {
   if (params.offset != null) sp.set("offset", String(params.offset));
   if (params.search) sp.set("search", params.search);
   if (params.categoryId) sp.set("category_id", params.categoryId);
+  if (params.areaId) sp.set("area_id", params.areaId);
+  if (params.embedPricePreview) sp.set("embed", "price_preview");
   const url = `/api/products?${sp.toString()}`;
   const res = await apiFetch(url);
   const data = await res.json();
-  const products: Product[] = data?.products ?? [];
-  const total: number = data?.total ?? 0;
-
-  if (params.embedPricePreview && products.length > 0) {
-    const previews = await Promise.all(
-      products.map((p) => fetchPricePreviewForProduct(p.id, params.areaId))
-    );
-    const enriched = products.map((p, i) => ({ ...p, price_preview: previews[i] }));
-    return { products: enriched as Product[], total };
-  }
-
-  return { products, total };
+  return {
+    products: data?.products ?? [],
+    total: data?.total ?? 0,
+  };
 }
 
 export async function fetchProduct(id: string): Promise<Product | null> {
