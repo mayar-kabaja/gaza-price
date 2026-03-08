@@ -50,6 +50,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
   const [storePhone, setStorePhone] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
   const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
@@ -153,6 +154,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         area_id,
         store_name_raw: store_name_raw.trim() || undefined,
         store_phone: storePhone.trim() || undefined,
+        store_address: storeAddress.trim() || undefined,
         receipt_photo_url: receipt_photo_url || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -308,6 +310,19 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               value={store_name_raw}
               onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
               placeholder="مثال: بقالة أبو رامي"
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
+              dir="rtl"
+            />
+          </div>
+
+          {/* Store address */}
+          <div>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">عنوان تفصيلي للمتجر</label>
+            <input
+              type="text"
+              value={storeAddress}
+              onChange={(e) => setStoreAddress(e.target.value)}
+              placeholder="مثال: شارع الجلاء بجانب مسجد العمري"
               className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="rtl"
             />

@@ -258,6 +258,7 @@ export function useSubmitReport() {
       area_id: string;
       store_name_raw?: string;
       store_phone?: string;
+      store_address?: string;
       receipt_photo_url?: string | null;
       headers?: Record<string, string>;
     }) => {
@@ -300,6 +301,7 @@ export function useSuggestProduct() {
       area_id: string;
       store_name_raw?: string;
       store_phone?: string;
+      store_address?: string;
       receipt_photo_url?: string | null;
       headers?: Record<string, string>;
     }) => {

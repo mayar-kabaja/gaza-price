@@ -57,6 +57,7 @@ function SuggestContent() {
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
   const [store_phone, setStorePhone] = useState("");
+  const [store_address, setStoreAddress] = useState("");
   const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [priceToast, setPriceToast] = useState<string | null>(null);
@@ -139,6 +140,7 @@ function SuggestContent() {
         area_id,
         store_name_raw: store_name_raw.trim() || undefined,
         store_phone: store_phone.trim() || undefined,
+        store_address: store_address.trim() || undefined,
         receipt_photo_url: receipt_photo_url || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -298,6 +300,18 @@ function SuggestContent() {
               value={store_name_raw}
               onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
               placeholder="مثال: بقالة أبو رامي"
+              className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+              dir="rtl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">عنوان تفصيلي للمتجر</label>
+            <input
+              type="text"
+              value={store_address}
+              onChange={(e) => setStoreAddress(e.target.value)}
+              placeholder="مثال: شارع الجلاء بجانب مسجد العمري"
               className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
               dir="rtl"
             />

@@ -57,6 +57,7 @@ function SubmitForm() {
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
   const [storePhone, setStorePhone] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [retryAfterSeconds, setRetryAfterSeconds] = useState<number | undefined>(undefined);
@@ -133,6 +134,7 @@ function SubmitForm() {
         area_id: areaId,
         store_name_raw: storeNameRaw || undefined,
         store_phone: storePhone.trim() || undefined,
+        store_address: storeAddress.trim() || undefined,
         receipt_photo_url: receiptPhotoUrl || undefined,
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
@@ -152,6 +154,7 @@ function SubmitForm() {
             area_id: areaId,
             store_name_raw: storeNameRaw || undefined,
             store_phone: storePhone.trim() || undefined,
+            store_address: storeAddress.trim() || undefined,
             receipt_photo_url: receiptPhotoUrl || undefined,
           });
           await refreshQueueCount();
@@ -359,6 +362,19 @@ function SubmitForm() {
             value={storeNameRaw}
             onChange={e => { setStoreNameRaw(e.target.value); setError(""); }}
             placeholder="مثال: بقالة أبو رامي"
+            className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
+            dir="rtl"
+          />
+        </div>
+
+        {/* Store address (optional) */}
+        <div>
+          <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">عنوان تفصيلي للمتجر</label>
+          <input
+            type="text"
+            value={storeAddress}
+            onChange={e => setStoreAddress(e.target.value)}
+            placeholder="مثال: شارع الجلاء بجانب مسجد العمري"
             className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
             dir="rtl"
           />
