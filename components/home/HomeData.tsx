@@ -11,7 +11,7 @@ import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
-import { useSectionsWithCategories, useProductsInfinite, useAreas } from "@/lib/queries/hooks";
+import { useBootstrap, useProductsInfinite } from "@/lib/queries/hooks";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { isStale as checkStale } from "@/lib/price";
@@ -69,8 +69,8 @@ export function HomeData() {
     router.replace(`/?category=${id}`);
   }
 
-  const { data: sections, isLoading: categoriesLoading } = useSectionsWithCategories();
-  useAreas(); // pre-warm cache for sidebar/modals
+  const { data: bootstrap, isLoading: categoriesLoading } = useBootstrap();
+  const sections = bootstrap?.sections;
 
   // Flatten categories from sections (same order as /categories page)
   const sortedCategories = (sections ?? []).flatMap((s) => s.categories ?? []);
