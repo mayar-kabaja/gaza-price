@@ -52,6 +52,7 @@ function SubmitForm() {
   const { refreshCount: refreshQueueCount } = useOfflineQueue();
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [cleared, setCleared] = useState(false);
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
@@ -67,7 +68,7 @@ function SubmitForm() {
   const queuedToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const areas = areasData?.areas ?? [];
-  const effectiveProduct = product ?? (productFromUrl as Product | null) ?? null;
+  const effectiveProduct = product ?? (cleared ? null : (productFromUrl as Product | null)) ?? null;
   const submitting = submitReport.isPending;
 
   const showPriceToast = useCallback((message: string) => {
@@ -87,10 +88,10 @@ function SubmitForm() {
   }, []);
 
   useEffect(() => {
-    if (productIdFromUrl && productFromUrl && !product) {
+    if (productIdFromUrl && productFromUrl && !product && !cleared) {
       setProduct(productFromUrl as Product);
     }
-  }, [productIdFromUrl, productFromUrl, product]);
+  }, [productIdFromUrl, productFromUrl, product, cleared]);
 
   useEffect(() => {
     if (areas.length > 0 && !areaId) {
@@ -189,6 +190,7 @@ function SubmitForm() {
 
   function handleSelectProduct(p: Product) {
     setProduct(p);
+    setCleared(false);
     setError("");
     clear();
     setOpen(false);
@@ -229,7 +231,7 @@ function SubmitForm() {
               </div>
               <button
                 type="button"
-                onClick={() => { setProduct(null); clear(); setShowNewProductInput(false); }}
+                onClick={() => { setProduct(null); setCleared(true); clear(); setShowNewProductInput(false); }}
                 className="text-mist hover:text-ink text-sm flex-shrink-0"
               >
                 تغيير
