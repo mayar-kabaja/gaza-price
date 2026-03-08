@@ -41,6 +41,22 @@ async function getJson<T>(url: string, opts?: RequestInit): Promise<T> {
   return data as T;
 }
 
+/** Map Arabic governorate names from backend → English keys used by frontend components. */
+const GOV_MAP: Record<string, string> = {
+  "شمال غزة": "north",
+  "غزة":      "north",
+  "الوسطى":   "central",
+  "خان يونس": "south",
+  "رفح":      "south",
+};
+
+function mapAreas(raw: unknown[]): Area[] {
+  return (raw ?? []).map((a: any) => ({
+    ...a,
+    governorate: GOV_MAP[a.governorate] ?? a.governorate ?? "central",
+  }));
+}
+
 export interface BootstrapData {
   areas: { areas: Area[] };
   categories: Category[];
@@ -50,14 +66,15 @@ export interface BootstrapData {
 export async function fetchBootstrap(): Promise<BootstrapData> {
   const data = await getJson<{ areas: unknown[]; categories: unknown[]; sections: unknown[] }>("/api/bootstrap");
   return {
-    areas: { areas: (data.areas ?? []) as Area[] },
+    areas: { areas: mapAreas(data.areas) },
     categories: (data.categories ?? []) as Category[],
     sections: (data.sections ?? []) as Section[],
   };
 }
 
 export async function fetchAreas(): Promise<{ areas: Area[] }> {
-  return getJson("/api/areas");
+  const data = await getJson<{ areas: unknown[] }>("/api/areas");
+  return { areas: mapAreas(data.areas) };
 }
 
 export async function fetchCategories(): Promise<Category[]> {
