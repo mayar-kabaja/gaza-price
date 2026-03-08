@@ -119,7 +119,7 @@ export function useProductsInfinite(
     },
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((acc, p) => acc + p.products.length, 0);
-      if (lastPage.products.length < pageSize) return undefined;
+      if (lastPage.products.length < pageSize || loaded >= lastPage.total) return undefined;
       return loaded;
     },
     initialPageParam: 0,
