@@ -173,6 +173,14 @@ export function HomeData() {
             onSubmitClick={() => setSubmitModalOpen(true)}
           />
           <main className="flex-1 overflow-y-auto p-8 bg-fog">
+            {/* Demo data banner */}
+            <div className="mb-4 flex items-start gap-3 rounded-xl bg-sand-light border border-sand/30 px-4 py-3">
+              <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
+              <div>
+                <span className="font-display font-bold text-sm text-ink">هذه نسخة تجريبية</span>
+                <span className="text-sm text-mist mr-2">— الأسعار تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك.</span>
+              </div>
+            </div>
             <DesktopBreadcrumb categoryId={effectiveCategoryId} />
             <DesktopStatsStrip products={products} isLoading={showSkeletons} />
             <DesktopFilterBar
@@ -202,6 +210,19 @@ export function HomeData() {
   return (
     <div className="flex flex-col min-h-dvh">
       <AppHeader />
+
+      {/* Demo data banner */}
+      <div className="mx-4 mt-3 mb-1 flex items-start gap-2.5 rounded-xl bg-sand-light border border-sand/30 px-3.5 py-3 flex-shrink-0">
+        <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-bold text-[12px] text-ink leading-snug">
+            هذه نسخة تجريبية من التطبيق
+          </div>
+          <div className="text-[11px] text-mist mt-0.5 leading-relaxed">
+            الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار.
+          </div>
+        </div>
+      </div>
 
       {showWelcomeToast && (
         <div className="mx-4 mt-3 mb-3 flex items-center gap-2.5 rounded-xl px-3.5 py-3 animate-slide-down flex-shrink-0" style={{ background: "#1A1F2E" }}>
