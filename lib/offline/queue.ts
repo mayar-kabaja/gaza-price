@@ -10,6 +10,7 @@ export interface QueuedReport {
   area_id: string;
   store_name_raw?: string;
   store_phone?: string;
+  store_address?: string;
   receipt_photo_url?: string;
   queued_at: string;
 }
