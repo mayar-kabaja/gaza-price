@@ -13,10 +13,12 @@ interface AreaPickerProps {
 }
 
 const GOV_LABELS: Record<string, string> = {
-  north:   "شمال غزة",
-  central: "وسط القطاع",
+  central: "وسط غزة",
   south:   "جنوب غزة",
+  north:   "شمال غزة",
 };
+
+const GOV_ORDER = ["central", "south", "north"];
 
 export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerProps) {
   const [selected, setSelected] = useState<Area | null>(null);
@@ -29,8 +31,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
     return acc;
   }, {});
 
-  // Use actual governorate keys (API returns Arabic) — govOrder was for non-existent "north"/"central"/"south"
-  const govKeys = Object.keys(grouped);
+  const govKeys = GOV_ORDER;
 
   return (
     <div className="flex flex-col h-dvh bg-surface">

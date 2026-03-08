@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 import { useAreas, useSectionsWithCategories } from "@/lib/queries/hooks";
 
 const GOV_LABELS: Record<Governorate, string> = {
-  north: "شمال غزة",
-  central: "وسط القطاع",
+  central: "وسط غزة",
   south: "جنوب غزة",
+  north: "شمال غزة",
 };
 
-const GOV_ORDER: Governorate[] = ["north", "central", "south"];
+const GOV_ORDER: Governorate[] = ["central", "south", "north"];
 
 interface DesktopSidebarProps {
   selectedAreaId: string | null;

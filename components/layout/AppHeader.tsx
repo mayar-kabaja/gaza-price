@@ -13,9 +13,9 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import { useAreas, useUpdateContributorMe } from "@/lib/queries/hooks";
 
 const GOV_LABELS: Record<string, string> = {
-  north: "شمال غزة",
-  central: "وسط القطاع",
+  central: "وسط غزة",
   south: "جنوب غزة",
+  north: "شمال غزة",
 };
 
 export function AppHeader() {
@@ -44,7 +44,7 @@ export function AppHeader() {
     acc[g].push(a);
     return acc;
   }, {});
-  const govOrder = ["north", "central", "south"];
+  const govOrder = ["central", "south", "north"];
 
   async function handleSelectArea(selected: Area) {
     const wasDifferent = area?.id !== selected.id;
@@ -156,7 +156,7 @@ export function AppHeader() {
                 {areaError || "تعذر تحميل المناطق"}
               </div>
             )}
-            <div className="overflow-y-auto no-scrollbar flex-1 px-4 py-3">
+            <div className="overflow-y-auto no-scrollbar flex-1 px-4 py-3 pb-8">
               {govOrder.map((gov) => {
                 const govAreas = grouped[gov];
                 if (!govAreas?.length) return null;

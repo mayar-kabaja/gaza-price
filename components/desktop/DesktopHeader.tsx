@@ -10,11 +10,11 @@ import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 const GOV_LABELS: Record<Governorate, string> = {
-  north: "شمال غزة",
-  central: "وسط القطاع",
+  central: "وسط غزة",
   south: "جنوب غزة",
+  north: "شمال غزة",
 };
-const GOV_ORDER: Governorate[] = ["north", "central", "south"];
+const GOV_ORDER: Governorate[] = ["central", "south", "north"];
 
 interface DesktopHeaderProps {
   onSubmitClick: () => void;
