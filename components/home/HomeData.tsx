@@ -138,7 +138,13 @@ export function HomeData() {
     const dismissed = localStorage.getItem(
       LOCAL_STORAGE_KEYS.welcome_toast_dismissed
     );
-    if (!dismissed) setShowWelcomeToast(true);
+    if (!dismissed) {
+      setShowWelcomeToast(true);
+      setTimeout(() => {
+        setShowWelcomeToast(false);
+        localStorage.setItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed, "1");
+      }, 5000);
+    }
   }, []);
 
   function dismissWelcomeToast() {

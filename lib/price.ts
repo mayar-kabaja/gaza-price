@@ -96,5 +96,8 @@ export function previewToPrice(p: PricePreviewItem, product: Product, isLowest: 
     confirmed_by_me: p.confirmed_by_me,
     flagged_by_me: p.flagged_by_me,
     is_mine: p.is_mine,
+    is_demo: p.is_demo,
+    store_address: p.store_address,
+    store_phone: p.store_phone,
   };
 }

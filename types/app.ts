@@ -59,8 +59,11 @@ export interface PricePreviewItem {
   flag_count?: number;
   flagged_by_me?: boolean;
   is_mine?: boolean;
+  is_demo?: boolean;
   reported_at: string;
   store?: { name_ar?: string };
+  store_address?: string | null;
+  store_phone?: string | null;
   area?: { name_ar?: string };
 }
 
@@ -97,6 +100,8 @@ export interface Price {
   store_id?: string;
   store?: Store;
   store_name_raw?: string;
+  store_address?: string | null;
+  store_phone?: string | null;
   area_id: string;
   area?: Area;
   price: number;
@@ -108,6 +113,7 @@ export interface Price {
   confirmation_count: number;
   flag_count: number;
   has_receipt: boolean;
+  is_demo?: boolean;
   is_lowest?: boolean;
   reported_at: string;
   expires_at: string;

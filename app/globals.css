@@ -12,6 +12,9 @@
   --raw-olive-mid: #C2DBC9;
   --raw-sand-light: #F7F0E4;
 
+  --details-bg: #F5FAF6;
+  --details-border: #D8EADC;
+
   --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
   --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
 }
@@ -26,6 +29,9 @@
   --raw-olive-pale: #1a2e22;
   --raw-olive-mid: #2D5C3C;
   --raw-sand-light: #2a2318;
+
+  --details-bg: #152018;
+  --details-border: #2D5C3C;
 }
 
 /* Tailwind v4: @theme generates --color-* custom properties */
@@ -130,6 +136,11 @@ body {
 }
 .dark .shadow-2xl {
   --tw-shadow-color: rgba(0, 0, 0, 0.6);
+}
+
+/* ── Demo card badge ── */
+.demo-badge {
+  background: linear-gradient(135deg, #E8A020, #C97B10);
 }
 
 /* App shell — full viewport on all devices (phone, tablet, desktop) */
