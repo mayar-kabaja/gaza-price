@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
@@ -75,12 +76,12 @@ export function AppHeader() {
 
       {/* Top row */}
       <div className="flex items-center justify-between mb-3 relative z-10">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <img src="/logo.svg" alt="" className="w-8 h-8 rounded-lg" />
           <span className="font-display font-extrabold text-xl text-white leading-none">
             غزة <span className="text-sand">بريس</span>
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-2">
           {area ? (
           <button

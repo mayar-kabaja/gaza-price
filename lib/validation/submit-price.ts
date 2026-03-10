@@ -39,6 +39,30 @@ export function validateSubmitPrice(params: {
   return null;
 }
 
+/**
+ * Phone number validation for Palestinian numbers.
+ * Accepts: 059x, 056x (10 digits), with optional +970 / 00970 prefix.
+ * Returns Arabic error message or null if valid / empty.
+ */
+export function validatePhone(phone: string): string | null {
+  const trimmed = phone.trim();
+  if (!trimmed) return null; // optional field
+
+  // Strip spaces, dashes, dots
+  const cleaned = trimmed.replace(/[\s\-().]/g, "");
+
+  // Normalize international prefix to local
+  const local = cleaned
+    .replace(/^(\+970|00970)/, "0");
+
+  // Must be 10 digits starting with 059 or 056
+  if (!/^(059|056)\d{7}$/.test(local)) {
+    return "رقم الهاتف غير صحيح — يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام (أرقام إنجليزية فقط)";
+  }
+
+  return null;
+}
+
 /** Handle (display name): not empty, max 30 chars. For account update handle. */
 export function validateHandle(handle: string): string | null {
   const trimmed = handle.trim();

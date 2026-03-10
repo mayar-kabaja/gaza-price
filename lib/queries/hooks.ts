@@ -159,7 +159,7 @@ export function useContributorMeReportsInfinite(status: string = "all") {
       }),
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((acc, p) => acc + p.reports.length, 0);
-      if (lastPage.reports.length < MY_REPORTS_PAGE_SIZE) return undefined;
+      if (lastPage.reports.length < MY_REPORTS_PAGE_SIZE || loaded >= lastPage.total) return undefined;
       return loaded;
     },
     initialPageParam: 0,
@@ -242,8 +242,16 @@ export function useUpdateContributorMe() {
       return data;
     },
     onSuccess: (data) => {
-      // PATCH now returns full profile — replace cache directly
-      queryClient.setQueryData(queryKeys.contributorMe, data);
+      // Merge PATCH response into cached profile so UI updates instantly
+      const cached = queryClient.getQueryData(queryKeys.contributorMe) as Record<string, unknown> | undefined;
+      if (cached) {
+        const merged = { ...cached };
+        if (data.display_handle !== undefined) merged.handle = data.display_handle;
+        if (data.area !== undefined) merged.area = data.area;
+        queryClient.setQueryData(queryKeys.contributorMe, merged);
+      }
+      // Also re-fetch for full consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
     },
   });
 }

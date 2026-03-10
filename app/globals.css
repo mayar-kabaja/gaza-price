@@ -175,6 +175,15 @@ body {
   animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Welcome toast progress bar */
+@keyframes toastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.animate-toast-progress {
+  animation: toastProgress 5s linear forwards;
+}
+
 /* Desktop card fade-up animation */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(12px); }

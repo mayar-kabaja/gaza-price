@@ -381,7 +381,7 @@ function MobileAccountPage() {
                 {(statsLoading || isUpdatingArea) ? (
                   <LoaderDots size="sm" className="flex-shrink-0" />
                 ) : (
-                  <span className="text-sm text-mist">{area?.name_ar ?? savedArea?.name_ar ?? "—"} ›</span>
+                  <span className="text-sm text-mist">{savedArea?.name_ar ?? area?.name_ar ?? "—"} ›</span>
                 )}
               </button>
               {areaError && !openAreaPicker && (

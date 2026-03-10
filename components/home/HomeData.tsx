@@ -231,24 +231,29 @@ export function HomeData() {
       </div>
 
       {showWelcomeToast && (
-        <div className="mx-4 mt-3 mb-3 flex items-center gap-2.5 rounded-xl px-3.5 py-3 animate-slide-down flex-shrink-0" style={{ background: "#1A1F2E" }}>
-          <span className="text-lg">👋</span>
-          <div className="flex-1 min-w-0">
-            <div className="font-display font-bold text-[13px] text-white leading-snug">
-              أهلاً — كل شيء جاهز
+        <div className="mx-4 mt-3 mb-3 rounded-xl animate-slide-down flex-shrink-0 overflow-hidden" style={{ background: "#1A1F2E" }}>
+          <div className="flex items-center gap-2.5 px-3.5 py-3">
+            <span className="text-lg">👋</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-display font-bold text-[13px] text-white leading-snug">
+                أهلاً — كل شيء جاهز
+              </div>
+              <div className="text-[11px] text-white/50 mt-0.5">
+                أنت مجهول الهوية تماماً · لا حساب مطلوب
+              </div>
             </div>
-            <div className="text-[11px] text-white/50 mt-0.5">
-              أنت مجهول الهوية تماماً · لا حساب مطلوب
-            </div>
+            <button
+              type="button"
+              onClick={dismissWelcomeToast}
+              className="text-white/30 text-base p-0.5 shrink-0"
+              aria-label="إغلاق"
+            >
+              ×
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={dismissWelcomeToast}
-            className="text-white/30 text-base p-0.5 shrink-0"
-            aria-label="إغلاق"
-          >
-            ×
-          </button>
+          <div className="h-[2px] w-full bg-white/10">
+            <div className="h-full bg-white/30 animate-toast-progress" />
+          </div>
         </div>
       )}
 

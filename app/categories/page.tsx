@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSectionsWithCategories, usePublicStats } from "@/lib/queries/hooks";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { cn } from "@/lib/utils";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import type { Section } from "@/types/app";
 
 const ENERGY_SECTION_NAMES = ["طاقة ووقود"];
@@ -70,15 +71,15 @@ function CategoriesContent() {
       {/* Stats strip */}
       <div className="flex bg-surface border-b border-border">
         <div className="flex-1 py-3 px-2 text-center border-l border-border">
-          <div className="font-display font-bold text-base text-olive-deep">{formatCount(totalCategories)}</div>
+          <div className="font-display font-bold text-base text-olive-deep">{stats ? formatCount(totalCategories) : <LoaderDots size="sm" />}</div>
           <div className="text-[10px] text-mist mt-0.5">تصنيف</div>
         </div>
         <div className="flex-1 py-3 px-2 text-center border-l border-border">
-          <div className="font-display font-bold text-base text-olive-deep">{stats ? formatCount(stats.products) : "—"}</div>
+          <div className="font-display font-bold text-base text-olive-deep">{stats ? formatCount(stats.products) : <LoaderDots size="sm" />}</div>
           <div className="text-[10px] text-mist mt-0.5">منتج</div>
         </div>
         <div className="flex-1 py-3 px-2 text-center">
-          <div className="font-display font-bold text-base text-olive-deep">{stats ? formatCount(stats.prices) : "—"}</div>
+          <div className="font-display font-bold text-base text-olive-deep">{stats ? formatCount(stats.prices) : <LoaderDots size="sm" />}</div>
           <div className="text-[10px] text-mist mt-0.5">سعر مُسجّل</div>
         </div>
       </div>

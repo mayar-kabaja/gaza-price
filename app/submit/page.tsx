@@ -10,7 +10,7 @@ import { LoaderDots } from "@/components/ui/LoaderDots";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
-import { validateSubmitPrice } from "@/lib/validation/submit-price";
+import { validateSubmitPrice, validatePhone } from "@/lib/validation/submit-price";
 import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
@@ -120,6 +120,12 @@ function SubmitForm() {
     });
     if (frontendError) {
       setError(frontendError);
+      return;
+    }
+
+    const phoneError = validatePhone(storePhone);
+    if (phoneError) {
+      setError(phoneError);
       return;
     }
 
