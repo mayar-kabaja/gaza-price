@@ -16,9 +16,9 @@ export default function OnboardingPage() {
   const { saveArea } = useArea();
   const [loading, setLoading] = useState(false);
 
-  const { data: areasData, isError: areasError, isLoading: areasLoading } = useAreas();
+  const { data: areasData, isError: areasError, isLoading: areasLoading, refetch } = useAreas({ retry: 3 });
   const areas = areasData?.areas ?? [];
-  const loadError = areasError ? "تعذر تحميل المناطق" : null;
+  const loadError = areasError ? "تعذر تحميل المناطق — تحقق من اتصالك بالإنترنت" : null;
 
   useEffect(() => {
     const done = localStorage.getItem(LOCAL_STORAGE_KEYS.onboarding_done);
@@ -55,7 +55,7 @@ export default function OnboardingPage() {
     }
   }
 
-  if (areasLoading && areas.length === 0 && !loadError) {
+  if ((areasLoading || areasError) && areas.length === 0) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden" style={{ background: "#1A1F2E" }}>
         <div className="absolute w-[200px] h-[200px] rounded-full bg-olive/15 -top-14 -left-14" />
@@ -64,9 +64,22 @@ export default function OnboardingPage() {
           <h1 className="font-display font-extrabold text-[2.8rem] text-white leading-none">
             غزة <span className="text-sand">بريس</span>
           </h1>
-          <p className="text-sm text-white/45 mt-2.5 font-body">جاري تحميل المناطق...</p>
+          {areasError ? (
+            <>
+              <p className="text-sm text-red-400 mt-2.5 font-body">تعذر الاتصال بالخادم</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-5 px-6 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-body"
+              >
+                إعادة المحاولة
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-white/45 mt-2.5 font-body">جاري تحميل المناطق...</p>
+          )}
         </div>
-        <LoaderDots className="relative z-10 mt-10" variant="light" />
+        {!areasError && <LoaderDots className="relative z-10 mt-10" variant="light" />}
       </div>
     );
   }

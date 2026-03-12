@@ -39,11 +39,12 @@ export function useBootstrap() {
 }
 
 // ── Areas ──
-export function useAreas() {
+export function useAreas(options?: { retry?: number }) {
   return useQuery({
     queryKey: queryKeys.areas,
     queryFn: fetchAreas,
     staleTime: 5 * 60 * 1000, // 5 min — areas change rarely
+    ...(options?.retry != null ? { retry: options.retry } : {}),
   });
 }
 
