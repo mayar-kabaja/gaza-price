@@ -11,7 +11,8 @@ import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
 import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
-import { useBootstrap, useProductsInfinite } from "@/lib/queries/hooks";
+import { useBootstrap, useProductsInfinite, useReportsInfinite } from "@/lib/queries/hooks";
+import { ReportCard } from "@/components/reports/ReportCard";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { isStale as checkStale } from "@/lib/price";
@@ -27,12 +28,14 @@ const DesktopPriceGrid = dynamic(() => import("@/components/desktop/DesktopPrice
 const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
 const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
 
+const ALL_CATEGORY_ID = "__all__";
+
 export function HomeData() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryFromUrl = searchParams?.get("category") ?? null;
   const areaFromUrl = searchParams?.get("area") ?? null;
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl ?? ALL_CATEGORY_ID);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const { area } = useArea();
   const connection = useConnectionQuality();
@@ -74,8 +77,9 @@ export function HomeData() {
 
   // Flatten categories from sections (same order as /categories page)
   const sortedCategories = (sections ?? []).flatMap((s) => s.categories ?? []);
+  const isAllTab = (categoryFromUrl ?? selectedCategoryId) === ALL_CATEGORY_ID || (!categoryFromUrl && !selectedCategoryId);
   const effectiveCategoryId =
-    categoryFromUrl ?? selectedCategoryId ?? sortedCategories[0]?.id ?? null;
+    categoryFromUrl ?? selectedCategoryId ?? ALL_CATEGORY_ID;
 
   const {
     data: infiniteData,
@@ -85,7 +89,23 @@ export function HomeData() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useProductsInfinite(effectiveCategoryId, undefined, true, activeAreaId, isSlow ? 5 : undefined);
+  } = useProductsInfinite(isAllTab ? null : effectiveCategoryId, undefined, true, activeAreaId, isSlow ? 5 : undefined);
+
+  // "الكل" tab: fetch all reports in user's area, newest first, no demo
+  const {
+    data: reportsData,
+    isLoading: reportsLoading,
+    isError: reportsError,
+    fetchNextPage: fetchNextReports,
+    hasNextPage: hasNextReports,
+    isFetchingNextPage: isFetchingNextReports,
+  } = useReportsInfinite(
+    activeAreaId ? "my_area" : "all",
+    activeAreaId,
+    true, // demo_last — real prices first, demo after
+    isAllTab, // enabled only when الكل tab is active
+  );
+  const allReports = reportsData?.pages?.flatMap((p) => p.reports) ?? [];
 
   const rawProducts = infiniteData?.pages?.flatMap((p) => p.products) ?? [];
   // When user has area selected, only show products that have prices in that area
@@ -158,8 +178,8 @@ export function HomeData() {
   }, []);
 
   const hasCategories = sortedCategories.length > 0;
-  const showSkeletons = categoriesLoading || (!!effectiveCategoryId && productsLoading);
-  const error = productsError ? "تعذر تحميل البيانات" : null;
+  const showSkeletons = categoriesLoading || (isAllTab ? reportsLoading : (!!effectiveCategoryId && productsLoading));
+  const error = (isAllTab ? reportsError : productsError) ? "تعذر تحميل البيانات" : null;
 
   // ── Desktop layout ──
   if (isDesktop) {
@@ -187,23 +207,66 @@ export function HomeData() {
                 <span className="text-sm text-mist mr-2">— الأسعار تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك.</span>
               </div>
             </div>
-            <DesktopBreadcrumb categoryId={effectiveCategoryId} />
-            <DesktopStatsStrip products={products} isLoading={showSkeletons} />
-            <DesktopFilterBar
-              filter={desktopFilter}
-              sort={desktopSort}
-              onFilterChange={setDesktopFilter}
-              onSortChange={setDesktopSort}
-            />
-            <DesktopPriceGrid
-              products={desktopProducts}
-              sections={sections ?? []}
-              selectedCategoryId={effectiveCategoryId}
-              hasNextPage={hasNextPage ?? false}
-              isFetchingNextPage={isFetchingNextPage}
-              onLoadMore={() => fetchNextPage()}
-              isLoading={showSkeletons}
-            />
+            <DesktopBreadcrumb categoryId={isAllTab ? null : effectiveCategoryId} />
+            {isAllTab ? (
+              /* Desktop "الكل" — reports feed */
+              showSkeletons ? (
+                <div className="space-y-3 mt-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="bg-surface rounded-2xl p-4 border border-border animate-pulse">
+                      <div className="h-4 bg-fog rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-fog rounded w-1/2 mb-2" />
+                      <div className="h-5 bg-fog rounded w-1/4" />
+                    </div>
+                  ))}
+                </div>
+              ) : allReports.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <div className="font-display font-bold text-ink mb-1">
+                    {activeAreaId ? "لا أسعار في منطقتك حالياً" : "لا أسعار حالياً"}
+                  </div>
+                  <div className="text-sm text-mist">كن أول من يضيف سعراً</div>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {allReports.map((report) => (
+                    <ReportCard key={report.id} report={report} />
+                  ))}
+                  {hasNextReports && (
+                    <div className="py-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => fetchNextReports()}
+                        disabled={isFetchingNextReports}
+                        className="px-6 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50"
+                      >
+                        {isFetchingNextReports ? "جاري التحميل..." : "تحميل المزيد"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
+              <>
+                <DesktopStatsStrip products={products} isLoading={showSkeletons} />
+                <DesktopFilterBar
+                  filter={desktopFilter}
+                  sort={desktopSort}
+                  onFilterChange={setDesktopFilter}
+                  onSortChange={setDesktopSort}
+                />
+                <DesktopPriceGrid
+                  products={desktopProducts}
+                  sections={sections ?? []}
+                  selectedCategoryId={effectiveCategoryId}
+                  hasNextPage={hasNextPage ?? false}
+                  isFetchingNextPage={isFetchingNextPage}
+                  onLoadMore={() => fetchNextPage()}
+                  isLoading={showSkeletons}
+                />
+              </>
+            )}
           </main>
         </div>
         <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
@@ -259,10 +322,24 @@ export function HomeData() {
 
       {/* Category tabs — show immediately; skeleton chips while categories load */}
       <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-surface border-b border-border">
+        {/* "الكل" tab — always first, always visible */}
+        <button
+          key={ALL_CATEGORY_ID}
+          ref={isAllTab ? scrollToSelected : undefined}
+          type="button"
+          onClick={() => selectCategory(ALL_CATEGORY_ID)}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+            isAllTab
+              ? "bg-olive-pale border-olive text-olive font-semibold"
+              : "bg-surface border-border text-slate hover:border-olive/50"
+          }`}
+        >
+          🛒 الكل
+        </button>
         {hasCategories ? (
           sortedCategories.map((c: Category) => {
             const label = c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar;
-            const isSelected = effectiveCategoryId === c.id;
+            const isSelected = !isAllTab && effectiveCategoryId === c.id;
             return (
               <button
                 key={c.id}
@@ -302,6 +379,37 @@ export function HomeData() {
           <div className="mx-4 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
             {error}
           </div>
+        ) : isAllTab ? (
+          /* "الكل" tab — all reports as PriceCards, same style as other categories */
+          allReports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <div className="text-4xl mb-3">🔍</div>
+              <div className="font-display font-bold text-ink mb-1">
+                {activeAreaId ? "لا أسعار في منطقتك حالياً" : "لا أسعار حالياً"}
+              </div>
+              <div className="text-sm text-mist">
+                كن أول من يضيف سعراً
+              </div>
+            </div>
+          ) : (
+            <div className="px-4 space-y-3">
+              {allReports.map((report) => (
+                <ReportCard key={report.id} report={report} />
+              ))}
+              {hasNextReports && (
+                <div className="py-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => fetchNextReports()}
+                    disabled={isFetchingNextReports}
+                    className="px-5 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50"
+                  >
+                    {isFetchingNextReports ? "جاري التحميل..." : "تحميل المزيد"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )
         ) : !effectiveCategoryId ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
             <div className="text-4xl mb-3">📂</div>

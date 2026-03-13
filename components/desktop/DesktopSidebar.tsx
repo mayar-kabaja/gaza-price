@@ -140,6 +140,20 @@ export function DesktopSidebar({
             </div>
           ) : (
           <div className="space-y-1">
+            {/* "الكل" — all categories */}
+            <button
+              type="button"
+              onClick={() => onCategorySelect("__all__")}
+              className={cn(
+                "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors text-right cursor-pointer",
+                selectedCategoryId === "__all__"
+                  ? "bg-olive-pale text-olive border border-olive-mid"
+                  : "text-ink hover:bg-fog"
+              )}
+            >
+              <span className="text-sm">🛒</span>
+              <span>الكل</span>
+            </button>
             {sections.map((section) => {
               const isOpen = openSections[section.id] ?? false;
               const categories = section.categories ?? [];

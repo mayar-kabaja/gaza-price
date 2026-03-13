@@ -171,7 +171,7 @@ export function useContributorMeReportsInfinite(status: string = "all") {
 // ── Reports (infinite, cached) ──
 const REPORTS_PAGE_SIZE = 20;
 
-export function useReportsInfinite(filter: string, areaId?: string | null) {
+export function useReportsInfinite(filter: string, areaId?: string | null, demoLast?: boolean, enabled = true) {
   return useInfiniteQuery({
     queryKey: queryKeys.reports(filter, areaId, REPORTS_PAGE_SIZE),
     queryFn: async ({ pageParam }) =>
@@ -180,10 +180,12 @@ export function useReportsInfinite(filter: string, areaId?: string | null) {
         areaId,
         limit: REPORTS_PAGE_SIZE,
         offset: pageParam as number,
+        demoLast,
       }),
     staleTime: 60 * 1000,
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.next_offset ?? undefined,
+    enabled,
   });
 }
 

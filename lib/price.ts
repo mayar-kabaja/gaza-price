@@ -1,4 +1,4 @@
-import { Price, PricePreviewItem, Product } from "@/types/app";
+import { Price, PricePreviewItem, Product, ReportFeedItem } from "@/types/app";
 import { OUTLIER_STD_DEV, STALE_HOURS } from "./constants";
 
 export function getMedian(prices: number[]): number {
@@ -99,5 +99,36 @@ export function previewToPrice(p: PricePreviewItem, product: Product, isLowest: 
     is_demo: p.is_demo,
     store_address: p.store_address,
     store_phone: p.store_phone,
+  };
+}
+
+/** Convert a ReportFeedItem to a Price so it can be rendered with PriceCard. */
+export function reportToPrice(r: ReportFeedItem): Price {
+  return {
+    id: r.id,
+    product_id: r.product_id,
+    product: r.product
+      ? { id: r.product.id, name_ar: r.product.name_ar, category_id: "", unit: r.product.unit, unit_size: r.product.unit_size, status: "active", created_at: "" }
+      : undefined,
+    store: r.store ? { id: "", name_ar: r.store.name_ar ?? "", area_id: "", is_verified: false } : undefined,
+    store_name_raw: r.store_name_raw ?? undefined,
+    area_id: "",
+    area: r.area ? { id: "", name_ar: r.area.name_ar ?? "", governorate: "central", is_active: true } : undefined,
+    price: r.price,
+    currency: r.currency,
+    status: r.status,
+    trust_score: r.trust_score,
+    confirmation_count: r.confirmation_count,
+    flag_count: r.flag_count,
+    has_receipt: r.has_receipt,
+    is_lowest: false,
+    is_demo: r.is_demo,
+    reported_at: r.reported_at,
+    expires_at: "",
+    confirmed_by_me: r.is_confirmed_by_me,
+    flagged_by_me: r.is_flagged_by_me,
+    is_mine: r.is_mine,
+    store_address: r.store_address,
+    store_phone: r.store_phone,
   };
 }

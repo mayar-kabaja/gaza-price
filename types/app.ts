@@ -187,6 +187,9 @@ export interface ReportFeedItem {
     unit_size: number;
     category?: { icon: string; name_ar: string };
   } | null;
+  is_demo?: boolean;
   store?: { name_ar: string } | null;
+  store_address?: string | null;
+  store_phone?: string | null;
   area?: { name_ar: string } | null;
 }

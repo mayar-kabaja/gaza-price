@@ -70,7 +70,7 @@ export function ReportFeed({ filter, areaId }: ReportFeedProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {reports.map((report) => (
         <ReportCard key={report.id} report={report} />
       ))}
