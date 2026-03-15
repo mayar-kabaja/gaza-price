@@ -142,9 +142,6 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
             </>
           )}
         </button>
-        <p className="text-center text-xs text-mist mt-2.5">
-          مجهول الهوية تماماً · لا حساب · لا هاتف
-        </p>
       </div>
     </div>
   );

@@ -13,6 +13,9 @@ import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { PRODUCT_UNITS } from "@/lib/constants";
 import { playSound } from "@/lib/sounds";
+import { ProductNameInput } from "@/components/ProductNameInput";
+import { StoreNameInput } from "@/components/StoreNameInput";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -33,7 +36,7 @@ interface DesktopSuggestModalProps {
 
 export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps) {
   const router = useRouter();
-  const { accessToken } = useSession();
+  const { accessToken, contributor } = useSession();
   const { data: categoriesData } = useCategories();
   const { data: areasData } = useAreas();
   const suggestProduct = useSuggestProduct();
@@ -43,12 +46,14 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
   const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   const [name_ar, setNameAr] = useState("");
+  const [nameIsValid, setNameIsValid] = useState(true);
   const [category_id, setCategoryId] = useState("");
   const [unit, setUnit] = useState("كغ");
   const [unit_size, setUnitSize] = useState("");
   const [price, setPrice] = useState("");
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
+  const [storeNameValid, setStoreNameValid] = useState(true);
   const [storePhone, setStorePhone] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
@@ -57,6 +62,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
   const [unitSizeToast, setUnitSizeToast] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Array<{ id: string; name_ar: string; similarity: number }>>([]);
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
   const priceToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unitSizeToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,6 +132,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
 
   function validate(): string | null {
     if (!name_ar.trim()) return "يرجى إدخال اسم المنتج";
+    if (!nameIsValid) return "اسم المنتج غير صالح";
     if (!category_id) return "يرجى اختيار التصنيف";
     const size = Number(unit_size);
     if (!unit_size.trim() || isNaN(size) || size < 0) return "يرجى إدخال الكمية صحيحة";
@@ -134,13 +141,11 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
     if (!area_id) return "يرجى اختيار المنطقة";
     if (!store_name_raw.trim()) return "يرجى إدخال اسم المتجر";
     if (store_name_raw.trim().length < 2) return "اسم المتجر يجب أن يكون حرفين على الأقل";
+    if (!storeNameValid) return "اسم المتجر غير صالح";
     return null;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const err = validate();
-    if (err) { setError(err); return; }
+  async function doSubmit(token: string) {
     setError("");
     setSimilarProducts([]);
 
@@ -156,18 +161,14 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         store_phone: storePhone.trim() || undefined,
         store_address: storeAddress.trim() || undefined,
         receipt_photo_url: receipt_photo_url || undefined,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
       });
       playSound("submitted");
-      setSuccessToast("تم إرسال الاقتراح بنجاح");
-      if (successToastRef.current) clearTimeout(successToastRef.current);
-      successToastRef.current = setTimeout(() => {
-        setSuccessToast(null);
-        successToastRef.current = null;
-        resetForm();
-        onClose();
-      }, 1500);
+      setShowAuthPopup(false);
+      resetForm();
+      onClose();
     } catch (err: unknown) {
+      setShowAuthPopup(false);
       const status = (err && typeof err === "object" && "status" in err ? (err as { status: number }).status : 500) as number;
       const data = (err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {}) as ApiErrorResponse;
       if (data?.error === "SIMILAR_PRODUCT_EXISTS" && Array.isArray(data.similar)) {
@@ -177,6 +178,19 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         handleApiError(new Response(null, { status }), data, setError, router);
       }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const err = validate();
+    if (err) { setError(err); return; }
+
+    if (contributor?.phone_verified && accessToken) {
+      await doSubmit(accessToken);
+      return;
+    }
+
+    setShowAuthPopup(true);
   }
 
   if (!open) return null;
@@ -206,18 +220,11 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {/* Product name */}
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المنتج</label>
-            <input
-              type="text"
-              value={name_ar}
-              onChange={(e) => { setNameAr(e.target.value); setError(""); }}
-              placeholder="مثال: شاي أحمد ٢٥٠غ"
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
-              dir="rtl"
-              autoFocus
-            />
-          </div>
+          <ProductNameInput
+            value={name_ar}
+            onChange={(val) => { setNameAr(val); setError(""); }}
+            onValidityChange={setNameIsValid}
+          />
 
           {/* Category + Unit + Unit size */}
           <div>
@@ -303,17 +310,11 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
           </div>
 
           {/* Store name */}
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
-            <input
-              type="text"
-              value={store_name_raw}
-              onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
-              placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
-              dir="rtl"
-            />
-          </div>
+          <StoreNameInput
+            value={store_name_raw}
+            onChange={(val) => { setStoreNameRaw(val); setError(""); }}
+            onValidityChange={setStoreNameValid}
+          />
 
           {/* Store address */}
           <div>
@@ -411,6 +412,12 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
           </div>
         </div>
       </div>
+
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={(token) => doSubmit(token)}
+      />
     </div>
   );
 }

@@ -182,11 +182,13 @@ export async function fetchReports(params: {
   limit?: number;
   offset: number;
   demoLast?: boolean;
+  activeOnly?: boolean;
 }): Promise<ReportsResponse> {
   const sp = new URLSearchParams();
   sp.set("filter", params.filter === "my_area" ? "all" : params.filter);
   if (params.areaId) sp.set("area_id", params.areaId);
   if (params.demoLast) sp.set("demo_last", "true");
+  if (params.activeOnly) sp.set("active_only", "true");
   sp.set("limit", String(params.limit ?? 20));
   sp.set("offset", String(params.offset));
   const res = await apiFetch(`/api/reports?${sp.toString()}`, { credentials: "include" });

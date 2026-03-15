@@ -8,17 +8,25 @@
 import { getStoredToken, setStoredToken, clearStoredToken, getAdminToken } from "@/lib/auth/token";
 
 function getBackendUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
-  return url;
+  // Server-side: use the full backend URL
+  if (typeof window === "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+  }
+  // Client-side: use relative URL so it goes through the Next.js proxy
+  return "";
 }
 
 /** Convert relative paths like "/api/areas" or "/areas" to full backend URL */
 function resolveUrl(url: string): string {
   if (url.startsWith("http")) return url;
   const base = getBackendUrl();
-  // "/api/areas" → strip "/api" prefix → "/areas" → base + "/areas"
+  if (!base) {
+    // Client-side: keep as /api/... path (goes through Next.js proxy routes)
+    if (url.startsWith("/api/")) return url;
+    return `/api${url}`;
+  }
+  // Server-side: resolve to full backend URL
   if (url.startsWith("/api/")) return `${base}${url.slice(4)}`;
-  // "/areas" → base + "/areas"
   return `${base}${url}`;
 }
 

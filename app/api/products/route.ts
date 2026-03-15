@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
       result =
         categoryId
           ? await searchProducts(search, categoryId, limit, offset)
-          : allProducts
+          : (allProducts || search)
             ? await searchProducts(search, undefined, limit, offset, { noCache: true })
             : await getProductsFirstCategory(limit, offset, search);
     } catch (backendErr) {

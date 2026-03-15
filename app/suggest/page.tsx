@@ -15,6 +15,9 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 
 import { PRODUCT_UNITS } from "@/lib/constants";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { ProductNameInput } from "@/components/ProductNameInput";
+import { StoreNameInput } from "@/components/StoreNameInput";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -40,7 +43,7 @@ function SuggestContent() {
     if (isDesktop) router.replace("/?modal=suggest");
   }, [isDesktop, router]);
 
-  const { accessToken } = useSession();
+  const { accessToken, contributor } = useSession();
   const { data: categoriesData } = useCategories();
   const { data: areasData } = useAreas();
   const suggestProduct = useSuggestProduct();
@@ -50,12 +53,14 @@ function SuggestContent() {
   const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   const [name_ar, setNameAr] = useState(nameFromUrl);
+  const [nameIsValid, setNameIsValid] = useState(true);
   const [category_id, setCategoryId] = useState("");
   const [unit, setUnit] = useState("كغ");
   const [unit_size, setUnitSize] = useState("");
   const [price, setPrice] = useState("");
   const [area_id, setAreaId] = useState("");
   const [store_name_raw, setStoreNameRaw] = useState("");
+  const [storeNameValid, setStoreNameValid] = useState(true);
   const [store_phone, setStorePhone] = useState("");
   const [store_address, setStoreAddress] = useState("");
   const [receipt_photo_url, setReceiptPhotoUrl] = useState<string | null>(null);
@@ -67,6 +72,7 @@ function SuggestContent() {
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const successToastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [similarProducts, setSimilarProducts] = useState<Array<{ id: string; name_ar: string; similarity: number }>>([]);
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
     setNameAr((prev) => (nameFromUrl && !prev ? nameFromUrl : prev));
@@ -110,6 +116,7 @@ function SuggestContent() {
 
   function validate(): string | null {
     if (!name_ar.trim()) return "يرجى إدخال اسم المنتج";
+    if (!nameIsValid) return "اسم المنتج غير صالح";
     if (!category_id) return "يرجى اختيار التصنيف";
     const size = Number(unit_size);
     if (!unit_size.trim() || isNaN(size) || size < 0) return "يرجى إدخال الكمية صحيحة";
@@ -117,17 +124,12 @@ function SuggestContent() {
     if (!price.trim() || isNaN(priceNum) || priceNum <= 0) return "يرجى إدخال سعر صحيح";
     if (!area_id) return "يرجى اختيار المنطقة";
     if (!store_name_raw.trim()) return "يرجى إدخال اسم المتجر";
+    if (!storeNameValid) return "اسم المتجر غير صالح";
     if (store_name_raw.trim().length < 2) return "اسم المتجر يجب أن يكون حرفين على الأقل";
     return null;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const err = validate();
-    if (err) {
-      setError(err);
-      return;
-    }
+  async function doSubmit(token: string) {
     setError("");
     setSimilarProducts([]);
     try {
@@ -142,17 +144,13 @@ function SuggestContent() {
         store_phone: store_phone.trim() || undefined,
         store_address: store_address.trim() || undefined,
         receipt_photo_url: receipt_photo_url || undefined,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
       });
       playSound("submitted");
-      setSuccessToast("تم إرسال الاقتراح بنجاح");
-      if (successToastRef.current) clearTimeout(successToastRef.current);
-      successToastRef.current = setTimeout(() => {
-        setSuccessToast(null);
-        successToastRef.current = null;
-        router.replace("/?suggested=1");
-      }, 2000);
+      setShowAuthPopup(false);
+      router.replace("/?suggested=1");
     } catch (err: unknown) {
+      setShowAuthPopup(false);
       const status = (err && typeof err === "object" && "status" in err ? (err as { status: number }).status : 500) as number;
       const data = (err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {}) as ApiErrorResponse;
       if (data?.error === "SIMILAR_PRODUCT_EXISTS" && Array.isArray(data.similar)) {
@@ -162,6 +160,24 @@ function SuggestContent() {
         handleApiError(new Response(null, { status }), data, setError, router);
       }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const err = validate();
+    if (err) {
+      setError(err);
+      return;
+    }
+
+    // If already phone-verified, submit directly
+    if (contributor?.phone_verified && accessToken) {
+      await doSubmit(accessToken);
+      return;
+    }
+
+    // Otherwise show the phone auth popup
+    setShowAuthPopup(true);
   }
 
   const productDisplayName = name_ar.trim() || nameFromUrl || "المنتج";
@@ -199,17 +215,11 @@ function SuggestContent() {
 
         {/* Form */}
         <div className="px-4 py-5 space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المنتج</label>
-            <input
-              type="text"
-              value={name_ar}
-              onChange={(e) => { setNameAr(e.target.value); setError(""); }}
-              placeholder="مثال: شاي أحمد ٢٥٠غ"
-              className="w-full bg-surface border border-olive-mid rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
-              dir="rtl"
-            />
-          </div>
+          <ProductNameInput
+            value={name_ar}
+            onChange={(val) => { setNameAr(val); setError(""); }}
+            onValidityChange={setNameIsValid}
+          />
 
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">الوحدة والكمية</label>
@@ -293,17 +303,11 @@ function SuggestContent() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
-            <input
-              type="text"
-              value={store_name_raw}
-              onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
-              placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
-              dir="rtl"
-            />
-          </div>
+          <StoreNameInput
+            value={store_name_raw}
+            onChange={(val) => { setStoreNameRaw(val); setError(""); }}
+            onValidityChange={setStoreNameValid}
+          />
 
           <div>
             <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">عنوان تفصيلي للمتجر</label>
@@ -392,6 +396,12 @@ function SuggestContent() {
       </form>
 
       <BottomNav />
+
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={(token) => doSubmit(token)}
+      />
     </div>
   );
 }

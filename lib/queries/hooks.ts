@@ -171,7 +171,7 @@ export function useContributorMeReportsInfinite(status: string = "all") {
 // ── Reports (infinite, cached) ──
 const REPORTS_PAGE_SIZE = 20;
 
-export function useReportsInfinite(filter: string, areaId?: string | null, demoLast?: boolean, enabled = true) {
+export function useReportsInfinite(filter: string, areaId?: string | null, demoLast?: boolean, enabled = true, activeOnly?: boolean) {
   return useInfiniteQuery({
     queryKey: queryKeys.reports(filter, areaId, REPORTS_PAGE_SIZE),
     queryFn: async ({ pageParam }) =>
@@ -181,6 +181,7 @@ export function useReportsInfinite(filter: string, areaId?: string | null, demoL
         limit: REPORTS_PAGE_SIZE,
         offset: pageParam as number,
         demoLast,
+        activeOnly,
       }),
     staleTime: 60 * 1000,
     initialPageParam: 0,

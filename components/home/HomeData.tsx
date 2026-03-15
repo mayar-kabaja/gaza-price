@@ -104,6 +104,7 @@ export function HomeData() {
     activeAreaId,
     true, // demo_last — real prices first, demo after
     isAllTab, // enabled only when الكل tab is active
+    true, // active_only — hide pending/unapproved products
   );
   const allReports = reportsData?.pages?.flatMap((p) => p.reports) ?? [];
 
@@ -288,7 +289,7 @@ export function HomeData() {
             هذه نسخة تجريبية من التطبيق
           </div>
           <div className="text-[11px] text-mist mt-0.5 leading-relaxed">
-            الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار.
+            الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار. تنبيه: إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.
           </div>
         </div>
       </div>
@@ -300,9 +301,6 @@ export function HomeData() {
             <div className="flex-1 min-w-0">
               <div className="font-display font-bold text-[13px] text-white leading-snug">
                 أهلاً — كل شيء جاهز
-              </div>
-              <div className="text-[11px] text-white/50 mt-0.5">
-                أنت مجهول الهوية تماماً · لا حساب مطلوب
               </div>
             </div>
             <button

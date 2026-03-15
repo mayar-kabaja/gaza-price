@@ -18,6 +18,8 @@ import { enqueueReport } from "@/lib/offline/queue";
 import { playSound } from "@/lib/sounds";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
+import { StoreNameInput } from "@/components/StoreNameInput";
 
 const PRICE_TOAST_MSG = "استخدم الأرقام الإنجليزية (0-9) فقط";
 const ARABIC_DIGITS = /[٠-٩]/g;
@@ -39,7 +41,8 @@ function SubmitForm() {
   const isDesktop = useIsDesktop();
   const searchParams = useSearchParams();
   const productIdFromUrl = searchParams.get("product_id");
-  const { accessToken } = useSession();
+  const { accessToken, contributor } = useSession();
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
     if (isDesktop) router.replace("/?modal=submit");
@@ -56,6 +59,7 @@ function SubmitForm() {
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
+  const [storeNameValid, setStoreNameValid] = useState(true);
   const [storePhone, setStorePhone] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
@@ -106,30 +110,8 @@ function SubmitForm() {
     }
   }, [areas.length, areaId]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  async function doSubmit(token: string) {
     const id = effectiveProduct?.id ?? productIdFromUrl ?? null;
-
-    // 1 — Frontend validation first (UX only, never send request if invalid)
-    const frontendError = validateSubmitPrice({
-      productId: id,
-      price,
-      areaId,
-      storeNameRaw,
-    });
-    if (frontendError) {
-      setError(frontendError);
-      return;
-    }
-
-    const phoneError = validatePhone(storePhone);
-    if (phoneError) {
-      setError(phoneError);
-      return;
-    }
-
-    // 2 — Send to backend via React Query mutation
     setError("");
     setRetryAfterSeconds(undefined);
 
@@ -142,12 +124,14 @@ function SubmitForm() {
         store_phone: storePhone.trim() || undefined,
         store_address: storeAddress.trim() || undefined,
         receipt_photo_url: receiptPhotoUrl || undefined,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
       });
       playSound("submitted");
+      setShowAuthPopup(false);
       router.push(`/product/${id}?submitted=1`);
     } catch (err: unknown) {
-      // Network error (TypeError from fetch) or device offline → queue for later
+      setShowAuthPopup(false);
+
       const isNetworkError =
         err instanceof TypeError || !navigator.onLine;
 
@@ -165,7 +149,6 @@ function SubmitForm() {
           });
           await refreshQueueCount();
 
-          // Reset form
           setProduct(null);
           setPrice("");
           setStoreNameRaw("");
@@ -173,7 +156,6 @@ function SubmitForm() {
           setError("");
           clear();
 
-          // Show success toast
           if (queuedToastTimeoutRef.current) clearTimeout(queuedToastTimeoutRef.current);
           setQueuedToast("تم حفظ السعر — سيُرسل تلقائياً عند عودة الاتصال");
           queuedToastTimeoutRef.current = setTimeout(() => {
@@ -186,7 +168,6 @@ function SubmitForm() {
         return;
       }
 
-      // Server error (4xx/5xx) — existing handling
       const status = (err && typeof err === "object" && "status" in err ? (err as { status: number }).status : 500) as number;
       const data = (err && typeof err === "object" && "data" in err ? (err as { data: ApiErrorResponse }).data : {}) as ApiErrorResponse;
       const res = new Response(null, { status });
@@ -195,6 +176,43 @@ function SubmitForm() {
         setRetryAfterSeconds(data.retry_after_seconds);
       }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const id = effectiveProduct?.id ?? productIdFromUrl ?? null;
+
+    const frontendError = validateSubmitPrice({
+      productId: id,
+      price,
+      areaId,
+      storeNameRaw,
+    });
+    if (frontendError) {
+      setError(frontendError);
+      return;
+    }
+
+    if (!storeNameValid) {
+      setError("اسم المتجر غير صالح");
+      return;
+    }
+
+    const phoneError = validatePhone(storePhone);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+
+    // If user is already phone-verified, submit directly
+    if (contributor?.phone_verified && accessToken) {
+      await doSubmit(accessToken);
+      return;
+    }
+
+    // Otherwise show the phone auth popup
+    setShowAuthPopup(true);
   }
 
   function handleSelectProduct(p: Product) {
@@ -361,17 +379,11 @@ function SubmitForm() {
         </div>
 
         {/* Store name */}
-        <div>
-          <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
-          <input
-            type="text"
-            value={storeNameRaw}
-            onChange={e => { setStoreNameRaw(e.target.value); setError(""); }}
-            placeholder="مثال: بقالة أبو رامي"
-            className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none"
-            dir="rtl"
-          />
-        </div>
+        <StoreNameInput
+          value={storeNameRaw}
+          onChange={(val) => { setStoreNameRaw(val); setError(""); }}
+          onValidityChange={setStoreNameValid}
+        />
 
         {/* Store address (optional) */}
         <div>
@@ -448,7 +460,9 @@ function SubmitForm() {
           {submitting ? "جاري الإرسال..." : "إرسال السعر ←"}
         </button>
 
-        <p className="text-center text-xs text-mist">مجهول الهوية تماماً · لا اسم · لا هاتف</p>
+        <p className="text-center text-xs text-mist">
+          {contributor?.phone_verified ? "✓ تم التحقق من رقمك" : "سيُطلب التحقق عبر WhatsApp عند الإرسال"}
+        </p>
 
         <Link
           href="/suggest"
@@ -457,6 +471,17 @@ function SubmitForm() {
           لم تجد المنتج؟ اقترح منتجاً جديداً +
         </Link>
       </form>
+
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={(token) => doSubmit(token)}
+        priceDetails={{
+          productName: effectiveProduct?.name_ar,
+          price,
+          areaName: areas.find((a) => a.id === areaId)?.name_ar,
+        }}
+      />
     </div>
   );
 }

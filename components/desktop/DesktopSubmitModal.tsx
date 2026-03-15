@@ -16,6 +16,8 @@ import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { playSound } from "@/lib/sounds";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
+import { StoreNameInput } from "@/components/StoreNameInput";
 
 const ARABIC_DIGITS = /[٠-٩]/g;
 const ARABIC_TO_ENGLISH: Record<string, string> = {
@@ -38,7 +40,8 @@ interface DesktopSubmitModalProps {
 
 export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
   const router = useRouter();
-  const { accessToken } = useSession();
+  const { accessToken, contributor } = useSession();
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   const { query, setQuery, results, loading, open: searchOpen, setOpen: setSearchOpen, clear } = useSearch();
   const { data: areasData } = useAreas();
@@ -49,6 +52,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
   const [price, setPrice] = useState("");
   const [areaId, setAreaId] = useState("");
   const [storeNameRaw, setStoreNameRaw] = useState("");
+  const [storeNameValid, setStoreNameValid] = useState(true);
   const [storePhone, setStorePhone] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [receiptPhotoUrl, setReceiptPhotoUrl] = useState<string | null>(null);
@@ -127,22 +131,8 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
     setSearchOpen(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  async function doSubmit(token: string) {
     const id = product?.id ?? null;
-    const frontendError = validateSubmitPrice({ productId: id, price, areaId, storeNameRaw });
-    if (frontendError) {
-      setError(frontendError);
-      return;
-    }
-
-    const phoneError = validatePhone(storePhone);
-    if (phoneError) {
-      setError(phoneError);
-      return;
-    }
-
     setError("");
     setRetryAfterSeconds(undefined);
 
@@ -155,9 +145,10 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
         store_phone: storePhone.trim() || undefined,
         store_address: storeAddress.trim() || undefined,
         receipt_photo_url: receiptPhotoUrl || undefined,
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
       });
       playSound("submitted");
+      setShowAuthPopup(false);
       setSuccessToast("تم إرسال السعر بنجاح");
       resetForm();
       setTimeout(() => {
@@ -165,6 +156,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
         onClose();
       }, 1500);
     } catch (err: unknown) {
+      setShowAuthPopup(false);
       const isNetworkError = err instanceof TypeError || !navigator.onLine;
       if (isNetworkError) {
         try {
@@ -201,6 +193,35 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
         setRetryAfterSeconds(data.retry_after_seconds);
       }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const id = product?.id ?? null;
+    const frontendError = validateSubmitPrice({ productId: id, price, areaId, storeNameRaw });
+    if (frontendError) {
+      setError(frontendError);
+      return;
+    }
+
+    if (!storeNameValid) {
+      setError("اسم المتجر غير صالح");
+      return;
+    }
+
+    const phoneError = validatePhone(storePhone);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+
+    if (contributor?.phone_verified && accessToken) {
+      await doSubmit(accessToken);
+      return;
+    }
+
+    setShowAuthPopup(true);
   }
 
   if (!open) return null;
@@ -345,17 +366,11 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
           </div>
 
           {/* Store name */}
-          <div>
-            <label className="block text-xs font-bold text-mist uppercase tracking-widest mb-2">اسم المتجر</label>
-            <input
-              type="text"
-              value={storeNameRaw}
-              onChange={(e) => { setStoreNameRaw(e.target.value); setError(""); }}
-              placeholder="مثال: بقالة أبو رامي"
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
-              dir="rtl"
-            />
-          </div>
+          <StoreNameInput
+            value={storeNameRaw}
+            onChange={(val) => { setStoreNameRaw(val); setError(""); }}
+            onValidityChange={setStoreNameValid}
+          />
 
           {/* Store address (optional) */}
           <div>
@@ -439,8 +454,21 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
           </button>
         </div>
 
-        <p className="text-center text-xs text-mist pb-3">مجهول الهوية تماماً · لا اسم · لا هاتف</p>
+        <p className="text-center text-xs text-mist pb-3">
+          {contributor?.phone_verified ? "✓ تم التحقق من رقمك" : "سيُطلب التحقق عبر WhatsApp عند الإرسال"}
+        </p>
       </div>
+
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={(token) => doSubmit(token)}
+        priceDetails={{
+          productName: product?.name_ar,
+          price,
+          areaName: areas.find((a) => a.id === areaId)?.name_ar,
+        }}
+      />
     </div>
   );
 }

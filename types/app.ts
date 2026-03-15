@@ -84,6 +84,7 @@ export interface Contributor {
   area_id?: string;
   area?: Area;
   display_handle?: string;
+  phone_verified?: boolean;
   trust_level: TrustLevel;
   report_count: number;
   confirmation_count: number;

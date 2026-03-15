@@ -21,6 +21,7 @@ type MeResponse = {
   id: string;
   handle: string | null;
   area: { id: string; name_ar: string } | null;
+  phone_verified?: boolean;
   trust_level: string;
   report_count: number;
   confirmation_count: number;
@@ -34,6 +35,7 @@ function mapMeToContributor(me: MeResponse): Contributor {
     id: me.id,
     anon_session_id: me.id,
     display_handle: me.handle ?? undefined,
+    phone_verified: me.phone_verified ?? false,
     area_id: me.area?.id,
     area: me.area
       ? {
