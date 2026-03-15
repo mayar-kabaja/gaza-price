@@ -1,7 +1,7 @@
 // Gaza Price — Service Worker v1
 // Pure manual SW: cache-first for static, stale-while-revalidate for API, network-first for pages
 
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const STATIC_CACHE = `static-v${CACHE_VERSION}`;
 const API_CACHE = `api-v${CACHE_VERSION}`;
 const PAGES_CACHE = `pages-v${CACHE_VERSION}`;
