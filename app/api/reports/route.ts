@@ -42,6 +42,13 @@ export async function GET(req: NextRequest) {
       headers: { Accept: "application/json", ...headers },
       signal: AbortSignal.timeout(25000),
     });
+    const ct = res.headers.get("content-type") ?? "";
+    if (!ct.includes("application/json")) {
+      return NextResponse.json(
+        { error: "SERVER_ERROR", message: "السيرفر الخلفي غير متاح حالياً، حاول لاحقاً" },
+        { status: 502 }
+      );
+    }
     const data = await res.json();
     if (!res.ok) {
       return NextResponse.json(

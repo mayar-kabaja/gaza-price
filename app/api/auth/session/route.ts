@@ -4,8 +4,8 @@ import { getTokenFromRequest } from "@/lib/get-token-from-request";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/auth/session — Proxy to backend POST /auth/session. No body when no token. */
-export async function GET(req: NextRequest) {
+/** Shared handler — proxy to backend POST /auth/session */
+async function handler(req: NextRequest) {
   const base = getApiBaseUrl();
   if (!base) {
     return NextResponse.json(
@@ -38,3 +38,5 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export { handler as GET, handler as POST };
