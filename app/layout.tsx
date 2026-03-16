@@ -9,6 +9,7 @@ import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivit
 import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 import { RegisterSW } from "@/components/sw/RegisterSW";
 import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
+import { Analytics } from "@vercel/analytics/next";
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -102,6 +103,7 @@ export default function RootLayout({
           </SessionProvider>
         </QueryProvider>
         <RegisterSW />
+        <Analytics />
       </body>
     </html>
   );
