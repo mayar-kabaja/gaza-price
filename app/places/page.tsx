@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 type Section = 'food' | 'store';
 type Sheet = 'restaurant' | 'store' | 'register' | null;
@@ -13,43 +13,18 @@ export default function PlacesPage() {
 
   return (
     <div className="min-h-screen bg-fog" dir="rtl">
-      {/* HEADER */}
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-olive via-olive to-olive-deep shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 pt-4 pb-3">
-          {/* Logo & Icons */}
-          <div className="flex items-center justify-between mb-3">
-            <Link href="/" className="flex items-center gap-2 font-display font-black text-white text-sm">
-              <div className="w-7 h-7 bg-white/15 rounded-lg border border-white/25 flex items-center justify-center text-sm">
-                👁
-              </div>
-              GazaPriceWatch
-            </Link>
-            <div className="flex gap-1">
-              <button className="w-8 h-8 bg-white/12 rounded-lg border-0 flex items-center justify-center text-sm hover:bg-white/18 transition">
-                🌙
-              </button>
-              <button className="w-8 h-8 bg-white/12 rounded-lg border-0 flex items-center justify-center text-sm hover:bg-white/18 transition">
-                🔔
-              </button>
-            </div>
-          </div>
+      <AppHeader />
 
-          {/* Search */}
-          <div className="flex items-center gap-2 bg-white/95 rounded-2xl px-3 py-2.5 mb-3 shadow-md">
-            <span className="text-xs text-mist">🔍</span>
-            <span className="text-xs text-mist font-semibold">
-              ابحث عن <span className="text-olive-deep font-bold">محل، مطعم، منتج...</span>
-            </span>
-          </div>
-
-          {/* Section Toggle */}
-          <div className="flex gap-0 bg-ink rounded-2xl p-1">
+      {/* Section Toggle */}
+      <div className="sticky top-16 z-30 bg-white px-4 py-3 border-b border-border">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-0 bg-fog rounded-2xl p-1">
             <button
               onClick={() => setSection('food')}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
                 section === 'food'
                   ? 'bg-olive text-white shadow-lg'
-                  : 'bg-transparent text-white/45 hover:text-white/60'
+                  : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
               🍽️ مطاعم وكافيه
@@ -59,7 +34,7 @@ export default function PlacesPage() {
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
                 section === 'store'
                   ? 'bg-olive text-white shadow-lg'
-                  : 'bg-transparent text-white/45 hover:text-white/60'
+                  : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
               🏪 متاجر
@@ -69,7 +44,7 @@ export default function PlacesPage() {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 py-4 pb-24">
+      <div className="max-w-4xl mx-auto px-4 py-4 pb-24">
         {/* Area Pill */}
         <div className="flex items-center justify-between bg-white rounded-3xl px-3 py-2.5 mb-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-2">
