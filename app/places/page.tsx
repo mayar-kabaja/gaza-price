@@ -101,7 +101,7 @@ export default function PlacesPage() {
             {/* Grid Row 2 */}
             <div className="grid grid-cols-2 gap-3">
               {/* Cafe Card */}
-              <button className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left">
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
                 <div className="text-2xl drop-shadow">☕</div>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5 drop-shadow">كافيه النخيل</h4>
@@ -152,7 +152,7 @@ export default function PlacesPage() {
               </div>
 
               {/* Juice Card */}
-              <button className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left">
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E5C5C, #2A8080)'}}>
                 <span className="text-xl">🧃</span>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5">عصير الصحة</h4>
@@ -230,7 +230,7 @@ export default function PlacesPage() {
             {/* Grid Row 2 */}
             <div className="grid grid-cols-2 gap-3">
               {/* Electronics Card */}
-              <button className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left">
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
                 <div className="text-2xl drop-shadow">📱</div>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5 drop-shadow">محل أبو سامي</h4>
@@ -279,7 +279,7 @@ export default function PlacesPage() {
               </div>
 
               {/* Building Card */}
-              <button className="bg-gradient-to-br from-amber-700 to-amber-800 rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left">
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #5C3A1E, #8B5E2A)'}}>
                 <span className="text-xl">🏗️</span>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5">مواد بناء أبو علي</h4>

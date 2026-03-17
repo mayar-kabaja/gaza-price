@@ -49,6 +49,16 @@
   --color-border: var(--raw-border);
   --color-fog: var(--raw-fog);
   --color-surface: var(--raw-surface);
+
+  /* Card colors for bento grid */
+  --color-card-navy-start: #1E3A5F;
+  --color-card-navy-end: #2A5280;
+  --color-card-brown-start: #5C3A1E;
+  --color-card-brown-end: #8B5E2A;
+  --color-card-purple-start: #3A1E5C;
+  --color-card-purple-end: #5C3A80;
+  --color-card-teal-start: #1E5C5C;
+  --color-card-teal-end: #2A8080;
 }
 
 * {
@@ -177,11 +187,11 @@ body {
 
 /* Welcome toast progress bar */
 @keyframes toastProgress {
-  from { width: 100%; }
-  to { width: 0%; }
+  from { width: 0%; }
+  to { width: 100%; }
 }
 .animate-toast-progress {
-  animation: toastProgress 5s linear forwards;
+  animation: toastProgress 10s linear forwards;
 }
 
 /* Desktop card fade-up animation */
