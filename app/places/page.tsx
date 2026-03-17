@@ -13,7 +13,7 @@ export default function PlacesPage() {
 
   return (
     <div className="min-h-screen bg-fog" dir="rtl">
-      <AppHeader />
+      <AppHeader hideActions />
 
       {/* Section Toggle */}
       <div className="sticky top-16 z-30 bg-white px-4 py-3 border-b border-border">
