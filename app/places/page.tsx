@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { BottomNav } from '@/components/layout/BottomNav';
 
 type Section = 'food' | 'store';
 type Sheet = 'restaurant' | 'store' | 'register' | null;
@@ -343,36 +344,7 @@ export default function PlacesPage() {
         <DetailSheet sheet={openSheet} onClose={() => setOpenSheet(null)} />
       )}
 
-      {/* BOTTOM NAV */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/97 backdrop-blur-lg border-t border-border flex items-center px-1.5 py-3 gap-1 z-50 shadow-2xl">
-        {[
-          { icon: '👤', label: 'حسابي', active: false },
-          { icon: '🏪', label: 'محلات', active: true },
-          { icon: '➕', label: 'إضافة', active: false },
-          { icon: '⊞', label: 'تصنيفات', active: false },
-          { icon: '🏠', label: 'الرئيسية', active: false },
-        ].map((item, i) => (
-          <button
-            key={i}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-1 rounded-2xl transition-all ${
-              item.active ? 'relative' : ''
-            }`}
-          >
-            {item.active && (
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-9 h-7 bg-olive-pale rounded-lg z-0"></div>
-            )}
-            <span className="text-lg relative z-10">{item.icon}</span>
-            <span
-              className={`text-xs font-bold relative z-10 ${
-                item.active ? 'text-olive' : 'text-mist'
-              }`}
-            >
-              {item.label}
-            </span>
-            {item.active && <div className="w-1 h-1 bg-olive rounded-full absolute -bottom-1"></div>}
-          </button>
-        ))}
-      </div>
+      <BottomNav />
     </div>
   );
 }
