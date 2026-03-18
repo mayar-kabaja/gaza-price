@@ -101,7 +101,7 @@ export default function PlacesPage() {
             {/* Grid Row 2 */}
             <div className="grid grid-cols-2 gap-3">
               {/* Cafe Card */}
-              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-right" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
                 <div className="text-2xl drop-shadow">☕</div>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5 drop-shadow">كافيه النخيل</h4>
@@ -152,7 +152,7 @@ export default function PlacesPage() {
               </div>
 
               {/* Juice Card */}
-              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E5C5C, #2A8080)'}}>
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-right" style={{backgroundImage: 'linear-gradient(to bottom right, #1E5C5C, #2A8080)'}}>
                 <span className="text-xl">🧃</span>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5">عصير الصحة</h4>
@@ -173,7 +173,7 @@ export default function PlacesPage() {
               <div className="w-11 h-11 bg-gradient-to-br from-olive-deep to-olive rounded-2xl flex items-center justify-center text-base flex-shrink-0">
                 🍽️
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-right">
                 <h4 className="font-display font-bold text-sm text-white mb-0.5">
                   صاحب مطعم؟ سجّل مجاناً
                 </h4>
@@ -230,7 +230,7 @@ export default function PlacesPage() {
             {/* Grid Row 2 */}
             <div className="grid grid-cols-2 gap-3">
               {/* Electronics Card */}
-              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-40 text-white shadow-sm hover:shadow-md transition-shadow text-right" style={{backgroundImage: 'linear-gradient(to bottom right, #1E3A5F, #2A5280)'}}>
                 <div className="text-2xl drop-shadow">📱</div>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5 drop-shadow">محل أبو سامي</h4>
@@ -279,7 +279,7 @@ export default function PlacesPage() {
               </div>
 
               {/* Building Card */}
-              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-left" style={{backgroundImage: 'linear-gradient(to bottom right, #5C3A1E, #8B5E2A)'}}>
+              <button className="rounded-3xl p-3.5 flex flex-col justify-between min-h-32 text-white cursor-pointer hover:shadow-md transition-shadow shadow-sm text-right" style={{backgroundImage: 'linear-gradient(to bottom right, #5C3A1E, #8B5E2A)'}}>
                 <span className="text-xl">🏗️</span>
                 <div>
                   <h4 className="font-display font-bold text-sm mb-0.5">مواد بناء أبو علي</h4>
@@ -300,7 +300,7 @@ export default function PlacesPage() {
               <div className="w-11 h-11 bg-gradient-to-br from-olive-deep to-olive rounded-2xl flex items-center justify-center text-base flex-shrink-0">
                 🏪
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-right">
                 <h4 className="font-display font-bold text-sm text-white mb-0.5">
                   صاحب متجر؟ سجّل مجاناً
                 </h4>
