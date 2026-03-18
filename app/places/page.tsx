@@ -67,25 +67,31 @@ export default function PlacesPage() {
             {/* Featured Card */}
             <button
               onClick={() => setOpenSheet('restaurant')}
-              className="w-full bg-gradient-to-br from-olive via-olive-deep to-olive rounded-3xl overflow-hidden cursor-pointer transform hover:scale-[1.01] transition-transform p-4 relative min-h-48 flex flex-col justify-end group shadow-md"
+              className="w-full bg-gradient-to-br from-olive via-olive-deep to-olive rounded-3xl overflow-hidden cursor-pointer transform hover:scale-[1.01] transition-transform p-4 relative min-h-48 flex flex-col justify-between group shadow-md"
             >
               <div className="absolute inset-0 bg-black/20"></div>
-              <div className="absolute top-4 right-4 text-3xl drop-shadow-lg">🍛</div>
-              <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/15 border border-white/25 rounded-full px-2 py-1 text-white text-xs font-bold z-10">
-                ✦ موثّق
+
+              {/* Top Section: Icon and Badge */}
+              <div className="relative z-10 flex items-start justify-between mb-3">
+                <div className="flex items-center gap-1 bg-white/15 border border-white/25 rounded-full px-2 py-1 text-white text-xs font-bold">
+                  ✦ موثّق
+                </div>
+                <div className="text-3xl drop-shadow-lg">🍛</div>
               </div>
+
+              {/* Bottom Section: Content */}
               <div className="relative z-10">
-                <h3 className="font-display font-black text-lg text-white mb-1 drop-shadow">
+                <h3 className="font-display font-black text-lg text-white mb-2 drop-shadow">
                   مطعم أبو خالد
                 </h3>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-white/80 font-semibold">📍 خان يونس</span>
                   <span className="flex items-center gap-1 text-xs font-bold text-emerald-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
                     مفتوح
                   </span>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {['3₪ فول', '8₪ شاكشوكة', '25₪ أرز'].map((p) => (
                     <div
                       key={p}
@@ -196,25 +202,31 @@ export default function PlacesPage() {
             {/* Featured Card */}
             <button
               onClick={() => setOpenSheet('store')}
-              className="w-full bg-gradient-to-br from-olive via-olive-deep to-olive rounded-3xl overflow-hidden cursor-pointer transform hover:scale-[1.01] transition-transform p-4 relative min-h-48 flex flex-col justify-end group shadow-md"
+              className="w-full bg-gradient-to-br from-olive via-olive-deep to-olive rounded-3xl overflow-hidden cursor-pointer transform hover:scale-[1.01] transition-transform p-4 relative min-h-48 flex flex-col justify-between group shadow-md"
             >
               <div className="absolute inset-0 bg-black/20"></div>
-              <div className="absolute top-4 right-4 text-3xl drop-shadow-lg">👗</div>
-              <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/15 border border-white/25 rounded-full px-2 py-1 text-white text-xs font-bold z-10">
-                ✦ موثّق
+
+              {/* Top Section: Icon and Badge */}
+              <div className="relative z-10 flex items-start justify-between mb-3">
+                <div className="flex items-center gap-1 bg-white/15 border border-white/25 rounded-full px-2 py-1 text-white text-xs font-bold">
+                  ✦ موثّق
+                </div>
+                <div className="text-3xl drop-shadow-lg">👗</div>
               </div>
+
+              {/* Bottom Section: Content */}
               <div className="relative z-10">
-                <h3 className="font-display font-black text-lg text-white mb-1 drop-shadow">
+                <h3 className="font-display font-black text-lg text-white mb-2 drop-shadow">
                   متجر الأناقة
                 </h3>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs text-white/80 font-semibold">📍 خان يونس</span>
                   <span className="flex items-center gap-1 text-xs font-bold text-emerald-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
                     مفتوح
                   </span>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {['45₪ جينز', '25₪ قميص', '60₪ فستان'].map((p) => (
                     <div
                       key={p}
