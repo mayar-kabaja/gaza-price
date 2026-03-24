@@ -91,7 +91,7 @@ export function HomeData() {
     isFetchingNextPage,
   } = useProductsInfinite(isAllTab ? null : effectiveCategoryId, undefined, true, activeAreaId, isSlow ? 5 : undefined);
 
-  // "الكل" tab: fetch all reports in user's area, newest first, no demo
+  // "الكل" tab: fetch latest reports from ALL areas so users see what's new everywhere
   const {
     data: reportsData,
     isLoading: reportsLoading,
@@ -100,8 +100,8 @@ export function HomeData() {
     hasNextPage: hasNextReports,
     isFetchingNextPage: isFetchingNextReports,
   } = useReportsInfinite(
-    activeAreaId ? "my_area" : "all",
-    activeAreaId,
+    "all",
+    null,
     true, // demo_last — real prices first, demo after
     isAllTab, // enabled only when الكل tab is active
     true, // active_only — hide pending/unapproved products
