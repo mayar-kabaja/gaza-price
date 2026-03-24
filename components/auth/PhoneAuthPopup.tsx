@@ -82,15 +82,16 @@ export function PhoneAuthPopup({
     ? `+${countryCode} ${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`
     : "";
 
-  // Full phone with country code for API (API expects 972XXXXXXXXX format)
+  // Full phone with country code for API
   const stripped = phone.startsWith("0") ? phone.slice(1) : phone;
-  const fullPhone = countryCode === "970" ? `972${stripped}` : `972${stripped}`;
+  const fullPhone = `${countryCode}${stripped}`;
 
   // ── Step 1: Send OTP ──
   async function handleSendOtp() {
     const cleaned = phone.replace(/\D/g, "");
-    if (cleaned.length < 9) {
-      setError("أدخل رقم هاتف صالح");
+    const local = cleaned.startsWith("0") ? cleaned : `0${cleaned}`;
+    if (!/^(059|056)\d{7}$/.test(local)) {
+      setError("رقم الهاتف غير صحيح — يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام");
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return;
