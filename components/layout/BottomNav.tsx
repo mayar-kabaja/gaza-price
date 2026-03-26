@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/", icon: "home", label: "الرئيسية" },
   { href: "/categories", icon: "categories", label: "التصنيفات" },
   { href: "/submit", icon: "add", label: "إضافة" },
-  { href: "/reports", icon: "reports", label: "تقارير" },
+  { href: "/places", icon: "places", label: "محلات" },
   { href: "/account", icon: "account", label: "حسابي" },
 ] as const;
 
@@ -44,6 +44,13 @@ function NavIcon({ icon, active, className }: { icon: string; active: boolean; c
       return (
         <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
           <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      );
+    case "places":
+      return (
+        <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
+          <path d="M3 21h18M5 21V7l8-4v18M13 21V3l6 4v14" />
+          <path d="M9 9h1M9 13h1M15 9h1M15 13h1" />
         </svg>
       );
     case "account":

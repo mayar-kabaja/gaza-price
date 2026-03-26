@@ -37,6 +37,7 @@ export function HomeData() {
   const areaFromUrl = searchParams?.get("area") ?? null;
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl ?? ALL_CATEGORY_ID);
   const [showWelcomeToast, setShowWelcomeToast] = useState(false);
+  const [showDemoBanner, setShowDemoBanner] = useState(true);
   const { area } = useArea();
   const connection = useConnectionQuality();
   const isSlow = connection === "slow";
@@ -168,6 +169,11 @@ export function HomeData() {
     }
   }, []);
 
+  useEffect(() => {
+    const t = setTimeout(() => setShowDemoBanner(false), 10000);
+    return () => clearTimeout(t);
+  }, []);
+
   function dismissWelcomeToast() {
     setShowWelcomeToast(false);
     if (typeof window !== "undefined")
@@ -282,38 +288,29 @@ export function HomeData() {
       <AppHeader />
 
       {/* Demo data banner */}
-      <div className="mx-4 mt-3 mb-1 flex items-start gap-2.5 rounded-xl bg-sand-light border border-sand/30 px-3.5 py-3 flex-shrink-0">
-        <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-[12px] text-ink leading-snug">
-            هذه نسخة تجريبية من التطبيق
-          </div>
-          <div className="text-[11px] text-mist mt-0.5 leading-relaxed">
-            الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار. تنبيه: إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.
-          </div>
-        </div>
-      </div>
-
-      {showWelcomeToast && (
-        <div className="mx-4 mt-3 mb-3 rounded-xl animate-slide-down flex-shrink-0 overflow-hidden" style={{ background: "#1A1F2E" }}>
-          <div className="flex items-center gap-2.5 px-3.5 py-3">
-            <span className="text-lg">👋</span>
+      {showDemoBanner && (
+        <div className="mx-4 my-2 rounded-xl bg-sand-light border border-sand/30 flex-shrink-0 overflow-hidden animate-slide-down">
+          <div className="flex items-start gap-2.5 px-3.5 py-3">
+            <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
             <div className="flex-1 min-w-0">
-              <div className="font-display font-bold text-[13px] text-white leading-snug">
-                أهلاً — كل شيء جاهز
+              <div className="font-display font-bold text-[12px] text-ink leading-snug">
+                اهلا بك 👋 هذه نسخة تجريبية من التطبيق
+              </div>
+              <div className="text-[11px] text-mist mt-0.5 leading-relaxed">
+                الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار. تنبيه: إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.
               </div>
             </div>
             <button
               type="button"
-              onClick={dismissWelcomeToast}
-              className="text-white/30 text-base p-0.5 shrink-0"
+              onClick={() => setShowDemoBanner(false)}
+              className="text-mist/50 text-base p-0.5 shrink-0"
               aria-label="إغلاق"
             >
               ×
             </button>
           </div>
-          <div className="h-[2px] w-full bg-white/10">
-            <div className="h-full bg-white/30 animate-toast-progress" />
+          <div className="h-[2px] w-full bg-sand/20">
+            <div className="h-full bg-sand/50" style={{ animation: "toastProgress 10s linear forwards" }} />
           </div>
         </div>
       )}

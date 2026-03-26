@@ -199,6 +199,10 @@ body {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes popIn {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
 .animate-fade-up {
   animation: fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -210,3 +214,29 @@ body {
 .stagger-6 { animation-delay: 0.18s; }
 .stagger-7 { animation-delay: 0.21s; }
 .stagger-8 { animation-delay: 0.24s; }
+
+/* Places page animations */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slideIn {
+  animation: slideIn 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease both;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

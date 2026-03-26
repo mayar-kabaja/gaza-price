@@ -17,6 +17,9 @@ import {
   fetchAdminStats,
   fetchAdminPendingProducts,
   fetchAdminFlags,
+  fetchPlaces,
+  fetchPlacesSearch,
+  fetchAdminPlaces,
 } from "@/lib/queries/fetchers";
 import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -337,6 +340,24 @@ export function useSuggestProduct() {
   });
 }
 
+// ── Places ──
+export function usePlaces(section: string, areaId?: string | null, limit = 20, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.places(section, areaId ?? undefined, limit, offset),
+    queryFn: () => fetchPlaces(section, areaId ?? undefined, limit, offset),
+    staleTime: 30 * 1000, // 30s — matches backend cache TTL
+  });
+}
+
+export function usePlacesSearch(q: string, section?: string, areaId?: string | null) {
+  return useQuery({
+    queryKey: queryKeys.placesSearch(q, section, areaId ?? undefined),
+    queryFn: () => fetchPlacesSearch({ q, section, areaId: areaId ?? undefined }),
+    enabled: q.trim().length >= 1,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 // ── Admin dashboard ──
 export function useAdminStats() {
   return useQuery({
@@ -358,6 +379,14 @@ export function useAdminFlags(limit = 5, offset = 0) {
   return useQuery({
     queryKey: queryKeys.adminFlags(limit, offset),
     queryFn: () => fetchAdminFlags(limit, offset),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAdminPlaces(status = "", limit = 20, offset = 0) {
+  return useQuery({
+    queryKey: queryKeys.adminPlaces(status, limit, offset),
+    queryFn: () => fetchAdminPlaces(status, limit, offset),
     staleTime: 60 * 1000,
   });
 }
