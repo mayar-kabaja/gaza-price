@@ -19,7 +19,12 @@ const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
 };
 
-export function AppHeader() {
+interface AppHeaderProps {
+  hideActions?: boolean;
+  hideSearch?: boolean;
+}
+
+export function AppHeader({ hideActions = false, hideSearch = false }: AppHeaderProps) {
   const router = useRouter();
   const { area, saveArea } = useArea();
   const { accessToken } = useSession();
@@ -67,7 +72,8 @@ export function AppHeader() {
   }
 
   return (
-    <div className="bg-olive px-5 pt-4 pb-5 relative overflow-visible flex-shrink-0 z-30">
+  <>
+    <div className="bg-olive px-5 pt-4 pb-3 relative overflow-visible flex-shrink-0 z-30">
       {/* BG circles (clipped to header) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute w-44 h-44 rounded-full bg-white/5 -bottom-14 -left-12" />
@@ -77,32 +83,12 @@ export function AppHeader() {
       {/* Top row */}
       <div className="flex items-center justify-between mb-3 relative z-10">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="" className="w-8 h-8 rounded-lg" />
+          <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
           <span className="font-display font-extrabold text-xl text-white leading-none">
             غزة <span className="text-sand">بريس</span>
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          {area ? (
-          <button
-            type="button"
-            onClick={() => setOpenAreaPicker(true)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1 transition-all text-right cursor-pointer",
-              areaJustChanged
-                ? "bg-white/25 border-2 border-white shadow-[0_0_0_2px_rgba(255,255,255,0.3)]"
-                : "bg-white/12 border border-white/20 hover:bg-white/20"
-            )}
-            aria-label="تغيير المنطقة"
-          >
-            {areaJustChanged ? (
-              <span className="text-white" aria-hidden></span>
-            ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-sand" />
-            )}
-            <span className="text-[11px] text-white/90 font-body">{area.name_ar}</span>
-          </button>
-        ) : null}
           <button
             type="button"
             onClick={toggleTheme}
@@ -126,11 +112,53 @@ export function AppHeader() {
         </div>
       </div>
 
-      <p className="text-[13px] text-white/60 font-body mb-3 relative z-10">
-        أسعار شفافة · قوة المجتمع
-      </p>
+      {!hideActions && (
+        <p className="text-[13px] text-white/60 font-body mb-3 relative z-10">
+          أسعار شفافة · قوة المجتمع
+        </p>
+      )}
 
-      <SearchBar />
+      {/* Quick action pills */}
+      {!hideActions && (
+      <div className="flex items-center gap-2 mb-3 relative z-10">
+        <button
+          type="button"
+          onClick={() => setOpenAreaPicker(true)}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-[5px] bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-all cursor-pointer hover:bg-white dark:hover:bg-white/20",
+            areaJustChanged && "ring-2 ring-white shadow-[0_0_0_2px_rgba(255,255,255,0.3)]"
+          )}
+        >
+          {!areaJustChanged && <div className="w-1.5 h-1.5 rounded-full bg-sand" />}
+          {area?.name_ar || "المنطقة"}
+        </button>
+        <Link
+          href="/reports"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-colors hover:bg-white dark:hover:bg-white/20"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          تقاريري
+        </Link>
+        <Link
+          href="/favorites"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-colors hover:bg-white dark:hover:bg-white/20"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          المفضلة
+        </Link>
+      </div>
+      )}
+
+      {/* SearchBar */}
+      {!hideSearch && (
+        <div className={cn("relative z-10", !hideActions && "mb-1")}>
+          <SearchBar hideActions={hideActions} />
+        </div>
+      )}
 
       {/* Area picker sheet */}
       {openAreaPicker && (
@@ -153,7 +181,7 @@ export function AppHeader() {
               </button>
             </div>
             {(areaError || areasError) && (
-              <div className="mx-4 mt-2 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+              <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
                 {areaError || "تعذر تحميل المناطق"}
               </div>
             )}
@@ -205,5 +233,6 @@ export function AppHeader() {
         </>
       )}
     </div>
+  </>
   );
 }

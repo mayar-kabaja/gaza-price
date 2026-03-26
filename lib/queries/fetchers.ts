@@ -24,12 +24,19 @@ export const queryKeys = {
     ["contributors", "me", "reports", status ?? "all", limit ?? 20] as const,
   reports: (filter: string, areaId?: string | null, limit?: number) =>
     ["reports", filter, areaId ?? "", limit ?? 20] as const,
+  // Places
+  places: (section: string, areaId?: string, limit?: number, offset?: number) =>
+    ["places", section, areaId ?? "", limit ?? 20, offset ?? 0] as const,
+  placesSearch: (q: string, section?: string, areaId?: string) =>
+    ["places", "search", q, section ?? "", areaId ?? ""] as const,
   // Admin dashboard
   adminStats: ["admin", "stats"] as const,
   adminPendingProducts: (limit: number, offset: number) =>
     ["admin", "pending-products", limit, offset] as const,
   adminFlags: (limit: number, offset: number) =>
     ["admin", "flags", limit, offset] as const,
+  adminPlaces: (status: string, limit: number, offset: number) =>
+    ["admin", "places", status, limit, offset] as const,
 };
 
 // ── Fetchers (return parsed JSON, throw on !res.ok for mutations) ──
@@ -284,5 +291,79 @@ export async function fetchAdminFlags(limit: number, offset: number): Promise<{
   return {
     reports: data?.reports ?? [],
     total: data?.total ?? 0,
+  };
+}
+
+export interface AdminPlace {
+  id: string;
+  name: string;
+  section: string;
+  type: string;
+  area_id?: string;
+  area?: { id: string; name_ar: string };
+  address?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  owner_token?: string | null;
+  is_open: boolean;
+  status: string;
+  plan?: string;
+  created_at?: string;
+}
+
+export async function fetchAdminPlaces(status: string, limit: number, offset: number): Promise<{
+  data: AdminPlace[];
+  total: number;
+}> {
+  const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (status) sp.set("status", status);
+  const res = await apiFetchAdmin(`/api/admin/places?${sp.toString()}`);
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    data: data?.data ?? [],
+    total: data?.total ?? 0,
+  };
+}
+
+// ── Places ──
+export async function fetchPlacesSearch(params: {
+  q: string;
+  section?: string;
+  areaId?: string;
+  limit?: number;
+}): Promise<{
+  places: import("@/lib/api/places").Place[];
+  matched_items: import("@/lib/api/places").MatchedItem[];
+}> {
+  const sp = new URLSearchParams();
+  sp.set("q", params.q);
+  if (params.section) sp.set("section", params.section);
+  if (params.areaId) sp.set("area_id", params.areaId);
+  if (params.limit) sp.set("limit", String(params.limit));
+  const res = await apiFetch(`/api/places/search?${sp.toString()}`);
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    places: data?.places ?? [],
+    matched_items: data?.matched_items ?? [],
+  };
+}
+
+export async function fetchPlaces(section: string, areaId?: string, limit = 20, offset = 0): Promise<{
+  places: import("@/lib/api/places").Place[];
+  total: number;
+}> {
+  const sp = new URLSearchParams();
+  if (areaId) sp.set("area_id", areaId);
+  sp.set("limit", String(limit));
+  sp.set("offset", String(offset));
+  const query = sp.toString();
+  const res = await apiFetch(`/api/places/by-section/${section}${query ? `?${query}` : ""}`);
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    places: data?.data ?? [],
+    total: data?.pagination?.total ?? 0,
   };
 }

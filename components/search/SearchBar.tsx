@@ -5,7 +5,11 @@ import { useSearch } from "@/hooks/useSearch";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { Product } from "@/types/app";
 
-export function SearchBar() {
+interface SearchBarProps {
+  hideActions?: boolean;
+}
+
+export function SearchBar({ hideActions = false }: SearchBarProps) {
   const router = useRouter();
   const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
 
@@ -26,16 +30,13 @@ export function SearchBar() {
 
   return (
     <div className="relative z-20">
-      <div className="bg-surface rounded-xl flex items-center gap-2.5 px-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-ink/40 flex-shrink-0">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/>
-          <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
+      <div className="bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl flex items-center gap-2 px-3 py-2.5">
+        <span className="text-xs text-mist dark:text-white/50">🔍</span>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="ابحث... سكر، أرز، زيت، دقيق"
-          className="flex-1 py-3 text-sm font-body text-ink placeholder:text-mist bg-transparent outline-none min-w-0"
+          placeholder={hideActions ? "ابحث عن محل، مطعم، منتج..." : "ابحث... سكر، أرز، زيت، دقيق"}
+          className="flex-1 text-xs text-mist dark:text-white placeholder:text-mist dark:placeholder:text-white/50 bg-transparent outline-none min-w-0 font-semibold"
           dir="rtl"
         />
         {loading && (
