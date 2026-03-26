@@ -6,10 +6,10 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 
 const TYPE_OPTIONS = [
-  { key: "restaurant", label: "مطعم", sub: "وجبات رئيسية", icon: "🍽️", section: "food" },
-  { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food" },
+  { key: "restaurant", label: "مطعم", sub: "وجبات رئيسية", icon: "🍽️", section: "food", wide: false, smallIcon: false },
+  { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food", wide: false, smallIcon: false },
   { key: "both", label: "مطعم وكافيه", sub: "يقدم طعام ومشروبات معاً", icon: "🍴☕", section: "food", wide: true, smallIcon: true },
-  { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true },
+  { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true, smallIcon: false },
 ] as const;
 
 type PlaceType = (typeof TYPE_OPTIONS)[number]["key"];
