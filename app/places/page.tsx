@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useTheme } from '@/hooks/useTheme';
+import { useArea } from '@/hooks/useArea';
 import { useAreas, usePlaces, usePlacesSearch } from '@/lib/queries/hooks';
 import { apiFetch } from '@/lib/api/fetch';
 import { uploadReceiptPhoto } from '@/lib/api/upload';
@@ -63,14 +64,18 @@ export default function PlacesPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const { area: userArea } = useArea();
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
   const [placesArea, setPlacesArea] = useState<Area | null>(null);
 
-  const { data: searchData, isLoading: searchLoading } = usePlacesSearch(debouncedSearch, section, placesArea?.id);
+  // "الكل" chip (0) = all areas, other chips = user's saved area
+  const activeArea = chip === 0 ? placesArea : (placesArea ?? userArea);
+
+  const { data: searchData, isLoading: searchLoading } = usePlacesSearch(debouncedSearch, section, activeArea?.id);
 
   const offset = page * PAGE_SIZE;
-  const { data: placesData, isLoading: loading } = usePlaces(section, placesArea?.id, PAGE_SIZE, offset);
+  const { data: placesData, isLoading: loading } = usePlaces(section, activeArea?.id, PAGE_SIZE, offset);
   const allPlaces = placesData?.places ?? [];
   const totalPlaces = placesData?.total ?? 0;
   const totalPages = Math.ceil(totalPlaces / PAGE_SIZE);
@@ -184,7 +189,7 @@ export default function PlacesPage() {
           <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-border">
             <div className="flex items-center gap-1.5">
               <div className="w-[7px] h-[7px] rounded-full bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.18)]" />
-              <span className="font-display font-bold text-xs text-ink">{placesArea?.name_ar || 'كل المناطق'}</span>
+              <span className="font-display font-bold text-xs text-ink">{activeArea?.name_ar || 'كل المناطق'}</span>
             </div>
             <button onClick={() => setOpenAreaPicker(true)} className="text-[11px] font-semibold text-olive cursor-pointer">
               📍 تغيير

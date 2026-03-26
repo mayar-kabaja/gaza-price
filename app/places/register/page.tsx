@@ -6,10 +6,10 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 
 const TYPE_OPTIONS = [
-  { key: "restaurant", label: "مطعم", sub: "وجبات رئيسية", icon: "🍽️", section: "food" },
-  { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food" },
+  { key: "restaurant", label: "مطعم", sub: "وجبات رئيسية", icon: "🍽️", section: "food", wide: false, smallIcon: false },
+  { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food", wide: false, smallIcon: false },
   { key: "both", label: "مطعم وكافيه", sub: "يقدم طعام ومشروبات معاً", icon: "🍴☕", section: "food", wide: true, smallIcon: true },
-  { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true },
+  { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true, smallIcon: false },
 ] as const;
 
 type PlaceType = (typeof TYPE_OPTIONS)[number]["key"];
@@ -529,23 +529,27 @@ export default function RegisterPlacePage() {
                     btnClass: "border-2 border-[#E5E7EB] text-[#4A5E52] bg-white",
                     btnText: "باقتك الحالية",
                     active: true,
+                    popular: false,
                   },
                   {
-                    key: "basic" as const, label: "أساسي", price: "15",
+                    key: "basic" as const, label: "أساسي", price: "100",
                     desc: "لكل مطعم يريد قائمة حية وحضور رقمي حقيقي",
                     features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "تقارير الأسعار"],
                     missing: ["ظهور مميّز أولاً"],
                     btnClass: "bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/25",
                     btnText: "اشترك الآن",
+                    active: false,
                     popular: true,
                   },
                   {
-                    key: "premium" as const, label: "مميّز", price: "30",
+                    key: "premium" as const, label: "مميّز", price: "200",
                     desc: "للمحلات التي تريد التميّز وأكثر زبائن",
                     features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "PDF المنيو", "إحصائيات مفصّلة"],
                     missing: [],
                     btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
                     btnText: "اشترك الآن",
+                    active: false,
+                    popular: false,
                   },
                 ] as const).map((p) => (
                   <div
