@@ -532,7 +532,7 @@ export default function RegisterPlacePage() {
                     popular: false,
                   },
                   {
-                    key: "basic" as const, label: "أساسي", price: "15",
+                    key: "basic" as const, label: "أساسي", price: "100",
                     desc: "لكل مطعم يريد قائمة حية وحضور رقمي حقيقي",
                     features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "تقارير الأسعار"],
                     missing: ["ظهور مميّز أولاً"],
@@ -542,7 +542,7 @@ export default function RegisterPlacePage() {
                     popular: true,
                   },
                   {
-                    key: "premium" as const, label: "مميّز", price: "30",
+                    key: "premium" as const, label: "مميّز", price: "200",
                     desc: "للمحلات التي تريد التميّز وأكثر زبائن",
                     features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "PDF المنيو", "إحصائيات مفصّلة"],
                     missing: [],
