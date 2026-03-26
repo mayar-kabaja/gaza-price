@@ -749,7 +749,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last 
     <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors hover:bg-[#F2FAF5] active:bg-[#EBF3EE] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
       <div className={`w-[42px] h-[42px] rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
         <svg viewBox="0 0 24 24" className={`w-5 h-5 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          {(icon as React.ReactElement).props.children}
+          {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
         </svg>
       </div>
       <div className="flex-1 min-w-0">
