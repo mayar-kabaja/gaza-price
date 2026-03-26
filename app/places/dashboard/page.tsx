@@ -20,8 +20,8 @@ type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "edit
 
 /* ── Plan data ── */
 const PLANS = [
-  { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[#F1EFE8] text-[#444441]" },
-  { key: "basic", badge: "أساسي", name: "Basic", price: "15", badgeClass: "bg-[#E1F5EE] text-[#085041]" },
+  { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[#F1EFE8] text-[#444441]", featured: false },
+  { key: "basic", badge: "أساسي", name: "Basic", price: "15", badgeClass: "bg-[#E1F5EE] text-[#085041]", featured: false },
   { key: "premium", badge: "الأفضل", name: "Premium", price: "30", badgeClass: "bg-[#3A6347] text-white", featured: true },
 ] as const;
 
