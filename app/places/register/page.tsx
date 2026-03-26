@@ -538,6 +538,7 @@ export default function RegisterPlacePage() {
                     missing: ["ظهور مميّز أولاً"],
                     btnClass: "bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/25",
                     btnText: "اشترك الآن",
+                    active: false,
                     popular: true,
                   },
                   {
@@ -547,6 +548,7 @@ export default function RegisterPlacePage() {
                     missing: [],
                     btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
                     btnText: "اشترك الآن",
+                    active: false,
                     popular: false,
                   },
                 ] as const).map((p) => (
