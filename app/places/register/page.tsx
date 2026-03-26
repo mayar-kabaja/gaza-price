@@ -529,6 +529,7 @@ export default function RegisterPlacePage() {
                     btnClass: "border-2 border-[#E5E7EB] text-[#4A5E52] bg-white",
                     btnText: "باقتك الحالية",
                     active: true,
+                    popular: false,
                   },
                   {
                     key: "basic" as const, label: "أساسي", price: "15",
@@ -546,6 +547,7 @@ export default function RegisterPlacePage() {
                     missing: [],
                     btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
                     btnText: "اشترك الآن",
+                    popular: false,
                   },
                 ] as const).map((p) => (
                   <div
