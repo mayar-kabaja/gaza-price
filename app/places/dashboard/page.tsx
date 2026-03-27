@@ -88,11 +88,19 @@ function OwnerDashboardPage() {
   const [editItemPrice, setEditItemPrice] = useState("");
   const [editItemDesc, setEditItemDesc] = useState("");
 
+  // Action loading — tracks which action is running
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   // Confirm dialog
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const qs = `token=${token}`;
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  }
 
   const load = useCallback(async () => {
     if (!token) { setError("رمز المالك مطلوب"); setLoading(false); return; }
@@ -119,16 +127,21 @@ function OwnerDashboardPage() {
   async function handleToggleOpen() {
     if (!token || toggling) return;
     setToggling(true);
+    setActionLoading("toggle-open");
     try {
       const res = await apiFetch(`/api/places/dashboard/toggle-open?${qs}`, { method: "PATCH" });
       const data = await res.json();
-      if (data.success && place) setPlace({ ...place, is_open: data.is_open });
-    } catch { /* ignore */ } finally { setToggling(false); }
+      if (data.success && place) {
+        setPlace({ ...place, is_open: data.is_open });
+        showToast(data.is_open ? "المحل مفتوح الآن ✓" : "المحل مغلق الآن ✓");
+      }
+    } catch { showToast("حدث خطأ"); } finally { setToggling(false); setActionLoading(null); }
   }
 
   async function handleSaveEdit() {
     if (!token || saving) return;
     setSaving(true);
+    setActionLoading("save-edit");
     try {
       const body: Record<string, string> = {};
       if (editName !== place?.name) body.name = editName;
@@ -140,13 +153,16 @@ function OwnerDashboardPage() {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (data.success) { await load(); setSheet(null); }
-    } catch { /* ignore */ } finally { setSaving(false); }
+      if (data.success) { await load(); setSheet(null); showToast("تم الحفظ ✓"); }
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
   async function handleToggleItem(itemId: string) {
-    await apiFetch(`/api/places/dashboard/menu/items/${itemId}/toggle?${qs}`, { method: "PATCH" });
-    await load();
+    setActionLoading(`toggle-item-${itemId}`);
+    try {
+      await apiFetch(`/api/places/dashboard/menu/items/${itemId}/toggle?${qs}`, { method: "PATCH" });
+      await load();
+    } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
   }
 
   function handleDeleteItem(itemId: string) {
@@ -154,8 +170,12 @@ function OwnerDashboardPage() {
       message: "هل أنت متأكد من حذف هذا الصنف؟",
       onConfirm: async () => {
         setConfirmDialog(null);
-        await apiFetch(`/api/places/dashboard/menu/items/${itemId}/delete?${qs}`, { method: "DELETE" });
-        await load();
+        setActionLoading(`delete-item-${itemId}`);
+        try {
+          await apiFetch(`/api/places/dashboard/menu/items/${itemId}/delete?${qs}`, { method: "DELETE" });
+          await load();
+          showToast("تم الحذف ✓");
+        } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
       },
     });
   }
@@ -165,8 +185,12 @@ function OwnerDashboardPage() {
       message: "هل أنت متأكد من حذف هذا القسم وجميع أصنافه؟",
       onConfirm: async () => {
         setConfirmDialog(null);
-        await apiFetch(`/api/places/dashboard/menu/sections/${sectionId}/delete?${qs}`, { method: "DELETE" });
-        await load();
+        setActionLoading(`delete-section-${sectionId}`);
+        try {
+          await apiFetch(`/api/places/dashboard/menu/sections/${sectionId}/delete?${qs}`, { method: "DELETE" });
+          await load();
+          showToast("تم الحذف ✓");
+        } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
       },
     });
   }
@@ -182,6 +206,7 @@ function OwnerDashboardPage() {
   async function handleUpdateItem() {
     if (!editItemName.trim()) return;
     setSaving(true);
+    setActionLoading("update-item");
     try {
       await apiFetch(`/api/places/dashboard/menu/items/${editItemId}/update?${qs}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -189,12 +214,14 @@ function OwnerDashboardPage() {
       });
       await load();
       setSheet("menu");
-    } catch { /* ignore */ } finally { setSaving(false); }
+      showToast("تم التعديل ✓");
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
   async function handleAddItem() {
     if (!addItemName.trim() || !addItemSection) return;
     setSaving(true);
+    setActionLoading("add-item");
     try {
       await apiFetch(`/api/places/dashboard/menu/items?${qs}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -203,12 +230,14 @@ function OwnerDashboardPage() {
       await load();
       setAddItemName(""); setAddItemPrice(""); setAddItemDesc("");
       setSheet("menu");
-    } catch { /* ignore */ } finally { setSaving(false); }
+      showToast("تمت الإضافة ✓");
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
   async function handleAddSection() {
     if (!addSectionName.trim()) return;
     setSaving(true);
+    setActionLoading("add-section");
     try {
       await apiFetch(`/api/places/dashboard/menu/sections?${qs}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -217,7 +246,8 @@ function OwnerDashboardPage() {
       await load();
       setAddSectionName("");
       setSheet("menu");
-    } catch { /* ignore */ } finally { setSaving(false); }
+      showToast("تمت الإضافة ✓");
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
   /* ── Loading / Error ── */
@@ -295,7 +325,13 @@ function OwnerDashboardPage() {
             disabled={toggling}
             className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}
           >
-            <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
+            {actionLoading === "toggle-open" ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
+            )}
           </button>
         </div>
 
@@ -354,8 +390,7 @@ function OwnerDashboardPage() {
             onClick={() => {
               const url = `${window.location.origin}/places/${place.id}`;
               navigator.clipboard.writeText(url);
-              setToast("تم نسخ الرابط ✓");
-              setTimeout(() => setToast(null), 2000);
+              showToast("تم نسخ الرابط ✓");
             }}
             last
           />
@@ -397,8 +432,15 @@ function OwnerDashboardPage() {
       {/* Menu Sheet */}
       <SheetWrap open={sheet === "menu"} onClose={() => setSheet(null)} title="إدارة القائمة" sub={`${totalItems} صنف في ${place.menu.length} أقسام`}>
         <div className="space-y-5">
-          {place.menu.map((sec) => (
-            <div key={sec.id}>
+          {place.menu.map((sec) => {
+            const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
+            return (
+            <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
+              {isSectionLoading && (
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
+                </div>
+              )}
               <div className="flex items-center justify-between pb-2 border-b-2 border-[#EBF3EE] mb-2">
                 <span className="font-bold text-[13px] text-[#111827]">{sec.name}</span>
                 <div className="flex items-center gap-1.5">
@@ -410,6 +452,7 @@ function OwnerDashboardPage() {
                   </button>
                   <button
                     onClick={() => handleDeleteSection(sec.id)}
+                    disabled={!!actionLoading}
                     className="text-[11px] font-bold text-[#E05C35] bg-[#FEF2F2] rounded-full px-2 py-1"
                   >
                     <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -418,8 +461,15 @@ function OwnerDashboardPage() {
                   </button>
                 </div>
               </div>
-              {sec.items.map((item) => (
-                <div key={item.id} className={`bg-white border border-[#E5E7EB] rounded-2xl p-3 mb-1.5 ${!item.available ? "opacity-55" : ""}`}>
+              {sec.items.map((item) => {
+                const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                return (
+                <div key={item.id} className={`bg-white border border-[#E5E7EB] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
+                  {isItemLoading && (
+                    <div className="absolute inset-0 bg-white/70 rounded-2xl flex items-center justify-center z-10">
+                      <div className="w-5 h-5 border-2 border-[#4A7C59]/30 border-t-[#4A7C59] rounded-full animate-spin" />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold text-[#111827]">{item.name}</div>
@@ -431,6 +481,7 @@ function OwnerDashboardPage() {
                       </span>
                       <button
                         onClick={() => handleToggleItem(item.id)}
+                        disabled={!!actionLoading}
                         className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[#3A6347]" : "bg-[#E5E7EB]"}`}
                       >
                         <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
@@ -441,6 +492,7 @@ function OwnerDashboardPage() {
                   <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#F3F4F6]">
                     <button
                       onClick={() => openEditItem(item)}
+                      disabled={!!actionLoading}
                       className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] bg-[#EBF3EE] rounded-lg py-1.5"
                     >
                       <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -450,6 +502,7 @@ function OwnerDashboardPage() {
                     </button>
                     <button
                       onClick={() => handleDeleteItem(item.id)}
+                      disabled={!!actionLoading}
                       className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#E05C35] bg-[#FEF2F2] rounded-lg py-1.5 px-3"
                     >
                       <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -459,12 +512,13 @@ function OwnerDashboardPage() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {sec.items.length === 0 && (
                 <div className="text-center text-[11px] text-[#9CA3AF] py-4">لا توجد أصناف في هذا القسم</div>
               )}
             </div>
-          ))}
+          ); })}
         </div>
         <div className="flex gap-2 mt-6">
           <button
@@ -522,8 +576,7 @@ function OwnerDashboardPage() {
                           body: JSON.stringify({ avatar_url: upData.url }),
                         });
                         await load();
-                        setToast("تم تحديث الصورة");
-                        setTimeout(() => setToast(null), 2000);
+                        showToast("تم تحديث الصورة ✓");
                       }
                     } catch { /* ignore */ } finally { setSaving(false); }
                   }}

@@ -305,6 +305,7 @@ export interface AdminPlace {
   phone?: string | null;
   whatsapp?: string | null;
   owner_token?: string | null;
+  instagram_url?: string | null;
   is_open: boolean;
   status: string;
   plan?: string;
