@@ -105,7 +105,7 @@ function OwnerDashboardPage() {
   const load = useCallback(async () => {
     if (!token) { setError("رمز المالك مطلوب"); setLoading(false); return; }
     try {
-      const res = await apiFetch(`/api/places/dashboard?${qs}`);
+      const res = await apiFetch(`/api/places/dashboard?${qs}&_t=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok || !data.success) { setError(data?.message ?? "رمز المالك غير صحيح"); setLoading(false); return; }
       setPlace(data.data);
