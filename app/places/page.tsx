@@ -2,16 +2,20 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useArea } from '@/hooks/useArea';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useAreas, usePlaces, usePlacesSearch } from '@/lib/queries/hooks';
 import { apiFetch } from '@/lib/api/fetch';
 import { uploadReceiptPhoto } from '@/lib/api/upload';
 import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
+
+const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
 
 type Section = 'food' | 'store';
 
@@ -50,6 +54,7 @@ const BG_MAP: Record<string, [string, string]> = {
 };
 
 export default function PlacesPage() {
+  const isDesktop = useIsDesktop();
   const [section, setSection] = useState<Section>('food');
   const [chip, setChip] = useState(0);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -115,6 +120,314 @@ export default function PlacesPage() {
   }, {});
   const govOrder = ['central', 'south', 'north'];
 
+  /* ═══ DESKTOP LAYOUT ═══ */
+  if (isDesktop) {
+    return (
+      <div className="h-screen grid grid-rows-[64px_1fr]" dir="rtl">
+        <DesktopHeader
+          onSubmitClick={() => {}}
+          onSuggestClick={() => {}}
+          onProfileClick={() => window.location.href = '/account'}
+          isProfileActive={false}
+        />
+        <div className="flex overflow-hidden">
+          {/* ── Sidebar ── */}
+          <aside className="w-[280px] flex-shrink-0 bg-surface border-l border-border overflow-y-auto no-scrollbar flex flex-col">
+            {/* Search */}
+            <div className="p-4 pb-2">
+              <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
+                <span className="text-xs text-mist">🔍</span>
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث عن محل أو صنف..."
+                  className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0 font-semibold"
+                  dir="rtl"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-mist text-sm leading-none hover:text-ink">×</button>
+                )}
+              </div>
+            </div>
+
+            {/* Section toggle */}
+            <div className="px-4 pb-3">
+              <div className="flex gap-0 bg-fog rounded-xl p-1">
+                <button
+                  onClick={() => { setSection('food'); setChip(0); setPage(0); }}
+                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                    section === 'food' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
+                  }`}
+                >
+                  🍽️ مطاعم وكافيه
+                </button>
+                <button
+                  onClick={() => { setSection('store'); setChip(0); setPage(0); }}
+                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                    section === 'store' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
+                  }`}
+                >
+                  🏪 متاجر
+                </button>
+              </div>
+            </div>
+
+            {/* Area filter */}
+            <div className="px-4 pb-3">
+              <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">المنطقة</div>
+              <button
+                onClick={() => { setPlacesArea(null); setPage(0); }}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body transition-colors text-right mb-1',
+                  !placesArea ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
+                )}
+              >
+                <span className={cn('w-2 h-2 rounded-full', !placesArea ? 'bg-olive' : 'bg-border')} />
+                كل المناطق
+              </button>
+              {govOrder.map((gov) => {
+                const govAreas = grouped[gov];
+                if (!govAreas?.length) return null;
+                return (
+                  <div key={gov} className="mb-1">
+                    <div className="text-[10px] font-bold text-mist/70 px-3 py-1 uppercase tracking-wider">{GOV_LABELS[gov] || gov}</div>
+                    {govAreas.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => { setPlacesArea(a); setPage(0); }}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-body transition-colors text-right',
+                          placesArea?.id === a.id ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
+                        )}
+                      >
+                        <span className={cn('w-1.5 h-1.5 rounded-full', placesArea?.id === a.id ? 'bg-olive' : 'bg-border')} />
+                        {a.name_ar}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Chips / categories */}
+            {section === 'food' && (
+              <div className="px-4 pb-3 border-t border-border pt-3">
+                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {chips.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => { setChip(i); setPage(0); }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                        chip === i
+                          ? 'bg-olive-pale border-olive text-olive font-semibold'
+                          : 'bg-surface border-border text-slate hover:border-olive/50'
+                      }`}
+                    >
+                      {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Register CTA */}
+            <div className="mt-auto p-4 border-t border-border">
+              <Link
+                href="/places/register"
+                className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
+              >
+                {section === 'food' ? '🍽️' : '🏪'} سجّل محلك مجاناً
+              </Link>
+            </div>
+          </aside>
+
+          {/* ── Main Content ── */}
+          <main className="flex-1 overflow-y-auto bg-fog">
+            {/* Header bar */}
+            <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <h1 className="font-display font-black text-lg text-ink">
+                  {section === 'food' ? '🍽️ مطاعم وكافيه' : '🏪 متاجر'}
+                </h1>
+                <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
+                  {count} مكان
+                </span>
+              </div>
+              {activeArea && (
+                <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
+              )}
+            </div>
+
+            {section === 'store' ? (
+              <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
+                  <span className="text-4xl">🏪</span>
+                </div>
+                <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
+                <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
+              </div>
+            ) : isSearching ? (
+              /* Search results */
+              (searchLoading) ? (
+                <div className="bg-surface border-b border-border divide-y divide-border">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-6 py-3">
+                      <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                        <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : places.length === 0 && matchedItems.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-sm text-mist">لا توجد نتائج لـ &quot;{debouncedSearch}&quot;</p>
+                </div>
+              ) : (
+                <div>
+                  {places.length > 0 && (
+                    <>
+                      <div className="bg-olive px-6 py-2">
+                        <span className="font-display font-bold text-[13px] text-white">محلات</span>
+                      </div>
+                      <div className="bg-surface border-b border-border">
+                        {places.map((place, i) => (
+                          <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {matchedItems.length > 0 && (() => {
+                    const groupedItems = matchedItems.reduce<Record<string, MatchedItem[]>>((acc, item) => {
+                      if (!acc[item.place_id]) acc[item.place_id] = [];
+                      acc[item.place_id].push(item);
+                      return acc;
+                    }, {});
+                    const placeMap = new Map((searchData?.places ?? []).map((p) => [p.id, p]));
+                    return (
+                      <>
+                        <div className="bg-olive px-6 py-2 mt-2">
+                          <span className="font-display font-bold text-[13px] text-white">أصناف القائمة</span>
+                        </div>
+                        {Object.entries(groupedItems).map(([placeId, items]) => {
+                          const place = placeMap.get(placeId);
+                          if (!place) return null;
+                          return (
+                            <div key={placeId} className="bg-surface border-b border-border">
+                              <div
+                                className="flex items-center gap-2 px-6 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
+                                onClick={() => setSelectedPlace(place)}
+                              >
+                                <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
+                                <span className="text-[10px] text-mist">{place.area?.name_ar}</span>
+                              </div>
+                              {items.map((item, idx) => (
+                                <div key={`${placeId}-${idx}`} className="flex items-center justify-between px-7 py-2.5 border-b border-border/50 last:border-b-0">
+                                  <span className="text-[13px] font-semibold text-ink">{item.item_name}</span>
+                                  {Number(item.price) > 0 ? (
+                                    <span className="font-display font-black text-[14px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
+                                  ) : (
+                                    <span className="text-[10px] text-mist">—</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
+                </div>
+              )
+            ) : (
+              /* Normal listing */
+              <>
+                {loading ? (
+                  <div className="bg-surface border-b border-border divide-y divide-border">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-6 py-3">
+                        <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                          <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                        </div>
+                        <div className="h-2.5 w-12 rounded-md bg-border/60 animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                ) : places.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-sm text-mist">لا توجد مطاعم أو مقاهي حالياً</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Spotlight — only on الكل chip, first page */}
+                    {chip === 0 && page === 0 && places.length > 0 && (
+                      <div className="px-6 pt-4 pb-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-display font-extrabold text-[14px] text-ink">الأبرز</span>
+                        </div>
+                        <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 pb-1">
+                          {places.slice(0, 4).map((place, i) => (
+                            <SpotlightCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* List */}
+                    {((chip === 0 && page === 0) ? places.length > 4 : places.length > 0) && (
+                      <>
+                        <div className="flex items-center justify-between px-6 py-2 bg-fog border-b border-border">
+                          <span className="font-display font-bold text-[12px] text-mist">الكل</span>
+                          <span className="text-[10px] text-mist">{chip === 0 ? (totalPlaces > 4 ? totalPlaces - 4 : 0) : places.length} مكان</span>
+                        </div>
+                        <div className="bg-surface border-b border-border">
+                          {(chip === 0 && page === 0 ? places.slice(4) : places).map((place, i) => (
+                            <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 px-6 py-6">
+                        <button
+                          onClick={() => setPage((p) => Math.max(0, p - 1))}
+                          disabled={page === 0}
+                          className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors"
+                        >
+                          السابق ←
+                        </button>
+                        <span className="text-[11px] font-semibold text-mist">{page + 1} / {totalPages}</span>
+                        <button
+                          onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                          disabled={page >= totalPages - 1}
+                          className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors"
+                        >
+                          → التالي
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </main>
+        </div>
+
+        {/* Detail Sheet — same for desktop */}
+        {selectedPlace && (
+          <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
+        )}
+      </div>
+    );
+  }
+
+  /* ═══ MOBILE LAYOUT ═══ */
   return (
     <div className="min-h-screen bg-fog" dir="rtl">
       <AppHeader hideActions hideSearch />
@@ -1041,5 +1354,61 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
         )}
       </div>
     </>
+  );
+}
+
+/* ─── Desktop Place Card ─── */
+function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => void }) {
+  const { theme } = useTheme();
+  const isBoth = place.type === 'both';
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : '🏪'));
+  const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
+  const bg = theme === 'dark' ? colors[1] : colors[0];
+  const closed = !place.is_open;
+  const typeLabel = isBoth ? 'مطعم وكافيه' : place.type === 'restaurant' ? 'مطعم' : place.type === 'cafe' ? 'كافيه' : place.type;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:border-olive/30 hover:-translate-y-0.5 ${closed ? 'opacity-60' : ''}`}
+    >
+      {/* Avatar / header area */}
+      <div className="h-[100px] relative overflow-hidden" style={{ background: place.avatar_url ? undefined : bg }}>
+        {place.avatar_url ? (
+          <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            {isBoth ? (
+              <span className="text-3xl flex items-center -space-x-1"><span>🍴</span><span>☕</span></span>
+            ) : (
+              <span className="text-4xl">{emoji}</span>
+            )}
+          </div>
+        )}
+        {/* Status badge */}
+        <div className="absolute top-2 right-2">
+          {place.is_open ? (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-olive/80 backdrop-blur-sm px-2 py-[3px] rounded-full">
+              <span className="w-[5px] h-[5px] rounded-full bg-white animate-pulse" />
+              مفتوح
+            </span>
+          ) : (
+            <span className="inline-flex text-[9px] font-semibold text-white/90 bg-black/40 backdrop-blur-sm px-2 py-[3px] rounded-full">مغلق</span>
+          )}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-3">
+        <div className="font-display font-extrabold text-[13px] text-ink mb-1 truncate">{place.name}</div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15">{typeLabel}</span>
+          <span className="text-[10px] text-mist truncate">📍 {place.area?.name_ar}</span>
+        </div>
+        {place.address && (
+          <div className="text-[10px] text-mist truncate">{place.address}</div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,25 +1,126 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { useAdminPlaces } from "@/lib/queries/hooks";
+import { useAdminPlaces, useAreas } from "@/lib/queries/hooks";
+import { apiFetchAdmin } from "@/lib/api/fetch";
 
 const PAGE_SIZE = 20;
 
 export default function AdminPlacesPage() {
   const { toast } = useAdminToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset);
+  const { data: areasData } = useAreas();
+  const areas = areasData?.areas ?? [];
   const places = data?.data ?? [];
   const total = data?.total ?? 0;
 
+  // Edit modal state
+  const [editPlace, setEditPlace] = useState<typeof places[0] | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editSection, setEditSection] = useState("");
+  const [editAreaId, setEditAreaId] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editInstagram, setEditInstagram] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Confirm delete state
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteName, setDeleteName] = useState("");
+
+  // Action menu state
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+
+  async function invalidate() {
+    await queryClient.invalidateQueries({ queryKey: ["admin", "places"], refetchType: "active" });
+  }
+
   function openDashboard(token: string) {
-    const base = window.location.hostname === "localhost"
-      ? `${window.location.origin}`
-      : "https://gazaprice.com";
+    const base = window.location.hostname === "localhost" ? window.location.origin : "https://gazaprice.com";
     window.open(`${base}/places/dashboard?token=${token}`, "_blank");
+  }
+
+  function openEdit(p: typeof places[0]) {
+    setEditPlace(p);
+    setEditName(p.name);
+    setEditType(p.type);
+    setEditSection(p.section);
+    setEditAreaId(p.area_id ?? "");
+    setEditPhone(p.phone ?? "");
+    setEditWhatsapp(p.whatsapp ?? "");
+    setEditAddress(p.address ?? "");
+    setEditInstagram(p.instagram_url ?? "");
+    setActionMenuId(null);
+  }
+
+  async function handleSaveEdit() {
+    if (!editPlace) return;
+    setSaving(true);
+    try {
+      const body: Record<string, string | boolean> = {};
+      if (editName !== editPlace.name) body.name = editName;
+      if (editType !== editPlace.type) body.type = editType;
+      if (editSection !== editPlace.section) body.section = editSection;
+      if (editAreaId !== (editPlace.area_id ?? "")) body.area_id = editAreaId;
+      if (editPhone !== (editPlace.phone ?? "")) body.phone = editPhone;
+      if (editWhatsapp !== (editPlace.whatsapp ?? "")) body.whatsapp = editWhatsapp;
+      if (editAddress !== (editPlace.address ?? "")) body.address = editAddress;
+      if (editInstagram !== (editPlace.instagram_url ?? "")) body.instagram_url = editInstagram;
+
+      if (Object.keys(body).length === 0) { setEditPlace(null); return; }
+
+      const res = await apiFetchAdmin(`/api/admin/places/${editPlace.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast("Place updated");
+      await invalidate();
+      setEditPlace(null);
+    } catch { toast("Error updating place"); }
+    setSaving(false);
+  }
+
+  async function handleAction(id: string, action: "approve" | "suspend") {
+    setActionMenuId(null);
+    try {
+      const res = await apiFetchAdmin(`/api/admin/places/${id}/${action}`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Failed");
+      toast(action === "approve" ? "Place approved" : "Place suspended");
+      await invalidate();
+    } catch { toast("Action failed"); }
+  }
+
+  async function handleToggleOpen(p: typeof places[0]) {
+    setActionMenuId(null);
+    try {
+      const res = await apiFetchAdmin(`/api/admin/places/${p.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_open: !p.is_open }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast(p.is_open ? "Closed" : "Opened");
+      await invalidate();
+    } catch { toast("Toggle failed"); }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return;
+    try {
+      const res = await apiFetchAdmin(`/api/admin/places/${deleteId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      toast("Place deleted");
+      setDeleteId(null);
+      await queryClient.invalidateQueries({ queryKey: ["admin", "places"] });
+    } catch { toast("Delete failed"); }
   }
 
   const filteredPlaces = search.trim()
@@ -48,6 +149,8 @@ export default function AdminPlacesPage() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+
+  const btnClass = "inline-flex items-center gap-1 rounded-lg border border-[#243040] bg-[#18212C] px-2.5 py-1.5 text-[10px] font-medium text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors whitespace-nowrap";
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
@@ -83,52 +186,92 @@ export default function AdminPlacesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-[#243040] sticky top-0 bg-[#111820] z-10">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-10">#</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Place</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Type</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Open</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Owner Dashboard</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-8">#</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Place</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Type</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Open</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">IG</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPlaces.map((p, i) => (
                   <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
-                    <td className="px-4 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
+                    <td className="px-3 py-3">
                       <div className="text-sm font-medium text-[#D8E4F0]">{p.name}</div>
                       {p.phone && <div className="text-[10px] text-[#4E6070] mt-0.5 font-mono">{p.phone}</div>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <span className="inline-flex items-center rounded-full border border-[#243040] bg-[#18212C] px-2 py-0.5 text-[10px] font-medium text-[#8FA3B8]">
                         {p.section === "food" ? "🍽" : "🏪"} {p.type}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>
-                    <td className="px-4 py-3">{statusBadge(p.status)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-sm ${p.is_open ? "text-[#6BA880]" : "text-[#D49088]"}`}>
-                        {p.is_open ? "Yes" : "No"}
-                      </span>
+                    <td className="px-3 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>
+                    <td className="px-3 py-3">{statusBadge(p.status)}</td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => handleToggleOpen(p)} className={`text-sm cursor-pointer ${p.is_open ? "text-[#6BA880]" : "text-[#D49088]"}`}>
+                        {p.is_open ? "✓ Yes" : "✗ No"}
+                      </button>
                     </td>
-                    <td className="px-4 py-3">
-                      {p.owner_token ? (
-                        <button
-                          onClick={() => openDashboard(p.owner_token!)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#243040] bg-[#18212C] px-3 py-1.5 text-xs font-medium text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors"
-                        >
-                          <svg fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                          </svg>
-                          Open
-                        </button>
+                    <td className="px-3 py-3">
+                      {p.instagram_url ? (
+                        <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" className="text-[#8FA3B8] hover:text-[#D8E4F0] text-sm">📷</a>
                       ) : (
-                        <span className="text-[10px] text-[#4E6070]">No token</span>
+                        <span className="text-[10px] text-[#4E6070]">—</span>
                       )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="relative">
+                        <button
+                          onClick={() => setActionMenuId(actionMenuId === p.id ? null : p.id)}
+                          className={btnClass}
+                        >
+                          ⋯ Actions
+                        </button>
+                        {actionMenuId === p.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
+                            <div className="absolute right-0 top-full mt-1 z-30 w-44 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              <button onClick={() => openEdit(p)} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">
+                                ✏️ Edit
+                              </button>
+                              {p.owner_token && (
+                                <button onClick={() => { openDashboard(p.owner_token!); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">
+                                  🔗 Dashboard
+                                </button>
+                              )}
+                              <button onClick={() => handleToggleOpen(p)} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">
+                                {p.is_open ? "🔴 Close" : "🟢 Open"}
+                              </button>
+                              {p.status === "pending" && (
+                                <button onClick={() => handleAction(p.id, "approve")} className="w-full px-3 py-2 text-left text-xs text-[#6BA880] hover:bg-[#243040] flex items-center gap-2">
+                                  ✅ Approve
+                                </button>
+                              )}
+                              {p.status === "active" && (
+                                <button onClick={() => handleAction(p.id, "suspend")} className="w-full px-3 py-2 text-left text-xs text-[#C9A96E] hover:bg-[#243040] flex items-center gap-2">
+                                  ⏸ Suspend
+                                </button>
+                              )}
+                              {p.status === "suspended" && (
+                                <button onClick={() => handleAction(p.id, "approve")} className="w-full px-3 py-2 text-left text-xs text-[#6BA880] hover:bg-[#243040] flex items-center gap-2">
+                                  ✅ Reactivate
+                                </button>
+                              )}
+                              <div className="h-px bg-[#243040] my-1" />
+                              <button onClick={() => { setDeleteId(p.id); setDeleteName(p.name); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D49088] hover:bg-[#243040] flex items-center gap-2">
+                                🗑 Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -141,37 +284,86 @@ export default function AdminPlacesPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1">
-          <button
-            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-            disabled={offset === 0}
-            className="rounded-lg border border-[#243040] px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#18212C] disabled:opacity-30"
-          >
-            Previous
-          </button>
+          <button onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))} disabled={offset === 0} className="rounded-lg border border-[#243040] px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#18212C] disabled:opacity-30">Previous</button>
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setOffset((page - 1) * PAGE_SIZE)}
-                className={`min-w-[28px] h-7 rounded-md text-xs font-medium transition-colors ${
-                  page === currentPage
-                    ? "bg-[#4A7C59] text-white"
-                    : "text-[#8FA3B8] hover:bg-[#18212C]"
-                }`}
-              >
-                {page}
-              </button>
+              <button key={page} onClick={() => setOffset((page - 1) * PAGE_SIZE)} className={`min-w-[28px] h-7 rounded-md text-xs font-medium transition-colors ${page === currentPage ? "bg-[#4A7C59] text-white" : "text-[#8FA3B8] hover:bg-[#18212C]"}`}>{page}</button>
             ))}
           </div>
-          <button
-            onClick={() => setOffset(offset + PAGE_SIZE)}
-            disabled={offset + PAGE_SIZE >= total}
-            className="rounded-lg border border-[#243040] px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#18212C] disabled:opacity-30"
-          >
-            Next
-          </button>
+          <button onClick={() => setOffset(offset + PAGE_SIZE)} disabled={offset + PAGE_SIZE >= total} className="rounded-lg border border-[#243040] px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#18212C] disabled:opacity-30">Next</button>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {editPlace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditPlace(null)}>
+          <div className="bg-[#111820] border border-[#243040] rounded-2xl w-full max-w-md mx-4 p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-[#D8E4F0]">Edit Place</h3>
+              <button onClick={() => setEditPlace(null)} className="text-[#4E6070] hover:text-[#D8E4F0] text-lg">×</button>
+            </div>
+            <div className="space-y-3">
+              <Field label="Name" value={editName} onChange={setEditName} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Section</label>
+                  <select value={editSection} onChange={(e) => setEditSection(e.target.value)} className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none">
+                    <option value="food">Food</option>
+                    <option value="store">Store</option>
+                  </select>
+                </div>
+                <Field label="Type" value={editType} onChange={setEditType} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Area</label>
+                <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none">
+                  <option value="">—</option>
+                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Phone" value={editPhone} onChange={setEditPhone} />
+                <Field label="WhatsApp" value={editWhatsapp} onChange={setEditWhatsapp} />
+              </div>
+              <Field label="Address" value={editAddress} onChange={setEditAddress} />
+              <Field label="Instagram URL" value={editInstagram} onChange={setEditInstagram} />
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setEditPlace(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={saving} className="flex-1 rounded-lg bg-[#4A7C59] py-2 text-xs font-bold text-white hover:bg-[#3A6347] disabled:opacity-50">
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>
+          <div className="bg-[#111820] border border-[#243040] rounded-2xl w-full max-w-sm mx-4 p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-bold text-[#D49088] mb-2">Delete Place</h3>
+            <p className="text-xs text-[#8FA3B8] mb-4">Are you sure you want to delete <strong className="text-[#D8E4F0]">{deleteName}</strong>? This cannot be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteId(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 rounded-lg bg-[#A85852] py-2 text-xs font-bold text-white hover:bg-[#8B4A45]">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+      />
     </div>
   );
 }
