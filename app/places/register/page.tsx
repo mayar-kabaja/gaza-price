@@ -10,6 +10,7 @@ const TYPE_OPTIONS = [
   { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food", wide: false, smallIcon: false },
   { key: "both", label: "مطعم وكافيه", sub: "يقدم طعام ومشروبات معاً", icon: "🍴☕", section: "food", wide: true, smallIcon: true },
   { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true, smallIcon: false },
+  { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
 ] as const;
 
 type PlaceType = (typeof TYPE_OPTIONS)[number]["key"];
