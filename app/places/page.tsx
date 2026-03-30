@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
 
-type Section = 'food' | 'store';
+type Section = 'food' | 'store' | 'workspace';
 
 const PAGE_SIZE = 20;
 
@@ -45,12 +45,14 @@ const EMOJI_MAP: Record<string, string> = {
   restaurant: '🍽️', cafe: '☕', bakery: '🫓', juice: '🧃',
   'ملابس': '👗', 'إلكترونيات': '📱', 'حلاقة': '✂️', 'أدوات منزلية': '🏗️',
   'صيدلية': '💊', 'كتب ودفاتر': '📚', 'ألعاب أطفال': '🧸', 'أزهار': '🌸',
+  'workspace': '💻', 'مساحة عمل': '💻',
 };
 
 const BG_MAP: Record<string, [string, string]> = {
   restaurant: ['#E8F5EE', '#1A2E22'], cafe: ['#E8F5EE', '#1A2E22'], both: ['#E8F5EE', '#1A2E22'], bakery: ['#FFF8E8', '#2A2518'], juice: ['#F0FDF4', '#1A2E22'],
   'ملابس': ['#FEF0EB', '#2A1E18'], 'إلكترونيات': ['#EEF2FF', '#1A1E2A'], 'حلاقة': ['#FDF4FF', '#261A2A'], 'أدوات منزلية': ['#FEF3E8', '#2A2518'],
   'صيدلية': ['#F0FDF4', '#1A2E22'], 'كتب ودفاتر': ['#FFF8E8', '#2A2518'], 'ألعاب أطفال': ['#FEF0EB', '#2A1E18'], 'أزهار': ['#F0FDF4', '#1A2E22'],
+  'workspace': ['#EEF2FF', '#1A1E2A'], 'مساحة عمل': ['#EEF2FF', '#1A1E2A'],
 };
 
 export default function PlacesPage() {
@@ -159,7 +161,7 @@ export default function PlacesPage() {
                     section === 'food' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
                   }`}
                 >
-                  🍽️ مطاعم وكافيه
+                  🍽️ مطاعم
                 </button>
                 <button
                   onClick={() => { setSection('store'); setChip(0); setPage(0); }}
@@ -168,6 +170,14 @@ export default function PlacesPage() {
                   }`}
                 >
                   🏪 متاجر
+                </button>
+                <button
+                  onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
+                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                    section === 'workspace' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
+                  }`}
+                >
+                  💻 مساحات عمل
                 </button>
               </div>
             </div>
@@ -237,7 +247,7 @@ export default function PlacesPage() {
                 href="/places/register"
                 className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
               >
-                {section === 'food' ? '🍽️' : '🏪'} سجّل محلك مجاناً
+                {section === 'food' ? '🍽️' : section === 'store' ? '🏪' : '💻'} سجّل {section === 'workspace' ? 'مساحة عملك' : 'محلك'} مجاناً
               </Link>
             </div>
           </aside>
@@ -248,7 +258,7 @@ export default function PlacesPage() {
             <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <h1 className="font-display font-black text-lg text-ink">
-                  {section === 'food' ? '🍽️ مطاعم وكافيه' : '🏪 متاجر'}
+                  {section === 'food' ? '🍽️ مطاعم وكافيه' : section === 'store' ? '🏪 متاجر' : '💻 مساحات عمل'}
                 </h1>
                 <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
                   {count} مكان
@@ -259,13 +269,21 @@ export default function PlacesPage() {
               )}
             </div>
 
-            {section === 'store' ? (
+            {(section === 'store' || section === 'workspace') ? (
               <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
                 <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                  <span className="text-4xl">🏪</span>
+                  <span className="text-4xl">{section === 'store' ? '🏪' : '💻'}</span>
                 </div>
                 <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-                <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
+                <p className="text-sm text-mist leading-relaxed max-w-[260px]">
+                  {section === 'store' ? 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.' : 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.'}
+                </p>
+                <Link
+                  href="/places/register"
+                  className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
+                >
+                  {section === 'store' ? '🏪 سجّل متجرك' : '💻 سجّل مساحة عملك'}
+                </Link>
               </div>
             ) : isSearching ? (
               /* Search results */
@@ -463,7 +481,7 @@ export default function PlacesPage() {
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              🍽️ مطاعم وكافيه
+              🍽️ مطاعم
             </button>
             <button
               onClick={() => { setSection('store'); setChip(0); setPage(0); }}
@@ -475,25 +493,35 @@ export default function PlacesPage() {
             >
               🏪 متاجر
             </button>
+            <button
+              onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
+              className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                section === 'workspace'
+                  ? 'bg-olive text-white shadow-lg'
+                  : 'bg-transparent text-ink hover:bg-fog'
+              }`}
+            >
+              💻 مساحات عمل
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Store "Coming Soon" ─── */}
-      {section === 'store' ? (
+      {/* ─── Store / Workspace "Coming Soon" ─── */}
+      {(section === 'store' || section === 'workspace') ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
           <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-            <span className="text-4xl">🏪</span>
+            <span className="text-4xl">{section === 'store' ? '🏪' : '💻'}</span>
           </div>
           <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
           <p className="text-sm text-mist leading-relaxed max-w-[260px]">
-            قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.
+            {section === 'store' ? 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.' : 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.'}
           </p>
           <Link
             href="/places/register"
             className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
           >
-            🏪 سجّل متجرك
+            {section === 'store' ? '🏪 سجّل متجرك' : '💻 سجّل مساحة عملك'}
           </Link>
         </div>
       ) : (
@@ -543,13 +571,12 @@ export default function PlacesPage() {
             <div className="absolute w-[100px] h-[100px] rounded-full bg-white/[0.07] -top-[40px] -left-[20px] pointer-events-none" />
             <div className="flex-1 relative z-[1]">
               <div className="font-display font-black text-[14px] text-white leading-tight">
-                صاحب مطعم؟ سجّل مجاناً
+                صاحب محل؟ سجّل مجاناً
               </div>
               <div className="text-[10px] text-white/60 mt-0.5">
                 {count} مكان مسجّل · انضم الآن
               </div>
             </div>
-            <span className="text-[44px] -my-2 -ml-1 drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] relative z-[1]">🍽️</span>
             <span className="mr-2 inline-flex items-center bg-white font-display font-extrabold text-[11px] px-3 py-[5px] rounded-full flex-shrink-0 relative z-[1] text-[#3A6347]">
               سجّل ←
             </span>

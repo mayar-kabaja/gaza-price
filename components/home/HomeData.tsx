@@ -92,7 +92,7 @@ export function HomeData() {
     isFetchingNextPage,
   } = useProductsInfinite(isAllTab ? null : effectiveCategoryId, undefined, true, activeAreaId, isSlow ? 5 : undefined);
 
-  // "الكل" tab: fetch all reports in user's area, newest first, no demo
+  // "الكل" tab: fetch newest prices from ALL areas
   const {
     data: reportsData,
     isLoading: reportsLoading,
@@ -101,8 +101,8 @@ export function HomeData() {
     hasNextPage: hasNextReports,
     isFetchingNextPage: isFetchingNextReports,
   } = useReportsInfinite(
-    activeAreaId ? "my_area" : "all",
-    activeAreaId,
+    "all",
+    null,
     true, // demo_last — real prices first, demo after
     isAllTab, // enabled only when الكل tab is active
     true, // active_only — hide pending/unapproved products
@@ -206,12 +206,15 @@ export function HomeData() {
             onSubmitClick={() => setSubmitModalOpen(true)}
           />
           <main className="flex-1 overflow-y-auto p-8 bg-fog">
-            {/* Demo data banner */}
-            <div className="mb-4 flex items-start gap-3 rounded-xl bg-sand-light border border-sand/30 px-4 py-3">
-              <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
-              <div>
-                <span className="font-display font-bold text-sm text-ink">هذه نسخة تجريبية</span>
-                <span className="text-sm text-mist mr-2">— الأسعار تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك.</span>
+            {/* Welcome + Warning banner */}
+            <div className="mb-4 rounded-xl overflow-hidden border border-border">
+              <div className="bg-olive-pale px-4 py-2.5 flex items-center gap-2">
+                <span className="text-base">👋</span>
+                <span className="font-display font-bold text-sm text-olive">اهلاً بك في غزة بريس!</span>
+              </div>
+              <div className="bg-sand-light px-4 py-2.5 flex items-start gap-2">
+                <span className="text-sm mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
+                <span className="text-sm text-ink/70"><span className="font-bold text-ink">تنبيه:</span> الأسعار التجريبية مكتوب عليها &quot;تجريبي&quot; وباقي الأسعار حقيقية. إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.</span>
               </div>
             </div>
             <DesktopBreadcrumb categoryId={isAllTab ? null : effectiveCategoryId} />
@@ -287,27 +290,29 @@ export function HomeData() {
     <div className="flex flex-col min-h-dvh">
       <AppHeader />
 
-      {/* Demo data banner */}
+      {/* Welcome + Warning banner */}
       {showDemoBanner && (
-        <div className="mx-4 my-2 rounded-xl bg-sand-light border border-sand/30 flex-shrink-0 overflow-hidden animate-slide-down">
-          <div className="flex items-start gap-2.5 px-3.5 py-3">
-            <span className="text-base mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
-            <div className="flex-1 min-w-0">
-              <div className="font-display font-bold text-[12px] text-ink leading-snug">
-                اهلا بك 👋 هذه نسخة تجريبية من التطبيق
-              </div>
-              <div className="text-[11px] text-mist mt-0.5 leading-relaxed">
-                الأسعار الحالية تجريبية فقط. كن أول من يضيف الأسعار الحقيقية في منطقتك وساعد الناس في غزة لمعرفة الأسعار. تنبيه: إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.
-              </div>
+        <div className="mx-4 my-2 rounded-xl overflow-hidden animate-slide-down border border-border flex-shrink-0 relative">
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={() => setShowDemoBanner(false)}
+            className="absolute top-2 left-2 text-mist/50 text-base p-0.5 shrink-0 z-10"
+            aria-label="إغلاق"
+          >
+            ×
+          </button>
+          {/* Welcome section */}
+          <div className="bg-olive-pale px-3.5 py-2.5 flex items-center gap-2">
+            <span className="text-base">👋</span>
+            <span className="font-display font-bold text-[12px] text-olive">اهلاً بك في غزة بريس!</span>
+          </div>
+          {/* Warning section */}
+          <div className="bg-sand-light px-3.5 py-2.5 flex items-start gap-2">
+            <span className="text-sm mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
+            <div className="text-[11px] text-ink/70 leading-relaxed">
+              <span className="font-bold text-ink">تنبيه:</span> الأسعار التجريبية مكتوب عليها &quot;تجريبي&quot; وباقي الأسعار حقيقية. إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.
             </div>
-            <button
-              type="button"
-              onClick={() => setShowDemoBanner(false)}
-              className="text-mist/50 text-base p-0.5 shrink-0"
-              aria-label="إغلاق"
-            >
-              ×
-            </button>
           </div>
           <div className="h-[2px] w-full bg-sand/20">
             <div className="h-full bg-sand/50" style={{ animation: "toastProgress 10s linear forwards" }} />

@@ -1,7 +1,7 @@
 export interface Place {
   id: string;
   name: string;
-  section: 'food' | 'store';
+  section: 'food' | 'store' | 'workspace';
   type: string;
   area_id: string;
   area?: { id: string; name_ar: string };
