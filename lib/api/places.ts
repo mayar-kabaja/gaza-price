@@ -1,3 +1,22 @@
+export interface WorkspaceDetailsData {
+  price_hour?: string | null;
+  price_half_day?: string | null;
+  price_day?: string | null;
+  price_week?: string | null;
+  price_month?: string | null;
+  total_seats?: number;
+  available_seats?: number;
+  opens_at?: string | null;
+  closes_at?: string | null;
+}
+
+export interface WorkspaceServiceData {
+  id: string;
+  service: string;
+  available: boolean;
+  detail?: string | null;
+}
+
 export interface Place {
   id: string;
   name: string;
@@ -13,6 +32,8 @@ export interface Place {
   plan?: string;
   avatar_url?: string | null;
   created_at?: string;
+  workspace_details?: WorkspaceDetailsData | null;
+  workspace_services?: WorkspaceServiceData[];
 }
 
 export interface MatchedItem {

@@ -6,11 +6,11 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 
 const TYPE_OPTIONS = [
+  { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
   { key: "restaurant", label: "مطعم", sub: "وجبات رئيسية", icon: "🍽️", section: "food", wide: false, smallIcon: false },
   { key: "cafe", label: "كافيه", sub: "مشروبات وحلويات", icon: "☕", section: "food", wide: false, smallIcon: false },
   { key: "both", label: "مطعم وكافيه", sub: "يقدم طعام ومشروبات معاً", icon: "🍴☕", section: "food", wide: true, smallIcon: true },
   { key: "store", label: "متجر", sub: "ملابس، إلكترونيات، أدوات...", icon: "🏪", section: "store", wide: true, smallIcon: false },
-  { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
 ] as const;
 
 type PlaceType = (typeof TYPE_OPTIONS)[number]["key"];
@@ -114,6 +114,9 @@ export default function RegisterPlacePage() {
   const [waPrefix, setWaPrefix] = useState("+970");
 
   const selectedTypeOption = TYPE_OPTIONS.find((t) => t.key === type);
+  const isWorkspace = type === "workspace";
+  const placeWord = isWorkspace ? "مساحة العمل" : "المحل";
+  const placeWordShort = isWorkspace ? "مساحتك" : "محلك";
 
   /** Strip non-digits from input */
   function digitsOnly(v: string) { return v.replace(/[^0-9]/g, ""); }
@@ -214,7 +217,7 @@ export default function RegisterPlacePage() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h1 className="font-bold text-base text-white">سجّل محلك</h1>
+          <h1 className="font-bold text-base text-white">سجّل {placeWordShort}</h1>
         </div>
 
         {/* Stepper */}
@@ -252,8 +255,8 @@ export default function RegisterPlacePage() {
         {/* Step 1: Type */}
         {step === 1 && (
           <div className="animate-fadeIn">
-            <h2 className="font-bold text-lg text-[#111827] mb-1">نوع المحل</h2>
-            <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر نوع محلك حتى نعرض المعلومات الصحيحة للزوار</p>
+            <h2 className="font-bold text-lg text-[#111827] mb-1">نوع النشاط</h2>
+            <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر النوع حتى نعرض المعلومات الصحيحة للزوار</p>
 
             <div className="grid grid-cols-2 gap-2.5">
               {TYPE_OPTIONS.map((t) => (
@@ -300,19 +303,19 @@ export default function RegisterPlacePage() {
         {/* Step 2: Details */}
         {step === 2 && (
           <div className="animate-fadeIn">
-            <h2 className="font-bold text-lg text-[#111827] mb-1">بيانات المحل</h2>
-            <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">هذه المعلومات ستظهر للزوار في صفحة محلك</p>
+            <h2 className="font-bold text-lg text-[#111827] mb-1">بيانات {placeWord}</h2>
+            <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">هذه المعلومات ستظهر للزوار في صفحتك</p>
 
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1">
-                  اسم المحل <span className="text-[#E05C35] text-[11px]">*</span>
+                  اسم {placeWord} <span className="text-[#E05C35] text-[11px]">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثال: شاورما أبو مازن"
+                  placeholder={isWorkspace ? "مثال: مساحة عمل النجاح" : "مثال: شاورما أبو مازن"}
                   className={`w-full border-[1.5px] rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9CA3AF]
                     ${name.trim() ? "border-[#4A7C59] bg-[#EBF3EE]" : "border-[#E5E7EB] bg-white focus:border-[#3A6347]"}`}
                 />
@@ -342,7 +345,7 @@ export default function RegisterPlacePage() {
                 <textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="مثال: شارع النصر، بجانب مسجد العمر..."
+                  placeholder={isWorkspace ? "مثال: شارع الوحدة، الطابق الثاني..." : "مثال: شارع النصر، بجانب مسجد العمر..."}
                   className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none resize-none h-20 placeholder:text-[#9CA3AF] focus:border-[#3A6347]"
                 />
                 <p className="text-[10px] text-[#9CA3AF] mt-1">اختياري — يساعد الزوار على إيجادك</p>
@@ -395,7 +398,7 @@ export default function RegisterPlacePage() {
                   <circle cx={12} cy={12} r={10} /><line x1={12} y1={8} x2={12} y2={12} /><line x1={12} y1={16} x2={12.01} y2={16} />
                 </svg>
                 <p className="text-[11px] text-[#3A6347] leading-relaxed">
-                  بعد موافقة الفريق، ستصلك رسالة واتساب تحتوي على رابط خاص للوحة التحكم الخاصة بمحلك
+                  بعد موافقة الفريق، ستصلك رسالة واتساب تحتوي على رابط خاص للوحة التحكم الخاصة بـ{placeWordShort}
                 </p>
               </div>
 
@@ -441,7 +444,7 @@ export default function RegisterPlacePage() {
               </div>
               <div className="p-4">
                 {[
-                  { key: "نوع المحل", val: selectedTypeOption?.label },
+                  { key: "النوع", val: selectedTypeOption?.label },
                   { key: "المنطقة", val: areaName },
                   { key: "العنوان", val: address.trim() || "غير محدد" },
                   { key: "الهاتف", val: `+970 ${normalizePhone(phone)}` },
@@ -466,7 +469,7 @@ export default function RegisterPlacePage() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               <p className="text-[11px] text-[#3A6347] leading-relaxed">
-                بإرسال الطلب توافق على عرض بيانات محلك للزوار على منصة GazaPriceWatch مجاناً
+                بإرسال الطلب توافق على عرض بياناتك للزوار على منصة GazaPriceWatch مجاناً
               </p>
             </div>
           </div>
@@ -494,10 +497,10 @@ export default function RegisterPlacePage() {
               <h3 className="font-bold text-[15px] text-[#111827] mb-4">أربع خطوات وصفحتك جاهزة</h3>
               <div className="grid grid-cols-2 gap-2.5">
                 {[
-                  { icon: "📝", n: "١", title: "سجّل محلك", text: "أدخل بياناتك في أقل من دقيقتين" },
+                  { icon: "📝", n: "١", title: `سجّل ${placeWordShort}`, text: "أدخل بياناتك في أقل من دقيقتين" },
                   { icon: "✅", n: "٢", title: "موافقة خلال 24 ساعة", text: "الفريق يراجع ويوافق" },
-                  { icon: "🍽️", n: "٣", title: "أضف قائمتك", text: "أصناف وأسعار من هاتفك" },
-                  { icon: "🚀", n: "٤", title: "الزبائن يجدونك", text: "صفحتك تظهر للآلاف يومياً" },
+                  { icon: isWorkspace ? "💻" : "🍽️", n: "٣", title: isWorkspace ? "جهّز مساحتك" : "أضف قائمتك", text: isWorkspace ? "أضف التفاصيل والخدمات" : "أصناف وأسعار من هاتفك" },
+                  { icon: "🚀", n: "٤", title: isWorkspace ? "العملاء يجدونك" : "الزبائن يجدونك", text: "صفحتك تظهر للآلاف يومياً" },
                 ].map((s) => (
                   <div key={s.n} className="bg-white rounded-2xl border border-[#E5E7EB] p-3 relative">
                     <div className="w-10 h-10 rounded-full bg-[#EBF3EE] border border-[#C2DBC9] flex items-center justify-center text-lg mb-2 relative">
@@ -524,8 +527,8 @@ export default function RegisterPlacePage() {
                 {([
                   {
                     key: "free" as const, label: "مجاني دائماً", price: "0",
-                    desc: "للمحلات التي تريد فقط الظهور في القائمة",
-                    features: ["صفحة أساسية للمحل", "الظهور في نتائج البحث", "رقم التواصل", "حالة مفتوح / مغلق"],
+                    desc: isWorkspace ? "لمساحات العمل التي تريد فقط الظهور في القائمة" : "للمحلات التي تريد فقط الظهور في القائمة",
+                    features: ["صفحة أساسية", "الظهور في نتائج البحث", "رقم التواصل", "حالة مفتوح / مغلق"],
                     missing: ["قائمة الأصناف", "إحصاءات"],
                     btnClass: "border-2 border-[#E5E7EB] text-[#4A5E52] bg-white",
                     btnText: "باقتك الحالية",
@@ -534,7 +537,7 @@ export default function RegisterPlacePage() {
                   },
                   {
                     key: "basic" as const, label: "أساسي", price: "100",
-                    desc: "لكل مطعم يريد قائمة حية وحضور رقمي حقيقي",
+                    desc: isWorkspace ? "لمساحات العمل التي تريد حضور رقمي حقيقي" : "لكل محل يريد قائمة حية وحضور رقمي حقيقي",
                     features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "تقارير الأسعار"],
                     missing: ["ظهور مميّز أولاً"],
                     btnClass: "bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/25",
@@ -544,7 +547,7 @@ export default function RegisterPlacePage() {
                   },
                   {
                     key: "premium" as const, label: "مميّز", price: "200",
-                    desc: "للمحلات التي تريد التميّز وأكثر زبائن",
+                    desc: isWorkspace ? "لمساحات العمل التي تريد التميّز وأكثر عملاء" : "للمحلات التي تريد التميّز وأكثر زبائن",
                     features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "PDF المنيو", "إحصائيات مفصّلة"],
                     missing: [],
                     btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
@@ -664,10 +667,10 @@ export default function RegisterPlacePage() {
               <div className="space-y-2">
                 {[
                   { q: "هل التسجيل مجاني فعلاً؟", a: "نعم — بدون أي التزام. سجّل وجرّب، وإذا أردت مميزات أكثر يمكنك الترقية لاحقاً." },
-                  { q: "كيف أحدّث قائمتي وأسعاري؟", a: "من لوحة تحكم بسيطة على هاتفك — تضيف صنفاً أو تغيّر سعراً في أقل من 30 ثانية. لا تحتاج أي خبرة تقنية." },
+                  { q: isWorkspace ? "كيف أحدّث بيانات مساحتي؟" : "كيف أحدّث قائمتي وأسعاري؟", a: isWorkspace ? "من لوحة تحكم بسيطة على هاتفك — تحدّث البيانات في أقل من 30 ثانية. لا تحتاج أي خبرة تقنية." : "من لوحة تحكم بسيطة على هاتفك — تضيف صنفاً أو تغيّر سعراً في أقل من 30 ثانية. لا تحتاج أي خبرة تقنية." },
                   { q: "كم من الوقت يأخذ القبول؟", a: "عادةً خلال 24 ساعة — وتصلك رسالة واتساب فور الموافقة تحتوي رابط لوحة التحكم." },
                   { q: "ماذا لو أردت إلغاء الاشتراك؟", a: "يمكنك الإلغاء في أي وقت بدون رسوم. صفحتك تنتقل للباقة المجانية وتبقى ظاهرة." },
-                  { q: "كيف يعرف الزبائن أن محلي موجود؟", a: "محلك يظهر في نتائج البحث عند كل شخص يبحث عن مطاعم في منطقتك. الباقة المميّزة تضعك أعلى القائمة." },
+                  { q: isWorkspace ? "كيف يعرف العملاء أن مساحتي موجودة؟" : "كيف يعرف الزبائن أن محلي موجود؟", a: isWorkspace ? "مساحتك تظهر في نتائج البحث عند كل شخص يبحث عن مساحات عمل في منطقتك. الباقة المميّزة تضعك أعلى القائمة." : "محلك يظهر في نتائج البحث عند كل شخص يبحث عن مطاعم في منطقتك. الباقة المميّزة تضعك أعلى القائمة." },
                 ].map((item, i) => (
                   <div
                     key={i}

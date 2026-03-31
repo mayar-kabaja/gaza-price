@@ -16,7 +16,12 @@ type PlaceData = {
   avatar_url?: string | null;
   plan_expires_at?: string | null; menu: MenuSection[];
 };
-type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem";
+type WorkspaceDetailsForm = {
+  price_hour: string; price_half_day: string; price_day: string; price_week: string; price_month: string;
+  total_seats: string; available_seats: string; opens_at: string; closes_at: string;
+};
+type WorkspaceServiceForm = { service: string; available: boolean; detail: string };
+type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem" | "wsDetails" | "wsServices";
 
 /* ── Plan data ── */
 const PLANS = [
@@ -91,11 +96,17 @@ function OwnerDashboardPage() {
   // Action loading — tracks which action is running
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Workspace forms
+  const [wsDetails, setWsDetails] = useState<WorkspaceDetailsForm>({ price_hour: '', price_half_day: '', price_day: '', price_week: '', price_month: '', total_seats: '', available_seats: '', opens_at: '', closes_at: '' });
+  const [wsServices, setWsServices] = useState<WorkspaceServiceForm[]>([]);
+  const [wsLoading, setWsLoading] = useState(false);
+
   // Confirm dialog
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const qs = `token=${token}`;
+  const isWorkspace = place?.section === 'workspace';
 
   function showToast(msg: string) {
     setToast(msg);
@@ -133,7 +144,7 @@ function OwnerDashboardPage() {
       const data = await res.json();
       if (data.success && place) {
         setPlace({ ...place, is_open: data.is_open });
-        showToast(data.is_open ? "المحل مفتوح الآن ✓" : "المحل مغلق الآن ✓");
+        showToast(data.is_open ? (isWorkspace ? "المساحة مفتوحة الآن ✓" : "المحل مفتوح الآن ✓") : (isWorkspace ? "المساحة مغلقة الآن ✓" : "المحل مغلق الآن ✓"));
       }
     } catch { showToast("حدث خطأ"); } finally { setToggling(false); setActionLoading(null); }
   }
@@ -250,6 +261,78 @@ function OwnerDashboardPage() {
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
+  const ALL_WS_SERVICES = ['wifi', 'electricity', 'printing', 'screens', 'private_rooms', 'drinks'];
+  const WS_SERVICE_LABELS: Record<string, string> = { wifi: 'WiFi', electricity: 'كهرباء', printing: 'طباعة', screens: 'شاشات', private_rooms: 'غرف خاصة', drinks: 'مشروبات' };
+
+  async function openWsDetails() {
+    if (!place) return;
+    setWsLoading(true);
+    setSheet("wsDetails");
+    try {
+      const res = await apiFetch(`/api/places/${place.id}/workspace`);
+      const data = await res.json();
+      const d = data?.data?.details;
+      setWsDetails({
+        price_hour: d?.price_hour ?? '', price_half_day: d?.price_half_day ?? '',
+        price_day: d?.price_day ?? '', price_week: d?.price_week ?? '', price_month: d?.price_month ?? '',
+        total_seats: d?.total_seats?.toString() ?? '', available_seats: d?.available_seats?.toString() ?? '',
+        opens_at: d?.opens_at?.slice(0,5) ?? '', closes_at: d?.closes_at?.slice(0,5) ?? '',
+      });
+    } catch {} finally { setWsLoading(false); }
+  }
+
+  async function openWsServices() {
+    if (!place) return;
+    setWsLoading(true);
+    setSheet("wsServices");
+    try {
+      const res = await apiFetch(`/api/places/${place.id}/workspace`);
+      const data = await res.json();
+      const existing = data?.data?.services || [];
+      setWsServices(ALL_WS_SERVICES.map(s => {
+        const found = existing.find((e: any) => e.service === s);
+        return { service: s, available: found?.available ?? false, detail: found?.detail ?? '' };
+      }));
+    } catch {} finally { setWsLoading(false); }
+  }
+
+  async function handleSaveWsDetails() {
+    if (!place || !token) return;
+    setSaving(true);
+    try {
+      const body: Record<string, any> = {};
+      if (wsDetails.price_hour) body.price_hour = Number(wsDetails.price_hour);
+      if (wsDetails.price_half_day) body.price_half_day = Number(wsDetails.price_half_day);
+      if (wsDetails.price_day) body.price_day = Number(wsDetails.price_day);
+      if (wsDetails.price_week) body.price_week = Number(wsDetails.price_week);
+      if (wsDetails.price_month) body.price_month = Number(wsDetails.price_month);
+      if (wsDetails.total_seats) body.total_seats = Number(wsDetails.total_seats);
+      if (wsDetails.available_seats) body.available_seats = Number(wsDetails.available_seats);
+      if (wsDetails.opens_at) body.opens_at = wsDetails.opens_at;
+      if (wsDetails.closes_at) body.closes_at = wsDetails.closes_at;
+      await apiFetch(`/api/places/${place.id}/workspace/details?${qs}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      showToast("تم الحفظ ✓");
+      setSheet(null);
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); }
+  }
+
+  async function handleSaveWsServices() {
+    if (!place || !token) return;
+    setSaving(true);
+    try {
+      const services = wsServices.filter(s => s.available).map(s => ({
+        service: s.service, available: true, detail: s.detail || undefined,
+      }));
+      await apiFetch(`/api/places/${place.id}/workspace/services?${qs}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ services }),
+      });
+      showToast("تم الحفظ ✓");
+      setSheet(null);
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); }
+  }
+
   /* ── Loading / Error ── */
   if (loading) return (
     <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center" dir="rtl">
@@ -293,7 +376,7 @@ function OwnerDashboardPage() {
           <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
             {place.avatar_url ? (
               <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : place.section === "food" ? "🍽️" : "🏪"}
+            ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
           </div>
           <div>
             <div className="font-bold text-[17px] text-white">{place.name}</div>
@@ -314,7 +397,7 @@ function OwnerDashboardPage() {
         <div className="flex items-center justify-between bg-white border border-[#E5E7EB] rounded-2xl p-3 -mt-6 mb-3 relative z-[2] shadow-sm">
           <div>
             <div className={`font-bold text-[13px] ${place.is_open ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
-              {place.is_open ? "● المحل مفتوح الآن" : "○ المحل مغلق الآن"}
+              {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'} الآن` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'} الآن`}
             </div>
             <div className="text-[10px] text-[#9CA3AF]">
               {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
@@ -336,6 +419,7 @@ function OwnerDashboardPage() {
         </div>
 
         {/* Stats cards */}
+        {!isWorkspace ? (
         <div className="grid grid-cols-3 gap-2.5 mb-4 relative z-[2]">
           {[
             { num: place.menu.length, label: "أقسام" },
@@ -348,6 +432,7 @@ function OwnerDashboardPage() {
             </div>
           ))}
         </div>
+        ) : null}
         {/* Plan badge */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -364,20 +449,43 @@ function OwnerDashboardPage() {
         {/* Actions */}
         <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">الإجراءات</div>
         <div className="bg-white rounded-[18px] border border-[#E5E7EB] overflow-hidden shadow-sm mb-4">
-          {/* Menu management */}
-          <ActionItem
-            icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>}
-            iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]"
-            title="إدارة القائمة"
-            sub={`${totalItems} صنف — تعديل الأسعار والتوفر`}
-            badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>}
-            onClick={() => setSheet("menu")}
-          />
+          {isWorkspace ? (
+            <>
+              {/* Workspace details */}
+              <ActionItem
+                icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
+                iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]"
+                title="الأسعار والأوقات"
+                sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد"
+                onClick={openWsDetails}
+              />
+              {/* Workspace services */}
+              <ActionItem
+                icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>}
+                iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]"
+                title="الخدمات المتاحة"
+                sub="WiFi، كهرباء، طباعة، شاشات، مشروبات"
+                onClick={openWsServices}
+              />
+            </>
+          ) : (
+            <>
+              {/* Menu management */}
+              <ActionItem
+                icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>}
+                iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]"
+                title="إدارة القائمة"
+                sub={`${totalItems} صنف — تعديل الأسعار والتوفر`}
+                badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>}
+                onClick={() => setSheet("menu")}
+              />
+            </>
+          )}
           {/* Edit info */}
           <ActionItem
             icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>}
             iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]"
-            title="تعديل بيانات المحل"
+            title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"}
             sub="اسم، منطقة، هاتف، واتساب"
             onClick={openEdit}
           />
@@ -385,8 +493,8 @@ function OwnerDashboardPage() {
           <ActionItem
             icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>}
             iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]"
-            title="مشاركة صفحة المحل"
-            sub="شارك رابط محلك مع الزبائن"
+            title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"}
+            sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"}
             onClick={() => {
               const url = `${window.location.origin}/places/${place.id}`;
               navigator.clipboard.writeText(url);
@@ -397,7 +505,7 @@ function OwnerDashboardPage() {
         </div>
 
         {/* Quick menu preview */}
-        {place.menu.length > 0 && (
+        {!isWorkspace && place.menu.length > 0 && (
           <>
             <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">القائمة</div>
             <div className="bg-white rounded-[14px] border border-[#E5E7EB] overflow-hidden shadow-sm">
@@ -422,8 +530,17 @@ function OwnerDashboardPage() {
       {/* ══ Bottom Nav ══ */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E5E7EB] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
         <NavItem icon="home" label="الرئيسية" active onClick={() => setSheet(null)} />
-        <NavItem icon="menu" label="القائمة" onClick={() => setSheet("menu")} />
-        <NavItem icon="add" label="إضافة" onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} />
+        {isWorkspace ? (
+          <>
+            <NavItem icon="menu" label="الأسعار" onClick={openWsDetails} />
+            <NavItem icon="add" label="الخدمات" onClick={openWsServices} />
+          </>
+        ) : (
+          <>
+            <NavItem icon="menu" label="القائمة" onClick={() => setSheet("menu")} />
+            <NavItem icon="add" label="إضافة" onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} />
+          </>
+        )}
         <NavItem icon="edit" label="تعديل" onClick={openEdit} />
       </div>
 
@@ -538,17 +655,17 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Edit Sheet */}
-      <SheetWrap open={sheet === "edit"} onClose={() => setSheet(null)} title="تعديل بيانات المحل" sub="التغييرات تظهر فوراً للزوار">
+      <SheetWrap open={sheet === "edit"} onClose={() => setSheet(null)} title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="التغييرات تظهر فوراً للزوار">
         <div className="space-y-3.5">
           {/* Avatar upload */}
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المحل</label>
+            <label className="text-xs font-bold text-[#374151] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
             <div className="flex items-center gap-3">
               <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F3F4F6] border-2 border-dashed border-[#D1D5DB] flex items-center justify-center overflow-hidden flex-shrink-0">
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-2xl">{place.section === "food" ? "🍽️" : "🏪"}</span>
+                  <span className="text-2xl">{place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}</span>
                 )}
               </div>
               <label className="flex-1 cursor-pointer">
@@ -584,7 +701,7 @@ function OwnerDashboardPage() {
               </label>
             </div>
           </div>
-          <FormField label="اسم المحل" value={editName} onChange={setEditName} />
+          <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
           <div>
             <label className="text-xs font-bold text-[#374151] mb-1.5 block">المنطقة</label>
             <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]">
@@ -745,6 +862,76 @@ function OwnerDashboardPage() {
             );
           })}
         </div>
+      </SheetWrap>
+
+      {/* Workspace Details Sheet */}
+      <SheetWrap open={sheet === "wsDetails"} onClose={() => setSheet(null)} title="الأسعار والأوقات" sub="عدّل أسعار المساحة ومواعيد العمل">
+        {wsLoading ? (
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#4A7C59] border-t-transparent rounded-full animate-spin" /></div>
+        ) : (
+        <div className="space-y-3.5">
+          <div className="text-[11px] font-bold text-[#374151] mb-1">الأسعار (بالشيكل)</div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <FormField label="سعر الساعة" value={wsDetails.price_hour} onChange={(v) => setWsDetails(d => ({...d, price_hour: v}))} type="number" placeholder="0" />
+            <FormField label="نصف يوم" value={wsDetails.price_half_day} onChange={(v) => setWsDetails(d => ({...d, price_half_day: v}))} type="number" placeholder="0" />
+            <FormField label="يوم كامل" value={wsDetails.price_day} onChange={(v) => setWsDetails(d => ({...d, price_day: v}))} type="number" placeholder="0" />
+            <FormField label="أسبوع" value={wsDetails.price_week} onChange={(v) => setWsDetails(d => ({...d, price_week: v}))} type="number" placeholder="0" />
+          </div>
+          <FormField label="سعر الشهر" value={wsDetails.price_month} onChange={(v) => setWsDetails(d => ({...d, price_month: v}))} type="number" placeholder="0" />
+
+          <div className="h-px bg-[#E5E7EB] my-1" />
+          <div className="text-[11px] font-bold text-[#374151] mb-1">أوقات العمل</div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <FormField label="يفتح الساعة" value={wsDetails.opens_at} onChange={(v) => setWsDetails(d => ({...d, opens_at: v}))} type="time" />
+            <FormField label="يغلق الساعة" value={wsDetails.closes_at} onChange={(v) => setWsDetails(d => ({...d, closes_at: v}))} type="time" />
+          </div>
+
+          <div className="h-px bg-[#E5E7EB] my-1" />
+          <div className="text-[11px] font-bold text-[#374151] mb-1">المقاعد</div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <FormField label="إجمالي المقاعد" value={wsDetails.total_seats} onChange={(v) => setWsDetails(d => ({...d, total_seats: v}))} type="number" placeholder="0" />
+            <FormField label="المقاعد المتاحة" value={wsDetails.available_seats} onChange={(v) => setWsDetails(d => ({...d, available_seats: v}))} type="number" placeholder="0" />
+          </div>
+
+          <button onClick={handleSaveWsDetails} disabled={saving} className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2">
+            {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+          </button>
+        </div>
+        )}
+      </SheetWrap>
+
+      {/* Workspace Services Sheet */}
+      <SheetWrap open={sheet === "wsServices"} onClose={() => setSheet(null)} title="الخدمات المتاحة" sub="فعّل الخدمات المتوفرة في مساحتك">
+        {wsLoading ? (
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#4A7C59] border-t-transparent rounded-full animate-spin" /></div>
+        ) : (
+        <div className="space-y-3">
+          {wsServices.map((s, i) => (
+            <div key={s.service} className={`bg-white border rounded-2xl p-4 transition-all ${s.available ? 'border-[#4A7C59]/30 bg-[#F2FAF5]' : 'border-[#E5E7EB]'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-[13px] text-[#111827]">{WS_SERVICE_LABELS[s.service] || s.service}</span>
+                <button
+                  onClick={() => setWsServices(prev => prev.map((ss, j) => j === i ? {...ss, available: !ss.available} : ss))}
+                  className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${s.available ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}
+                >
+                  <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${s.available ? "right-[25px]" : "right-[3px]"}`} />
+                </button>
+              </div>
+              {s.available && (
+                <input
+                  value={s.detail}
+                  onChange={(e) => setWsServices(prev => prev.map((ss, j) => j === i ? {...ss, detail: e.target.value} : ss))}
+                  placeholder="تفاصيل إضافية (اختياري)..."
+                  className="w-full border border-[#E5E7EB] rounded-xl px-3 py-2 text-[12px] text-[#111827] bg-white outline-none focus:border-[#4A7C59] placeholder:text-[#9CA3AF]"
+                />
+              )}
+            </div>
+          ))}
+          <button onClick={handleSaveWsServices} disabled={saving} className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2">
+            {saving ? "جاري الحفظ..." : "حفظ الخدمات"}
+          </button>
+        </div>
+        )}
       </SheetWrap>
 
       {/* Footer */}
