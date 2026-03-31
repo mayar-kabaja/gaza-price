@@ -23,6 +23,7 @@ const PAGE_SIZE = 20;
 
 const FOOD_CHIPS = ['الكل', 'مطعم وكافيه', 'مطاعم', 'كافيه', '🟢 مفتوح'];
 const STORE_CHIPS = ['الكل', 'ملابس', 'إلكترونيات', 'حلاقة', 'بناء'];
+const WORKSPACE_CHIPS = ['الكل', '🟢 مفتوح'];
 
 // Map chip labels to DB type values for filtering
 const CHIP_TO_TYPE: Record<string, string | string[]> = {
@@ -87,7 +88,7 @@ export default function PlacesPage() {
   const totalPlaces = placesData?.total ?? 0;
   const totalPages = Math.ceil(totalPlaces / PAGE_SIZE);
 
-  const chips = section === 'food' ? FOOD_CHIPS : STORE_CHIPS;
+  const chips = section === 'food' ? FOOD_CHIPS : section === 'workspace' ? WORKSPACE_CHIPS : STORE_CHIPS;
 
   const isSearching = debouncedSearch.length >= 1;
   const matchedItems = searchData?.matched_items ?? [];
@@ -164,20 +165,20 @@ export default function PlacesPage() {
                   🍽️ مطاعم
                 </button>
                 <button
-                  onClick={() => { setSection('store'); setChip(0); setPage(0); }}
-                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                    section === 'store' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
-                  }`}
-                >
-                  🏪 متاجر
-                </button>
-                <button
                   onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
                   className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
                     section === 'workspace' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
                   }`}
                 >
                   💻 مساحات عمل
+                </button>
+                <button
+                  onClick={() => { setSection('store'); setChip(0); setPage(0); }}
+                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                    section === 'store' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
+                  }`}
+                >
+                  🏪 متاجر
                 </button>
               </div>
             </div>
@@ -241,6 +242,27 @@ export default function PlacesPage() {
               </div>
             )}
 
+            {section === 'workspace' && (
+              <div className="px-4 pb-3 border-t border-border pt-3">
+                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {chips.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => { setChip(i); setPage(0); }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                        chip === i
+                          ? 'bg-olive-pale border-olive text-olive font-semibold'
+                          : 'bg-surface border-border text-slate hover:border-olive/50'
+                      }`}
+                    >
+                      {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Register CTA */}
             <div className="mt-auto p-4 border-t border-border">
               <Link
@@ -269,22 +291,67 @@ export default function PlacesPage() {
               )}
             </div>
 
-            {(section === 'store' || section === 'workspace') ? (
+            {section === 'store' || section === 'workspace' ? (
               <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
                 <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                  <span className="text-4xl">{section === 'store' ? '🏪' : '💻'}</span>
+                  <span className="text-4xl">{section === 'workspace' ? '💻' : '🏪'}</span>
                 </div>
                 <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-                <p className="text-sm text-mist leading-relaxed max-w-[260px]">
-                  {section === 'store' ? 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.' : 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.'}
-                </p>
+                <p className="text-sm text-mist leading-relaxed max-w-[260px]">{section === 'workspace' ? 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.' : 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.'}</p>
                 <Link
                   href="/places/register"
                   className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
                 >
-                  {section === 'store' ? '🏪 سجّل متجرك' : '💻 سجّل مساحة عملك'}
+                  {section === 'workspace' ? '💻 سجّل مساحتك' : '🏪 سجّل متجرك'}
                 </Link>
               </div>
+            ) : false ? (
+              /* Workspace listing */
+              loading ? (
+                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 p-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-surface rounded-2xl border border-border p-4 animate-pulse">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 rounded-[14px] bg-border/60" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-28 rounded-md bg-border/60" />
+                          <div className="h-3 w-20 rounded-md bg-border/60" />
+                        </div>
+                      </div>
+                      <div className="h-8 rounded-lg bg-border/60" />
+                    </div>
+                  ))}
+                </div>
+              ) : places.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
+                    <span className="text-4xl">💻</span>
+                  </div>
+                  <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
+                  <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
+                  <Link
+                    href="/places/register"
+                    className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
+                  >
+                    💻 سجّل مساحة عملك
+                  </Link>
+                </div>
+              ) : (
+                <div className="p-6">
+                  <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                    {places.map((place, i) => (
+                      <WorkspaceCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 py-6">
+                      <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">السابق ←</button>
+                      <span className="text-[11px] font-semibold text-mist">{page + 1} / {totalPages}</span>
+                      <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">→ التالي</button>
+                    </div>
+                  )}
+                </div>
+              )
             ) : isSearching ? (
               /* Search results */
               (searchLoading) ? (
@@ -484,16 +551,6 @@ export default function PlacesPage() {
               🍽️ مطاعم
             </button>
             <button
-              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
-              className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                section === 'store'
-                  ? 'bg-olive text-white shadow-lg'
-                  : 'bg-transparent text-ink hover:bg-fog'
-              }`}
-            >
-              🏪 متاجر
-            </button>
-            <button
               onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
                 section === 'workspace'
@@ -503,27 +560,127 @@ export default function PlacesPage() {
             >
               💻 مساحات عمل
             </button>
+            <button
+              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
+              className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
+                section === 'store'
+                  ? 'bg-olive text-white shadow-lg'
+                  : 'bg-transparent text-ink hover:bg-fog'
+              }`}
+            >
+              🏪 متاجر
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Store / Workspace "Coming Soon" ─── */}
-      {(section === 'store' || section === 'workspace') ? (
+      {/* ─── Store/Workspace "Coming Soon" ─── */}
+      {section === 'store' || section === 'workspace' ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
           <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-            <span className="text-4xl">{section === 'store' ? '🏪' : '💻'}</span>
+            <span className="text-4xl">{section === 'workspace' ? '💻' : '🏪'}</span>
           </div>
           <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-          <p className="text-sm text-mist leading-relaxed max-w-[260px]">
-            {section === 'store' ? 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.' : 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.'}
-          </p>
+          <p className="text-sm text-mist leading-relaxed max-w-[260px]">{section === 'workspace' ? 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.' : 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.'}</p>
           <Link
             href="/places/register"
             className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
           >
-            {section === 'store' ? '🏪 سجّل متجرك' : '💻 سجّل مساحة عملك'}
+            {section === 'workspace' ? '💻 سجّل مساحتك' : '🏪 سجّل متجرك'}
           </Link>
         </div>
+      ) : false ? (
+        /* ─── Workspace listing ─── */
+        <>
+          {/* Area bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-border">
+            <div className="flex items-center gap-1.5">
+              <div className="w-[7px] h-[7px] rounded-full bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.18)]" />
+              <span className="font-display font-bold text-[12px] text-ink">{placesArea?.name_ar ?? 'كل المناطق'}</span>
+            </div>
+            <button onClick={() => setOpenAreaPicker(true)} className="text-[11px] font-semibold text-olive">📍 تغيير</button>
+          </div>
+
+          {/* Chips */}
+          <div className="flex gap-2 px-4 py-2.5 bg-surface border-b border-border overflow-x-auto no-scrollbar">
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                  chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+              </button>
+            ))}
+          </div>
+
+          {/* Section header */}
+          <div className="flex items-center justify-between px-4 py-2 bg-fog border-b border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-olive rounded-sm" />
+              <span className="font-display font-bold text-[13px] text-ink">مساحات العمل</span>
+            </div>
+            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">{totalPlaces} مكان</span>
+          </div>
+
+          {loading ? (
+            <div className="px-4 py-3 space-y-3 pb-28">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-surface rounded-2xl border border-border p-4 animate-pulse">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-[14px] bg-border/60" />
+                    <div className="flex-1 space-y-2"><div className="h-4 w-28 rounded-md bg-border/60" /><div className="h-3 w-20 rounded-md bg-border/60" /></div>
+                  </div>
+                  <div className="h-8 rounded-lg bg-border/60" />
+                </div>
+              ))}
+            </div>
+          ) : places.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
+              <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
+                <span className="text-4xl">💻</span>
+              </div>
+              <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
+              <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
+              <Link href="/places/register" className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
+                💻 سجّل مساحة عملك
+              </Link>
+            </div>
+          ) : (
+            <div className="px-4 py-3 space-y-3 pb-28">
+              {/* Register banner */}
+              <Link
+                href="/places/register"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
+              >
+                <div className="absolute w-[80px] h-[80px] rounded-full bg-white/[0.07] -bottom-[20px] -left-[10px] pointer-events-none" />
+                <div className="w-[38px] h-[38px] rounded-[10px] bg-white/15 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+                </div>
+                <div className="flex-1 relative z-[1]">
+                  <div className="font-display font-black text-[12px] text-white">صاحب مساحة عمل؟ سجّل مجاناً</div>
+                  <div className="text-[10px] text-white/55">أضف مساحتك وابدأ الآن</div>
+                </div>
+                <span className="text-white/40 text-sm">‹</span>
+              </Link>
+
+              {places.map((place, i) => (
+                <WorkspaceCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+              ))}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 py-4">
+                  <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="flex items-center gap-1 px-3.5 py-2 rounded-xl border-[1.5px] border-border bg-fog text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">السابق ←</button>
+                  <span className="text-[11px] font-semibold text-mist">{page + 1} / {totalPages}</span>
+                  <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex items-center gap-1 px-3.5 py-2 rounded-xl border-[1.5px] border-border bg-fog text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">→ التالي</button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       ) : (
         <>
           {/* Area bar */}
@@ -846,7 +1003,7 @@ const CARD_GRADIENTS = [
 
 function SpotlightCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
   const gradient = CARD_GRADIENTS[index % 3];
   const typeLabel = isBoth ? 'مطعم وكافيه' : place.type === 'restaurant' ? 'مطعم' : place.type === 'cafe' ? 'كافيه' : place.type;
 
@@ -909,7 +1066,7 @@ function SpotlightCard({ place, index, onClick }: { place: Place; index: number;
 function PlaceRow({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
   const { theme } = useTheme();
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
   const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
   const bg = theme === 'dark' ? colors[1] : colors[0];
   const closed = !place.is_open;
@@ -967,6 +1124,127 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
   );
 }
 
+/* ─── Workspace Card ─── */
+const SERVICE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  wifi: { label: 'WiFi', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg> },
+  electricity: { label: 'كهرباء', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M13 2l-2 6.5H5l5.5 4-2 6.5L14 15l5.5 4-2-6.5L23 8.5H16z"/></svg> },
+  printing: { label: 'طباعة', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> },
+  screens: { label: 'شاشات', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> },
+  private_rooms: { label: 'غرف خاصة', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg> },
+  drinks: { label: 'مشروبات', icon: <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></svg> },
+};
+
+function formatTime(t?: string | null): string {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'م' : 'ص';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m ? `${h12}:${String(m).padStart(2,'0')} ${period}` : `${h12}:00 ${period}`;
+}
+
+function WorkspaceCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const closed = !place.is_open;
+  const wd = place.workspace_details;
+  const services = place.workspace_services?.filter(s => s.available) || [];
+
+  // Pick best price to show on card
+  const priceDisplay = wd?.price_hour ? { val: wd.price_hour, unit: '/ ساعة' }
+    : wd?.price_day ? { val: wd.price_day, unit: '/ يوم' }
+    : wd?.price_month ? { val: wd.price_month, unit: '/ شهر' }
+    : null;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] ${closed ? 'opacity-60' : ''}`}
+      style={{ animation: `slideUp 0.25s ease both ${0.05 * (index + 1)}s` }}
+    >
+      {/* Header: avatar + name + area + status + price */}
+      <div className="flex items-center gap-3 p-4 pb-2.5">
+        <div
+          className={`w-[50px] h-[50px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[22px] border-[1.5px] ${
+            closed ? 'bg-fog border-border' : 'bg-[#EEF2FF] border-[rgba(30,77,43,0.15)]'
+          }`}
+        >
+          {place.avatar_url ? (
+            <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-[14px]" loading="lazy" />
+          ) : '💼'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-extrabold text-[14px] text-ink truncate mb-1">{place.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-mist flex items-center gap-1">
+              <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+              {place.area?.name_ar}
+            </span>
+            {place.is_open ? (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-olive">
+                <span className="w-[5px] h-[5px] rounded-full bg-olive" />مفتوح
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold text-mist">مغلق</span>
+            )}
+          </div>
+        </div>
+        {priceDisplay && (
+          <div className="text-left flex-shrink-0">
+            <div className="font-display font-black text-[18px] text-olive leading-none">
+              {priceDisplay.val} <span className="text-[10px] font-normal text-mist">₪</span>
+            </div>
+            <div className="text-[9px] text-mist text-left">{priceDisplay.unit}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="mx-4 h-px bg-border" />
+
+      {/* Services chips */}
+      <div className="flex gap-1.5 flex-wrap px-4 py-2.5">
+        {services.slice(0, 4).map(s => {
+          const info = SERVICE_LABELS[s.service];
+          return (
+            <span key={s.service} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-olive-pale text-olive border border-olive/15">
+              {info?.icon}{info?.label || s.service}
+            </span>
+          );
+        })}
+        {wd?.total_seats ? (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
+            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            {wd.total_seats} مقعد
+          </span>
+        ) : null}
+      </div>
+
+      {/* Stats row: hours + location */}
+      <div className="flex items-center gap-3 px-4 pb-2.5 border-t border-border pt-2.5">
+        {wd?.opens_at && wd?.closes_at && (
+          <span className="text-[10px] text-mist flex items-center gap-1">
+            <svg viewBox="0 0 24 24" className="w-[12px] h-[12px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <strong className="text-ink font-bold">{formatTime(wd.opens_at)}</strong> — <strong className="text-ink font-bold">{formatTime(wd.closes_at)}</strong>
+          </span>
+        )}
+        {place.address && (
+          <span className="text-[10px] text-mist flex items-center gap-1 mr-auto truncate max-w-[140px]">
+            <svg viewBox="0 0 24 24" className="w-[12px] h-[12px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {place.address}
+          </span>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
+        <span className={`text-[10px] font-semibold flex items-center gap-1 ${place.is_open ? 'text-olive' : 'text-mist'}`}>
+          <svg viewBox="0 0 24 24" className="w-[11px] h-[11px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+          {place.is_open ? 'متاح اليوم' : 'مغلق الآن'}
+        </span>
+        <span className="text-[11px] font-bold text-olive bg-olive-pale px-3 py-1 rounded-full">التفاصيل ←</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Detail Sheet ─── */
 interface MenuItem {
   id?: string;
@@ -997,9 +1275,137 @@ function timeAgo(dateStr?: string): string {
   return `منذ ${Math.floor(days / 7)} أ`;
 }
 
+const SERVICE_DETAIL_COLORS: Record<string, { bg: string; stroke: string }> = {
+  wifi: { bg: '#EFF6FF', stroke: '#3B82F6' },
+  electricity: { bg: '#FFFBEB', stroke: '#F59E0B' },
+  printing: { bg: '#EFF6FF', stroke: '#3B82F6' },
+  screens: { bg: '#EFF6FF', stroke: '#3B82F6' },
+  private_rooms: { bg: '#FEF0EB', stroke: '#E05C35' },
+  drinks: { bg: '#E8F5EE', stroke: '#1E4D2B' },
+};
+
+function WorkspaceSheetContent({ place }: { place: Place }) {
+  const wd = place.workspace_details;
+  const services = place.workspace_services || [];
+
+  const pricingRows = [
+    { label: 'سعر الساعة', value: wd?.price_hour, unit: '₪ / ساعة', color: 'green' },
+    { label: 'نصف يوم', value: wd?.price_half_day, unit: '₪ / نصف يوم', color: 'green' },
+    { label: 'سعر اليوم', value: wd?.price_day, unit: '₪ / يوم', color: 'blue' },
+    { label: 'سعر الأسبوع', value: wd?.price_week, unit: '₪ / أسبوع', color: 'blue' },
+    { label: 'سعر الشهر', value: wd?.price_month, unit: '₪ / شهر', color: 'amber' },
+  ].filter(r => r.value);
+
+  const iconColors: Record<string, { bg: string; stroke: string }> = {
+    green: { bg: '#E8F5EE', stroke: '#1E4D2B' },
+    blue: { bg: '#EFF6FF', stroke: '#3B82F6' },
+    amber: { bg: '#FFFBEB', stroke: '#F59E0B' },
+  };
+
+  return (
+    <>
+      {/* Pricing card */}
+      <div className="bg-surface border border-border rounded-[14px] overflow-hidden mb-4">
+        {pricingRows.map((row, i) => {
+          const ic = iconColors[row.color];
+          return (
+            <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i < pricingRows.length - 1 ? 'border-b border-border' : ''}`}>
+              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: ic.bg }}>
+                <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke={ic.stroke} strokeWidth={2} strokeLinecap="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+              </div>
+              <div>
+                <div className="text-[11px] text-mist">{row.label}</div>
+                <div className="text-[13px] font-bold text-ink">{row.value} {row.unit}</div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Hours */}
+        {wd?.opens_at && wd?.closes_at && (
+          <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
+            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#FFFBEB' }}>
+              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#F59E0B" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+              <div className="text-[11px] text-mist">أوقات العمل</div>
+              <div className="text-[13px] font-bold text-ink">{formatTime(wd.opens_at)} — {formatTime(wd.closes_at)}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Seats */}
+        {wd?.total_seats ? (
+          <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
+            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#EFF6FF' }}>
+              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div>
+              <div className="text-[11px] text-mist">الطاقة الاستيعابية</div>
+              <div className="text-[13px] font-bold text-ink">{wd.total_seats} مقعد</div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Services section */}
+      {services.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 bg-olive rounded-sm" />
+            <span className="font-display font-extrabold text-[13px] text-ink">الخدمات المتاحة</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {services.map(s => {
+              const info = SERVICE_LABELS[s.service];
+              const colors = SERVICE_DETAIL_COLORS[s.service] || { bg: '#E8F5EE', stroke: '#1E4D2B' };
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center gap-2 p-3 rounded-xl border ${
+                    s.available
+                      ? 'bg-olive-pale border-olive/20'
+                      : 'bg-fog border-border opacity-50'
+                  }`}
+                >
+                  <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: colors.bg }}>
+                    <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke={colors.stroke} strokeWidth={2} strokeLinecap="round">
+                      {s.service === 'wifi' && <><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></>}
+                      {s.service === 'electricity' && <path d="M13 2l-2 6.5H5l5.5 4-2 6.5L14 15l5.5 4-2-6.5L23 8.5H16z"/>}
+                      {s.service === 'printing' && <><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>}
+                      {s.service === 'screens' && <><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></>}
+                      {s.service === 'private_rooms' && <><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></>}
+                      {s.service === 'drinks' && <><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></>}
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-[12px] font-bold text-ink">{info?.label || s.service}</div>
+                    <div className={`text-[10px] ${s.available ? 'text-olive' : 'text-mist'}`}>
+                      {s.available ? (s.detail || 'متاح') : 'غير متاح'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {!wd && services.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-sm text-mist">لا توجد تفاصيل بعد</p>
+          <p className="text-xs text-mist mt-1">📍 {place.area?.name_ar}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
 function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : '🏪'));
+  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
 
@@ -1097,7 +1503,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
               {'›'}
             </button>
             <span className="font-display font-bold text-[13px] text-white">
-              {place.section === 'food' ? 'القائمة الكاملة' : 'تفاصيل المتجر'}
+              {place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر'}
             </span>
           </div>
 
@@ -1140,7 +1546,9 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-24">
-          {menuLoading ? (
+          {place.section === 'workspace' ? (
+            <WorkspaceSheetContent place={place} />
+          ) : menuLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i}>
@@ -1388,7 +1796,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
 function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => void }) {
   const { theme } = useTheme();
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
   const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
   const bg = theme === 'dark' ? colors[1] : colors[0];
   const closed = !place.is_open;
