@@ -316,21 +316,21 @@ export default function PlacesPage() {
               )}
             </div>
 
-            {section === 'store' || section === 'workspace' ? (
+            {section === 'store' ? (
               <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
                 <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                  <span className="text-4xl">{section === 'workspace' ? '💻' : '🏪'}</span>
+                  <span className="text-4xl">🏪</span>
                 </div>
                 <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-                <p className="text-sm text-mist leading-relaxed max-w-[260px]">{section === 'workspace' ? 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.' : 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.'}</p>
+                <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
                 <Link
                   href="/places/register"
                   className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
                 >
-                  {section === 'workspace' ? '💻 سجّل مساحتك' : '🏪 سجّل متجرك'}
+                  🏪 سجّل متجرك
                 </Link>
               </div>
-            ) : false ? (
+            ) : section === 'workspace' ? (
               /* Workspace listing */
               loading ? (
                 <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 p-6">
@@ -602,22 +602,22 @@ export default function PlacesPage() {
         </div>
       </div>
 
-      {/* ─── Store/Workspace "Coming Soon" ─── */}
-      {section === 'store' || section === 'workspace' ? (
+      {/* ─── Store "Coming Soon" ─── */}
+      {section === 'store' ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
           <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-            <span className="text-4xl">{section === 'workspace' ? '💻' : '🏪'}</span>
+            <span className="text-4xl">🏪</span>
           </div>
           <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-          <p className="text-sm text-mist leading-relaxed max-w-[260px]">{section === 'workspace' ? 'قسم مساحات العمل قيد التطوير وسيكون متاحاً قريباً.' : 'قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.'}</p>
+          <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
           <Link
             href="/places/register"
             className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
           >
-            {section === 'workspace' ? '💻 سجّل مساحتك' : '🏪 سجّل متجرك'}
+            🏪 سجّل متجرك
           </Link>
         </div>
-      ) : false ? (
+      ) : section === 'workspace' ? (
         /* ─── Workspace listing ─── */
         <>
           {/* Area bar */}
@@ -1224,26 +1224,30 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
         )}
       </div>
 
-      {/* Divider */}
-      <div className="mx-4 h-px bg-border" />
+      {(services.length > 0 || wd?.total_seats) && (
+        <>
+          {/* Divider */}
+          <div className="mx-4 h-px bg-border" />
 
-      {/* Services chips */}
-      <div className="flex gap-1.5 flex-wrap px-4 py-2.5">
-        {services.slice(0, 4).map(s => {
-          const info = SERVICE_LABELS[s.service];
-          return (
-            <span key={s.service} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-olive-pale text-olive border border-olive/15">
-              {info?.icon}{info?.label || s.service}
-            </span>
-          );
-        })}
-        {wd?.total_seats ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
-            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            {wd.total_seats} مقعد
-          </span>
-        ) : null}
-      </div>
+          {/* Services chips */}
+          <div className="flex gap-1.5 flex-wrap px-4 py-2.5">
+            {services.slice(0, 4).map(s => {
+              const info = SERVICE_LABELS[s.service];
+              return (
+                <span key={s.service} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-olive-pale text-olive border border-olive/15">
+                  {info?.icon}{info?.label || s.service}
+                </span>
+              );
+            })}
+            {wd?.total_seats ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
+                <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                {wd.total_seats} مقعد
+              </span>
+            ) : null}
+          </div>
+        </>
+      )}
 
       {/* Stats row: hours + location */}
       <div className="flex items-center gap-3 px-4 pb-2.5 border-t border-border pt-2.5">
