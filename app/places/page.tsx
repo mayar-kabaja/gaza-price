@@ -363,7 +363,7 @@ export default function PlacesPage() {
                 </div>
               ) : (
                 <div className="p-6">
-                  <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {places.map((place, i) => (
                       <WorkspaceCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                     ))}
@@ -1184,13 +1184,13 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
   return (
     <div
       onClick={onClick}
-      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] ${closed ? 'opacity-60' : ''}`}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] flex flex-col ${closed ? 'opacity-60' : ''}`}
       style={{ animation: `slideUp 0.25s ease both ${0.05 * (index + 1)}s` }}
     >
-      {/* Header: avatar + name + area + status + price */}
-      <div className="flex items-center gap-3 p-4 pb-2.5">
+      {/* Header: avatar + name + status */}
+      <div className="flex items-center gap-3 p-4">
         <div
-          className={`w-[50px] h-[50px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[22px] border-[1.5px] ${
+          className={`w-[48px] h-[48px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[20px] border-[1.5px] ${
             closed ? 'bg-fog border-border' : 'bg-[#EEF2FF] border-[rgba(30,77,43,0.15)]'
           }`}
         >
@@ -1199,79 +1199,73 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
           ) : '💼'}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-display font-extrabold text-[14px] text-ink truncate mb-1">{place.name}</div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-mist flex items-center gap-1">
-              <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+          <div className="font-display font-extrabold text-[14px] text-ink truncate">{place.name}</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-mist flex items-center gap-1 truncate">
+              <svg viewBox="0 0 24 24" className="w-[9px] h-[9px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
               {place.area?.name_ar}
             </span>
+            <span className="text-mist">·</span>
             {place.is_open ? (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-olive">
+              <span className="flex items-center gap-1 text-[10px] font-bold text-olive flex-shrink-0">
                 <span className="w-[5px] h-[5px] rounded-full bg-olive" />مفتوح
               </span>
             ) : (
-              <span className="text-[10px] font-semibold text-mist">مغلق</span>
+              <span className="text-[10px] font-semibold text-mist flex-shrink-0">مغلق</span>
             )}
           </div>
         </div>
+      </div>
+
+      {/* Info row: price + hours + seats */}
+      <div className="flex items-center gap-2 flex-wrap px-4 pb-3">
         {priceDisplay && (
-          <div className="text-left flex-shrink-0">
-            <div className="font-display font-black text-[18px] text-olive leading-none">
-              {priceDisplay.val} <span className="text-[10px] font-normal text-mist">₪</span>
-            </div>
-            <div className="text-[9px] text-mist text-left">{priceDisplay.unit}</div>
-          </div>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-olive bg-olive-pale border border-olive/15">
+            {priceDisplay.val} ₪ <span className="font-normal text-olive/70">{priceDisplay.unit}</span>
+          </span>
+        )}
+        {wd?.total_seats ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
+            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            {wd.total_seats} مقعد
+          </span>
+        ) : null}
+        {wd?.opens_at && wd?.closes_at && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] text-mist bg-fog border border-border">
+            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {formatTime(wd.opens_at)} — {formatTime(wd.closes_at)}
+          </span>
         )}
       </div>
 
-      {(services.length > 0 || wd?.total_seats) && (
-        <>
-          {/* Divider */}
-          <div className="mx-4 h-px bg-border" />
-
-          {/* Services chips */}
-          <div className="flex gap-1.5 flex-wrap px-4 py-2.5">
-            {services.slice(0, 4).map(s => {
-              const info = SERVICE_LABELS[s.service];
-              return (
-                <span key={s.service} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold bg-olive-pale text-olive border border-olive/15">
-                  {info?.icon}{info?.label || s.service}
-                </span>
-              );
-            })}
-            {wd?.total_seats ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
-                <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                {wd.total_seats} مقعد
+      {/* Services chips */}
+      {services.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap px-4 pb-3">
+          {services.slice(0, 4).map(s => {
+            const info = SERVICE_LABELS[s.service];
+            return (
+              <span key={s.service} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-mist bg-fog">
+                {info?.icon}{info?.label || s.service}
               </span>
-            ) : null}
-          </div>
-        </>
+            );
+          })}
+        </div>
       )}
 
-      {/* Stats row: hours + location */}
-      <div className="flex items-center gap-3 px-4 pb-2.5 border-t border-border pt-2.5">
-        {wd?.opens_at && wd?.closes_at && (
-          <span className="text-[10px] text-mist flex items-center gap-1">
-            <svg viewBox="0 0 24 24" className="w-[12px] h-[12px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <strong className="text-ink font-bold">{formatTime(wd.opens_at)}</strong> — <strong className="text-ink font-bold">{formatTime(wd.closes_at)}</strong>
-          </span>
-        )}
-        {place.address && (
-          <span className="text-[10px] text-mist flex items-center gap-1 mr-auto truncate max-w-[140px]">
-            <svg viewBox="0 0 24 24" className="w-[12px] h-[12px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            {place.address}
-          </span>
-        )}
-      </div>
+      {/* Spacer to push footer down */}
+      <div className="flex-1" />
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
-        <span className={`text-[10px] font-semibold flex items-center gap-1 ${place.is_open ? 'text-olive' : 'text-mist'}`}>
-          <svg viewBox="0 0 24 24" className="w-[11px] h-[11px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-          {place.is_open ? 'متاح اليوم' : 'مغلق الآن'}
-        </span>
-        <span className="text-[11px] font-bold text-olive bg-olive-pale px-3 py-1 rounded-full">التفاصيل ←</span>
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border mt-auto">
+        {place.address ? (
+          <span className="text-[10px] text-mist flex items-center gap-1 truncate max-w-[60%]">
+            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {place.address}
+          </span>
+        ) : (
+          <span />
+        )}
+        <span className="text-[11px] font-bold text-olive flex-shrink-0">التفاصيل ←</span>
       </div>
     </div>
   );
