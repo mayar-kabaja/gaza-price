@@ -13,6 +13,7 @@ export default function AdminPlacesPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [offset, setOffset] = useState(0);
   const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset);
   const { data: areasData } = useAreas();
@@ -153,6 +154,16 @@ export default function AdminPlacesPage() {
   const filteredPlaces = places.filter((p) => {
     // Respect status filter after local updates
     if (statusFilter && p.status !== statusFilter) return false;
+    if (typeFilter) {
+      const typeGroups: Record<string, string[]> = {
+        restaurant: ["restaurant", "مطعم"],
+        cafe: ["cafe", "كافيه", "مقهى"],
+        both: ["both", "مطعم وكافيه"],
+        workspace: ["workspace", "مساحة عمل"],
+      };
+      const allowed = typeGroups[typeFilter] ?? [typeFilter];
+      if (!allowed.includes(p.type)) return false;
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       return p.name.toLowerCase().includes(q) ||
@@ -201,6 +212,17 @@ export default function AdminPlacesPage() {
           <option value="active">Active</option>
           <option value="pending">Pending</option>
           <option value="suspended">Suspended</option>
+        </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => { setTypeFilter(e.target.value); setOffset(0); }}
+          className="h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+        >
+          <option value="">All Types</option>
+          <option value="restaurant">🍽️ Restaurant</option>
+          <option value="cafe">☕ Cafe</option>
+          <option value="both">🍽️☕ Both</option>
+          <option value="workspace">💻 Workspace</option>
         </select>
         <span className="text-xs text-[#4E6070]">{total} total</span>
       </div>
