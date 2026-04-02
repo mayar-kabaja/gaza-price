@@ -101,10 +101,14 @@ body {
 
 /* Dark mode: desktop search bar — solid dark bg, no green bleed */
 .dark .desktop-search-wrap {
-  background: #18212C !important;
-  border-color: #243040 !important;
+  background: transparent !important;
+  border: none !important;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+.dark .desktop-search-wrap input {
+  background: #1e2a36 !important;
+  border-color: transparent !important;
 }
 
 /* Dark mode: select/option need explicit dark bg */
