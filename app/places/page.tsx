@@ -124,9 +124,8 @@ export default function PlacesPage() {
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips]);
 
-  // Paginate client-side
-  const totalPages = Math.ceil(filteredPlaces.length / PAGE_SIZE);
-  const places = filteredPlaces.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const places = filteredPlaces;
+  const totalPages = 1;
   const count = filteredPlaces.length;
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
@@ -301,7 +300,7 @@ export default function PlacesPage() {
           </aside>
 
           {/* ── Main Content ── */}
-          <main className="flex-1 p-8">
+          <main className="flex-1 p-8 min-h-0">
             {/* Header bar */}
             <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
               <div className="flex items-center gap-3">
@@ -489,14 +488,14 @@ export default function PlacesPage() {
                     )}
 
                     {/* List */}
-                    {((chip === 0 && page === 0) ? places.length > 6 : places.length > 0) && (
+                    {((chip === 0 && page === 0) ? places.length > 3 : places.length > 0) && (
                       <>
                         <div className="flex items-center justify-between px-8 py-2.5 bg-fog border-b border-border">
                           <span className="font-display font-bold text-[12px] text-mist">الكل</span>
-                          <span className="text-[10px] text-mist">{chip === 0 ? (places.length > 6 ? places.length - 6 : 0) : places.length} مكان</span>
+                          <span className="text-[10px] text-mist">{chip === 0 && page === 0 ? (places.length > 3 ? places.length - 3 : 0) : places.length} مكان</span>
                         </div>
                         <div className="bg-surface border-b border-border divide-y divide-border/50">
-                          {(chip === 0 && page === 0 ? places.slice(6) : places).map((place, i) => (
+                          {(chip === 0 && page === 0 ? places.slice(3) : places).map((place, i) => (
                             <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                           ))}
                         </div>

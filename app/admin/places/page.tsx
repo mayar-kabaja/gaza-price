@@ -38,9 +38,20 @@ export default function AdminPlacesPage() {
 
   // Action menu state
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [statusMenuId, setStatusMenuId] = useState<string | null>(null);
+  const [loadingStatusId, setLoadingStatusId] = useState<string | null>(null);
+  const [loadingOpenId, setLoadingOpenId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function updatePlaceLocally(id: string, patch: Record<string, unknown>) {
+    queryClient.setQueriesData<typeof data>({ queryKey: ["admin", "places"] }, (old) => {
+      if (!old?.data) return old;
+      return { ...old, data: old.data.map((p) => p.id === id ? { ...p, ...patch } : p) };
+    });
+  }
 
   async function invalidate() {
-    await queryClient.invalidateQueries({ queryKey: ["admin", "places"], refetchType: "active" });
+    await queryClient.invalidateQueries({ queryKey: ["admin", "places"] });
   }
 
   function openDashboard(token: string) {
@@ -83,24 +94,37 @@ export default function AdminPlacesPage() {
       });
       if (!res.ok) throw new Error("Failed");
       toast("Place updated");
-      await invalidate();
+      updatePlaceLocally(editPlace.id, body);
       setEditPlace(null);
     } catch { toast("Error updating place"); }
     setSaving(false);
   }
 
-  async function handleAction(id: string, action: "approve" | "suspend") {
+  async function handleAction(id: string, action: "approve" | "suspend" | "pending") {
     setActionMenuId(null);
+    setLoadingStatusId(id);
+    const labels = { approve: "Place approved", suspend: "Place suspended", pending: "Place set to pending" };
     try {
-      const res = await apiFetchAdmin(`/api/admin/places/${id}/${action}`, { method: "PATCH" });
+      let res;
+      if (action === "pending") {
+        res = await apiFetchAdmin(`/api/admin/places/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "pending" }),
+        });
+      } else {
+        res = await apiFetchAdmin(`/api/admin/places/${id}/${action}`, { method: "PATCH" });
+      }
       if (!res.ok) throw new Error("Failed");
-      toast(action === "approve" ? "Place approved" : "Place suspended");
-      await invalidate();
+      toast(labels[action]);
+      const newStatus = action === "approve" ? "active" : action === "suspend" ? "suspended" : "pending";
+      updatePlaceLocally(id, { status: newStatus });
     } catch { toast("Action failed"); }
+    setLoadingStatusId(null);
   }
 
   async function handleToggleOpen(p: typeof places[0]) {
     setActionMenuId(null);
+    setLoadingOpenId(p.id);
     try {
       const res = await apiFetchAdmin(`/api/admin/places/${p.id}`, {
         method: "PATCH",
@@ -108,30 +132,36 @@ export default function AdminPlacesPage() {
       });
       if (!res.ok) throw new Error("Failed");
       toast(p.is_open ? "Closed" : "Opened");
-      await invalidate();
+      updatePlaceLocally(p.id, { is_open: !p.is_open });
     } catch { toast("Toggle failed"); }
+    setLoadingOpenId(null);
   }
 
   async function handleDelete() {
     if (!deleteId) return;
+    setDeleting(true);
     try {
-      const res = await apiFetchAdmin(`/api/admin/places/${deleteId}`, { method: "DELETE" });
+      const res = await apiFetchAdmin(`/api/admin/places/${deleteId}/suspend`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed");
-      toast("Place deleted");
+      toast("Place suspended");
+      updatePlaceLocally(deleteId, { status: "suspended" });
       setDeleteId(null);
-      await queryClient.invalidateQueries({ queryKey: ["admin", "places"] });
     } catch { toast("Delete failed"); }
+    setDeleting(false);
   }
 
-  const filteredPlaces = search.trim()
-    ? places.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
-          (p.area?.name_ar ?? "").includes(search.trim()) ||
-          (p.phone ?? "").includes(search.trim()) ||
-          (p.type ?? "").toLowerCase().includes(search.trim().toLowerCase())
-      )
-    : places;
+  const filteredPlaces = places.filter((p) => {
+    // Respect status filter after local updates
+    if (statusFilter && p.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return p.name.toLowerCase().includes(q) ||
+        (p.area?.name_ar ?? "").includes(q) ||
+        (p.phone ?? "").includes(q) ||
+        (p.type ?? "").toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {
@@ -160,12 +190,12 @@ export default function AdminPlacesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search places..."
-          className="flex-1 min-w-[180px] rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+          className="flex-1 min-w-[180px] h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
         />
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); }}
-          className="rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+          className="h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
         >
           <option value="">All</option>
           <option value="active">Active</option>
@@ -175,7 +205,7 @@ export default function AdminPlacesPage() {
         <span className="text-xs text-[#4E6070]">{total} total</span>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+      <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820] flex-1 min-h-0 flex flex-col">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
@@ -185,7 +215,7 @@ export default function AdminPlacesPage() {
             {search.trim() ? "No places match your search." : "No places"}
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-[#243040] sticky top-0 bg-[#111820] z-10">
@@ -195,7 +225,7 @@ export default function AdminPlacesPage() {
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Open</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">IG</th>
+                  <th className="px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Instagram</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
                 </tr>
               </thead>
@@ -213,15 +243,67 @@ export default function AdminPlacesPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>
-                    <td className="px-3 py-3">{statusBadge(p.status)}</td>
                     <td className="px-3 py-3">
-                      <button onClick={() => handleToggleOpen(p)} className={`text-sm cursor-pointer ${p.is_open ? "text-[#6BA880]" : "text-[#D49088]"}`}>
-                        {p.is_open ? "✓ Yes" : "✗ No"}
-                      </button>
+                      <div className="relative">
+                        {loadingStatusId === p.id ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#243040] bg-[#18212C] px-2.5 py-0.5 text-[10px] text-[#8FA3B8]">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+                          </span>
+                        ) : (
+                        <button
+                          onClick={() => setStatusMenuId(statusMenuId === p.id ? null : p.id)}
+                          className="cursor-pointer"
+                        >
+                          {statusBadge(p.status)}
+                        </button>
+                        )}
+                        {statusMenuId === p.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setStatusMenuId(null)} />
+                            <div className="absolute left-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              {p.status !== "active" && (
+                                <button
+                                  onClick={() => { handleAction(p.id, "approve"); setStatusMenuId(null); }}
+                                  className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                >
+                                  🟢 Active
+                                </button>
+                              )}
+                              {p.status !== "suspended" && (
+                                <button
+                                  onClick={() => { handleAction(p.id, "suspend"); setStatusMenuId(null); }}
+                                  className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                >
+                                  🔴 Suspended
+                                </button>
+                              )}
+                              {p.status !== "pending" && (
+                                <button
+                                  onClick={() => { handleAction(p.id, "pending"); setStatusMenuId(null); }}
+                                  className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                >
+                                  🟡 Pending
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-3">
+                      {loadingOpenId === p.id ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent inline-block" />
+                      ) : (
+                        <button onClick={() => handleToggleOpen(p)} className={`text-sm cursor-pointer ${p.is_open ? "text-[#6BA880]" : "text-[#D49088]"}`}>
+                          {p.is_open ? "✓ Yes" : "✗ No"}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-center">
                       {p.instagram_url ? (
-                        <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" className="text-[#8FA3B8] hover:text-[#D8E4F0] text-sm">📷</a>
+                        <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center text-[#8FA3B8] hover:text-[#D8E4F0]">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </a>
                       ) : (
                         <span className="text-[10px] text-[#4E6070]">—</span>
                       )}
@@ -264,10 +346,14 @@ export default function AdminPlacesPage() {
                                   ✅ Reactivate
                                 </button>
                               )}
-                              <div className="h-px bg-[#243040] my-1" />
-                              <button onClick={() => { setDeleteId(p.id); setDeleteName(p.name); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D49088] hover:bg-[#243040] flex items-center gap-2">
-                                🗑 Delete
-                              </button>
+                              {p.status !== "suspended" && (
+                                <>
+                                  <div className="h-px bg-[#243040] my-1" />
+                                  <button onClick={() => { setDeleteId(p.id); setDeleteName(p.name); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D49088] hover:bg-[#243040] flex items-center gap-2">
+                                    🗑 Delete
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </>
                         )}
@@ -343,10 +429,12 @@ export default function AdminPlacesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDeleteId(null)}>
           <div className="bg-[#111820] border border-[#243040] rounded-2xl w-full max-w-sm mx-4 p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-bold text-[#D49088] mb-2">Delete Place</h3>
-            <p className="text-xs text-[#8FA3B8] mb-4">Are you sure you want to delete <strong className="text-[#D8E4F0]">{deleteName}</strong>? This cannot be undone.</p>
+            <p className="text-xs text-[#8FA3B8] mb-4">Are you sure you want to suspend <strong className="text-[#D8E4F0]">{deleteName}</strong>? It can be reactivated later.</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteId(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 rounded-lg bg-[#A85852] py-2 text-xs font-bold text-white hover:bg-[#8B4A45]">Delete</button>
+              <button onClick={() => setDeleteId(null)} disabled={deleting} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C] disabled:opacity-40">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 rounded-lg bg-[#A85852] py-2 text-xs font-bold text-white hover:bg-[#8B4A45] disabled:opacity-60 inline-flex items-center justify-center gap-2">
+                {deleting ? <><span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> Deleting...</> : "Delete"}
+              </button>
             </div>
           </div>
         </div>
