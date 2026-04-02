@@ -25,20 +25,20 @@ export function DesktopSearchBar() {
   const showNoResults = showDropdown && !hasResults;
 
   return (
-    <div className="relative flex-1 max-w-[520px]">
-      <div className="desktop-search-wrap flex items-center gap-2.5 px-3.5 rounded-lg bg-white/10 border border-white/20 backdrop-blur-sm">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white/50 flex-shrink-0">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-          <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+    <div className="relative flex-1 min-w-0">
+      <div className="desktop-search-wrap relative">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="ابحث عن منتج... سكر، أرز، زيت"
-          className="flex-1 py-2.5 text-sm font-body text-white placeholder:text-white/40 bg-transparent outline-none min-w-0"
+          className="w-full h-[38px] bg-white/8 border border-white/14 rounded-[10px] pr-3.5 pl-10 text-[13px] font-body text-white/90 placeholder:text-white/35 outline-none focus:bg-white/12 focus:border-sand/50 transition-colors"
           dir="rtl"
         />
-        {loading && <LoaderDots size="sm" className="flex-shrink-0" />}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+          <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        {loading && <div className="absolute left-10 top-1/2 -translate-y-1/2"><LoaderDots size="sm" /></div>}
       </div>
 
       {showDropdown && hasResults && (

@@ -21,6 +21,7 @@ import type { DesktopFilter, DesktopSort } from "@/components/desktop/DesktopFil
 // Desktop components — lazy-loaded so mobile never downloads them
 const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
 const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebar })), { ssr: false });
+const DesktopSidebarCTA = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebarCTA })), { ssr: false });
 const DesktopBreadcrumb = dynamic(() => import("@/components/desktop/DesktopBreadcrumb").then(m => ({ default: m.DesktopBreadcrumb })), { ssr: false });
 const DesktopStatsStrip = dynamic(() => import("@/components/desktop/DesktopStatsStrip").then(m => ({ default: m.DesktopStatsStrip })), { ssr: false });
 const DesktopFilterBar = dynamic(() => import("@/components/desktop/DesktopFilterBar").then(m => ({ default: m.DesktopFilterBar })), { ssr: false });
@@ -191,32 +192,48 @@ export function HomeData() {
   // ── Desktop layout ──
   if (isDesktop) {
     return (
-      <div className="h-screen grid grid-rows-[64px_1fr]">
+      <div className="h-screen grid grid-rows-[60px_1fr]">
         <DesktopHeader
           onSubmitClick={() => setSubmitModalOpen(true)}
           onSuggestClick={() => setSuggestModalOpen(true)}
           onProfileClick={() => router.push("/account")}
         />
-        <div className="flex overflow-hidden">
-          <DesktopSidebar
-            selectedAreaId={activeAreaId}
-            selectedCategoryId={effectiveCategoryId}
-            onAreaSelect={(a) => setBrowseAreaId(a.id)}
-            onCategorySelect={selectCategory}
-            onSubmitClick={() => setSubmitModalOpen(true)}
-          />
-          <main className="flex-1 overflow-y-auto p-8 bg-fog">
-            {/* Welcome + Warning banner */}
-            <div className="mb-4 rounded-xl overflow-hidden border border-border">
+        <div className="flex-1 overflow-y-auto bg-fog">
+          <div className="max-w-[900px] mx-auto flex min-h-full">
+          <div className="w-[280px] flex-shrink-0 sticky top-0 self-start h-[calc(100vh-60px)] flex flex-col py-4 mr-4">
+            <DesktopSidebar
+              selectedAreaId={activeAreaId}
+              selectedCategoryId={effectiveCategoryId}
+              onAreaSelect={(a) => setBrowseAreaId(a.id)}
+              onCategorySelect={selectCategory}
+            />
+            <DesktopSidebarCTA onSubmitClick={() => setSubmitModalOpen(true)} />
+          </div>
+          <main className="flex-1 p-8">
+            {/* Welcome toast */}
+            {showDemoBanner && (
+            <div className="fixed bottom-6 left-6 z-50 w-[380px] rounded-xl overflow-hidden bg-surface border border-border shadow-xl animate-slideIn">
+              <button
+                type="button"
+                onClick={() => setShowDemoBanner(false)}
+                className="absolute top-2.5 left-2.5 text-mist/50 text-base p-0.5 z-10 hover:text-mist cursor-pointer"
+                aria-label="إغلاق"
+              >
+                ×
+              </button>
               <div className="bg-olive-pale px-4 py-2.5 flex items-center gap-2">
                 <span className="text-base">👋</span>
                 <span className="font-display font-bold text-sm text-olive">اهلاً بك في غزة بريس!</span>
               </div>
-              <div className="bg-sand-light px-4 py-2.5 flex items-start gap-2">
+              <div className="px-4 py-3 flex items-start gap-2">
                 <span className="text-sm mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
-                <span className="text-sm text-ink/70"><span className="font-bold text-ink">تنبيه:</span> الأسعار التجريبية مكتوب عليها &quot;تجريبي&quot; وباقي الأسعار حقيقية. إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.</span>
+                <span className="text-[13px] text-ink/70 leading-relaxed"><span className="font-bold text-ink">تنبيه:</span> الأسعار التجريبية مكتوب عليها &quot;تجريبي&quot; وباقي الأسعار حقيقية. إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.</span>
+              </div>
+              <div className="h-[3px] w-full bg-olive/10">
+                <div className="h-full bg-olive/50 rounded-full" style={{ animation: "toastProgress 10s linear forwards" }} />
               </div>
             </div>
+            )}
             <DesktopBreadcrumb categoryId={isAllTab ? null : effectiveCategoryId} />
             {isAllTab ? (
               /* Desktop "الكل" — reports feed */
@@ -258,26 +275,51 @@ export function HomeData() {
                 </div>
               )
             ) : (
-              <>
-                <DesktopStatsStrip products={products} isLoading={showSkeletons} />
-                <DesktopFilterBar
-                  filter={desktopFilter}
-                  sort={desktopSort}
-                  onFilterChange={setDesktopFilter}
-                  onSortChange={setDesktopSort}
-                />
-                <DesktopPriceGrid
-                  products={desktopProducts}
-                  sections={sections ?? []}
-                  selectedCategoryId={effectiveCategoryId}
-                  hasNextPage={hasNextPage ?? false}
-                  isFetchingNextPage={isFetchingNextPage}
-                  onLoadMore={() => fetchNextPage()}
-                  isLoading={showSkeletons}
-                />
-              </>
+              showSkeletons ? (
+                <div className="space-y-3 mt-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="bg-surface rounded-xl p-3 border border-border animate-pulse">
+                      <div className="h-3.5 bg-fog rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-fog rounded w-1/2 mb-2" />
+                      <div className="h-4 bg-fog rounded w-1/4" />
+                    </div>
+                  ))}
+                </div>
+              ) : desktopProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <div className="font-display font-bold text-ink mb-1">
+                    {activeAreaId ? "لا أسعار في منطقتك لهذه الفئة" : "لا منتجات في هذه الفئة"}
+                  </div>
+                  <div className="text-sm text-mist">جرب فئة أخرى أو غيّر المنطقة</div>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  {desktopProducts.map((product) => (
+                    <HomeProductCard
+                      key={product.id}
+                      product={product}
+                      areaId={activeAreaId}
+                      isRefetching={productsFetching}
+                    />
+                  ))}
+                  {hasNextPage && (
+                    <div className="py-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="px-6 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50 cursor-pointer"
+                      >
+                        {isFetchingNextPage ? "جاري التحميل..." : "تحميل المزيد"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </main>
+          </div>
         </div>
         <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
         <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
