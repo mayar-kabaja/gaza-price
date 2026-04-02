@@ -16,6 +16,8 @@ import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
 
 const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
+const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
+const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -41,6 +43,15 @@ const GOV_LABELS: Record<string, string> = {
   central: 'وسط غزة',
   south: 'جنوب غزة',
 };
+
+// Normalize type labels for display
+function typeLabel(type: string): string {
+  if (type === 'both' || type === 'مطعم وكافيه') return 'مطعم وكافيه';
+  if (type === 'restaurant' || type === 'مطعم') return 'مطعم';
+  if (type === 'cafe' || type === 'كافيه' || type === 'مقهى') return 'كافيه';
+  if (type === 'workspace' || type === 'مساحة عمل') return 'مساحة عمل';
+  return type;
+}
 
 const EMOJI_MAP: Record<string, string> = {
   restaurant: '🍽️', cafe: '☕', bakery: '🫓', juice: '🧃',
@@ -76,26 +87,26 @@ export default function PlacesPage() {
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
   const [placesArea, setPlacesArea] = useState<Area | null>(null);
+  const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [suggestModalOpen, setSuggestModalOpen] = useState(false);
 
   // "الكل" chip (0) = all areas, other chips = user's saved area
-  const activeArea = chip === 0 ? placesArea : (placesArea ?? userArea);
+  const activeArea = placesArea;
 
   const { data: searchData, isLoading: searchLoading } = usePlacesSearch(debouncedSearch, section, activeArea?.id);
 
-  const offset = page * PAGE_SIZE;
-  const { data: placesData, isLoading: loading } = usePlaces(section, activeArea?.id, PAGE_SIZE, offset);
-  const allPlaces = placesData?.places ?? [];
-  const totalPlaces = placesData?.total ?? 0;
-  const totalPages = Math.ceil(totalPlaces / PAGE_SIZE);
-
   const chips = section === 'food' ? FOOD_CHIPS : section === 'workspace' ? WORKSPACE_CHIPS : STORE_CHIPS;
+
+  // Fetch ALL places for this section (no pagination limit) so client-side filtering works correctly
+  const { data: placesData, isLoading: loading } = usePlaces(section, activeArea?.id, 500, 0);
+  const allPlaces = placesData?.places ?? [];
 
   const isSearching = debouncedSearch.length >= 1;
   const matchedItems = searchData?.matched_items ?? [];
 
-  // Filter places by selected chip + search query
-  const places = useMemo(() => {
-    // If searching, use server results
+  // Filter places by selected chip
+  const filteredPlaces = useMemo(() => {
     if (isSearching) return searchData?.places ?? [];
 
     let filtered = allPlaces;
@@ -113,7 +124,10 @@ export default function PlacesPage() {
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips]);
 
-  const count = totalPlaces;
+  // Paginate client-side
+  const totalPages = Math.ceil(filteredPlaces.length / PAGE_SIZE);
+  const places = filteredPlaces.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const count = filteredPlaces.length;
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
     const g = a.governorate;
@@ -126,16 +140,17 @@ export default function PlacesPage() {
   /* ═══ DESKTOP LAYOUT ═══ */
   if (isDesktop) {
     return (
-      <div className="h-screen grid grid-rows-[64px_1fr]" dir="rtl">
+      <div className="h-screen grid grid-rows-[60px_1fr]" dir="rtl">
         <DesktopHeader
-          onSubmitClick={() => {}}
-          onSuggestClick={() => {}}
+          onSubmitClick={() => setSubmitModalOpen(true)}
+          onSuggestClick={() => setSuggestModalOpen(true)}
           onProfileClick={() => window.location.href = '/account'}
           isProfileActive={false}
         />
-        <div className="flex overflow-hidden">
+        <div className="flex-1 overflow-y-auto bg-fog">
+          <div className="max-w-[900px] mx-auto flex min-h-full">
           {/* ── Sidebar ── */}
-          <aside className="w-[280px] flex-shrink-0 bg-surface border-l border-border overflow-y-auto no-scrollbar flex flex-col">
+          <aside className="w-[280px] flex-shrink-0 bg-surface border border-border rounded-2xl shadow-sm overflow-y-auto no-scrollbar flex flex-col sticky top-0 h-fit max-h-screen my-4 mr-4">
             {/* Search */}
             <div className="p-4 pb-2">
               <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
@@ -153,33 +168,29 @@ export default function PlacesPage() {
               </div>
             </div>
 
-            {/* Section toggle */}
+            {/* Section nav */}
             <div className="px-4 pb-3">
-              <div className="flex gap-0 bg-fog rounded-xl p-1">
-                <button
-                  onClick={() => { setSection('food'); setChip(0); setPage(0); }}
-                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                    section === 'food' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
-                  }`}
-                >
-                  🍽️ مطاعم
-                </button>
-                <button
-                  onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
-                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                    section === 'workspace' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
-                  }`}
-                >
-                  💻 مساحات عمل
-                </button>
-                <button
-                  onClick={() => { setSection('store'); setChip(0); setPage(0); }}
-                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                    section === 'store' ? 'bg-olive text-white shadow-md' : 'bg-transparent text-ink hover:bg-fog'
-                  }`}
-                >
-                  🏪 متاجر
-                </button>
+              <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الأقسام</div>
+              <div className="space-y-0.5">
+                {([
+                  { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
+                  { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
+                  { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
+                ] as const).map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
+                    className={cn(
+                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors text-right cursor-pointer',
+                      section === item.key
+                        ? 'bg-olive-pale text-olive border border-olive-mid'
+                        : 'text-ink hover:bg-fog'
+                    )}
+                  >
+                    <span className="text-sm">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -199,10 +210,25 @@ export default function PlacesPage() {
               {govOrder.map((gov) => {
                 const govAreas = grouped[gov];
                 if (!govAreas?.length) return null;
+                const isGovOpen = openGovs[gov] ?? false;
                 return (
                   <div key={gov} className="mb-1">
-                    <div className="text-[10px] font-bold text-mist/70 px-3 py-1 uppercase tracking-wider">{GOV_LABELS[gov] || gov}</div>
-                    {govAreas.map((a) => (
+                    <button
+                      type="button"
+                      onClick={() => setOpenGovs((prev) => ({ ...prev, [gov]: !prev[gov] }))}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-mist/70 uppercase tracking-wider hover:text-mist transition-colors cursor-pointer"
+                    >
+                      <span>{GOV_LABELS[gov] || gov}</span>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 12 12"
+                        className={cn("text-mist transition-transform", isGovOpen && "rotate-90")}
+                      >
+                        <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                      </svg>
+                    </button>
+                    {isGovOpen && govAreas.map((a) => (
                       <button
                         key={a.id}
                         onClick={() => { setPlacesArea(a); setPage(0); }}
@@ -275,7 +301,7 @@ export default function PlacesPage() {
           </aside>
 
           {/* ── Main Content ── */}
-          <main className="flex-1 overflow-y-auto bg-fog">
+          <main className="flex-1 p-8">
             {/* Header bar */}
             <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
               <div className="flex items-center gap-3">
@@ -450,12 +476,12 @@ export default function PlacesPage() {
                   <>
                     {/* Spotlight — only on الكل chip, first page */}
                     {chip === 0 && page === 0 && places.length > 0 && (
-                      <div className="px-6 pt-4 pb-1">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="px-8 pt-5 pb-2">
+                        <div className="flex items-center justify-between mb-3">
                           <span className="font-display font-extrabold text-[14px] text-ink">الأبرز</span>
                         </div>
-                        <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 pb-1">
-                          {places.slice(0, 4).map((place, i) => (
+                        <div className="grid grid-cols-3 gap-4">
+                          {places.slice(0, 3).map((place, i) => (
                             <SpotlightCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                           ))}
                         </div>
@@ -463,14 +489,14 @@ export default function PlacesPage() {
                     )}
 
                     {/* List */}
-                    {((chip === 0 && page === 0) ? places.length > 4 : places.length > 0) && (
+                    {((chip === 0 && page === 0) ? places.length > 6 : places.length > 0) && (
                       <>
-                        <div className="flex items-center justify-between px-6 py-2 bg-fog border-b border-border">
+                        <div className="flex items-center justify-between px-8 py-2.5 bg-fog border-b border-border">
                           <span className="font-display font-bold text-[12px] text-mist">الكل</span>
-                          <span className="text-[10px] text-mist">{chip === 0 ? (totalPlaces > 4 ? totalPlaces - 4 : 0) : places.length} مكان</span>
+                          <span className="text-[10px] text-mist">{chip === 0 ? (places.length > 6 ? places.length - 6 : 0) : places.length} مكان</span>
                         </div>
-                        <div className="bg-surface border-b border-border">
-                          {(chip === 0 && page === 0 ? places.slice(4) : places).map((place, i) => (
+                        <div className="bg-surface border-b border-border divide-y divide-border/50">
+                          {(chip === 0 && page === 0 ? places.slice(6) : places).map((place, i) => (
                             <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                           ))}
                         </div>
@@ -502,12 +528,15 @@ export default function PlacesPage() {
               </>
             )}
           </main>
+          </div>
         </div>
 
         {/* Detail Sheet — same for desktop */}
         {selectedPlace && (
           <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
         )}
+        <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
+        <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
       </div>
     );
   }
@@ -622,7 +651,7 @@ export default function PlacesPage() {
               <div className="w-1 h-4 bg-olive rounded-sm" />
               <span className="font-display font-bold text-[13px] text-ink">مساحات العمل</span>
             </div>
-            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">{totalPlaces} مكان</span>
+            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">{places.length} مكان</span>
           </div>
 
           {loading ? (
@@ -886,7 +915,7 @@ export default function PlacesPage() {
                 <>
                   <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
                     <span className="font-display font-bold text-[12px] text-mist">الكل</span>
-                    <span className="text-[10px] text-mist">{chip === 0 ? (totalPlaces > 4 ? totalPlaces - 4 : 0) : places.length} مكان</span>
+                    <span className="text-[10px] text-mist">{chip === 0 ? (places.length > 4 ? places.length - 4 : 0) : places.length} مكان</span>
                   </div>
                   <div className={`bg-surface border-b border-border mb-2 ${totalPages <= 1 ? 'pb-20' : ''}`}>
                     {(chip === 0 && page === 0 ? places.slice(4) : places).map((place, i) => (
@@ -1005,14 +1034,14 @@ function SpotlightCard({ place, index, onClick }: { place: Place; index: number;
   const isBoth = place.type === 'both';
   const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
   const gradient = CARD_GRADIENTS[index % 3];
-  const typeLabel = isBoth ? 'مطعم وكافيه' : place.type === 'restaurant' ? 'مطعم' : place.type === 'cafe' ? 'كافيه' : place.type;
+  const placeTypeLabel = typeLabel(place.type);
 
   const hasAvatar = !!place.avatar_url;
 
   return (
     <div
       onClick={onClick}
-      className="w-[155px] h-[185px] flex-shrink-0 rounded-2xl relative overflow-hidden cursor-pointer hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+      className="w-[155px] lg:w-auto h-[185px] flex-shrink-0 rounded-2xl relative overflow-hidden cursor-pointer hover:-translate-y-0.5 active:scale-[0.98] transition-all"
       style={{ animation: `slideUp 0.3s ease both ${0.1 * (index + 1)}s` }}
     >
       {/* Background */}
@@ -1050,7 +1079,7 @@ function SpotlightCard({ place, index, onClick }: { place: Place; index: number;
           </div>
           <div className="flex items-center gap-1.5">
             <span className={`text-[9px] font-semibold px-1.5 py-[2px] rounded-full ${hasAvatar ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-olive-pale text-olive'}`}>
-              {typeLabel}
+              {placeTypeLabel}
             </span>
             <span className={`text-[10px] truncate ${hasAvatar ? 'text-white/70' : 'text-mist'}`}>
               {place.area?.name_ar}
@@ -1074,7 +1103,7 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors hover:bg-olive-pale/40 active:bg-olive-pale relative ${
+      className={`flex items-center gap-3 px-4 lg:px-6 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors hover:bg-olive-pale/40 active:bg-olive-pale relative ${
         closed ? 'opacity-60' : ''
       }`}
       style={{ animation: `slideUp 0.25s ease both ${0.04 * (index + 1)}s` }}
@@ -1103,7 +1132,7 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
             {place.name}
           </span>
           <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">
-            {place.type === 'both' ? 'مطعم وكافيه' : place.type === 'restaurant' ? 'مطعم' : place.type === 'cafe' ? 'كافيه' : place.type}
+            {typeLabel(place.type)}
           </span>
         </div>
         <div className="text-[10px] text-mist mb-0.5">
@@ -1639,7 +1668,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
           ) : (
             <div className="text-center py-8">
               <p className="text-sm text-mist">لا توجد قائمة أسعار بعد</p>
-              <p className="text-xs text-mist mt-1">📍 {place.area?.name_ar} · {place.type}</p>
+              <p className="text-xs text-mist mt-1">📍 {place.area?.name_ar} · {typeLabel(place.type)}</p>
             </div>
           )}
         </div>
@@ -1800,7 +1829,7 @@ function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => voi
   const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
   const bg = theme === 'dark' ? colors[1] : colors[0];
   const closed = !place.is_open;
-  const typeLabel = isBoth ? 'مطعم وكافيه' : place.type === 'restaurant' ? 'مطعم' : place.type === 'cafe' ? 'كافيه' : place.type;
+  const placeTypeLabel = typeLabel(place.type);
 
   return (
     <div
@@ -1837,7 +1866,7 @@ function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => voi
       <div className="p-3">
         <div className="font-display font-extrabold text-[13px] text-ink mb-1 truncate">{place.name}</div>
         <div className="flex items-center gap-1.5 mb-1">
-          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15">{typeLabel}</span>
+          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15">{placeTypeLabel}</span>
           <span className="text-[10px] text-mist truncate">📍 {place.area?.name_ar}</span>
         </div>
         {place.address && (

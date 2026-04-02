@@ -44,7 +44,7 @@ export function ReportCard({ report }: ReportCardProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl px-3.5 py-2.5 relative overflow-hidden bg-surface border-[1.5px] border-border"
+        "rounded-xl px-3 pt-2.5 pb-1.5 relative overflow-hidden bg-surface border-[1.5px] border-border hover:border-olive/30 hover:shadow-sm transition-all duration-200"
       )}
     >
       {/* Demo badge */}
@@ -60,19 +60,19 @@ export function ReportCard({ report }: ReportCardProps) {
       {/* Product name row */}
       <Link
         href={report.product_id ? `/product/${report.product_id}` : "#"}
-        className={cn("flex items-center gap-1.5 mb-2 focus:outline-none", isDemo && "mt-3")}
+        className={cn("flex items-center gap-1 mb-0.5 focus:outline-none", isDemo && "mt-2")}
       >
-        <span className="text-base leading-none">{categoryIcon}</span>
-        <span className="font-display font-bold text-sm text-ink hover:text-olive transition-colors">{productLabel}</span>
+        <span className="text-sm leading-none">{categoryIcon}</span>
+        <span className="font-display font-bold text-xs text-ink hover:text-olive transition-colors">{productLabel}</span>
       </Link>
 
       {/* Main row: store + price */}
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-sm text-ink">
+          <div className="font-display font-bold text-xs text-ink">
             {storeName}
           </div>
-          <div className="text-xs text-mist mt-0.5">
+          <div className="text-[11px] text-mist">
             {report.area?.name_ar}
             {report.has_receipt && (
               <span className="mr-2 text-olive">📷</span>
@@ -80,16 +80,16 @@ export function ReportCard({ report }: ReportCardProps) {
           </div>
         </div>
         <div className="text-right flex-shrink-0 mr-3">
-          <div className="price-number font-display font-extrabold text-xl leading-none text-olive">
+          <div className="price-number font-display font-extrabold text-base leading-none text-olive">
             {report.price.toFixed(2)}
           </div>
-          <div className="text-[11px] text-mist text-left direction-ltr">₪ / {product?.unit ?? "كغ"}</div>
+          <div className="text-[10px] text-mist text-left direction-ltr">₪ / {product?.unit ?? "كغ"}</div>
         </div>
       </div>
 
       {/* Store details toggle */}
       {hasDetails && (
-        <div className="mt-2.5">
+        <div className="mt-1.5">
           <button
             type="button"
             onClick={() => setDetailsOpen((v) => !v)}
@@ -151,18 +151,18 @@ export function ReportCard({ report }: ReportCardProps) {
       )}
 
       {/* Stats row */}
-      <div className={cn("flex items-center justify-between", hasDetails ? "mt-1.5" : "mt-2")}>
-        <div className={cn("text-[11px]", stale ? "text-sand" : "text-mist")}>
+      <div className={cn("flex items-center justify-between", hasDetails ? "mt-1" : "mt-1.5")}>
+        <div className={cn("text-[10px]", stale ? "text-sand" : "text-mist")}>
           {stale && "⚠️ "}
           {formatRelativeTime(report.reported_at)}
         </div>
         <div className="flex items-center gap-1.5">
           <TrustDots confirmations={displayCount} />
-          <span className="text-[11px] text-mist">
+          <span className="text-[10px] text-mist">
             {toArabicNumerals(displayCount)} تأكيد
           </span>
           {displayFlagCount > 0 && (
-            <span className="text-[11px] text-sand/80">
+            <span className="text-[10px] text-sand/80">
               · {toArabicNumerals(displayFlagCount)} إبلاغ
             </span>
           )}
@@ -170,7 +170,7 @@ export function ReportCard({ report }: ReportCardProps) {
       </div>
 
       {/* Actions row */}
-      <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-border/50">
+      <div className="flex items-center gap-1.5 mt-1 pt-1 border-t border-border/50">
         {report.is_mine ? (
           <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
             سعرك
