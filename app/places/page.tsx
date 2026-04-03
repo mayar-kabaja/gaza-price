@@ -121,8 +121,20 @@ export default function PlacesPage() {
         }
       }
     }
+    // Prioritize specific workspaces to show first
+    if (section === 'workspace') {
+      const priorityNames = ['legospace', 'zero to hero', 'leapspace'];
+      filtered = [...filtered].sort((a, b) => {
+        const aIdx = priorityNames.indexOf(a.name.toLowerCase());
+        const bIdx = priorityNames.indexOf(b.name.toLowerCase());
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return 0;
+      });
+    }
     return filtered;
-  }, [isSearching, searchData, allPlaces, chip, chips]);
+  }, [isSearching, searchData, allPlaces, chip, chips, section]);
 
   const places = filteredPlaces;
   const totalPages = 1;
@@ -1031,7 +1043,7 @@ const CARD_GRADIENTS = [
 
 function SpotlightCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const gradient = CARD_GRADIENTS[index % 3];
   const placeTypeLabel = typeLabel(place.type);
 
@@ -1094,7 +1106,7 @@ function SpotlightCard({ place, index, onClick }: { place: Place; index: number;
 function PlaceRow({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
   const { theme } = useTheme();
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
   const bg = theme === 'dark' ? colors[1] : colors[0];
   const closed = !place.is_open;
@@ -1196,7 +1208,7 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
         >
           {place.avatar_url ? (
             <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-[14px]" loading="lazy" />
-          ) : '💼'}
+          ) : '💻'}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-display font-extrabold text-[14px] text-ink truncate">{place.name}</div>
@@ -1431,7 +1443,7 @@ function WorkspaceSheetContent({ place }: { place: Place }) {
 
 function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
+  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
 
@@ -1822,7 +1834,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
 function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => void }) {
   const { theme } = useTheme();
   const isBoth = place.type === 'both';
-  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💼' : '🏪'));
+  const emoji = isBoth ? null : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
   const bg = theme === 'dark' ? colors[1] : colors[0];
   const closed = !place.is_open;
