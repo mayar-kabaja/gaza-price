@@ -383,10 +383,10 @@ export function useAdminFlags(limit = 5, offset = 0) {
   });
 }
 
-export function useAdminPlaces(status = "", limit = 20, offset = 0) {
+export function useAdminPlaces(status = "", limit = 20, offset = 0, search = "") {
   return useQuery({
-    queryKey: queryKeys.adminPlaces(status, limit, offset),
-    queryFn: () => fetchAdminPlaces(status, limit, offset),
+    queryKey: queryKeys.adminPlaces(status, limit, offset, search),
+    queryFn: () => fetchAdminPlaces(status, limit, offset, search),
     staleTime: 60 * 1000,
   });
 }

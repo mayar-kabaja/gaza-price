@@ -124,19 +124,15 @@ export default function AdminSnapshotsPage() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
             </div>
-          ) : snapshots.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#4E6070]">
-              No price snapshots. Use &quot;Run snapshots now&quot; or wait for the daily job at midnight.
-            </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
+            <div className="flex-1 min-h-0 overflow-auto">
               <table className="w-full min-w-[640px]">
-                <thead>
+                <thead className="sticky top-0 bg-[#111820] z-10">
                   <tr className="border-b border-[#243040]">
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
@@ -149,7 +145,9 @@ export default function AdminSnapshotsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {snapshots.map((s, i) => (
+                  {snapshots.length === 0 ? (
+                    <tr><td colSpan={8} className="py-12 text-center text-sm text-[#4E6070]">No price snapshots. Use &quot;Run snapshots now&quot; or wait for the daily job at midnight.</td></tr>
+                  ) : snapshots.map((s, i) => (
                     <tr key={s.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                       <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                       <td className="px-5 py-3 text-sm text-[#D8E4F0]">{s.product?.name_ar ?? "—"}</td>

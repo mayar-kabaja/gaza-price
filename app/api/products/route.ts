@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
   const categoryId = searchParams.get("category_id") ?? undefined;
   const allProducts = searchParams.get("all") === "1" || searchParams.get("all") === "true";
   const embedPricePreview = searchParams.get("embed") === "price_preview";
-  const limit = Math.min(Number(searchParams.get("limit") ?? 10), 50);
+  const limit = Math.min(Number(searchParams.get("limit") ?? 10), 200);
   const offset = Number(searchParams.get("offset") ?? 0);
   const token = getTokenFromRequest(req);
 

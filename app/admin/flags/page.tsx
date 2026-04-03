@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { ViewIcon, EditIcon, ApproveIcon, UnapproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type FlaggedReport = {
   id: string;
@@ -20,19 +19,39 @@ type Area = { id: string; name_ar: string };
 
 const ADD_FORM_EMPTY = { product_id: "", area_id: "", price: "" };
 
+function statusBadge(status?: string) {
+  const cls = status === "confirmed"
+    ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
+    : status === "rejected"
+      ? "border-[#A8585235] bg-[#A8585218] text-[#D49088]"
+      : "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]";
+  const dot = status === "confirmed" ? "🟢" : status === "rejected" ? "🔴" : "🟡";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${cls}`}>
+      <span className="text-[8px]">{dot}</span> {status ?? "—"}
+    </span>
+  );
+}
+
 export default function AdminFlagsPage() {
   const { toast } = useAdminToast();
   const [reports, setReports] = useState<FlaggedReport[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"flagged" | "all">("flagged");
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
 
-  // Confirmation modals
-  const [approveTarget, setApproveTarget] = useState<FlaggedReport | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<FlaggedReport | null>(null);
-  const [unapproveTarget, setUnapproveTarget] = useState<FlaggedReport | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  // Column filters
+  const [statusFilter, setStatusFilter] = useState<"all" | "confirmed" | "pending" | "rejected">("all");
+  const [filterProduct, setFilterProduct] = useState("");
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+
+  // Clickable status dropdown
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+  const [loadingStatusId, setLoadingStatusId] = useState<string | null>(null);
+
+  // Kebab action menu
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   // +Add modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -58,7 +77,9 @@ export default function AdminFlagsPage() {
       return;
     }
     setLoading(true);
-    fetch(`/api/admin/flags?status=${filter}&limit=50&offset=0`, {
+    const searchTerm = filterProduct.trim();
+    const searchParam = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
+    fetch(`/api/admin/flags?status=all&limit=${limit}&offset=${offset}${searchParam}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     })
       .then((r) => r.json())
@@ -75,7 +96,20 @@ export default function AdminFlagsPage() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [offset]);
+
+  // Debounced server-side search when product filter changes
+  const filterProductRef = useRef(filterProduct);
+  filterProductRef.current = filterProduct;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (filterProductRef.current === filterProduct) {
+        setOffset(0);
+        load();
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filterProduct]);
 
   useEffect(() => {
     if (!showAddModal && !editTarget) return;
@@ -89,87 +123,32 @@ export default function AdminFlagsPage() {
     }).finally(() => setAddOptionsLoading(false));
   }, [showAddModal, editTarget]);
 
-  const filteredReports = search.trim()
-    ? reports.filter((r) => {
-        const q = search.trim().toLowerCase();
-        const name = (r.product?.name_ar ?? "").toLowerCase();
-        const price = String(r.price ?? "");
-        return name.includes(q) || price.includes(q);
-      })
-    : reports;
+  const filteredReports = reports.filter((r) => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    return true;
+  });
 
-  async function confirmApprove() {
-    if (!approveTarget) return;
+  async function handleStatusChange(id: string, newStatus: string) {
     const token = getAdminToken();
     if (!token) return;
-    setActionLoading(true);
+    setLoadingStatusId(id);
+    setStatusDropdownId(null);
     try {
-      const res = await fetch(`/api/admin/prices/${approveTarget.id}/status`, {
+      const res = await fetch(`/api/admin/prices/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: "confirmed" }),
+        body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        toast("Report approved", "success");
-        setApproveTarget(null);
-        load();
+        setReports((prev) => prev.map((r) => r.id === id ? { ...r, status: newStatus } : r));
+        toast(`Status changed to ${newStatus}`, "success");
       } else {
         toast("Action failed", "error");
       }
     } catch {
       toast("Action failed", "error");
     } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function confirmRemove() {
-    if (!removeTarget) return;
-    const token = getAdminToken();
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/admin/prices/${removeTarget.id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: "rejected" }),
-      });
-      if (res.ok) {
-        toast("Report removed", "success");
-        setRemoveTarget(null);
-        load();
-      } else {
-        toast("Action failed", "error");
-      }
-    } catch {
-      toast("Action failed", "error");
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function confirmUnapprove() {
-    if (!unapproveTarget) return;
-    const token = getAdminToken();
-    if (!token) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`/api/admin/prices/${unapproveTarget.id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: "pending" }),
-      });
-      if (res.ok) {
-        toast("Approve removed", "success");
-        setUnapproveTarget(null);
-        load();
-      } else {
-        toast("Action failed", "error");
-      }
-    } catch {
-      toast("Action failed", "error");
-    } finally {
-      setActionLoading(false);
+      setLoadingStatusId(null);
     }
   }
 
@@ -179,6 +158,7 @@ export default function AdminFlagsPage() {
   }
 
   async function openEditModal(r: FlaggedReport) {
+    setActionMenuId(null);
     setEditTarget(r);
     setEditFetching(true);
     try {
@@ -287,6 +267,7 @@ export default function AdminFlagsPage() {
   }
 
   async function handleView(r: FlaggedReport) {
+    setActionMenuId(null);
     setViewLoadingId(r.id);
     try {
       const res = await fetch(`/api/prices/${r.id}`);
@@ -304,69 +285,125 @@ export default function AdminFlagsPage() {
     }
   }
 
+  function handleRemove(r: FlaggedReport) {
+    setActionMenuId(null);
+    handleStatusChange(r.id, "rejected");
+  }
+
+  function handleApprove(r: FlaggedReport) {
+    setActionMenuId(null);
+    handleStatusChange(r.id, "confirmed");
+  }
+
+  function handleUnapprove(r: FlaggedReport) {
+    setActionMenuId(null);
+    handleStatusChange(r.id, "pending");
+  }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClick() {
+      setStatusDropdownId(null);
+      setActionMenuId(null);
+      setOpenFilter(null);
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
+  const funnelIcon = (active: boolean) => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={active ? "#4A7C59" : "currentColor"} strokeWidth="2">
+      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>
+    </svg>
+  );
+
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-nowrap gap-2 sm:gap-3 items-center">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search product or price..."
-            className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-          />
-          <button
-            onClick={openAddModal}
-            className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
-          >
-            + Add Report
-          </button>
-        </div>
-        <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
-          <div className="flex items-center justify-between border-b border-[#243040] px-5 py-4">
-            <div>
-              <div className="text-[13px] font-semibold text-[#D8E4F0]">Flagged Price Reports</div>
-              <div className="text-[11px] text-[#4E6070] mt-0.5">{total} reports {filter === "flagged" ? "awaiting review" : "with flags"}</div>
-            </div>
-            <div className="flex gap-1.5">
-              {(["flagged", "all"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    filter === f
-                      ? "border border-[#4A7C59] bg-[#4A7C59] text-white"
-                      : "border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:text-[#D8E4F0]"
-                  }`}
-                >
-                  {f === "flagged" ? "Awaiting" : "All"}
-                </button>
-              ))}
-            </div>
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820] flex-1 min-h-0 flex flex-col">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
           </div>
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
-            </div>
-          ) : filteredReports.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#4E6070]">
-              {search.trim() ? "No reports match your search." : "No flagged reports"}
-            </div>
-          ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
-              <table className="w-full min-w-[480px]">
-                <thead>
-                  <tr className="border-b border-[#243040]">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Price</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Flags</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Reported</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+        ) : (
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+            <table className="w-full min-w-[480px]">
+              <thead>
+                <tr className="border-b border-[#243040]">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="flex items-center gap-1.5">
+                      Product
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setOpenFilter(openFilter === "product" ? null : "product")}
+                          className="p-0.5 rounded hover:bg-[#243040] transition-colors"
+                        >
+                          {funnelIcon(!!filterProduct.trim())}
+                        </button>
+                        {openFilter === "product" && (
+                          <div className="absolute top-full left-0 mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] p-2 shadow-xl">
+                            <input
+                              type="text"
+                              value={filterProduct}
+                              onChange={(e) => setFilterProduct(e.target.value)}
+                              placeholder="Filter product..."
+                              autoFocus
+                              className="w-full rounded-md border border-[#243040] bg-[#111820] px-2 py-1.5 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Price</th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="flex items-center gap-1.5">
+                      Status
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setOpenFilter(openFilter === "status" ? null : "status")}
+                          className="p-0.5 rounded hover:bg-[#243040] transition-colors"
+                        >
+                          {funnelIcon(statusFilter !== "all")}
+                        </button>
+                        {openFilter === "status" && (
+                          <div className="absolute top-full left-0 mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] p-1 shadow-xl">
+                            {(["all", "confirmed", "pending", "rejected"] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => { setStatusFilter(s); setOpenFilter(null); }}
+                                className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors ${
+                                  statusFilter === s
+                                    ? "bg-[#4A7C5930] text-[#6BA880]"
+                                    : "text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0]"
+                                }`}
+                              >
+                                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Flags</th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Reported</th>
+                  <th className="px-5 py-2.5 text-center">
+                    <button onClick={openAddModal} className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredReports.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-sm text-[#4E6070]">
+                      No flagged reports
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredReports.map((r, i) => (
+                ) : (
+                  filteredReports.map((r, i) => (
                     <tr key={r.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                       <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{i + 1}</td>
                       <td className="px-5 py-3 text-xs font-medium text-[#D8E4F0]">
@@ -374,20 +411,41 @@ export default function AdminFlagsPage() {
                       </td>
                       <td className="px-5 py-3 font-mono text-xs">₪ {r.price}</td>
                       <td className="px-5 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
-                          r.status === "confirmed"
-                            ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
-                            : r.status === "rejected"
-                              ? "border-[#64748B35] bg-[#334155] text-[#94A3B8]"
-                              : "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]"
-                        }`}>
-                          {r.status === "confirmed" ? "Approved" : r.status === "rejected" ? "Rejected" : "Flagged"}
-                        </span>
+                        <div className="relative" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setStatusDropdownId(statusDropdownId === r.id ? null : r.id)}
+                            disabled={loadingStatusId === r.id}
+                            className="cursor-pointer disabled:opacity-50"
+                          >
+                            {loadingStatusId === r.id ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-[#4E6070]">...</span>
+                            ) : (
+                              statusBadge(r.status)
+                            )}
+                          </button>
+                          {statusDropdownId === r.id && (
+                            <div className="absolute top-full left-0 mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] p-1 shadow-xl">
+                              {(["confirmed", "pending", "rejected"] as const).map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => handleStatusChange(r.id, s)}
+                                  className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors ${
+                                    r.status === s
+                                      ? "bg-[#4A7C5930] text-[#6BA880]"
+                                      : "text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0]"
+                                  }`}
+                                >
+                                  {s === "confirmed" ? "🟢 Confirmed" : s === "rejected" ? "🔴 Rejected" : "🟡 Pending"}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
                         <div className="space-y-1">
-                          {(r.flags ?? []).slice(0, 2).map((f, i) => (
-                            <div key={i} className="text-[11px] text-[#8FA3B8]">
+                          {(r.flags ?? []).slice(0, 2).map((f, fi) => (
+                            <div key={fi} className="text-[11px] text-[#8FA3B8]">
                               {f.reason ?? "No reason"}
                             </div>
                           ))}
@@ -399,107 +457,89 @@ export default function AdminFlagsPage() {
                       <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">
                         {r.reported_at ? new Date(r.reported_at).toLocaleDateString() : "—"}
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-2 flex-wrap items-center">
+                      <td className="px-5 py-3 text-center">
+                        <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleView(r)}
-                            disabled={viewLoadingId === r.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6] bg-[#3B82F618] px-3 py-1.5 text-xs font-medium text-[#60A5FA] hover:bg-[#3B82F628] disabled:opacity-50 transition-colors"
+                            onClick={() => setActionMenuId(actionMenuId === r.id ? null : r.id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer"
                           >
-                            <ViewIcon />
-                            {viewLoadingId === r.id ? "..." : "View"}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                           </button>
-                          <button
-                            onClick={() => openEditModal(r)}
-                            disabled={editFetching}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] disabled:opacity-50 transition-colors"
-                          >
-                            <EditIcon />
-                            Edit
-                          </button>
-                          {r.status === "confirmed" ? (
-                            <button
-                              onClick={() => setUnapproveTarget(r)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-3 py-1.5 text-xs font-medium text-[#E8B870] hover:bg-[#D4913A28] hover:border-[#D4913A] disabled:opacity-50 transition-colors"
-                            >
-                              <UnapproveIcon />
-                              Unapprove
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => setApproveTarget(r)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] disabled:opacity-50 transition-colors"
-                            >
-                              <ApproveIcon />
-                              Approve
-                            </button>
+                          {actionMenuId === r.id && (
+                            <div className="absolute right-0 top-full mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] p-1 shadow-xl">
+                              <button
+                                onClick={() => handleView(r)}
+                                disabled={viewLoadingId === r.id}
+                                className="w-full text-left px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] rounded-md transition-colors disabled:opacity-50"
+                              >
+                                {viewLoadingId === r.id ? "Loading..." : "View"}
+                              </button>
+                              <button
+                                onClick={() => openEditModal(r)}
+                                className="w-full text-left px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] rounded-md transition-colors"
+                              >
+                                Edit
+                              </button>
+                              {r.status === "pending" && (
+                                <button
+                                  onClick={() => handleApprove(r)}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] rounded-md transition-colors"
+                                >
+                                  Approve
+                                </button>
+                              )}
+                              {r.status === "confirmed" && (
+                                <button
+                                  onClick={() => handleUnapprove(r)}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] rounded-md transition-colors"
+                                >
+                                  Unapprove
+                                </button>
+                              )}
+                              {r.status !== "rejected" && (
+                                <>
+                                  <div className="my-1 border-t border-[#243040]" />
+                                  <button
+                                    onClick={() => handleRemove(r)}
+                                    className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#A8585218] rounded-md transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           )}
-                          <button
-                            onClick={() => setRemoveTarget(r)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] disabled:opacity-50 transition-colors"
-                          >
-                            <RemoveIcon />
-                            Remove
-                          </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {total > limit && (
+        <div className="mt-4 flex justify-between">
+          <button
+            onClick={() => setOffset((o) => Math.max(0, o - limit))}
+            disabled={offset === 0}
+            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-[#4E6070]">
+            {offset + 1}–{Math.min(offset + limit, total)} of {total}
+          </span>
+          <button
+            onClick={() => setOffset((o) => o + limit)}
+            disabled={offset + limit >= total}
+            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
-
-      {/* Unapprove confirmation */}
-      {unapproveTarget && (
-        <>
-          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !actionLoading && setUnapproveTarget(null)} />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Approve</h3>
-            <p className="text-sm text-[#8FA3B8] mb-4">
-              Remove approval from &ldquo;{unapproveTarget.product?.name_ar ?? "—"}&rdquo; (₪{unapproveTarget.price})? It will go back to pending.
-            </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setUnapproveTarget(null)} disabled={actionLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmUnapprove} disabled={actionLoading} className="flex-1 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-4 py-2 text-sm font-medium text-[#E8B870] hover:bg-[#D4913A28] disabled:opacity-50">{actionLoading ? "..." : "Yes, Unapprove"}</button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Approve confirmation */}
-      {approveTarget && (
-        <>
-          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !actionLoading && setApproveTarget(null)} />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Approve Report</h3>
-            <p className="text-sm text-[#8FA3B8] mb-4">
-              Are you sure you want to approve this flagged price report for &ldquo;{approveTarget.product?.name_ar ?? "—"}&rdquo; (₪{approveTarget.price})? The price will remain active.
-            </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setApproveTarget(null)} disabled={actionLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmApprove} disabled={actionLoading} className="flex-1 rounded-lg bg-[#4A7C59] px-4 py-2 text-sm font-medium text-white hover:bg-[#3A6347] disabled:opacity-50">{actionLoading ? "..." : "Yes, Approve"}</button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Remove confirmation */}
-      {removeTarget && (
-        <>
-          <div className="fixed inset-0 bg-black/60 z-40" aria-hidden onClick={() => !actionLoading && setRemoveTarget(null)} />
-          <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto rounded-xl border border-[#243040] bg-[#18212C] p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-[#D8E4F0] mb-2">Remove Report</h3>
-            <p className="text-sm text-[#8FA3B8] mb-4">
-              Are you sure you want to remove this flagged price report for &ldquo;{removeTarget.product?.name_ar ?? "—"}&rdquo; (₪{removeTarget.price})? The price will be rejected.
-            </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setRemoveTarget(null)} disabled={actionLoading} className="flex-1 rounded-lg border border-[#243040] px-4 py-2 text-sm text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={confirmRemove} disabled={actionLoading} className="flex-1 rounded-lg border border-[#A85852] bg-[#A8585218] px-4 py-2 text-sm font-medium text-[#D49088] hover:bg-[#A8585228] disabled:opacity-50 transition-colors">{actionLoading ? "..." : "Yes, Remove"}</button>
-            </div>
-          </div>
-        </>
       )}
 
       {/* Edit modal */}

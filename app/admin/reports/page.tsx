@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { ViewIcon, EditIcon, ApproveIcon, UnapproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
@@ -27,8 +27,11 @@ export default function AdminReportsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [offset, setOffset] = useState(0);
-  const [search, setSearch] = useState("");
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterProduct, setFilterProduct] = useState("");
+  const [filterArea, setFilterArea] = useState("");
   const limit = 20;
 
   // Confirmation modals
@@ -45,11 +48,31 @@ export default function AdminReportsPage() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [addOptionsLoading, setAddOptionsLoading] = useState(false);
 
+  // Product search (typeahead)
+  const [productQuery, setProductQuery] = useState("");
+  const [productResults, setProductResults] = useState<Product[]>([]);
+  const [productSearching, setProductSearching] = useState(false);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [selectedProductName, setSelectedProductName] = useState("");
+  const productSearchTimer = useState<ReturnType<typeof setTimeout> | null>(null);
+
   // Edit modal
   const [editTarget, setEditTarget] = useState<Report | null>(null);
   const [editForm, setEditForm] = useState(ADD_FORM_EMPTY);
   const [editSaving, setEditSaving] = useState(false);
   const [editFetching, setEditFetching] = useState(false);
+
+  // Edit product search (typeahead)
+  const [editProductQuery, setEditProductQuery] = useState("");
+  const [editProductResults, setEditProductResults] = useState<Product[]>([]);
+  const [editProductSearching, setEditProductSearching] = useState(false);
+  const [showEditProductDropdown, setShowEditProductDropdown] = useState(false);
+  const [editSelectedProductName, setEditSelectedProductName] = useState("");
+
+  // Status dropdown
+  const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
+  const [loadingStatusId, setLoadingStatusId] = useState<string | null>(null);
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   // View: fetch price when product_id missing
   const [viewLoadingId, setViewLoadingId] = useState<string | null>(null);
@@ -57,6 +80,7 @@ export default function AdminReportsPage() {
   function load() {
     setLoading(true);
     const params = new URLSearchParams({ filter, limit: String(limit), offset: String(offset) });
+    if (filterProduct.trim()) params.set("search", filterProduct.trim());
     fetch(`/api/reports?${params}`)
       .then((r) => r.json())
       .then((d) => {
@@ -70,11 +94,22 @@ export default function AdminReportsPage() {
     load();
   }, [filter, offset]);
 
+  // Debounced server-side search when product filter changes
+  const productFilterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (productFilterTimer.current) clearTimeout(productFilterTimer.current);
+    productFilterTimer.current = setTimeout(() => {
+      setOffset(0);
+      load();
+    }, 300);
+    return () => { if (productFilterTimer.current) clearTimeout(productFilterTimer.current); };
+  }, [filterProduct]);
+
   useEffect(() => {
     if (!showAddModal && !editTarget) return;
     setAddOptionsLoading(true);
     Promise.all([
-      fetch("/api/products?limit=50").then((r) => r.json()).then((d) => d?.products ?? []).catch(() => []),
+      fetch("/api/products?all=1&limit=200").then((r) => r.json()).then((d) => d?.products ?? []).catch(() => []),
       fetch("/api/areas").then((r) => r.json()).then((d) => d?.areas ?? []).catch(() => []),
     ]).then(([prods, ars]) => {
       setProducts(prods);
@@ -82,15 +117,13 @@ export default function AdminReportsPage() {
     }).finally(() => setAddOptionsLoading(false));
   }, [showAddModal, editTarget]);
 
-  const filteredReports = search.trim()
-    ? reports.filter((r) => {
-        const q = search.trim().toLowerCase();
-        const name = (r.product?.name_ar ?? "").toLowerCase();
-        const area = (r.area?.name_ar ?? "").toLowerCase();
-        const price = String(r.price ?? "");
-        return name.includes(q) || area.includes(q) || price.includes(q);
-      })
-    : reports;
+  const filteredReports = reports.filter((r) => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (filterArea.trim()) {
+      if (!(r.area?.name_ar ?? "").toLowerCase().includes(filterArea.trim().toLowerCase())) return false;
+    }
+    return true;
+  });
 
   async function confirmApprove() {
     if (!approveTarget) return;
@@ -165,9 +198,9 @@ export default function AdminReportsPage() {
         body: JSON.stringify({ status: "rejected" }),
       });
       if (res.ok) {
-        toast("Report removed", "success");
+        toast("Report rejected", "success");
+        setReports((prev) => prev.map((r) => r.id === removeTarget.id ? { ...r, status: "rejected" } : r));
         setRemoveTarget(null);
-        load();
       } else {
         const d = await res.json();
         toast(d?.message ?? "Action failed", "error");
@@ -315,64 +348,150 @@ export default function AdminReportsPage() {
     }
   }
 
+  async function handleStatusChange(r: Report, newStatus: string) {
+    const token = getAdminToken();
+    if (!token) { toast("Login required", "error"); return; }
+    setStatusDropdownId(null);
+    setLoadingStatusId(r.id);
+    try {
+      const res = await fetch(`/api/admin/prices/${r.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setReports((prev) => prev.map((x) => x.id === r.id ? { ...x, status: newStatus } : x));
+        toast("Status updated", "success");
+      } else {
+        const d = await res.json();
+        toast(d?.message ?? "Failed", "error");
+      }
+    } catch {
+      toast("Failed", "error");
+    } finally {
+      setLoadingStatusId(null);
+    }
+  }
+
+  function statusBadge(status?: string) {
+    const cls = status === "confirmed"
+      ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
+      : status === "rejected"
+        ? "border-[#A8585235] bg-[#A8585218] text-[#D49088]"
+        : "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]";
+    const dot = status === "confirmed" ? "🟢" : status === "rejected" ? "🔴" : "🟡";
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${cls}`}>
+        <span className="text-[8px]">{dot}</span> {status ?? "—"}
+      </span>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
-          <div className="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
-            {(["all", "today", "trusted"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => { setFilter(f); setOffset(0); }}
-                className={`rounded-lg px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-                  filter === f
-                    ? "bg-[#4A7C59] text-white"
-                    : "border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:text-[#D8E4F0]"
-                }`}
-              >
-                {f === "all" ? "All" : f === "today" ? "Today" : "Trusted"}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-nowrap gap-2 sm:gap-3 items-center min-w-0">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search product, area or price..."
-              className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-            />
-            <button
-              onClick={openAddModal}
-              className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
-            >
-              + Add Report
-            </button>
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
             </div>
-          ) : filteredReports.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#4E6070]">
-              {search.trim() ? "No reports match your search." : "No reports"}
-            </div>
           ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
+            <div className="overflow-x-auto overflow-y-auto">
               <table className="w-full min-w-[480px]">
                 <thead>
                   <tr className="border-b border-[#243040]">
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                      <div className="relative inline-flex items-center gap-1">
+                        Product
+                        <button onClick={() => setOpenFilter(openFilter === "product" ? null : "product")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterProduct ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                        </button>
+                        {openFilter === "product" && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                            <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={filterProduct}
+                                onChange={(e) => setFilterProduct(e.target.value)}
+                                placeholder="Filter product..."
+                                className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal"
+                              />
+                              {filterProduct && (
+                                <button onClick={() => { setFilterProduct(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Price</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                      <div className="relative inline-flex items-center gap-1">
+                        Area
+                        <button onClick={() => setOpenFilter(openFilter === "area" ? null : "area")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterArea ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                        </button>
+                        {openFilter === "area" && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                            <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={filterArea}
+                                onChange={(e) => setFilterArea(e.target.value)}
+                                placeholder="Filter area..."
+                                className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal"
+                              />
+                              {filterArea && (
+                                <button onClick={() => { setFilterArea(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </th>
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                      <div className="relative inline-flex items-center gap-1">
+                        Status
+                        <button onClick={() => setOpenFilter(openFilter === "status" ? null : "status")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${statusFilter !== "all" ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                        </button>
+                        {openFilter === "status" && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                            <div className="absolute left-0 top-full mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              {[{ v: "all", l: "All" }, { v: "confirmed", l: "🟢 Confirmed" }, { v: "pending", l: "🟡 Pending" }, { v: "rejected", l: "🔴 Rejected" }].map((o) => (
+                                <button
+                                  key={o.v}
+                                  onClick={() => { setStatusFilter(o.v); setOpenFilter(null); }}
+                                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] flex items-center gap-2 font-normal normal-case tracking-normal ${statusFilter === o.v ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                                >
+                                  {o.l}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </th>
                     <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Confirmations</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+                    <th className="px-5 py-2.5 text-center">
+                      <button
+                        onClick={openAddModal}
+                        className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
+                  {filteredReports.length === 0 && (
+                    <tr><td colSpan={7} className="py-12 text-center text-sm text-[#4E6070]">{reports.length > 0 ? "No reports match filters" : "No reports"}</td></tr>
+                  )}
                   {filteredReports.map((r, i) => (
                     <tr key={r.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                       <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
@@ -380,60 +499,96 @@ export default function AdminReportsPage() {
                       <td className="px-5 py-3 font-mono text-xs">₪ {r.price ?? "—"}</td>
                       <td className="px-5 py-3 text-xs text-[#8FA3B8]">{r.area?.name_ar ?? "—"}</td>
                       <td className="px-5 py-3">
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
-                          r.status === "confirmed"
-                            ? "border-[#4A7C5935] bg-[#4A7C5920] text-[#6BA880]"
-                            : r.status === "rejected"
-                              ? "border-[#64748B35] bg-[#334155] text-[#94A3B8]"
-                              : "border-[#D4913A35] bg-[#D4913A18] text-[#E8B870]"
-                        }`}>
-                          {r.status ?? "—"}
-                        </span>
+                        <div className="relative">
+                          {loadingStatusId === r.id ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#243040] bg-[#18212C] px-2.5 py-0.5 text-[10px] text-[#8FA3B8]">
+                              <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setStatusDropdownId(statusDropdownId === r.id ? null : r.id)}
+                              className="cursor-pointer"
+                            >
+                              {statusBadge(r.status)}
+                            </button>
+                          )}
+                          {statusDropdownId === r.id && (
+                            <>
+                              <div className="fixed inset-0 z-20" onClick={() => setStatusDropdownId(null)} />
+                              <div className="absolute left-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                                {r.status !== "confirmed" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(r, "confirmed")}
+                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                  >
+                                    🟢 Confirmed
+                                  </button>
+                                )}
+                                {r.status !== "pending" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(r, "pending")}
+                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                  >
+                                    🟡 Pending
+                                  </button>
+                                )}
+                                {r.status !== "rejected" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStatusChange(r, "rejected")}
+                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
+                                  >
+                                    🔴 Rejected
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3 font-mono text-xs">{r.confirmation_count ?? 0}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-2 flex-wrap items-center">
+                      <td className="px-5 py-3 text-center">
+                        <div className="relative">
                           <button
-                            onClick={() => handleView(r)}
-                            disabled={viewLoadingId === r.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6] bg-[#3B82F618] px-3 py-1.5 text-xs font-medium text-[#60A5FA] hover:bg-[#3B82F628] disabled:opacity-50 transition-colors"
+                            onClick={() => setActionMenuId(actionMenuId === r.id ? null : r.id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer"
                           >
-                            <ViewIcon />
-                            {viewLoadingId === r.id ? "..." : "View"}
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                           </button>
-                          <button
-                            onClick={() => openEditModal(r)}
-                            disabled={editFetching}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] disabled:opacity-50 transition-colors"
-                          >
-                            <EditIcon />
-                            Edit
-                          </button>
-                          {r.status === "pending" && (
-                            <button
-                              onClick={() => setApproveTarget(r)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] disabled:opacity-50 transition-colors"
-                            >
-                              <ApproveIcon />
-                              Approve
-                            </button>
+                          {actionMenuId === r.id && (
+                            <>
+                              <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
+                              <div className="absolute right-0 top-full mt-1 z-30 w-44 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                                <button onClick={() => { handleView(r); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">
+                                  👁 View
+                                </button>
+                                <button onClick={() => { openEditModal(r); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">
+                                  ✏️ Edit
+                                </button>
+                                {r.status === "pending" && (
+                                  <button onClick={() => { setApproveTarget(r); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#6BA880] hover:bg-[#243040] flex items-center gap-2">
+                                    ✅ Approve
+                                  </button>
+                                )}
+                                {r.status === "confirmed" && (
+                                  <button onClick={() => { setUnapproveTarget(r); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#E8B870] hover:bg-[#243040] flex items-center gap-2">
+                                    ⏸ Unapprove
+                                  </button>
+                                )}
+                                {r.status !== "rejected" && (
+                                  <>
+                                    <div className="h-px bg-[#243040] my-1" />
+                                    <button onClick={() => { setRemoveTarget(r); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D49088] hover:bg-[#243040] flex items-center gap-2">
+                                      🗑 Remove
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </>
                           )}
-                          {r.status === "confirmed" && (
-                            <button
-                              onClick={() => setUnapproveTarget(r)}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-[#D4913A] bg-[#D4913A18] px-3 py-1.5 text-xs font-medium text-[#E8B870] hover:bg-[#D4913A28] hover:border-[#D4913A] disabled:opacity-50 transition-colors"
-                            >
-                              <UnapproveIcon />
-                              Unapprove
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setRemoveTarget(r)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] disabled:opacity-50 transition-colors"
-                          >
-                            <RemoveIcon />
-                            Remove
-                          </button>
                         </div>
                       </td>
                     </tr>
