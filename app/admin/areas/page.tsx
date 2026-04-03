@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 
 type Area = {
   id: string;
@@ -19,7 +18,11 @@ export default function AdminAreasPage() {
   const { toast } = useAdminToast();
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterArea, setFilterArea] = useState("");
+  const [filterGov, setFilterGov] = useState("");
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   const [showFormModal, setShowFormModal] = useState(false);
   const [formMode, setFormMode] = useState<"add" | "edit">("add");
@@ -149,72 +152,106 @@ export default function AdminAreasPage() {
     }
   }
 
-  const filteredAreas = search.trim()
-    ? areas.filter(
-        (a) =>
-          (a.name_ar?.toLowerCase() ?? "").includes(search.trim().toLowerCase()) ||
-          (a.governorate?.toLowerCase() ?? "").includes(search.trim().toLowerCase())
-      )
-    : areas;
+  const filteredAreas = areas.filter((a) => {
+    if (filterArea && !(a.name_ar ?? "").toLowerCase().includes(filterArea.toLowerCase())) return false;
+    if (filterGov && !(a.governorate ?? "").toLowerCase().includes(filterGov.toLowerCase())) return false;
+    return true;
+  });
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="mb-4 flex flex-nowrap gap-2 sm:gap-3 items-center">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search areas..."
-          className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-        />
-        <button
-          onClick={openAddModal}
-          className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
-        >
-          + Add Area
-        </button>
-      </div>
-
-      <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
-          </div>
-        ) : filteredAreas.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[#4E6070]">
-            {search.trim() ? "No areas match your search." : "No areas"}
-          </div>
-        ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
-            <table className="w-full min-w-[500px]">
-              <thead>
-                <tr className="border-b border-[#243040]">
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Governorate</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Active Reports</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+        <div className="overflow-x-auto overflow-y-auto h-full">
+          <table className="w-full min-w-[500px]">
+            <thead>
+              <tr className="border-b border-[#243040]">
+                <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
+                <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                  <div className="relative inline-flex items-center gap-1">
+                    Area
+                    <button onClick={() => setOpenFilter(openFilter === "area" ? null : "area")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterArea ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                    </button>
+                    {openFilter === "area" && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                        <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                          <input autoFocus type="text" value={filterArea} onChange={(e) => setFilterArea(e.target.value)} placeholder="Filter area..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                          {filterArea && (<button onClick={() => { setFilterArea(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </th>
+                <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                  <div className="relative inline-flex items-center gap-1">
+                    Governorate
+                    <button onClick={() => setOpenFilter(openFilter === "gov" ? null : "gov")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterGov ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                    </button>
+                    {openFilter === "gov" && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                        <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                          <input autoFocus type="text" value={filterGov} onChange={(e) => setFilterGov(e.target.value)} placeholder="Filter governorate..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                          {filterGov && (<button onClick={() => { setFilterGov(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </th>
+                <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Active Reports</th>
+                <th className="px-5 py-2.5 text-center">
+                  <button onClick={openAddModal} className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center">
+                    <div className="flex justify-center">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredAreas.map((a, i) => (
+              ) : filteredAreas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-sm text-[#4E6070]">
+                    {filterArea || filterGov ? "No areas match your filters." : "No areas"}
+                  </td>
+                </tr>
+              ) : (
+                filteredAreas.map((a, i) => (
                   <tr key={a.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                     <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{i + 1}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{a.name_ar}</td>
                     <td className="px-5 py-3 text-xs text-[#8FA3B8]">{a.governorate ?? "—"}</td>
                     <td className="px-5 py-3 font-mono text-xs">{a.active_reports_count ?? 0}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-2 flex-wrap items-center">
-                        <button onClick={() => openEditModal(a)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"><EditIcon />Edit</button>
-                        <button onClick={() => setDeleteTarget(a)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"><RemoveIcon />Remove</button>
+                    <td className="px-5 py-3 text-center">
+                      <div className="relative inline-block">
+                        <button onClick={() => setActionMenuId(actionMenuId === a.id ? null : a.id)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {actionMenuId === a.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
+                            <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              <button onClick={() => { setActionMenuId(null); openEditModal(a); }} className="w-full px-3 py-1.5 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] transition-colors">Edit</button>
+                              <button onClick={() => { setActionMenuId(null); setDeleteTarget(a); }} className="w-full px-3 py-1.5 text-left text-xs text-[#D49088] hover:bg-[#243040] transition-colors">Remove</button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Add/Edit modal */}

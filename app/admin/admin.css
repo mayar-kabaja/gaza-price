@@ -91,6 +91,16 @@
 .admin-root .admin-stat-card.sky:hover {
   border-color: rgba(74, 159, 212, 0.5);
 }
+.admin-root .admin-stat-card.purple::before {
+  background: linear-gradient(90deg, #9B7ACF, #B89AE8);
+}
+.admin-root .admin-stat-card.purple {
+  background: linear-gradient(135deg, #111820 0%, #16141a 100%);
+  border-color: rgba(155, 122, 207, 0.3);
+}
+.admin-root .admin-stat-card.purple:hover {
+  border-color: rgba(155, 122, 207, 0.5);
+}
 
 /* Custom scrollbar — dark theme */
 .admin-root ::-webkit-scrollbar {

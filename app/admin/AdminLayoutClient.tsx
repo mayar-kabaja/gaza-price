@@ -61,7 +61,6 @@ function useAdminAuth() {
         sectionsRes,
         categoriesRes,
         areasRes,
-        storesRes,
         contributorsRes,
         reportsRes,
         logsRes,
@@ -74,7 +73,6 @@ function useAdminAuth() {
         fetch("/api/sections", { headers: { Accept: "application/json" } }),
         fetch("/api/categories", { headers: { Accept: "application/json" } }),
         fetch("/api/areas", { headers: { Accept: "application/json" } }),
-        fetch("/api/stores", { headers: { Accept: "application/json" } }),
         fetch("/api/admin/contributors?limit=1&offset=0", { headers }),
         fetch("/api/reports?limit=1&offset=0", { headers: { Accept: "application/json" } }),
         fetch("/api/admin/logs/search?limit=1&offset=0", { headers }),
@@ -107,10 +105,6 @@ function useAdminAuth() {
       if (areasRes.ok) {
         const d = (await areasRes.json()) as { areas?: unknown[] };
         counts.areas = d?.areas?.length ?? 0;
-      }
-      if (storesRes.ok) {
-        const d = await storesRes.json();
-        counts.stores = Array.isArray(d) ? d.length : 0;
       }
       if (contributorsRes.ok) {
         const d = (await contributorsRes.json()) as { total?: number };

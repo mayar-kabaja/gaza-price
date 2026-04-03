@@ -21,6 +21,7 @@ type Stats = {
   active_contributors?: number;
   submission_volume?: number[];
   top_categories?: { id: string; name_ar: string; icon: string | null; count: number }[];
+  total_users?: number;
   top_contributors?: { id: string; display_handle: string | null; area: { name_ar: string } | null; report_count: number }[];
   regional_coverage?: { id: string; name_ar: string; count: number }[];
 };
@@ -77,22 +78,23 @@ export default function AdminDashboardPage() {
       ) : (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-1 max-[380px]:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 max-[380px]:grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
           {[
             { label: "Price Reports Today", value: String(stats.reports_today ?? "—"), icon: "📊", color: "olive", delta: "Today" },
             { label: "Pending Review", value: String(stats.pending_products ?? "—"), icon: "⏳", color: "sand", delta: "Awaiting verification" },
             { label: "Flagged Reports", value: String(stats.flagged_count ?? "—"), icon: "⚠️", color: "red", delta: "Requires attention" },
             { label: "Active Contributors", value: String(stats.active_contributors ?? "—"), icon: "👥", color: "sky", delta: "This week" },
+            { label: "Total Users", value: String(stats.total_users ?? "—"), icon: "🧑‍🤝‍🧑", color: "purple", delta: "Registered users" },
           ].map((s) => (
             <div
               key={s.label}
-              className={`admin-stat-card relative overflow-hidden rounded-[10px] border max-sm:py-[14px] max-sm:px-4 sm:p-5 transition-all duration-200 ${s.color === "olive" ? "olive" : ""} ${s.color === "sand" ? "sand" : ""} ${s.color === "red" ? "red" : ""} ${s.color === "sky" ? "sky" : ""}`}
+              className={`admin-stat-card relative overflow-hidden rounded-[10px] border max-sm:py-[14px] max-sm:px-4 sm:p-5 transition-all duration-200 ${s.color === "olive" ? "olive" : ""} ${s.color === "sand" ? "sand" : ""} ${s.color === "red" ? "red" : ""} ${s.color === "sky" ? "sky" : ""} ${s.color === "purple" ? "purple" : ""}`}
             >
               <div className="flex items-center justify-between mb-3.5">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-[#4E6070]">{s.label}</span>
                 <span className="text-lg opacity-90">{s.icon}</span>
               </div>
-              <div className={`text-[22px] sm:text-[26px] font-bold tracking-tight mb-2 font-mono ${s.color === "olive" ? "text-[#6BA880]" : s.color === "sand" ? "text-[#E8C98A]" : s.color === "red" ? "text-[#E8887A]" : "text-[#7AC4F0]"}`}>{s.value}</div>
+              <div className={`text-[22px] sm:text-[26px] font-bold tracking-tight mb-2 font-mono ${s.color === "olive" ? "text-[#6BA880]" : s.color === "sand" ? "text-[#E8C98A]" : s.color === "red" ? "text-[#E8887A]" : s.color === "purple" ? "text-[#B89AE8]" : "text-[#7AC4F0]"}`}>{s.value}</div>
               <div className="text-[11px] text-[#4E6070]">{s.delta}</div>
             </div>
           ))}

@@ -13,7 +13,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/sections": "Sections",
   "/admin/categories": "Categories",
   "/admin/areas": "Areas",
-  "/admin/stores": "Stores",
   "/admin/users": "Users",
   "/admin/flags": "Flags",
   "/admin/reports": "Reports",
@@ -29,7 +28,6 @@ const navItems = [
   { href: "/admin/sections", label: "Sections", icon: "layers" },
   { href: "/admin/categories", label: "Categories", icon: "tag" },
   { href: "/admin/areas", label: "Areas", icon: "map" },
-  { href: "/admin/stores", label: "Stores", icon: "store" },
   { href: "/admin/places", label: "Places", icon: "map", badge: "pending" },
   { href: "/admin/users", label: "Users", icon: "users", badge: "sand" },
   { href: "/admin/flags", label: "Flags", icon: "bell", badge: "red" },
@@ -247,7 +245,6 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
         <NavLink href="/admin/sections" label="Sections" icon="layers" count={sidebarCounts.sections} pathname={pathname} />
         <NavLink href="/admin/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
         <NavLink href="/admin/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
-        <NavLink href="/admin/stores" label="Stores" icon="store" count={sidebarCounts.stores} pathname={pathname} />
         <NavLink href="/admin/places" label="Places" icon="map" badge="pending" badgeCount={sidebarCounts.pendingPlaces} pathname={pathname} />
       </nav>
 

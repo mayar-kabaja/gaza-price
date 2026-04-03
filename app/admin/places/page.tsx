@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { useAdminPlaces, useAreas } from "@/lib/queries/hooks";
@@ -11,11 +11,25 @@ const PAGE_SIZE = 20;
 export default function AdminPlacesPage() {
   const { toast } = useAdminToast();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [offset, setOffset] = useState(0);
-  const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset);
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterName, setFilterName] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterArea, setFilterArea] = useState("");
+
+  // Debounce filterName for server-side search
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(filterName.trim());
+      setOffset(0);
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [filterName]);
+
+  const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset, debouncedSearch);
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
   const places = data?.data ?? [];
@@ -32,6 +46,17 @@ export default function AdminPlacesPage() {
   const [editAddress, setEditAddress] = useState("");
   const [editInstagram, setEditInstagram] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Add place modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addSection, setAddSection] = useState("food");
+  const [addType, setAddType] = useState("");
+  const [addAreaId, setAddAreaId] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [addWhatsapp, setAddWhatsapp] = useState("");
+  const [addAddress, setAddAddress] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
 
   // Confirm delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -53,6 +78,38 @@ export default function AdminPlacesPage() {
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ["admin", "places"] });
+  }
+
+  function openAddModal() {
+    setAddName(""); setAddSection("food"); setAddType(""); setAddAreaId("");
+    setAddPhone(""); setAddWhatsapp(""); setAddAddress("");
+    setShowAddModal(true);
+  }
+
+  async function handleAddPlace() {
+    if (!addName.trim() || !addType.trim() || !addAreaId) {
+      toast("Name, type, and area are required"); return;
+    }
+    setAddSaving(true);
+    try {
+      const res = await apiFetchAdmin("/api/admin/places", {
+        method: "POST",
+        body: JSON.stringify({
+          name: addName.trim(),
+          section: addSection,
+          type: addType.trim(),
+          area_id: addAreaId,
+          phone: addPhone.trim() || undefined,
+          whatsapp: addWhatsapp.trim() || undefined,
+          address: addAddress.trim() || undefined,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toast(d?.message ?? "Failed to add"); return; }
+      toast("Place added");
+      setShowAddModal(false);
+      invalidate();
+    } catch { toast("Failed to add"); }
+    setAddSaving(false);
   }
 
   function openDashboard(token: string) {
@@ -152,7 +209,6 @@ export default function AdminPlacesPage() {
   }
 
   const filteredPlaces = places.filter((p) => {
-    // Respect status filter after local updates
     if (statusFilter && p.status !== statusFilter) return false;
     if (typeFilter) {
       const typeGroups: Record<string, string[]> = {
@@ -164,26 +220,23 @@ export default function AdminPlacesPage() {
       const allowed = typeGroups[typeFilter] ?? [typeFilter];
       if (!allowed.includes(p.type)) return false;
     }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      return p.name.toLowerCase().includes(q) ||
-        (p.area?.name_ar ?? "").includes(q) ||
-        (p.phone ?? "").includes(q) ||
-        (p.type ?? "").toLowerCase().includes(q);
+    if (filterArea.trim()) {
+      const q = filterArea.trim().toLowerCase();
+      if (!(p.area?.name_ar ?? "").toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
   const statusBadge = (status: string) => {
-    const map: Record<string, { bg: string; text: string; label: string }> = {
-      active: { bg: "bg-[#4A7C5920] border-[#4A7C5935]", text: "text-[#6BA880]", label: "Active" },
-      pending: { bg: "bg-[#C9A96E20] border-[#C9A96E35]", text: "text-[#C9A96E]", label: "Pending" },
-      suspended: { bg: "bg-[#A8585218] border-[#A8585235]", text: "text-[#D49088]", label: "Suspended" },
+    const map: Record<string, { bg: string; text: string; label: string; dot: string }> = {
+      active: { bg: "bg-[#4A7C5920] border-[#4A7C5935]", text: "text-[#6BA880]", label: "Active", dot: "🟢" },
+      pending: { bg: "bg-[#C9A96E20] border-[#C9A96E35]", text: "text-[#C9A96E]", label: "Pending", dot: "🟡" },
+      suspended: { bg: "bg-[#A8585218] border-[#A8585235]", text: "text-[#D49088]", label: "Suspended", dot: "🔴" },
     };
-    const s = map[status] ?? { bg: "bg-[#334155] border-[#64748B35]", text: "text-[#94A3B8]", label: status };
+    const s = map[status] ?? { bg: "bg-[#334155] border-[#64748B35]", text: "text-[#94A3B8]", label: status, dot: "⚪" };
     return (
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${s.bg} ${s.text}`}>
-        {s.label}
+      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${s.bg} ${s.text}`}>
+        <span className="text-[8px]">{s.dot}</span> {s.label}
       </span>
     );
   };
@@ -195,46 +248,10 @@ export default function AdminPlacesPage() {
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="mb-2 flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search places..."
-          className="flex-1 min-w-[180px] h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); }}
-          className="h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-        >
-          <option value="">All</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="suspended">Suspended</option>
-        </select>
-        <select
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setOffset(0); }}
-          className="h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
-        >
-          <option value="">All Types</option>
-          <option value="restaurant">🍽️ Restaurant</option>
-          <option value="cafe">☕ Cafe</option>
-          <option value="both">🍽️☕ Both</option>
-          <option value="workspace">💻 Workspace</option>
-        </select>
-        <span className="text-xs text-[#4E6070]">{total} total</span>
-      </div>
-
       <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820] flex-1 min-h-0 flex flex-col">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
-          </div>
-        ) : filteredPlaces.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[#4E6070]">
-            {search.trim() ? "No places match your search." : "No places"}
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto flex-1">
@@ -242,16 +259,122 @@ export default function AdminPlacesPage() {
               <thead>
                 <tr className="border-b border-[#243040] sticky top-0 bg-[#111820] z-10">
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-8">#</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Place</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Type</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Area</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Place
+                      <button onClick={() => setOpenFilter(openFilter === "name" ? null : "name")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterName ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "name" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input
+                              autoFocus
+                              type="text"
+                              value={filterName}
+                              onChange={(e) => setFilterName(e.target.value)}
+                              placeholder="Filter name..."
+                              className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal"
+                            />
+                            {filterName && (
+                              <button onClick={() => { setFilterName(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Type
+                      <button onClick={() => setOpenFilter(openFilter === "type" ? null : "type")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${typeFilter ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "type" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                            {[{ v: "", l: "All" }, { v: "restaurant", l: "🍽️ Restaurant" }, { v: "cafe", l: "☕ Cafe" }, { v: "both", l: "🍽️☕ Both" }, { v: "workspace", l: "💻 Workspace" }].map((o) => (
+                              <button
+                                key={o.v}
+                                onClick={() => { setTypeFilter(o.v); setOffset(0); setOpenFilter(null); }}
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] flex items-center gap-2 font-normal normal-case tracking-normal ${typeFilter === o.v ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                              >
+                                {o.l}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Area
+                      <button onClick={() => setOpenFilter(openFilter === "area" ? null : "area")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterArea ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "area" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input
+                              autoFocus
+                              type="text"
+                              value={filterArea}
+                              onChange={(e) => setFilterArea(e.target.value)}
+                              placeholder="Filter area..."
+                              className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal"
+                            />
+                            {filterArea && (
+                              <button onClick={() => { setFilterArea(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Status
+                      <button onClick={() => setOpenFilter(openFilter === "status" ? null : "status")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${statusFilter ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "status" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                            {[{ v: "", l: "All" }, { v: "active", l: "🟢 Active" }, { v: "pending", l: "🟡 Pending" }, { v: "suspended", l: "🔴 Suspended" }].map((o) => (
+                              <button
+                                key={o.v}
+                                onClick={() => { setStatusFilter(o.v); setOffset(0); setOpenFilter(null); }}
+                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] flex items-center gap-2 font-normal normal-case tracking-normal ${statusFilter === o.v ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                              >
+                                {o.l}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Open</th>
                   <th className="px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Instagram</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+                  <th className="px-3 py-2.5 text-center">
+                    <button
+                      onClick={openAddModal}
+                      className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
+                {filteredPlaces.length === 0 && (
+                  <tr><td colSpan={8} className="py-12 text-center text-sm text-[#4E6070]">{places.length > 0 ? "No places match filters" : "No places"}</td></tr>
+                )}
                 {filteredPlaces.map((p, i) => (
                   <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                     <td className="px-3 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
@@ -261,7 +384,7 @@ export default function AdminPlacesPage() {
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center rounded-full border border-[#243040] bg-[#18212C] px-2 py-0.5 text-[10px] font-medium text-[#8FA3B8]">
-                        {p.section === "food" ? "🍽" : "🏪"} {p.type}
+                        {p.section === "food" ? "🍽" : p.section === "workspace" ? "💻" : "🏪"} {({ restaurant: "Restaurant", مطعم: "Restaurant", cafe: "Cafe", كافيه: "Cafe", مقهى: "Cafe", both: "Both", "مطعم وكافيه": "Both", workspace: "Workspace", "مساحة عمل": "Workspace" } as Record<string, string>)[p.type] ?? p.type}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>
@@ -330,13 +453,13 @@ export default function AdminPlacesPage() {
                         <span className="text-[10px] text-[#4E6070]">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-3 text-center">
                       <div className="relative">
                         <button
                           onClick={() => setActionMenuId(actionMenuId === p.id ? null : p.id)}
-                          className={btnClass}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer"
                         >
-                          ⋯ Actions
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                         </button>
                         {actionMenuId === p.id && (
                           <>
@@ -415,16 +538,26 @@ export default function AdminPlacesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Section</label>
-                  <select value={editSection} onChange={(e) => setEditSection(e.target.value)} className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none">
+                  <select value={editSection} onChange={(e) => setEditSection(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
                     <option value="food">Food</option>
                     <option value="store">Store</option>
+                    <option value="workspace">Workspace</option>
                   </select>
                 </div>
-                <Field label="Type" value={editType} onChange={setEditType} />
+                <div>
+                  <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Type</label>
+                  <select value={editType} onChange={(e) => setEditType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                    <option value="">Select type...</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="cafe">Cafe</option>
+                    <option value="both">Both</option>
+                    <option value="workspace">Workspace</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Area</label>
-                <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none">
+                <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
                   <option value="">—</option>
                   {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
                 </select>
@@ -440,6 +573,59 @@ export default function AdminPlacesPage() {
               <button onClick={() => setEditPlace(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
               <button onClick={handleSaveEdit} disabled={saving} className="flex-1 rounded-lg bg-[#4A7C59] py-2 text-xs font-bold text-white hover:bg-[#3A6347] disabled:opacity-50">
                 {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Place Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowAddModal(false)}>
+          <div className="bg-[#111820] border border-[#243040] rounded-2xl w-full max-w-md mx-4 p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-[#D8E4F0]">Add Place</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-[#4E6070] hover:text-[#D8E4F0] text-lg">×</button>
+            </div>
+            <div className="space-y-3">
+              <Field label="Name" value={addName} onChange={setAddName} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Section</label>
+                  <select value={addSection} onChange={(e) => setAddSection(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                    <option value="food">Food</option>
+                    <option value="store">Store</option>
+                    <option value="workspace">Workspace</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Type</label>
+                  <select value={addType} onChange={(e) => setAddType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                    <option value="">Select type...</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="cafe">Cafe</option>
+                    <option value="both">Both</option>
+                    <option value="workspace">Workspace</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Area</label>
+                <select value={addAreaId} onChange={(e) => setAddAreaId(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                  <option value="">—</option>
+                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Phone" value={addPhone} onChange={setAddPhone} />
+                <Field label="WhatsApp" value={addWhatsapp} onChange={setAddWhatsapp} />
+              </div>
+              <Field label="Address" value={addAddress} onChange={setAddAddress} />
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
+              <button onClick={handleAddPlace} disabled={addSaving} className="flex-1 rounded-lg bg-[#4A7C59] py-2 text-xs font-bold text-white hover:bg-[#3A6347] disabled:opacity-50">
+                {addSaving ? "Adding..." : "Add"}
               </button>
             </div>
           </div>
@@ -472,7 +658,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+        className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
       />
     </div>
   );

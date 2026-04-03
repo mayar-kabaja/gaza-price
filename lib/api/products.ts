@@ -47,8 +47,8 @@ export async function getProductsFirstCategory(
   return searchProducts(search, first.id, limit, offset, opts);
 }
 
-/** Backend accepts limit 1–30; we cap to avoid 400. */
-const BACKEND_LIMIT_MAX = 30;
+/** Backend accepts limit 1–200; we cap to avoid excessive queries. */
+const BACKEND_LIMIT_MAX = 200;
 
 export async function searchProducts(
   search?: string,

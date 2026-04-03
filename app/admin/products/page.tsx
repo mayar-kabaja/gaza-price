@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { ViewIcon, EditIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
 import { PRODUCT_UNITS } from "@/lib/constants";
 
 type Category = {
@@ -37,11 +35,15 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
-  const prevSearchRef = useRef(search);
   const limit = 20;
+
+  // Filter states
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterProduct, setFilterProduct] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   // Add / Edit modal
   const [showFormModal, setShowFormModal] = useState(false);
@@ -59,7 +61,7 @@ export default function AdminProductsPage() {
     setLoading(true);
     const off = overrideOffset ?? offset;
     const params = new URLSearchParams({ limit: String(limit), offset: String(off), all: "1" });
-    if (search.trim()) params.set("search", search.trim());
+    if (filterProduct.trim()) params.set("search", filterProduct.trim());
     fetch(`/api/products?${params.toString()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
@@ -77,14 +79,22 @@ export default function AdminProductsPage() {
   }, []);
 
   useEffect(() => {
-    if (prevSearchRef.current !== search) {
-      prevSearchRef.current = search;
+    load();
+  }, [offset]);
+
+  // Debounce filterProduct to trigger server-side search
+  useEffect(() => {
+    const t = setTimeout(() => {
       setOffset(0);
       load(0);
-      return;
-    }
-    load();
-  }, [search, offset]);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filterProduct]);
+
+  const filteredProducts = products.filter((p) => {
+    if (filterCategory && !(p.category?.name_ar ?? "").toLowerCase().includes(filterCategory.toLowerCase())) return false;
+    return true;
+  });
 
   function openAddModal() {
     setFormMode("add");
@@ -240,76 +250,87 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-      <div className="mb-4 flex flex-nowrap gap-2 sm:gap-3 items-center">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && load()}
-          placeholder="Search products..."
-          className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-        />
-        <button
-          onClick={openAddModal}
-          className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
-        >
-          + Add Product
-        </button>
-      </div>
-
-      <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
           </div>
-        ) : products.length === 0 ? (
-          <div className="py-12 text-center text-sm text-[#4E6070]">
-            {search.trim() ? "No products found. Try a different search." : "No products yet."}
-          </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
+          <div className="flex-1 min-h-0 overflow-auto">
             <table className="w-full min-w-[560px]">
-              <thead>
+              <thead className="sticky top-0 bg-[#111820] z-10">
                 <tr className="border-b border-[#243040]">
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Category</th>
+                  {/* Product with funnel */}
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Product
+                      <button onClick={() => setOpenFilter(openFilter === "product" ? null : "product")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterProduct ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "product" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input autoFocus type="text" value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)} placeholder="Filter product..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                            {filterProduct && (<button onClick={() => { setFilterProduct(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  {/* Category with funnel */}
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Category
+                      <button onClick={() => setOpenFilter(openFilter === "category" ? null : "category")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterCategory ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "category" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input autoFocus type="text" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} placeholder="Filter category..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                            {filterCategory && (<button onClick={() => { setFilterCategory(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Unit</th>
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+                  {/* Actions with + */}
+                  <th className="px-5 py-2.5 text-center">
+                    <button onClick={openAddModal} className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((p, i) => (
+                {filteredProducts.length === 0 ? (
+                  <tr><td colSpan={5} className="py-12 text-center text-sm text-[#4E6070]">{filterProduct || filterCategory ? "No products match filters." : "No products yet."}</td></tr>
+                ) : filteredProducts.map((p, i) => (
                   <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                     <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                     <td className="px-5 py-3 text-sm font-medium text-[#D8E4F0]">{p.name_ar}</td>
                     <td className="px-5 py-3 text-xs text-[#8FA3B8]">{p.category?.name_ar ?? "—"}</td>
                     <td className="px-5 py-3 text-xs text-[#4E6070]">{p.unit ?? "—"} {p.unit_size != null ? Math.floor(Number(p.unit_size)) : "—"}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <Link
-                          href={`/product/${p.id}`}
-                          target="_blank"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6] bg-[#3B82F618] px-3 py-1.5 text-xs font-medium text-[#60A5FA] hover:bg-[#3B82F628] transition-colors"
-                        >
-                          <ViewIcon />
-                          View
-                        </Link>
-                        <button
-                          onClick={() => openEditModal(p)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#64748B] bg-[#334155] px-3 py-1.5 text-xs font-medium text-[#94A3B8] hover:bg-[#475569] hover:border-[#64748B] transition-colors"
-                        >
-                          <EditIcon />
-                          Edit
+                    <td className="px-5 py-3 text-center">
+                      <div className="relative inline-block">
+                        <button onClick={() => setActionMenuId(actionMenuId === p.id ? null : p.id)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
                         </button>
-                        <button
-                          onClick={() => openDeleteModal(p)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] transition-colors"
-                        >
-                          <RemoveIcon />
-                          Remove
-                        </button>
+                        {actionMenuId === p.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
+                            <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              <a href={`/product/${p.id}`} target="_blank" className="block w-full text-left px-3 py-1.5 text-xs text-[#D8E4F0] hover:bg-[#243040]">View</a>
+                              <button onClick={() => { setActionMenuId(null); openEditModal(p); }} className="w-full text-left px-3 py-1.5 text-xs text-[#D8E4F0] hover:bg-[#243040]">Edit</button>
+                              <button onClick={() => { setActionMenuId(null); openDeleteModal(p); }} className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#243040]">Remove</button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

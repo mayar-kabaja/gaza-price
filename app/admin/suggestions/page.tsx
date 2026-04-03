@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { getAdminToken } from "@/lib/auth/token";
 import { apiFetchAdmin } from "@/lib/api/fetch";
 import { useAdminToast } from "@/components/admin/AdminToast";
-import { ApproveIcon, RejectIcon } from "@/components/admin/AdminActionIcons";
 import { PRODUCT_UNITS } from "@/lib/constants";
 
 type PendingProduct = {
@@ -21,7 +20,7 @@ type PendingProduct = {
 
 type Category = { id: string; name_ar: string };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 const ADD_FORM_EMPTY = { name_ar: "", name_en: "", category_id: "", unit: "كغ", unit_size: 1 };
 
 export default function AdminSuggestionsPage() {
@@ -32,12 +31,19 @@ export default function AdminSuggestionsPage() {
   const [loading, setLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
-  const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState(ADD_FORM_EMPTY);
   const [addSaving, setAddSaving] = useState(false);
   const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Filters
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+  const [filterProduct, setFilterProduct] = useState("");
+  const [filterBy, setFilterBy] = useState("");
+
+  // Kebab menu
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   function load(showSpinner = true) {
     const token = getAdminToken();
@@ -46,7 +52,9 @@ export default function AdminSuggestionsPage() {
       return;
     }
     if (showSpinner) setLoading(true);
-    apiFetchAdmin(`/api/admin/products/pending?limit=${PAGE_SIZE}&offset=${offset}`)
+    let url = `/api/admin/products/pending?limit=${PAGE_SIZE}&offset=${offset}`;
+    if (filterProduct.trim()) url += '&search=' + encodeURIComponent(filterProduct.trim());
+    apiFetchAdmin(url)
       .then((r) => r.json())
       .then((d) => {
         setProducts(d?.products ?? []);
@@ -64,6 +72,14 @@ export default function AdminSuggestionsPage() {
   }, [offset]);
 
   useEffect(() => {
+    const t = setTimeout(() => {
+      setOffset(0);
+      load(true);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filterProduct]);
+
+  useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((d) => setCategories(Array.isArray(d) ? d : []))
@@ -79,21 +95,18 @@ export default function AdminSuggestionsPage() {
     }
   }, [searchParams]);
 
-  const filteredProducts = search.trim()
-    ? products.filter((p) => {
-        const q = search.trim().toLowerCase();
-        const name = (p.name_ar ?? "").toLowerCase();
-        const category = (p.category?.name_ar ?? "").toLowerCase();
-        const by = (p.suggested_by_handle ?? "").toLowerCase();
-        const price = String(p.pending_price ?? "");
-        return name.includes(q) || category.includes(q) || by.includes(q) || price.includes(q);
-      })
-    : products;
+  const filteredProducts = products.filter((p) => {
+    if (filterBy) {
+      if (!(p.suggested_by_handle ?? "").toLowerCase().includes(filterBy.toLowerCase())) return false;
+    }
+    return true;
+  });
 
   async function handleReview(id: string, action: "approve" | "reject") {
     const token = getAdminToken();
     if (!token) return;
     setReviewingId(id);
+    setActionMenuId(null);
     try {
       const res = await fetch(`/api/admin/products/${id}/review`, {
         method: "PATCH",
@@ -107,8 +120,8 @@ export default function AdminSuggestionsPage() {
         toast(action === "approve" ? "Product approved" : "Product rejected", "success");
         setProducts((prev) => prev.filter((p) => p.id !== id));
         setTotal((t) => Math.max(0, t - 1));
-        load(false); // Sync with server in background (no spinner)
-        window.dispatchEvent(new CustomEvent("admin:refetch-counts")); // Update sidebar counts
+        load(false);
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts"));
       } else {
         toast("Action failed", "error");
       }
@@ -169,7 +182,7 @@ export default function AdminSuggestionsPage() {
         setShowAddConfirm(false);
         setAddForm(ADD_FORM_EMPTY);
         load();
-        window.dispatchEvent(new CustomEvent("admin:refetch-counts")); // Update sidebar counts
+        window.dispatchEvent(new CustomEvent("admin:refetch-counts"));
       } else {
         toast(data?.message ?? "Failed to add", "error");
       }
@@ -180,116 +193,139 @@ export default function AdminSuggestionsPage() {
     }
   }
 
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-        <div className="mb-4 flex flex-nowrap gap-2 sm:gap-3 items-center">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search product, category..."
-            className="flex-1 min-w-0 rounded-lg border border-[#243040] bg-[#18212C] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
-          />
-          <button
-            onClick={openAddModal}
-            className="flex-shrink-0 rounded-lg bg-[#4A7C59] px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-[#3A6347]"
-          >
-            + Add Suggestion
-          </button>
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
+        <div className="border-b border-[#243040] px-5 py-4">
+          <div className="text-[13px] font-semibold text-[#D8E4F0]">Pending Product Suggestions</div>
+          <div className="text-[11px] text-[#4E6070] mt-0.5">{total} awaiting verification</div>
         </div>
-        <div className="overflow-hidden rounded-[10px] border border-[#243040] bg-[#111820]">
-          <div className="border-b border-[#243040] px-5 py-4">
-            <div className="text-[13px] font-semibold text-[#D8E4F0]">Pending Product Suggestions</div>
-            <div className="text-[11px] text-[#4E6070] mt-0.5">{total} awaiting verification</div>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
           </div>
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#4E6070]">
-              {search.trim() ? "No suggestions match your search." : "No pending suggestions"}
-            </div>
-          ) : (
-            <div className="overflow-x-auto overflow-y-auto max-h-[560px]">
-              <table className="w-full min-w-[480px]">
-                <thead>
-                  <tr className="border-b border-[#243040]">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Product</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Suggested</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">By</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Actions</th>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-auto">
+            <table className="w-full min-w-[480px]">
+              <thead className="sticky top-0 bg-[#111820] z-10">
+                <tr className="border-b border-[#243040]">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
+                  {/* Product with funnel filter */}
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      Product
+                      <button onClick={() => setOpenFilter(openFilter === "product" ? null : "product")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterProduct ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "product" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input autoFocus type="text" value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)} placeholder="Filter product..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                            {filterProduct && (<button onClick={() => { setFilterProduct(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Suggested</th>
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Status</th>
+                  {/* By with funnel filter */}
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <div className="relative inline-flex items-center gap-1">
+                      By
+                      <button onClick={() => setOpenFilter(openFilter === "by" ? null : "by")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterBy ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                      </button>
+                      {openFilter === "by" && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
+                          <div className="absolute left-0 top-full mt-1 z-30 w-48 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl p-2">
+                            <input autoFocus type="text" value={filterBy} onChange={(e) => setFilterBy(e.target.value)} placeholder="Filter by..." className="w-full h-[30px] rounded-md border border-[#243040] bg-[#111820] px-2 text-xs text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59] font-normal normal-case tracking-normal" />
+                            {filterBy && (<button onClick={() => { setFilterBy(""); setOpenFilter(null); }} className="mt-1.5 w-full text-center text-[10px] text-[#4E6070] hover:text-[#D8E4F0]">Clear</button>)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </th>
+                  {/* Actions with + button */}
+                  <th className="px-5 py-2.5 text-center">
+                    <button onClick={openAddModal} className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.length === 0 ? (
+                  <tr><td colSpan={6} className="py-12 text-center text-sm text-[#4E6070]">{filterProduct || filterBy ? "No suggestions match filters." : "No pending suggestions"}</td></tr>
+                ) : filteredProducts.map((p, i) => (
+                  <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
+                    <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
+                    <td className="px-5 py-3">
+                      <div>
+                        <div className="text-xs font-medium text-[#D8E4F0]">{p.name_ar}</div>
+                        <div className="text-[10px] text-[#4E6070]">{p.category?.name_ar ?? "—"}</div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 font-mono text-xs">
+                      {p.pending_price != null ? `₪ ${p.pending_price}` : "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center rounded-full border border-[#D4913A35] bg-[#D4913A18] px-2.5 py-0.5 text-[10px] font-medium text-[#E8B870]">🟡 Pending</span>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-[#8FA3B8]">{p.suggested_by_handle ?? "—"}</td>
+                    <td className="px-5 py-3 text-center">
+                      <div className="relative inline-block">
+                        <button onClick={() => setActionMenuId(actionMenuId === p.id ? null : p.id)} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors cursor-pointer">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {actionMenuId === p.id && (
+                          <>
+                            <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
+                            <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                              <button onClick={() => handleReview(p.id, "approve")} disabled={reviewingId === p.id} className="w-full text-left px-3 py-1.5 text-xs text-[#D8E4F0] hover:bg-[#243040] disabled:opacity-50">Approve</button>
+                              <button onClick={() => handleReview(p.id, "reject")} disabled={reviewingId === p.id} className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#243040] disabled:opacity-50">Reject</button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((p, i) => (
-                    <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
-                      <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
-                      <td className="px-5 py-3">
-                        <div>
-                          <div className="text-xs font-medium text-[#D8E4F0]">{p.name_ar}</div>
-                          <div className="text-[10px] text-[#4E6070]">{p.category?.name_ar ?? "—"}</div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 font-mono text-xs">
-                        {p.pending_price != null ? `₪ ${p.pending_price}` : "—"}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className="inline-flex items-center rounded-full border border-[#D4913A35] bg-[#D4913A18] px-2.5 py-0.5 text-[10px] font-medium text-[#E8B870]">Pending</span>
-                      </td>
-                      <td className="px-5 py-3 text-xs text-[#8FA3B8]">{p.suggested_by_handle ?? "—"}</td>
-                      <td className="px-5 py-3">
-                        <div className="flex gap-2 items-center">
-                          <button
-                            onClick={() => handleReview(p.id, "approve")}
-                            disabled={reviewingId === p.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#4A7C59] bg-[#4A7C59] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#3A6347] hover:border-[#3A6347] disabled:opacity-50 transition-colors"
-                          >
-                            <ApproveIcon />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReview(p.id, "reject")}
-                            disabled={reviewingId === p.id}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#A85852] bg-[#A8585218] px-3 py-1.5 text-xs font-medium text-[#D49088] hover:bg-[#A8585228] hover:border-[#A85852] disabled:opacity-50 transition-colors"
-                          >
-                            <RejectIcon />
-                            Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        {total > PAGE_SIZE && (
-          <div className="mt-4 flex justify-between items-center">
-            <button
-              onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
-              disabled={offset === 0}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50 hover:bg-[#243040]"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-[#4E6070]">
-              {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
-            </span>
-            <button
-              onClick={() => setOffset((o) => o + PAGE_SIZE)}
-              disabled={offset + PAGE_SIZE >= total}
-              className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50 hover:bg-[#243040]"
-            >
-              Next
-            </button>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+      </div>
 
-      {/* Add modal */}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-between items-center">
+          <button
+            onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
+            disabled={offset === 0}
+            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50 hover:bg-[#243040]"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-[#4E6070]">
+            {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
+          </span>
+          <button
+            onClick={() => setOffset((o) => o + PAGE_SIZE)}
+            disabled={offset + PAGE_SIZE >= total}
+            className="rounded-lg border border-[#243040] bg-[#18212C] px-4 py-2 text-sm text-[#D8E4F0] disabled:opacity-50 hover:bg-[#243040]"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {/* Add modal — keep exactly as-is */}
       {showAddModal && (
         <>
           <div
