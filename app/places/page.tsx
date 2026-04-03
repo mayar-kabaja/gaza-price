@@ -121,16 +121,12 @@ export default function PlacesPage() {
         }
       }
     }
-    // Prioritize specific workspaces to show first
+    // Sort by featured_order (lower = first), nulls go last
     if (section === 'workspace') {
-      const priorityNames = ['legospace', 'zero to hero', 'leapspace'];
       filtered = [...filtered].sort((a, b) => {
-        const aIdx = priorityNames.indexOf(a.name.toLowerCase());
-        const bIdx = priorityNames.indexOf(b.name.toLowerCase());
-        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-        if (aIdx !== -1) return -1;
-        if (bIdx !== -1) return 1;
-        return 0;
+        const aO = a.featured_order ?? 9999;
+        const bO = b.featured_order ?? 9999;
+        return aO - bO;
       });
     }
     return filtered;
