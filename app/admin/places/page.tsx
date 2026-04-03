@@ -113,7 +113,7 @@ export default function AdminPlacesPage() {
   }
 
   function openDashboard(token: string) {
-    const base = window.location.hostname === "localhost" ? window.location.origin : "https://gazaprice.com";
+    const base = window.location.origin;
     window.open(`${base}/places/dashboard?token=${token}`, "_blank");
   }
 
