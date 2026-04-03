@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   try {
+    const search = searchParams.get("search")?.trim() || undefined;
     const params: Record<string, string | number> = {
       filter: filter === "my_area" ? "all" : filter,
       limit,
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
     };
     if (filter === "my_area" && areaId) params.area_id = areaId;
     else if (areaId) params.area_id = areaId;
+    if (search) params.search = search;
 
     const url = `${base}/reports?${new URLSearchParams(
       Object.entries(params).map(([k, v]) => [k, String(v)])

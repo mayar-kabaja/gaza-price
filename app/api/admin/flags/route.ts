@@ -21,9 +21,12 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status") ?? "flagged";
   const limit = searchParams.get("limit") ?? "20";
   const offset = searchParams.get("offset") ?? "0";
+  const search = searchParams.get("search") ?? "";
   try {
+    const params = new URLSearchParams({ status, limit, offset });
+    if (search) params.set("search", search);
     const res = await fetch(
-      `${base}/admin/flags?status=${status}&limit=${limit}&offset=${offset}`,
+      `${base}/admin/flags?${params}`,
       {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         signal: AbortSignal.timeout(15000),
