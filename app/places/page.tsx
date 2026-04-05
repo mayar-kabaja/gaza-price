@@ -132,13 +132,34 @@ export default function PlacesPage() {
         }
       }
     }
-    // Sort by featured_order (lower = first), nulls go last
+    // Sort workspaces: first 4 by featured_order, then priority names, then rest
     if (section === 'workspace') {
-      filtered = [...filtered].sort((a, b) => {
+      const PRIORITY_NAMES = [
+        'Grow Space', 'Badwan Space', 'Meras Space', 'Space Noon',
+        'PDX Space', 'Alqaser Space', 'sham space', 'Continental Hub',
+        'Sultan Hub', 'Diamond Hub', 'Taqat Hub', 'Ahram Space', 'Phoenix Hub',
+      ];
+      const priorityLower = PRIORITY_NAMES.map(n => n.toLowerCase());
+
+      // Split into featured-top-4 vs rest
+      const withOrder = filtered.filter(p => p.featured_order != null).sort((a, b) => a.featured_order! - b.featured_order!);
+      const top4 = withOrder.slice(0, 4);
+      const remaining = filtered.filter(p => !top4.includes(p));
+
+      // From remaining, pick priority-named ones in order
+      const priorityPlaces: typeof remaining = [];
+      for (const name of priorityLower) {
+        const found = remaining.find(p => p.name.toLowerCase() === name);
+        if (found) priorityPlaces.push(found);
+      }
+      const prioritySet = new Set(priorityPlaces);
+      const rest = remaining.filter(p => !prioritySet.has(p)).sort((a, b) => {
         const aO = a.featured_order ?? 9999;
         const bO = b.featured_order ?? 9999;
         return aO - bO;
       });
+
+      filtered = [...top4, ...priorityPlaces, ...rest];
     }
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips, section]);
