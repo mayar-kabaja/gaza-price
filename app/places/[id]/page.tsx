@@ -76,6 +76,18 @@ function timeAgo(dateStr?: string): string {
   return `منذ ${Math.floor(days / 7)} أ`;
 }
 
+/** Clean whatsapp number: ensure it starts with 972 (not 970972 or similar) */
+/** Clean whatsapp number: fix double prefix, keep 970 or 972 */
+function cleanWhatsapp(raw: string): string {
+  let d = raw.replace(/\D/g, '');
+  if (d.startsWith('970972')) d = d.slice(3);
+  if (d.startsWith('972970')) d = '972' + d.slice(6);
+  if (d.startsWith('00')) d = d.slice(2);
+  if (d.startsWith('0')) d = '970' + d.slice(1);
+  if (!d.startsWith('970') && !d.startsWith('972')) d = '970' + d;
+  return d;
+}
+
 function typeLabel(type: string): string {
   if (type === 'both' || type === 'مطعم وكافيه') return 'مطعم وكافيه';
   if (type === 'restaurant' || type === 'مطعم') return 'مطعم';
@@ -578,7 +590,7 @@ export default function PlaceDetailPage() {
               </a>
             )}
             {place.whatsapp && (
-              <a href={`https://wa.me/${place.whatsapp}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
+              <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
                 💬
               </a>
             )}

@@ -132,14 +132,15 @@ export default function RegisterPlacePage() {
     return d;
   }
 
-  /** Normalize WhatsApp number with chosen prefix → international format (e.g. 970591234567) */
+  /** Normalize WhatsApp: dropdown prefix + local number → e.g. 970567359920 or 972567359920 */
   function normalizeWhatsApp(raw: string, prefix: string): string {
     let d = digitsOnly(raw);
-    // Remove leading country code if user typed it
+    // Strip country code if user accidentally typed it in the number field
     if (d.startsWith("970")) d = d.slice(3);
-    if (d.startsWith("972")) d = d.slice(3);
-    // Remove leading 0
+    else if (d.startsWith("972")) d = d.slice(3);
+    // Strip leading 0
     if (d.startsWith("0")) d = d.slice(1);
+    // Use the prefix from dropdown
     const code = prefix === "+972" ? "972" : "970";
     return d.length > 0 ? code + d : "";
   }
