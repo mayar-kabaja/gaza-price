@@ -172,7 +172,7 @@ function RegisterPlacePage() {
     return d;
   }
 
-  /** Normalize WhatsApp: dropdown prefix + local number → e.g. 970567359920 or 972567359920 */
+  /** Normalize WhatsApp: dropdown prefix + local number → e.g. 970567359920 or 972567786946 */
   function normalizeWhatsApp(raw: string, prefix: string): string {
     let d = digitsOnly(raw);
     // Strip country code if user accidentally typed it in the number field
@@ -839,7 +839,7 @@ function RegisterPlacePage() {
                         <div className="bg-[#F9FAFB] rounded-xl p-3">
                           <div className="text-[10px] text-[#9CA3AF] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
                           <a
-                            href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.label} — الاسم: ${name}`)}`}
+                            href={`https://wa.me/972567786946?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.label} — الاسم: ${name}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
