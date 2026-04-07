@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 
@@ -15,9 +15,23 @@ const TYPE_OPTIONS = [
 
 type PlaceType = (typeof TYPE_OPTIONS)[number]["key"];
 
+const STORE_CATEGORIES = [
+  { label: "مواد غذائية وبقالة", icon: "🛒", types: ["بقالية عامة", "سوبرماركت", "خضار وفواكه", "لحوم", "سمك", "مخبز", "حلويات ومعجنات", "بهارات وتوابل"] },
+  { label: "صحة وصيدلية", icon: "💊", types: ["صيدلية", "عيادة وطب", "مستلزمات طبية", "بصريات"] },
+  { label: "ملابس وأزياء", icon: "👕", types: ["ملابس رجالي", "ملابس حريمي", "ملابس أطفال", "أحذية", "إكسسوارات", "خياطة وتعديل"] },
+  { label: "منزل وأثاث", icon: "🏠", types: ["أثاث منزلي", "مفروشات وستائر", "أدوات منزلية", "كهرباء ولوازم منزلية", "نظافة ومنظفات", "أدوات صحية وسباكة"] },
+  { label: "إلكترونيات وتقنية", icon: "📱", types: ["موبايل وإكسسوارات", "كمبيوتر ولاب توب", "كهربائيات", "طاقة شمسية", "إصلاح وصيانة"] },
+  { label: "بناء ومواد", icon: "🏗️", types: ["مواد بناء", "حديد وألمنيوم", "دهانات وديكور", "أخشاب", "سيراميك وبلاط"] },
+  { label: "تعليم وثقافة", icon: "📚", types: ["مكتبة وقرطاسية", "ألعاب أطفال", "أدوات رسم وفنون"] },
+  { label: "خدمات شخصية", icon: "💈", types: ["حلاقة وصالون", "عطور وكوزمتيك", "تصوير"] },
+  { label: "سيارات", icon: "🚗", types: ["قطع غيار سيارات", "كراج وميكانيك", "إطارات"] },
+  { label: "زراعة وحيوانات", icon: "🌿", types: ["مستلزمات زراعية", "علف وبيطري"] },
+  { label: "أخرى", icon: "📦", types: ["أخرى"] },
+];
+
 const PLAN_FEATURES = [
   { name: "ظهور في القائمة",     free: true,  basic: true,  premium: true },
-  { name: "صفحة المحل",         free: true,  basic: true,  premium: true },
+  { name: "صفحة خاصة",          free: true,  basic: true,  premium: true },
   { name: "قائمة الأسعار",       free: true,  basic: true,  premium: true },
   { name: "Toggle مفتوح/مغلق",  free: true,  basic: true,  premium: true },
   { name: "لوحة تحكم",          free: true,  basic: true,  premium: true },
@@ -93,30 +107,56 @@ function PrefixPicker({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export default function RegisterPlacePage() {
+const SECTION_TO_TYPE: Record<string, PlaceType | null> = {
+  food: null,
+  store: "store",
+  workspace: "workspace",
+};
+
+export default function RegisterPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F9FAFB]" />}>
+      <RegisterPlacePage />
+    </Suspense>
+  );
+}
+
+function RegisterPlacePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get("section");
+  const preselectedType = sectionParam ? SECTION_TO_TYPE[sectionParam] ?? null : null;
+
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
 
-  const [step, setStep] = useState(1);
+  const skipTypeStep = preselectedType === "workspace";
+  const [step, setStep] = useState(skipTypeStep ? 2 : 1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<"free" | "basic" | "premium" | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Form state
-  const [type, setType] = useState<PlaceType | null>(null);
+  // Form state — pre-select type from URL param
+  const [type, setType] = useState<PlaceType | null>(preselectedType);
+  const [storeSubType, setStoreSubType] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [areaId, setAreaId] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [waPrefix, setWaPrefix] = useState("+970");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedTypeOption = TYPE_OPTIONS.find((t) => t.key === type);
   const isWorkspace = type === "workspace";
-  const placeWord = isWorkspace ? "مساحة العمل" : "المحل";
-  const placeWordShort = isWorkspace ? "مساحتك" : "محلك";
+  const isStore = type === "store";
+  const isFood = type === "restaurant" || type === "cafe" || type === "both";
+  const placeWord = isWorkspace ? "مساحة العمل" : type === "cafe" ? "الكافيه" : type === "both" ? "المطعم والكافيه" : isFood ? "المطعم" : isStore ? "المتجر" : "المكان";
+  const placeWordShort = isWorkspace ? "مساحتك" : type === "cafe" ? "الكافيه" : type === "both" ? "مطعمك" : isFood ? "مطعمك" : isStore ? "متجرك" : "مكانك";
 
   /** Strip non-digits from input */
   function digitsOnly(v: string) { return v.replace(/[^0-9]/g, ""); }
@@ -151,8 +191,34 @@ export default function RegisterPlacePage() {
     return /^05[0-9]{8}$/.test(d);
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    setUploadingAvatar(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        setAvatarUrl(data.url);
+      }
+    } catch {
+      // silent fail — avatar is optional
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   function canNext() {
-    if (step === 1) return !!type;
+    if (step === 1) {
+      if (!type) return false;
+      if (type === "store" && !storeSubType) return false;
+      if (sectionParam === "food" && !["restaurant", "cafe", "both"].includes(type)) return false;
+      return true;
+    }
     if (step === 2) return name.trim().length >= 2 && !!areaId;
     if (step === 3) return isValidPhone(phone);
     return true;
@@ -177,11 +243,12 @@ export default function RegisterPlacePage() {
       const body = {
         name: name.trim(),
         section: selectedTypeOption?.section ?? "food",
-        type: selectedTypeOption?.label ?? type,
+        type: type === "store" && storeSubType ? storeSubType : (selectedTypeOption?.label ?? type),
         area_id: areaId,
         address: address.trim() || undefined,
         phone: normalizedPhone,
         whatsapp: normalizedWa,
+        avatar_url: avatarUrl || undefined,
       };
       const res = await apiFetch("/api/places/register", {
         method: "POST",
@@ -211,7 +278,11 @@ export default function RegisterPlacePage() {
         <div className="absolute w-40 h-40 rounded-full bg-white/5 -top-14 -left-10" />
         <div className="flex items-center gap-3 mb-4 relative z-10">
           <button
-            onClick={() => (step > 1 && step < 5 ? setStep(step - 1) : router.back())}
+            onClick={() => {
+              const minStep = skipTypeStep ? 2 : 1;
+              if (step > minStep && step < 5) setStep(step - 1);
+              else router.back();
+            }}
             className="w-9 h-9 bg-white/10 rounded-[10px] flex items-center justify-center"
           >
             <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
@@ -224,12 +295,19 @@ export default function RegisterPlacePage() {
         {/* Stepper */}
         {step < 5 && (
           <div className="flex items-center relative z-10">
-            {[
-              { n: 1, label: "النوع" },
-              { n: 2, label: "البيانات" },
-              { n: 3, label: "التواصل" },
-              { n: 4, label: "مراجعة" },
-            ].map((s, i) => (
+            {(skipTypeStep
+              ? [
+                  { n: 2, label: "البيانات" },
+                  { n: 3, label: "التواصل" },
+                  { n: 4, label: "مراجعة" },
+                ]
+              : [
+                  { n: 1, label: "النوع" },
+                  { n: 2, label: "البيانات" },
+                  { n: 3, label: "التواصل" },
+                  { n: 4, label: "مراجعة" },
+                ]
+            ).map((s, i, arr) => (
               <div key={s.n} className="flex items-center flex-1 last:flex-none">
                 <div className="flex flex-col items-center gap-1">
                   <div
@@ -242,7 +320,7 @@ export default function RegisterPlacePage() {
                     {s.label}
                   </span>
                 </div>
-                {i < 3 && (
+                {i < arr.length - 1 && (
                   <div className={`flex-1 h-0.5 mx-1 mb-3 max-w-[30px] ${s.n < step ? "bg-white/60" : "bg-white/20"}`} />
                 )}
               </div>
@@ -256,48 +334,161 @@ export default function RegisterPlacePage() {
         {/* Step 1: Type */}
         {step === 1 && (
           <div className="animate-fadeIn">
-            <h2 className="font-bold text-lg text-[#111827] mb-1">نوع النشاط</h2>
-            <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر النوع حتى نعرض المعلومات الصحيحة للزوار</p>
+            {sectionParam === "food" ? (
+              <>
+                <h2 className="font-bold text-lg text-[#111827] mb-1">شو نوع نشاطك؟</h2>
+                <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر الوصف الأقرب لمكانك</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {(TYPE_OPTIONS.filter((t) => t.section === "food") as typeof TYPE_OPTIONS[number][]).map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setType(t.key)}
+                      className={`rounded-2xl border-2 p-4 transition-all
+                        ${t.wide ? "col-span-2 flex items-center gap-3.5 text-right" : "text-center"}
+                        ${type === t.key ? "border-[#4A7C59] bg-[#EBF3EE]" : "border-[#E5E7EB] bg-white hover:border-[#3A6347]"}`}
+                    >
+                      <div
+                        className={`w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0
+                          ${t.wide ? "" : "mx-auto mb-2.5"}
+                          ${"smallIcon" in t && t.smallIcon ? "text-lg" : "text-2xl"}
+                          ${type === t.key ? "bg-[#4A7C59] text-white" : "bg-[#EBF3EE]"}`}
+                      >
+                        {t.icon}
+                      </div>
+                      <div className={t.wide ? "flex-1" : ""}>
+                        <div className={`font-bold text-[13px] ${type === t.key ? "text-[#4A7C59]" : "text-[#111827]"}`}>
+                          {t.label}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 ${type === t.key ? "text-[#3A6347]" : "text-[#9CA3AF]"}`}>
+                          {t.sub}
+                        </div>
+                      </div>
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                          ${t.wide ? "mr-auto" : "mx-auto mt-2"}
+                          ${type === t.key ? "bg-[#4A7C59] border-[#4A7C59]" : "border-[#E5E7EB]"}`}
+                      >
+                        {type === t.key && (
+                          <svg viewBox="0 0 12 12" className="w-[11px] h-[11px]" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+                            <polyline points="1,6 4,10 11,2" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : preselectedType === "store" ? (
+              <>
+                <h2 className="font-bold text-lg text-[#111827] mb-1">نوع المتجر</h2>
+                <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر التصنيف الأقرب لنشاطك</p>
+                <div className="space-y-2">
+                  {STORE_CATEGORIES.map((cat) => (
+                    <div key={cat.label}>
+                      <div className="text-[11px] font-bold text-[#374151] flex items-center gap-1.5 mb-1.5">
+                        <span className="text-[14px]">{cat.icon}</span>
+                        {cat.label}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {cat.types.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setStoreSubType(t)}
+                            className={`text-[11px] font-semibold px-3 py-[6px] rounded-full border transition-all
+                              ${storeSubType === t
+                                ? "bg-[#4A7C59] text-white border-[#4A7C59]"
+                                : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#4A7C59]"
+                              }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="font-bold text-lg text-[#111827] mb-1">نوع النشاط</h2>
+                <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">اختر النوع حتى نعرض المعلومات الصحيحة للزوار</p>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {TYPE_OPTIONS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setType(t.key)}
-                  className={`rounded-2xl border-2 p-4 transition-all
-                    ${t.wide ? "col-span-2 flex items-center gap-3.5 text-right" : "text-center"}
-                    ${type === t.key ? "border-[#4A7C59] bg-[#EBF3EE]" : "border-[#E5E7EB] bg-white hover:border-[#3A6347]"}`}
-                >
-                  <div
-                    className={`w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0
-                      ${t.wide ? "" : "mx-auto mb-2.5"}
-                      ${"smallIcon" in t && t.smallIcon ? "text-lg" : "text-2xl"}
-                      ${type === t.key ? "bg-[#4A7C59] text-white" : "bg-[#EBF3EE]"}`}
-                  >
-                    {t.icon}
-                  </div>
-                  <div className={t.wide ? "flex-1" : ""}>
-                    <div className={`font-bold text-[13px] ${type === t.key ? "text-[#4A7C59]" : "text-[#111827]"}`}>
-                      {t.label}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {TYPE_OPTIONS.map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => { setType(t.key); if (t.key !== "store") setStoreSubType(null); }}
+                      className={`rounded-2xl border-2 p-4 transition-all
+                        ${t.wide ? "col-span-2 flex items-center gap-3.5 text-right" : "text-center"}
+                        ${type === t.key ? "border-[#4A7C59] bg-[#EBF3EE]" : "border-[#E5E7EB] bg-white hover:border-[#3A6347]"}`}
+                    >
+                      <div
+                        className={`w-[52px] h-[52px] rounded-[14px] flex items-center justify-center flex-shrink-0
+                          ${t.wide ? "" : "mx-auto mb-2.5"}
+                          ${"smallIcon" in t && t.smallIcon ? "text-lg" : "text-2xl"}
+                          ${type === t.key ? "bg-[#4A7C59] text-white" : "bg-[#EBF3EE]"}`}
+                      >
+                        {t.icon}
+                      </div>
+                      <div className={t.wide ? "flex-1" : ""}>
+                        <div className={`font-bold text-[13px] ${type === t.key ? "text-[#4A7C59]" : "text-[#111827]"}`}>
+                          {t.label}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 ${type === t.key ? "text-[#3A6347]" : "text-[#9CA3AF]"}`}>
+                          {t.sub}
+                        </div>
+                      </div>
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
+                          ${t.wide ? "mr-auto" : "mx-auto mt-2"}
+                          ${type === t.key ? "bg-[#4A7C59] border-[#4A7C59]" : "border-[#E5E7EB]"}`}
+                      >
+                        {type === t.key && (
+                          <svg viewBox="0 0 12 12" className="w-[11px] h-[11px]" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+                            <polyline points="1,6 4,10 11,2" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Store sub-type picker when selected from generic flow */}
+                {type === "store" && (
+                  <div className="mt-5 animate-fadeIn">
+                    <h3 className="font-bold text-[14px] text-[#111827] mb-1">نوع المتجر</h3>
+                    <p className="text-[11px] text-[#9CA3AF] mb-3">اختر التصنيف الأقرب لنشاطك</p>
+                    <div className="space-y-2">
+                      {STORE_CATEGORIES.map((cat) => (
+                        <div key={cat.label}>
+                          <div className="text-[11px] font-bold text-[#374151] flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[14px]">{cat.icon}</span>
+                            {cat.label}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {cat.types.map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setStoreSubType(t)}
+                                className={`text-[11px] font-semibold px-3 py-[6px] rounded-full border transition-all
+                                  ${storeSubType === t
+                                    ? "bg-[#4A7C59] text-white border-[#4A7C59]"
+                                    : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#4A7C59]"
+                                  }`}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className={`text-[10px] mt-0.5 ${type === t.key ? "text-[#3A6347]" : "text-[#9CA3AF]"}`}>
-                      {t.sub}
-                    </div>
                   </div>
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
-                      ${t.wide ? "mr-auto" : "mx-auto mt-2"}
-                      ${type === t.key ? "bg-[#4A7C59] border-[#4A7C59]" : "border-[#E5E7EB]"}`}
-                  >
-                    {type === t.key && (
-                      <svg viewBox="0 0 12 12" className="w-[11px] h-[11px]" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
-                        <polyline points="1,6 4,10 11,2" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -308,15 +499,42 @@ export default function RegisterPlacePage() {
             <p className="text-[13px] text-[#9CA3AF] mb-5 leading-relaxed">هذه المعلومات ستظهر للزوار في صفحتك</p>
 
             <div className="space-y-4">
+              {/* Avatar upload */}
+              <div className="flex flex-col items-center mb-2">
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-[80px] h-[80px] rounded-full border-2 border-dashed border-[#C2DBC9] bg-[#EBF3EE] flex items-center justify-center overflow-hidden hover:border-[#4A7C59] transition-colors"
+                >
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="" className="w-full h-full object-cover rounded-full" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#4A7C59" strokeWidth={1.8} strokeLinecap="round">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                    </div>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
+                      <div className="w-5 h-5 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+                    </div>
+                  )}
+                </button>
+                <span className="text-[10px] text-[#9CA3AF] mt-1.5">صورة {placeWord} (اختياري)</span>
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1">
-                  اسم {placeWord} <span className="text-[#E05C35] text-[11px]">*</span>
+                  اسم {type === "cafe" ? "الكافيه" : type === "restaurant" ? "المطعم" : type === "both" ? "المطعم" : placeWord} <span className="text-[#E05C35] text-[11px]">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={isWorkspace ? "مثال: مساحة عمل النجاح" : "مثال: شاورما أبو مازن"}
+                  placeholder={isWorkspace ? "مثال: مساحة عمل النجاح" : type === "cafe" ? "مثال: كافيه الصباح" : type === "both" ? "مثال: مطعم وكافيه الديوان" : isStore ? "مثال: سوبرماركت الأمل" : "مثال: مطعم أبو مازن"}
                   className={`w-full border-[1.5px] rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9CA3AF]
                     ${name.trim() ? "border-[#4A7C59] bg-[#EBF3EE]" : "border-[#E5E7EB] bg-white focus:border-[#3A6347]"}`}
                 />
@@ -433,19 +651,25 @@ export default function RegisterPlacePage() {
 
             <div className="bg-white border-[1.5px] border-[#E5E7EB] rounded-2xl overflow-hidden mb-4">
               <div className="bg-[#4A7C59] p-4 flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-                  </svg>
+                <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center overflow-hidden">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <div className="font-bold text-[15px] text-white">{name || "—"}</div>
-                  <div className="text-[10px] text-white/60 mt-0.5">{selectedTypeOption?.label ?? "—"}</div>
+                  <div className="text-[10px] text-white/60 mt-0.5">
+                    {type === "store" && storeSubType ? storeSubType : (selectedTypeOption?.label ?? "—")}
+                  </div>
                 </div>
               </div>
               <div className="p-4">
                 {[
-                  { key: "النوع", val: selectedTypeOption?.label },
+                  { key: "النوع", val: type === "store" && storeSubType ? `متجر — ${storeSubType}` : selectedTypeOption?.label },
                   { key: "المنطقة", val: areaName },
                   { key: "العنوان", val: address.trim() || "غير محدد" },
                   { key: "الهاتف", val: `+970 ${normalizePhone(phone)}` },
@@ -528,7 +752,7 @@ export default function RegisterPlacePage() {
                 {([
                   {
                     key: "free" as const, label: "مجاني دائماً", price: "0",
-                    desc: isWorkspace ? "لمساحات العمل التي تريد فقط الظهور في القائمة" : "للمحلات التي تريد فقط الظهور في القائمة",
+                    desc: isWorkspace ? "لمساحات العمل التي تريد فقط الظهور في القائمة" : "لمن يريد فقط الظهور في القائمة",
                     features: ["صفحة أساسية", "الظهور في نتائج البحث", "رقم التواصل", "حالة مفتوح / مغلق"],
                     missing: ["قائمة الأصناف", "إحصاءات"],
                     btnClass: "border-2 border-[#E5E7EB] text-[#4A5E52] bg-white",
@@ -538,7 +762,7 @@ export default function RegisterPlacePage() {
                   },
                   {
                     key: "basic" as const, label: "أساسي", price: "100",
-                    desc: isWorkspace ? "لمساحات العمل التي تريد حضور رقمي حقيقي" : "لكل محل يريد قائمة حية وحضور رقمي حقيقي",
+                    desc: isWorkspace ? "لمساحات العمل التي تريد حضور رقمي حقيقي" : "لمن يريد قائمة حية وحضور رقمي حقيقي",
                     features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "تقارير الأسعار"],
                     missing: ["ظهور مميّز أولاً"],
                     btnClass: "bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/25",
@@ -548,7 +772,7 @@ export default function RegisterPlacePage() {
                   },
                   {
                     key: "premium" as const, label: "مميّز", price: "200",
-                    desc: isWorkspace ? "لمساحات العمل التي تريد التميّز وأكثر عملاء" : "للمحلات التي تريد التميّز وأكثر زبائن",
+                    desc: isWorkspace ? "لمساحات العمل التي تريد التميّز وأكثر عملاء" : "لمن يريد التميّز وأكثر زبائن",
                     features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "PDF المنيو", "إحصائيات مفصّلة"],
                     missing: [],
                     btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
@@ -615,7 +839,7 @@ export default function RegisterPlacePage() {
                         <div className="bg-[#F9FAFB] rounded-xl p-3">
                           <div className="text-[10px] text-[#9CA3AF] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
                           <a
-                            href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.label} — اسم المحل: ${name}`)}`}
+                            href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.label} — الاسم: ${name}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -671,7 +895,7 @@ export default function RegisterPlacePage() {
                   { q: isWorkspace ? "كيف أحدّث بيانات مساحتي؟" : "كيف أحدّث قائمتي وأسعاري؟", a: isWorkspace ? "من لوحة تحكم بسيطة على هاتفك — تحدّث البيانات في أقل من 30 ثانية. لا تحتاج أي خبرة تقنية." : "من لوحة تحكم بسيطة على هاتفك — تضيف صنفاً أو تغيّر سعراً في أقل من 30 ثانية. لا تحتاج أي خبرة تقنية." },
                   { q: "كم من الوقت يأخذ القبول؟", a: "عادةً خلال 24 ساعة — وتصلك رسالة واتساب فور الموافقة تحتوي رابط لوحة التحكم." },
                   { q: "ماذا لو أردت إلغاء الاشتراك؟", a: "يمكنك الإلغاء في أي وقت بدون رسوم. صفحتك تنتقل للباقة المجانية وتبقى ظاهرة." },
-                  { q: isWorkspace ? "كيف يعرف العملاء أن مساحتي موجودة؟" : "كيف يعرف الزبائن أن محلي موجود؟", a: isWorkspace ? "مساحتك تظهر في نتائج البحث عند كل شخص يبحث عن مساحات عمل في منطقتك. الباقة المميّزة تضعك أعلى القائمة." : "محلك يظهر في نتائج البحث عند كل شخص يبحث عن مطاعم في منطقتك. الباقة المميّزة تضعك أعلى القائمة." },
+                  { q: "كيف يعرف الزبائن أنك موجود؟", a: "صفحتك تظهر في نتائج البحث عند كل شخص يبحث في منطقتك. الباقة المميّزة تضعك أعلى القائمة." },
                 ].map((item, i) => (
                   <div
                     key={i}
@@ -733,7 +957,7 @@ export default function RegisterPlacePage() {
                 </>
               )}
             </button>
-            {step > 1 && (
+            {step > (skipTypeStep ? 2 : 1) && (
               <button
                 onClick={() => setStep(step - 1)}
                 className="w-full text-[#6B7280] font-semibold text-[13px] py-2 mt-1.5"

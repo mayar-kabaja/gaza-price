@@ -23,19 +23,25 @@ type Section = 'food' | 'store' | 'workspace';
 
 const PAGE_SIZE = 20;
 
-const FOOD_CHIPS = ['الكل', 'مطعم وكافيه', 'مطاعم', 'كافيه', '🟢 مفتوح'];
-const STORE_CHIPS = ['الكل', 'ملابس', 'إلكترونيات', 'حلاقة', 'بناء'];
-const WORKSPACE_CHIPS = ['الكل', '🟢 مفتوح'];
+const FOOD_CHIPS = ['الكل', 'مطعم وكافيه', 'مطاعم', 'كافيه', 'مفتوح'];
+const STORE_CHIPS = ['الكل', 'غذائية', 'صحة', 'ملابس', 'منزل', 'إلكترونيات', 'بناء', 'تعليم', 'خدمات', 'سيارات', 'زراعة', 'مفتوح'];
+const WORKSPACE_CHIPS = ['الكل', 'مفتوح'];
 
 // Map chip labels to DB type values for filtering
 const CHIP_TO_TYPE: Record<string, string | string[]> = {
   'مطاعم': ['restaurant', 'مطعم'],
   'كافيه': ['cafe', 'كافيه', 'مقهى'],
   'مطعم وكافيه': ['both', 'مطعم وكافيه'],
-  'ملابس': 'ملابس',
-  'إلكترونيات': 'إلكترونيات',
-  'حلاقة': 'حلاقة',
-  'بناء': 'أدوات منزلية',
+  'غذائية': ['بقالية عامة', 'سوبرماركت', 'خضار وفواكه', 'لحوم', 'سمك', 'مخبز', 'حلويات ومعجنات', 'بهارات وتوابل'],
+  'صحة': ['صيدلية', 'عيادة وطب', 'مستلزمات طبية', 'بصريات'],
+  'ملابس': ['ملابس رجالي', 'ملابس حريمي', 'ملابس أطفال', 'أحذية', 'إكسسوارات', 'خياطة وتعديل'],
+  'منزل': ['أثاث منزلي', 'مفروشات وستائر', 'أدوات منزلية', 'كهرباء ولوازم منزلية', 'نظافة ومنظفات', 'أدوات صحية وسباكة'],
+  'إلكترونيات': ['موبايل وإكسسوارات', 'كمبيوتر ولاب توب', 'كهربائيات', 'طاقة شمسية', 'إصلاح وصيانة'],
+  'بناء': ['مواد بناء', 'حديد وألمنيوم', 'دهانات وديكور', 'أخشاب', 'سيراميك وبلاط'],
+  'تعليم': ['مكتبة وقرطاسية', 'ألعاب أطفال', 'أدوات رسم وفنون'],
+  'خدمات': ['حلاقة وصالون', 'عطور وكوزمتيك', 'تصوير'],
+  'سيارات': ['قطع غيار سيارات', 'كراج وميكانيك', 'إطارات'],
+  'زراعة': ['مستلزمات زراعية', 'علف وبيطري', 'أخرى'],
 };
 
 const GOV_LABELS: Record<string, string> = {
@@ -66,16 +72,74 @@ function cleanWhatsapp(raw: string): string {
 
 const EMOJI_MAP: Record<string, string> = {
   restaurant: '🍽️', cafe: '☕', bakery: '🫓', juice: '🧃',
-  'ملابس': '👗', 'إلكترونيات': '📱', 'حلاقة': '✂️', 'أدوات منزلية': '🏗️',
-  'صيدلية': '💊', 'كتب ودفاتر': '📚', 'ألعاب أطفال': '🧸', 'أزهار': '🌸',
+  // 🛒 مواد غذائية وبقالة
+  'بقالية عامة': '🛒', 'سوبرماركت': '🛒', 'خضار وفواكه': '🥬', 'لحوم': '🥩',
+  'سمك': '🐟', 'مخبز': '🫓', 'حلويات ومعجنات': '🍰', 'بهارات وتوابل': '🌶️',
+  // 💊 صحة وصيدلية
+  'صيدلية': '💊', 'عيادة وطب': '🏥', 'مستلزمات طبية': '🩺', 'بصريات': '👓',
+  // 👕 ملابس وأزياء
+  'ملابس رجالي': '👔', 'ملابس حريمي': '👗', 'ملابس أطفال': '🧒', 'أحذية': '👟',
+  'إكسسوارات': '💍', 'خياطة وتعديل': '🧵',
+  // 🏠 منزل وأثاث
+  'أثاث منزلي': '🛋️', 'مفروشات وستائر': '🪟', 'أدوات منزلية': '🏠', 'كهرباء ولوازم منزلية': '💡',
+  'نظافة ومنظفات': '🧹', 'أدوات صحية وسباكة': '🔧',
+  // 📱 إلكترونيات وتقنية
+  'موبايل وإكسسوارات': '📱', 'كمبيوتر ولاب توب': '💻', 'كهربائيات': '🔌',
+  'طاقة شمسية': '☀️', 'إصلاح وصيانة': '🔧',
+  // 🏗️ بناء ومواد
+  'مواد بناء': '🏗️', 'حديد وألمنيوم': '🔩', 'دهانات وديكور': '🎨', 'أخشاب': '🪵', 'سيراميك وبلاط': '🧱',
+  // 📚 تعليم وثقافة
+  'مكتبة وقرطاسية': '📚', 'ألعاب أطفال': '🧸', 'أدوات رسم وفنون': '🎨',
+  // 💈 خدمات شخصية
+  'حلاقة وصالون': '💈', 'عطور وكوزمتيك': '🌸', 'تصوير': '📷',
+  // 🚗 سيارات
+  'قطع غيار سيارات': '🚗', 'كراج وميكانيك': '🔧', 'إطارات': '🛞',
+  // 🌿 زراعة وحيوانات
+  'مستلزمات زراعية': '🌿', 'علف وبيطري': '🐄', 'أخرى': '📦',
+  // workspace
   'workspace': '💻', 'مساحة عمل': '💻',
 };
 
+const _green: [string, string] = ['#E8F5EE', '#1A2E22'];
+const _blue: [string, string] = ['#EFF6FF', '#1A1E2A'];
+const _amber: [string, string] = ['#FFFBEB', '#2A2518'];
+const _purple: [string, string] = ['#F5F3FF', '#261A2A'];
+const _slate: [string, string] = ['#F1F5F9', '#1A1E2A'];
+const _orange: [string, string] = ['#FFF7ED', '#2A1E18'];
+const _teal: [string, string] = ['#F0FDFA', '#1A2E2A'];
+const _pink: [string, string] = ['#FDF2F8', '#261A2A'];
+const _indigo: [string, string] = ['#EEF2FF', '#1A1E2A'];
+const _emerald: [string, string] = ['#ECFDF5', '#1A2E22'];
+
 const BG_MAP: Record<string, [string, string]> = {
-  restaurant: ['#E8F5EE', '#1A2E22'], cafe: ['#E8F5EE', '#1A2E22'], both: ['#E8F5EE', '#1A2E22'], bakery: ['#FFF8E8', '#2A2518'], juice: ['#F0FDF4', '#1A2E22'],
-  'ملابس': ['#FEF0EB', '#2A1E18'], 'إلكترونيات': ['#EEF2FF', '#1A1E2A'], 'حلاقة': ['#FDF4FF', '#261A2A'], 'أدوات منزلية': ['#FEF3E8', '#2A2518'],
-  'صيدلية': ['#F0FDF4', '#1A2E22'], 'كتب ودفاتر': ['#FFF8E8', '#2A2518'], 'ألعاب أطفال': ['#FEF0EB', '#2A1E18'], 'أزهار': ['#F0FDF4', '#1A2E22'],
-  'workspace': ['#EEF2FF', '#1A1E2A'], 'مساحة عمل': ['#EEF2FF', '#1A1E2A'],
+  restaurant: _green, cafe: _green, both: _green, bakery: _amber, juice: _green,
+  // غذائية
+  'بقالية عامة': _green, 'سوبرماركت': _green, 'خضار وفواكه': _green, 'لحوم': _green,
+  'سمك': _green, 'مخبز': _green, 'حلويات ومعجنات': _green, 'بهارات وتوابل': _green,
+  // صحة
+  'صيدلية': _blue, 'عيادة وطب': _blue, 'مستلزمات طبية': _blue, 'بصريات': _blue,
+  // ملابس
+  'ملابس رجالي': _amber, 'ملابس حريمي': _amber, 'ملابس أطفال': _amber,
+  'أحذية': _amber, 'إكسسوارات': _amber, 'خياطة وتعديل': _amber,
+  // منزل
+  'أثاث منزلي': _purple, 'مفروشات وستائر': _purple, 'أدوات منزلية': _purple,
+  'كهرباء ولوازم منزلية': _purple, 'نظافة ومنظفات': _purple, 'أدوات صحية وسباكة': _purple,
+  // إلكترونيات
+  'موبايل وإكسسوارات': _slate, 'كمبيوتر ولاب توب': _slate, 'كهربائيات': _slate,
+  'طاقة شمسية': _slate, 'إصلاح وصيانة': _slate,
+  // بناء
+  'مواد بناء': _orange, 'حديد وألمنيوم': _orange, 'دهانات وديكور': _orange,
+  'أخشاب': _orange, 'سيراميك وبلاط': _orange,
+  // تعليم
+  'مكتبة وقرطاسية': _teal, 'ألعاب أطفال': _teal, 'أدوات رسم وفنون': _teal,
+  // خدمات
+  'حلاقة وصالون': _pink, 'عطور وكوزمتيك': _pink, 'تصوير': _pink,
+  // سيارات
+  'قطع غيار سيارات': _indigo, 'كراج وميكانيك': _indigo, 'إطارات': _indigo,
+  // زراعة
+  'مستلزمات زراعية': _emerald, 'علف وبيطري': _emerald, 'أخرى': _emerald,
+  // workspace
+  'workspace': _indigo, 'مساحة عمل': _indigo,
 };
 
 export default function PlacesPage() {
@@ -123,7 +187,7 @@ export default function PlacesPage() {
     let filtered = allPlaces;
     const chipLabel = chips[chip];
     if (chipLabel && chipLabel !== 'الكل') {
-      if (chipLabel === '🟢 مفتوح') filtered = filtered.filter((p) => p.is_open);
+      if (chipLabel === 'مفتوح') filtered = filtered.filter((p) => p.is_open);
       else {
         const typeFilter = CHIP_TO_TYPE[chipLabel];
         if (typeFilter) {
@@ -197,7 +261,7 @@ export default function PlacesPage() {
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ابحث عن محل أو صنف..."
+                  placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
                   className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0 font-semibold"
                   dir="rtl"
                 />
@@ -300,7 +364,7 @@ export default function PlacesPage() {
                           : 'bg-surface border-border text-slate hover:border-olive/50'
                       }`}
                     >
-                      {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
                     </button>
                   ))}
                 </div>
@@ -321,7 +385,28 @@ export default function PlacesPage() {
                           : 'bg-surface border-border text-slate hover:border-olive/50'
                       }`}
                     >
-                      {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {section === 'store' && (
+              <div className="px-4 pb-3 border-t border-border pt-3">
+                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {chips.map((label, i) => (
+                    <button
+                      key={label}
+                      onClick={() => { setChip(i); setPage(0); }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                        chip === i
+                          ? 'bg-olive-pale border-olive text-olive font-semibold'
+                          : 'bg-surface border-border text-slate hover:border-olive/50'
+                      }`}
+                    >
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -331,7 +416,7 @@ export default function PlacesPage() {
             {/* Register CTA */}
             <div className="mt-auto p-4 border-t border-border">
               <Link
-                href="/places/register"
+                href={`/places/register?section=${section}`}
                 className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
               >
                 {section === 'food' ? '🍽️' : section === 'store' ? '🏪' : '💻'} سجّل {section === 'workspace' ? 'مساحة عملك' : 'محلك'} مجاناً
@@ -345,7 +430,7 @@ export default function PlacesPage() {
             <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <h1 className="font-display font-black text-lg text-ink">
-                  {section === 'food' ? '🍽️ مطاعم وكافيه' : section === 'store' ? '🏪 متاجر' : '💻 مساحات عمل'}
+                  {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
                 </h1>
                 <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
                   {count} مكان
@@ -357,19 +442,181 @@ export default function PlacesPage() {
             </div>
 
             {section === 'store' ? (
-              <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-                <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                  <span className="text-4xl">🏪</span>
+              isSearching ? (
+                (searchLoading) ? (
+                  <div className="bg-surface border-b border-border divide-y divide-border">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-6 py-3">
+                        <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                          <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : places.length === 0 && matchedItems.length === 0 ? (
+                  <div className="text-center py-20">
+                    <p className="text-sm text-mist">لا توجد نتائج لـ &quot;{debouncedSearch}&quot;</p>
+                  </div>
+                ) : (
+                  <div>
+                    {places.length > 0 && (
+                      <>
+                        <div className="bg-olive px-6 py-2">
+                          <span className="font-display font-bold text-[13px] text-white">متاجر</span>
+                        </div>
+                        <div className="bg-surface border-b border-border">
+                          {places.map((place, i) => (
+                            <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {matchedItems.length > 0 && (() => {
+                      const groupedItems = matchedItems.reduce<Record<string, MatchedItem[]>>((acc, item) => {
+                        if (!acc[item.place_id]) acc[item.place_id] = [];
+                        acc[item.place_id].push(item);
+                        return acc;
+                      }, {});
+                      const placeMap = new Map((searchData?.places ?? []).map((p) => [p.id, p]));
+                      return (
+                        <>
+                          <div className="bg-olive px-6 py-2 mt-2">
+                            <span className="font-display font-bold text-[13px] text-white">منتجات</span>
+                          </div>
+                          {Object.entries(groupedItems).map(([placeId, items]) => {
+                            const place = placeMap.get(placeId);
+                            if (!place) return null;
+                            return (
+                              <div key={placeId} className="bg-surface border-b border-border">
+                                <div
+                                  className="flex items-center gap-2 px-6 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
+                                  onClick={() => setSelectedPlace(place)}
+                                >
+                                  <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
+                                  <span className="text-[10px] text-mist">{place.area?.name_ar}</span>
+                                </div>
+                                {items.map((item, idx) => (
+                                  <div key={`${placeId}-${idx}`} className="flex items-center justify-between px-7 py-2.5 border-b border-border/50 last:border-b-0">
+                                    <span className="text-[13px] font-semibold text-ink">{item.item_name}</span>
+                                    {Number(item.price) > 0 ? (
+                                      <span className="font-display font-black text-[14px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
+                                    ) : (
+                                      <span className="text-[10px] text-mist">—</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )
+              ) : loading ? (
+                <div className="bg-surface border-b border-border divide-y divide-border">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-6 py-3">
+                      <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                        <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                      </div>
+                      <div className="h-2.5 w-12 rounded-md bg-border/60 animate-pulse" />
+                    </div>
+                  ))}
                 </div>
-                <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-                <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
-                <Link
-                  href="/places/register"
-                  className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
-                >
-                  🏪 سجّل متجرك
-                </Link>
-              </div>
+              ) : places.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
+                    <span className="text-4xl">🏪</span>
+                  </div>
+                  <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد متاجر حالياً</h2>
+                  <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل متجر في منطقتك</p>
+                  <Link
+                    href={`/places/register?section=${section}`}
+                    className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
+                  >
+                    🏪 سجّل متجرك
+                  </Link>
+                </div>
+              ) : (
+                <div className="p-6">
+                  {/* الأبرز — Story Circles */}
+                  {chip === 0 && places.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                          <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-5 overflow-x-auto no-scrollbar pb-1">
+                        {places.slice(0, 10).map((place) => {
+                          const emoji = EMOJI_MAP[place.type] || '🏪';
+                          const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+                          const closed = !place.is_open;
+                          return (
+                            <div
+                              key={place.id}
+                              onClick={() => setSelectedPlace(place)}
+                              className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
+                            >
+                              <div
+                                className="w-[64px] h-[64px] rounded-full p-[2.5px] transition-transform group-hover:scale-105"
+                                style={{
+                                  background: closed
+                                    ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                    : accent.ring,
+                                }}
+                              >
+                                <div className="w-full h-full rounded-full bg-surface border-[2.5px] border-surface flex items-center justify-center overflow-hidden">
+                                  {place.avatar_url ? (
+                                    <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                                  ) : (
+                                    <span className={`text-[28px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`text-[10px] font-semibold text-center max-w-[68px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                                {place.name}
+                              </div>
+                              <div className="text-[9px] text-mist text-center -mt-[2px]">
+                                {closed ? 'مغلق' : (place.type || 'متجر')}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* الكل — Accent Bar Cards */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                      <span className="font-display font-black text-[14px] text-ink">الكل</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
+                      {places.length} متجر
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {places.map((place, i) => (
+                      <StoreCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-3 py-6">
+                      <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">السابق ←</button>
+                      <span className="text-[11px] font-semibold text-mist">{page + 1} / {totalPages}</span>
+                      <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">→ التالي</button>
+                    </div>
+                  )}
+                </div>
+              )
             ) : section === 'workspace' ? (
               /* Workspace listing */
               loading ? (
@@ -395,7 +642,7 @@ export default function PlacesPage() {
                   <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
                   <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
                   <Link
-                    href="/places/register"
+                    href={`/places/register?section=${section}`}
                     className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
                   >
                     💻 سجّل مساحة عملك
@@ -592,7 +839,7 @@ export default function PlacesPage() {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن محل، مطعم، كافيه، أو صنف..."
+            placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
             className="flex-1 text-xs text-mist dark:text-white placeholder:text-mist dark:placeholder:text-white/50 bg-transparent outline-none min-w-0 font-semibold"
             dir="rtl"
           />
@@ -616,7 +863,7 @@ export default function PlacesPage() {
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              🍽️ مطاعم
+              مطاعم
             </button>
             <button
               onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
@@ -626,7 +873,7 @@ export default function PlacesPage() {
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              💻 مساحات عمل
+              مساحات عمل
             </button>
             <button
               onClick={() => { setSection('store'); setChip(0); setPage(0); }}
@@ -636,27 +883,243 @@ export default function PlacesPage() {
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              🏪 متاجر
+              متاجر
             </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Store "Coming Soon" ─── */}
+      {/* ─── Store listing ─── */}
       {section === 'store' ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-            <span className="text-4xl">🏪</span>
+        <>
+          {/* Area bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-b border-border">
+            <div className="flex items-center gap-1.5">
+              <div className="w-[7px] h-[7px] rounded-full bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.18)]" />
+              <span className="font-display font-bold text-[12px] text-ink">{placesArea?.name_ar ?? 'كل المناطق'}</span>
+            </div>
+            <button onClick={() => setOpenAreaPicker(true)} className="text-[11px] font-semibold text-olive">📍 تغيير</button>
           </div>
-          <h2 className="font-display font-black text-xl text-ink mb-2">قريباً</h2>
-          <p className="text-sm text-mist leading-relaxed max-w-[260px]">قسم المتاجر قيد التطوير وسيكون متاحاً قريباً.</p>
+
+          {/* Chips */}
+          <div className="flex gap-2 px-4 py-2.5 bg-surface border-b border-border overflow-x-auto no-scrollbar">
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                  chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Section header */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-fog">
+            <span className="font-display font-extrabold text-[13px] text-ink">المتاجر</span>
+            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
+              {count} متجر
+            </span>
+          </div>
+
+          {/* Banner */}
           <Link
-            href="/places/register"
-            className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors"
+            href={`/places/register?section=${section}`}
+            className="flex items-center mx-3 mt-2 mb-1 rounded-2xl px-4 py-3 relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
           >
-            🏪 سجّل متجرك
+            <div className="absolute w-[100px] h-[100px] rounded-full bg-white/[0.07] -top-[40px] -left-[20px] pointer-events-none" />
+            <div className="flex-1 relative z-[1]">
+              <div className="font-display font-black text-[14px] text-white leading-tight">
+                صاحب متجر؟ سجّل مجاناً
+              </div>
+              <div className="text-[10px] text-white/60 mt-0.5">
+                {count} متجر مسجّل · انضم الآن
+              </div>
+            </div>
+            <span className="mr-2 inline-flex items-center bg-white font-display font-extrabold text-[11px] px-3 py-[5px] rounded-full flex-shrink-0 relative z-[1] text-[#3A6347]">
+              سجّل ←
+            </span>
           </Link>
-        </div>
+
+          {isSearching ? (
+            searchLoading ? (
+              <div className="bg-surface border-b border-border mb-2 pb-32 divide-y divide-border">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                      <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : places.length === 0 && matchedItems.length === 0 ? (
+              <div className="bg-surface border-b border-border mb-2 pb-20">
+                <div className="text-center py-12">
+                  <p className="text-sm text-mist">لا توجد نتائج لـ &quot;{debouncedSearch}&quot;</p>
+                </div>
+              </div>
+            ) : (
+              <div className="pb-24">
+                {places.length > 0 && (
+                  <>
+                    <div className="bg-olive px-4 py-2">
+                      <span className="font-display font-bold text-[13px] text-white">متاجر</span>
+                    </div>
+                    <div className="bg-surface border-b border-border">
+                      {places.map((place, i) => (
+                        <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                      ))}
+                    </div>
+                  </>
+                )}
+                {matchedItems.length > 0 && (() => {
+                  const grouped = matchedItems.reduce<Record<string, MatchedItem[]>>((acc, item) => {
+                    if (!acc[item.place_id]) acc[item.place_id] = [];
+                    acc[item.place_id].push(item);
+                    return acc;
+                  }, {});
+                  const placeMap = new Map((searchData?.places ?? []).map((p) => [p.id, p]));
+                  return (
+                    <>
+                      <div className="bg-olive px-4 py-2 mt-2">
+                        <span className="font-display font-bold text-[13px] text-white">منتجات</span>
+                      </div>
+                      {Object.entries(grouped).map(([placeId, items]) => {
+                        const place = placeMap.get(placeId);
+                        if (!place) return null;
+                        return (
+                          <div key={placeId} className="bg-surface border-b border-border">
+                            <div
+                              className="flex items-center gap-2 px-4 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
+                              onClick={() => setSelectedPlace(place)}
+                            >
+                              <span className="text-[14px]">🏪</span>
+                              <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
+                              <span className="text-[9px] text-mist">{place.area?.name_ar}</span>
+                              <span className="text-[11px] text-mist">{'‹'}</span>
+                            </div>
+                            {items.map((item, idx) => (
+                              <div
+                                key={`${placeId}-${idx}`}
+                                className="flex items-center justify-between px-5 py-2.5 border-b border-border/50 last:border-b-0 cursor-pointer hover:bg-fog/50"
+                                onClick={() => setSelectedPlace(place)}
+                              >
+                                <span className="text-[13px] font-semibold text-ink">{item.item_name}</span>
+                                {Number(item.price) > 0 ? (
+                                  <span className="font-display font-black text-[14px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
+                                ) : (
+                                  <span className="text-[10px] text-mist">—</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </div>
+            )
+          ) : loading ? (
+            <div className="bg-surface border-b border-border divide-y divide-border pb-28">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                    <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : places.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
+              <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
+                <span className="text-4xl">🏪</span>
+              </div>
+              <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد متاجر حالياً</h2>
+              <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل متجر في منطقتك</p>
+              <Link href={`/places/register?section=${section}`} className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
+                🏪 سجّل متجرك
+              </Link>
+            </div>
+          ) : (
+            <div className="pb-28">
+              {/* الأبرز — Story Circles */}
+              {chip === 0 && places.length > 0 && (
+                <div className="px-4 pt-4 pb-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                      <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                    </div>
+                    <span className="text-[11px] text-mist">اسحب ←</span>
+                  </div>
+                  <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                    {places.slice(0, 8).map((place) => {
+                      const emoji = EMOJI_MAP[place.type] || '🏪';
+                      const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+                      const closed = !place.is_open;
+                      return (
+                        <div
+                          key={place.id}
+                          onClick={() => setSelectedPlace(place)}
+                          className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
+                        >
+                          <div
+                            className="w-[60px] h-[60px] rounded-full p-[2.5px] transition-transform group-hover:scale-105"
+                            style={{
+                              background: closed
+                                ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                : accent.ring,
+                            }}
+                          >
+                            <div className="w-full h-full rounded-full bg-surface border-[2.5px] border-surface flex items-center justify-center overflow-hidden">
+                              {place.avatar_url ? (
+                                <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                              ) : (
+                                <span className={`text-[26px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`text-[10px] font-semibold text-center max-w-[64px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                            {place.name}
+                          </div>
+                          <div className="text-[9px] text-mist text-center -mt-[2px]">
+                            {closed ? 'مغلق' : (place.type || 'متجر')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* الكل — Accent Bar Cards */}
+              <div className="px-4 mt-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                    <span className="font-display font-black text-[14px] text-ink">الكل</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
+                    {places.length} متجر
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 pb-4">
+                  {places.map((place, i) => (
+                    <StoreCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       ) : section === 'workspace' ? (
         /* ─── Workspace listing ─── */
         <>
@@ -679,7 +1142,7 @@ export default function PlacesPage() {
                   chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
                 }`}
               >
-                {label === '🟢 مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
               </button>
             ))}
           </div>
@@ -712,7 +1175,7 @@ export default function PlacesPage() {
               </div>
               <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
               <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
-              <Link href="/places/register" className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
+              <Link href={`/places/register?section=${section}`} className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
                 💻 سجّل مساحة عملك
               </Link>
             </div>
@@ -720,7 +1183,7 @@ export default function PlacesPage() {
             <div className="px-4 py-3 space-y-3 pb-28">
               {/* Register banner */}
               <Link
-                href="/places/register"
+                href={`/places/register?section=${section}`}
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 relative overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
               >
@@ -774,7 +1237,7 @@ export default function PlacesPage() {
                     : 'bg-surface border-border text-slate hover:border-olive/50'
                 }`}
               >
-                {label === '🟢 مفتوح' ? (<><span className={`w-[7px] h-[7px] rounded-full animate-pulse ${chip === i ? 'bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.3)]' : 'bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.18)]'}`} />مفتوح</>) : label}
+                {label === 'مفتوح' ? (<><span className={`w-[7px] h-[7px] rounded-full animate-pulse ${chip === i ? 'bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.3)]' : 'bg-olive shadow-[0_0_0_2px_rgba(45,107,63,0.18)]'}`} />مفتوح</>) : label}
               </button>
             ))}
           </div>
@@ -789,14 +1252,14 @@ export default function PlacesPage() {
 
           {/* Banner — compact strip */}
           <Link
-            href="/places/register"
+            href={`/places/register?section=${section}`}
             className="flex items-center mx-3 mt-2 mb-1 rounded-2xl px-4 py-3 relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
           >
             <div className="absolute w-[100px] h-[100px] rounded-full bg-white/[0.07] -top-[40px] -left-[20px] pointer-events-none" />
             <div className="flex-1 relative z-[1]">
               <div className="font-display font-black text-[14px] text-white leading-tight">
-                صاحب محل؟ سجّل مجاناً
+                صاحب مطعم أو كافيه؟ سجّل مجاناً
               </div>
               <div className="text-[10px] text-white/60 mt-0.5">
                 {count} مكان مسجّل · انضم الآن
@@ -1125,6 +1588,103 @@ function SpotlightCard({ place, index, onClick }: { place: Place; index: number;
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Store type → accent color mapping ─── */
+/* ── Parent category accent definitions ── */
+const _A_GREEN   = { border: '#1E4D2B', bg: '#E8F5EE', text: '#1E4D2B', ring: 'linear-gradient(135deg, #1E4D2B, #4CAF50)' };
+const _A_BLUE    = { border: '#3B82F6', bg: '#EFF6FF', text: '#1A3A5C', ring: 'linear-gradient(135deg, #1A3A5C, #60A5FA)' };
+const _A_AMBER   = { border: '#F59E0B', bg: '#FFFBEB', text: '#B45309', ring: 'linear-gradient(135deg, #B45309, #FBBF24)' };
+const _A_PURPLE  = { border: '#7C3AED', bg: '#F5F3FF', text: '#7C3AED', ring: 'linear-gradient(135deg, #6D28D9, #A78BFA)' };
+const _A_SLATE   = { border: '#475569', bg: '#F1F5F9', text: '#475569', ring: 'linear-gradient(135deg, #334155, #94A3B8)' };
+const _A_ORANGE  = { border: '#C2410C', bg: '#FFF7ED', text: '#C2410C', ring: 'linear-gradient(135deg, #9A3412, #FB923C)' };
+const _A_TEAL    = { border: '#0D9488', bg: '#F0FDFA', text: '#0D9488', ring: 'linear-gradient(135deg, #0F766E, #5EEAD4)' };
+const _A_PINK    = { border: '#DB2777', bg: '#FDF2F8', text: '#DB2777', ring: 'linear-gradient(135deg, #BE185D, #F9A8D4)' };
+const _A_INDIGO  = { border: '#4338CA', bg: '#EEF2FF', text: '#4338CA', ring: 'linear-gradient(135deg, #3730A3, #818CF8)' };
+const _A_EMERALD = { border: '#059669', bg: '#ECFDF5', text: '#059669', ring: 'linear-gradient(135deg, #047857, #6EE7B7)' };
+
+const STORE_ACCENT: Record<string, { border: string; bg: string; text: string; ring: string }> = {
+  // 🛒 مواد غذائية وبقالة
+  'بقالية عامة': _A_GREEN, 'سوبرماركت': _A_GREEN, 'خضار وفواكه': _A_GREEN, 'لحوم': _A_GREEN,
+  'سمك': _A_GREEN, 'مخبز': _A_GREEN, 'حلويات ومعجنات': _A_GREEN, 'بهارات وتوابل': _A_GREEN,
+  // 💊 صحة وصيدلية
+  'صيدلية': _A_BLUE, 'عيادة وطب': _A_BLUE, 'مستلزمات طبية': _A_BLUE, 'بصريات': _A_BLUE,
+  // 👕 ملابس وأزياء
+  'ملابس رجالي': _A_AMBER, 'ملابس حريمي': _A_AMBER, 'ملابس أطفال': _A_AMBER,
+  'أحذية': _A_AMBER, 'إكسسوارات': _A_AMBER, 'خياطة وتعديل': _A_AMBER,
+  // 🏠 منزل وأثاث
+  'أثاث منزلي': _A_PURPLE, 'مفروشات وستائر': _A_PURPLE, 'أدوات منزلية': _A_PURPLE,
+  'كهرباء ولوازم منزلية': _A_PURPLE, 'نظافة ومنظفات': _A_PURPLE, 'أدوات صحية وسباكة': _A_PURPLE,
+  // 📱 إلكترونيات وتقنية
+  'موبايل وإكسسوارات': _A_SLATE, 'كمبيوتر ولاب توب': _A_SLATE, 'كهربائيات': _A_SLATE,
+  'طاقة شمسية': _A_SLATE, 'إصلاح وصيانة': _A_SLATE,
+  // 🏗️ بناء ومواد
+  'مواد بناء': _A_ORANGE, 'حديد وألمنيوم': _A_ORANGE, 'دهانات وديكور': _A_ORANGE,
+  'أخشاب': _A_ORANGE, 'سيراميك وبلاط': _A_ORANGE,
+  // 📚 تعليم وثقافة
+  'مكتبة وقرطاسية': _A_TEAL, 'ألعاب أطفال': _A_TEAL, 'أدوات رسم وفنون': _A_TEAL,
+  // 💈 خدمات شخصية
+  'حلاقة وصالون': _A_PINK, 'عطور وكوزمتيك': _A_PINK, 'تصوير': _A_PINK,
+  // 🚗 سيارات
+  'قطع غيار سيارات': _A_INDIGO, 'كراج وميكانيك': _A_INDIGO, 'إطارات': _A_INDIGO,
+  // 🌿 زراعة وحيوانات
+  'مستلزمات زراعية': _A_EMERALD, 'علف وبيطري': _A_EMERALD, 'أخرى': _A_EMERALD,
+};
+const DEFAULT_ACCENT = _A_GREEN;
+
+/* ─── Store Card — Accent Bar ─── */
+function StoreCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const closed = !place.is_open;
+  const emoji = EMOJI_MAP[place.type] || '🏪';
+  const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all hover:shadow-[0_4px_14px_rgba(0,0,0,0.07)] active:scale-[0.99] ${closed ? 'opacity-55' : ''}`}
+      style={{ animation: `slideUp 0.22s ease both ${0.04 * (index + 1)}s` }}
+    >
+      {/* Emoji */}
+      <div className="w-[42px] h-[42px] rounded-full bg-fog flex items-center justify-center text-[20px] flex-shrink-0 overflow-hidden">
+        {place.avatar_url ? (
+          <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+        ) : (
+          emoji
+        )}
+      </div>
+
+      {/* Name + type flag */}
+      <div className="flex-1 min-w-0">
+        <div className="font-display font-extrabold text-[13px] text-ink truncate mb-[3px]">{place.name}</div>
+        <div className="flex items-center gap-[6px]">
+          <span
+            className="text-[10px] font-bold px-[7px] py-[2px] rounded-full shadow-sm"
+            style={{ background: accent.bg, color: accent.text, boxShadow: `0 1px 4px ${accent.border}30` }}
+          >
+            {place.type || 'متجر'}
+          </span>
+          <span className="text-[10px] text-mist flex items-center gap-[2px]">
+            <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            {place.area?.name_ar}
+          </span>
+        </div>
+      </div>
+
+      {/* Status + count */}
+      <div className="flex flex-col items-end gap-[3px] flex-shrink-0">
+        {place.is_open ? (
+          <span className="flex items-center gap-[3px] text-[10px] font-bold text-olive">
+            <span className="w-[5px] h-[5px] rounded-full bg-olive" />مفتوح
+          </span>
+        ) : (
+          <span className="text-[10px] font-semibold text-mist">مغلق</span>
+        )}
+        {(place as any).menu_items_count != null && (
+          <span className="text-[9px] text-mist">{(place as any).menu_items_count} منتج</span>
+        )}
       </div>
     </div>
   );

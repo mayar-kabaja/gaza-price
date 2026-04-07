@@ -6,7 +6,7 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 
 /* ── Types ── */
-type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean };
+type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null };
 type MenuSection = { id: string; name: string; items: MenuItem[] };
 type PlaceData = {
   id: string; name: string; section: string; type: string;
@@ -82,6 +82,7 @@ function OwnerDashboardPage() {
   const [addItemName, setAddItemName] = useState("");
   const [addItemPrice, setAddItemPrice] = useState("");
   const [addItemDesc, setAddItemDesc] = useState("");
+  const [addItemPhoto, setAddItemPhoto] = useState("");
 
   // Add section form
   const [addSectionName, setAddSectionName] = useState("");
@@ -92,6 +93,8 @@ function OwnerDashboardPage() {
   const [editItemName, setEditItemName] = useState("");
   const [editItemPrice, setEditItemPrice] = useState("");
   const [editItemDesc, setEditItemDesc] = useState("");
+  const [editItemPhoto, setEditItemPhoto] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Action loading — tracks which action is running
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -111,6 +114,25 @@ function OwnerDashboardPage() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
+  }
+
+  async function uploadProductPhoto(file: File): Promise<string | null> {
+    setUploadingPhoto(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${base}/upload/product`, { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) return data.url;
+      showToast("فشل رفع الصورة");
+      return null;
+    } catch {
+      showToast("فشل رفع الصورة");
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   const load = useCallback(async () => {
@@ -211,6 +233,7 @@ function OwnerDashboardPage() {
     setEditItemName(item.name);
     setEditItemPrice(item.price);
     setEditItemDesc(item.description ?? "");
+    setEditItemPhoto(item.photo_url ?? "");
     setSheet("editItem");
   }
 
@@ -221,7 +244,7 @@ function OwnerDashboardPage() {
     try {
       await apiFetch(`/api/places/dashboard/menu/items/${editItemId}/update?${qs}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editItemName.trim(), price: editItemPrice || "0", description: editItemDesc.trim() || null }),
+        body: JSON.stringify({ name: editItemName.trim(), price: editItemPrice || "0", description: editItemDesc.trim() || null, photo_url: editItemPhoto || null }),
       });
       await load();
       setSheet("menu");
@@ -236,10 +259,10 @@ function OwnerDashboardPage() {
     try {
       await apiFetch(`/api/places/dashboard/menu/items?${qs}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section_id: addItemSection, name: addItemName.trim(), price: addItemPrice || "0", description: addItemDesc.trim() || undefined }),
+        body: JSON.stringify({ section_id: addItemSection, name: addItemName.trim(), price: addItemPrice || "0", description: addItemDesc.trim() || undefined, photo_url: addItemPhoto || undefined }),
       });
       await load();
-      setAddItemName(""); setAddItemPrice(""); setAddItemDesc("");
+      setAddItemName(""); setAddItemPrice(""); setAddItemDesc(""); setAddItemPhoto("");
       setSheet("menu");
       showToast("تمت الإضافة ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
@@ -734,9 +757,34 @@ function OwnerDashboardPage() {
           <FormField label="اسم الصنف" value={addItemName} onChange={setAddItemName} placeholder="مثال: شاورما لحمة" />
           <FormField label="السعر (₪)" value={addItemPrice} onChange={setAddItemPrice} type="number" placeholder="0" />
           <FormField label="وصف (اختياري)" value={addItemDesc} onChange={setAddItemDesc} placeholder="وصف قصير..." />
+          {/* Photo upload */}
+          <div>
+            <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج (اختياري)</label>
+            {addItemPhoto ? (
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
+                <img src={addItemPhoto} alt="" className="w-full h-full object-cover" />
+                <button onClick={() => setAddItemPhoto("")} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+              </div>
+            ) : (
+              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const url = await uploadProductPhoto(file);
+                  if (url) setAddItemPhoto(url);
+                  e.target.value = "";
+                }} />
+                {uploadingPhoto ? (
+                  <span className="text-xs text-[#9CA3AF]">جاري الرفع...</span>
+                ) : (
+                  <span className="text-xs text-[#9CA3AF]">اضغط لرفع صورة</span>
+                )}
+              </label>
+            )}
+          </div>
           <button
             onClick={handleAddItem}
-            disabled={saving || !addItemName.trim()}
+            disabled={saving || !addItemName.trim() || uploadingPhoto}
             className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الإضافة..." : "إضافة الصنف"}
@@ -759,14 +807,39 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Edit Item Sheet */}
-      <SheetWrap open={sheet === "editItem"} onClose={() => setSheet("menu")} title="تعديل الصنف" sub="عدّل الاسم أو السعر أو الوصف">
+      <SheetWrap open={sheet === "editItem"} onClose={() => setSheet("menu")} title="تعديل الصنف" sub="عدّل الاسم أو السعر أو الوصف أو الصورة">
         <div className="space-y-3.5">
           <FormField label="اسم الصنف" value={editItemName} onChange={setEditItemName} />
           <FormField label="السعر (₪)" value={editItemPrice} onChange={setEditItemPrice} type="number" placeholder="0" />
           <FormField label="وصف (اختياري)" value={editItemDesc} onChange={setEditItemDesc} placeholder="وصف قصير..." />
+          {/* Photo upload */}
+          <div>
+            <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج</label>
+            {editItemPhoto ? (
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
+                <img src={editItemPhoto} alt="" className="w-full h-full object-cover" />
+                <button onClick={() => setEditItemPhoto("")} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+              </div>
+            ) : (
+              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const url = await uploadProductPhoto(file);
+                  if (url) setEditItemPhoto(url);
+                  e.target.value = "";
+                }} />
+                {uploadingPhoto ? (
+                  <span className="text-xs text-[#9CA3AF]">جاري الرفع...</span>
+                ) : (
+                  <span className="text-xs text-[#9CA3AF]">اضغط لرفع صورة</span>
+                )}
+              </label>
+            )}
+          </div>
           <button
             onClick={handleUpdateItem}
-            disabled={saving || !editItemName.trim()}
+            disabled={saving || !editItemName.trim() || uploadingPhoto}
             className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}

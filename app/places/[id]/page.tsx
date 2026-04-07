@@ -47,6 +47,7 @@ interface MenuItem {
   price: number;
   available: boolean;
   icon?: string | null;
+  photo_url?: string | null;
   updated_at?: string;
 }
 
@@ -364,16 +365,23 @@ function MenuContent({ place }: { place: Place }) {
               key={item.id || `${item.name}-${idx}`}
               className={`p-3 bg-surface rounded-[11px] mb-1.5 border border-border hover:border-olive/25 ${!item.available ? 'opacity-40' : ''}`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  {item.icon && (
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                  {item.photo_url ? (
+                    <img
+                      src={item.photo_url}
+                      alt={item.name}
+                      className="w-[48px] h-[48px] rounded-[10px] object-cover flex-shrink-0 border border-border"
+                      loading="lazy"
+                    />
+                  ) : item.icon ? (
                     <span className="w-[34px] h-[34px] rounded-[10px] bg-olive-pale flex items-center justify-center text-[17px] flex-shrink-0">
                       {item.icon}
                     </span>
-                  )}
+                  ) : null}
                   <div className="text-[13px] font-semibold text-ink">{item.name}</div>
                 </div>
-                <div>
+                <div className="flex-shrink-0">
                   {item.available ? (
                     Number(item.price) > 0 ? (
                       <span className="font-display font-black text-[15px] text-olive">
