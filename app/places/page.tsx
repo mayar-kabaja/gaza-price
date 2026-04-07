@@ -228,8 +228,8 @@ export default function PlacesPage() {
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips, section]);
 
-  const places = filteredPlaces;
-  const totalPages = 1;
+  const totalPages = Math.max(1, Math.ceil(filteredPlaces.length / PAGE_SIZE));
+  const places = filteredPlaces.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const count = filteredPlaces.length;
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
