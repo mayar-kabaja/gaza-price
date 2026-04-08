@@ -206,7 +206,7 @@ function RegisterPlacePage() {
         setAvatarUrl(data.url);
       }
     } catch {
-      // silent fail — avatar is optional
+      // silent fail — user can try again
     } finally {
       setUploadingAvatar(false);
     }
@@ -219,7 +219,7 @@ function RegisterPlacePage() {
       if (sectionParam === "food" && !["restaurant", "cafe", "both"].includes(type)) return false;
       return true;
     }
-    if (step === 2) return name.trim().length >= 2 && !!areaId;
+    if (step === 2) return name.trim().length >= 2 && !!areaId && !!avatarUrl;
     if (step === 3) return isValidPhone(phone);
     return true;
   }
@@ -523,7 +523,9 @@ function RegisterPlacePage() {
                     </div>
                   )}
                 </button>
-                <span className="text-[10px] text-[#9CA3AF] mt-1.5">صورة {placeWord} (اختياري)</span>
+                <span className="text-[10px] text-[#9CA3AF] mt-1.5">
+                  صورة {placeWord} <span className="text-[#E05C35] text-[11px]">*</span>
+                </span>
               </div>
 
               <div>
