@@ -99,6 +99,7 @@ function OwnerDashboardPage() {
   const [addItemPrice, setAddItemPrice] = useState("");
   const [addItemDesc, setAddItemDesc] = useState("");
   const [addItemPhoto, setAddItemPhoto] = useState("");
+  const [addItemPhotoPreview, setAddItemPhotoPreview] = useState("");
 
   // Add section form
   const [addSectionName, setAddSectionName] = useState("");
@@ -110,6 +111,7 @@ function OwnerDashboardPage() {
   const [editItemPrice, setEditItemPrice] = useState("");
   const [editItemDesc, setEditItemDesc] = useState("");
   const [editItemPhoto, setEditItemPhoto] = useState("");
+  const [editItemPhotoPreview, setEditItemPhotoPreview] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Action loading — tracks which action is running
@@ -141,30 +143,73 @@ function OwnerDashboardPage() {
     setTimeout(() => setToast(null), 2000);
   }
 
+  function normalizeImageUrl(url?: string | null): string {
+    if (!url) return "";
+    let out = url.trim();
+    if (!/^https?:\/\//i.test(out)) {
+      const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+      if (base) out = `${base}${out.startsWith("/") ? out : `/${out}`}`;
+    }
+    // Avoid mixed-content blocking when app runs on HTTPS.
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && out.startsWith("http://")) {
+      out = out.replace(/^http:\/\//i, "https://");
+    }
+    return out;
+  }
+
   async function compressImageForUpload(file: File): Promise<File> {
     if (!file.type.startsWith("image/")) return file;
     // Keep unsupported/animated formats untouched.
     if (file.type === "image/gif" || file.type === "image/svg+xml") return file;
     // Small images don't need compression.
-    if (file.size <= 2 * 1024 * 1024) return file;
+    if (file.size <= 1 * 1024 * 1024) return file;
 
     try {
-      const bitmap = await createImageBitmap(file);
-      const maxSide = 1600;
-      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-      const width = Math.max(1, Math.round(bitmap.width * scale));
-      const height = Math.max(1, Math.round(bitmap.height * scale));
-
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
       const ctx = canvas.getContext("2d");
       if (!ctx) return file;
 
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.82)
-      );
+      const drawFromImage = async () => {
+        const imageUrl = URL.createObjectURL(file);
+        try {
+          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new Image();
+            el.onload = () => resolve(el);
+            el.onerror = reject;
+            el.src = imageUrl;
+          });
+          const maxSide = 1280;
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        } finally {
+          URL.revokeObjectURL(imageUrl);
+        }
+      };
+
+      try {
+        const bitmap = await createImageBitmap(file);
+        const maxSide = 1280;
+        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      } catch {
+        // iOS/Safari may fail on some formats with createImageBitmap.
+        await drawFromImage();
+      }
+
+      const qualitySteps = [0.72, 0.62, 0.52, 0.45];
+      const targetSize = 900 * 1024; // ~900KB for faster upload on mobile networks
+      let blob: Blob | null = null;
+      for (const q of qualitySteps) {
+        blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", q)
+        );
+        if (!blob) break;
+        if (blob.size <= targetSize) break;
+      }
       if (!blob) return file;
 
       if (blob.size >= file.size) return file;
@@ -185,7 +230,7 @@ function OwnerDashboardPage() {
       fd.append("file", prepared);
       const res = await fetch(`${base}/upload/product`, { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.url) return data.url;
+      if (res.ok && data.url) return normalizeImageUrl(data.url);
       showToast("فشل رفع الصورة");
       return null;
     } catch {
@@ -297,6 +342,7 @@ function OwnerDashboardPage() {
     setEditItemPrice(item.price);
     setEditItemDesc(item.description ?? "");
     setEditItemPhoto(item.photo_url ?? "");
+    setEditItemPhotoPreview("");
     setSheet("editItem");
   }
 
@@ -325,7 +371,7 @@ function OwnerDashboardPage() {
         body: JSON.stringify({ section_id: addItemSection, name: addItemName.trim(), price: addItemPrice || "0", description: addItemDesc.trim() || undefined, photo_url: addItemPhoto || undefined }),
       });
       await load();
-      setAddItemName(""); setAddItemPrice(""); setAddItemDesc(""); setAddItemPhoto("");
+      setAddItemName(""); setAddItemPrice(""); setAddItemDesc(""); setAddItemPhoto(""); setAddItemPhotoPreview("");
       setSheet("menu");
       showToast("تمت الإضافة ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
@@ -848,16 +894,23 @@ function OwnerDashboardPage() {
             <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج (اختياري)</label>
             {addItemPhoto ? (
               <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
-                <img src={addItemPhoto} alt="" className="w-full h-full object-cover" />
-                <button onClick={() => setAddItemPhoto("")} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                <img
+                  src={addItemPhotoPreview || normalizeImageUrl(addItemPhoto)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={() => showToast("تعذر عرض الصورة. جرّب صورة أخرى")}
+                />
+                <button onClick={() => { setAddItemPhoto(""); setAddItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
               <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  setAddItemPhotoPreview(URL.createObjectURL(file));
                   const url = await uploadProductPhoto(file);
                   if (url) setAddItemPhoto(url);
+                  else setAddItemPhotoPreview("");
                   e.target.value = "";
                 }} />
                 {uploadingPhoto ? (
@@ -903,16 +956,23 @@ function OwnerDashboardPage() {
             <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج</label>
             {editItemPhoto ? (
               <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
-                <img src={editItemPhoto} alt="" className="w-full h-full object-cover" />
-                <button onClick={() => setEditItemPhoto("")} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                <img
+                  src={editItemPhotoPreview || normalizeImageUrl(editItemPhoto)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={() => showToast("تعذر عرض الصورة. جرّب صورة أخرى")}
+                />
+                <button onClick={() => { setEditItemPhoto(""); setEditItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
               <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  setEditItemPhotoPreview(URL.createObjectURL(file));
                   const url = await uploadProductPhoto(file);
                   if (url) setEditItemPhoto(url);
+                  else setEditItemPhotoPreview("");
                   e.target.value = "";
                 }} />
                 {uploadingPhoto ? (
