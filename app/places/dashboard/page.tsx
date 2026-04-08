@@ -23,6 +23,21 @@ type WorkspaceDetailsForm = {
 type WorkspaceServiceForm = { service: string; available: boolean; detail: string };
 type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem" | "wsDetails" | "wsServices";
 
+const STORE_CATEGORIES = [
+  { label: "مواد غذائية وبقالة", icon: "🛒", types: ["بقالية عامة", "سوبرماركت", "خضار وفواكه", "لحوم", "سمك", "مخبز", "حلويات ومعجنات", "بهارات وتوابل"] },
+  { label: "صحة وصيدلية", icon: "💊", types: ["صيدلية", "عيادة وطب", "مستلزمات طبية", "بصريات"] },
+  { label: "ملابس وأزياء", icon: "👕", types: ["ملابس رجالي", "ملابس حريمي", "ملابس أطفال", "أحذية", "إكسسوارات", "خياطة وتعديل"] },
+  { label: "منزل وأثاث", icon: "🏠", types: ["أثاث منزلي", "مفروشات وستائر", "أدوات منزلية", "كهرباء ولوازم منزلية", "نظافة ومنظفات", "أدوات صحية وسباكة"] },
+  { label: "إلكترونيات وتقنية", icon: "📱", types: ["موبايل وإكسسوارات", "كمبيوتر ولاب توب", "كهربائيات", "طاقة شمسية", "إصلاح وصيانة"] },
+  { label: "بناء ومواد", icon: "🏗️", types: ["مواد بناء", "حديد وألمنيوم", "دهانات وديكور", "أخشاب", "سيراميك وبلاط"] },
+  { label: "تعليم وثقافة", icon: "📚", types: ["مكتبة وقرطاسية", "ألعاب أطفال", "أدوات رسم وفنون"] },
+  { label: "خدمات شخصية", icon: "💈", types: ["حلاقة وصالون", "عطور وكوزمتيك", "تصوير"] },
+  { label: "سيارات", icon: "🚗", types: ["قطع غيار سيارات", "كراج وميكانيك", "إطارات"] },
+  { label: "زراعة وحيوانات", icon: "🌿", types: ["مستلزمات زراعية", "علف وبيطري"] },
+  { label: "أخرى", icon: "📦", types: ["أخرى"] },
+];
+const STORE_TYPE_VALUES = Array.from(new Set(STORE_CATEGORIES.flatMap((c) => c.types)));
+
 /* ── Plan data ── */
 const PLANS = [
   { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[#F1EFE8] text-[#444441]", featured: false },
@@ -75,6 +90,7 @@ function OwnerDashboardPage() {
   const [editPhone, setEditPhone] = useState("");
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editAreaId, setEditAreaId] = useState("");
+  const [editStoreType, setEditStoreType] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Add item form
@@ -154,6 +170,7 @@ function OwnerDashboardPage() {
     setEditPhone(place.phone ?? "");
     setEditWhatsapp(place.whatsapp ?? "");
     setEditAreaId(place.area_id ?? place.area?.id ?? "");
+    setEditStoreType(place.type ?? "");
     setSheet("edit");
   }
 
@@ -182,6 +199,7 @@ function OwnerDashboardPage() {
       if (editPhone !== (place?.phone ?? "")) body.phone = editPhone;
       if (editWhatsapp !== (place?.whatsapp ?? "")) body.whatsapp = editWhatsapp;
       if (editAreaId !== (place?.area_id ?? place?.area?.id ?? "")) body.area_id = editAreaId;
+      if (place?.section === "store" && editStoreType && editStoreType !== place?.type) body.type = editStoreType;
       const res = await apiFetch(`/api/places/dashboard/update?${qs}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
@@ -725,6 +743,29 @@ function OwnerDashboardPage() {
             </div>
           </div>
           <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
+          {place.section === "store" && (
+            <div>
+              <label className="text-xs font-bold text-[#374151] mb-1.5 block">
+                نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
+              </label>
+              <select
+                value={editStoreType}
+                onChange={(e) => setEditStoreType(e.target.value)}
+                className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]"
+              >
+                <option value="">اختر نوع المتجر...</option>
+                {STORE_CATEGORIES.map((cat) => (
+                  <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
+                    {cat.types.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-xs font-bold text-[#374151] mb-1.5 block">المنطقة</label>
             <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]">
@@ -737,7 +778,7 @@ function OwnerDashboardPage() {
           <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
           <button
             onClick={handleSaveEdit}
-            disabled={saving}
+            disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
             className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}

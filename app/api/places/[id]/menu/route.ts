@@ -8,7 +8,9 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const res = await fetch(`${API}/places/${id}/menu`, {
+    const qs = req.nextUrl.searchParams.toString();
+    const url = `${API}/places/${id}/menu${qs ? `?${qs}` : ""}`;
+    const res = await fetch(url, {
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });

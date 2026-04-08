@@ -1878,7 +1878,16 @@ interface MenuItem {
   price: number;
   available: boolean;
   icon?: string | null;
+  photo_url?: string | null;
   updated_at?: string;
+}
+
+function resolvePublicImageUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+  if (!base) return url;
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
 const FLAG_REASONS = [
@@ -2034,6 +2043,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
   const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   // Flag state
   const [flagItem, setFlagItem] = useState<MenuItem | null>(null);
@@ -2096,7 +2106,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const res = await apiFetch(`/api/places/${place.id}/menu`);
+        const res = await apiFetch(`/api/places/${place.id}/menu?no_cache=1&_t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           setMenuSections(data.data || data || []);
@@ -2212,11 +2222,28 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        {item.icon && (
-                          <span className="w-[34px] h-[34px] rounded-[10px] bg-olive-pale flex items-center justify-center text-[17px] flex-shrink-0">
+                        {resolvePublicImageUrl(item.photo_url) ? (
+                          <div className="relative w-[52px] h-[52px] rounded-[12px] bg-olive-pale flex-shrink-0 overflow-hidden">
+                            <div className="absolute inset-0 flex items-center justify-center text-[18px]">🏷️</div>
+                            <img
+                              src={resolvePublicImageUrl(item.photo_url)!}
+                              alt={item.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setImagePreviewUrl(resolvePublicImageUrl(item.photo_url)!)}
+                              className="absolute inset-x-1 bottom-1 rounded-md bg-black/55 text-white text-[9px] font-bold py-0.5"
+                            >
+                              عرض الصورة
+                            </button>
+                          </div>
+                        ) : item.icon ? (
+                          <span className="w-[52px] h-[52px] rounded-[12px] bg-olive-pale flex items-center justify-center text-[20px] flex-shrink-0">
                             {item.icon}
                           </span>
-                        )}
+                        ) : null}
                         <div className="text-[13px] font-semibold text-ink">{item.name}</div>
                       </div>
                       <div>
@@ -2409,6 +2436,35 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                     </button>
                   </>
                 )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ══ IMAGE PREVIEW ══ */}
+        {imagePreviewUrl && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 z-[80]"
+              onClick={() => setImagePreviewUrl(null)}
+            />
+            <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" dir="rtl">
+              <div className="relative w-full max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setImagePreviewUrl(null)}
+                  className="absolute -top-3 -left-3 w-9 h-9 rounded-full bg-white text-[#111827] shadow-lg flex items-center justify-center text-xl leading-none"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
+                  <img
+                    src={imagePreviewUrl}
+                    alt=""
+                    className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                  />
+                </div>
               </div>
             </div>
           </>

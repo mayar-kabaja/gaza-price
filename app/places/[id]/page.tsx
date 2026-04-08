@@ -96,6 +96,14 @@ function typeLabel(type: string): string {
   return type;
 }
 
+function resolvePublicImageUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+  if (!base) return url;
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
 /* ─── Workspace Content ─── */
 
 function WorkspaceContent({ place }: { place: Place }) {
@@ -307,7 +315,8 @@ function MenuContent({ place }: { place: Place }) {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const res = await apiFetch(`/api/places/${place.id}/menu`);
+        // Cache-bust so visitors see menu/photo updates immediately.
+        const res = await apiFetch(`/api/places/${place.id}/menu?no_cache=1&_t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
           setMenuSections(data.data || data || []);
@@ -367,13 +376,16 @@ function MenuContent({ place }: { place: Place }) {
             >
               <div className="flex items-start justify-between gap-2.5">
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  {item.photo_url ? (
-                    <img
-                      src={item.photo_url}
-                      alt={item.name}
-                      className="w-[48px] h-[48px] rounded-[10px] object-cover flex-shrink-0 border border-border"
-                      loading="lazy"
-                    />
+                  {resolvePublicImageUrl(item.photo_url) ? (
+                    <div className="relative w-[48px] h-[48px] rounded-[10px] flex-shrink-0 border border-border overflow-hidden bg-olive-pale">
+                      <div className="absolute inset-0 flex items-center justify-center text-[18px]">🏷️</div>
+                      <img
+                        src={resolvePublicImageUrl(item.photo_url)!}
+                        alt={item.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
                   ) : item.icon ? (
                     <span className="w-[34px] h-[34px] rounded-[10px] bg-olive-pale flex items-center justify-center text-[17px] flex-shrink-0">
                       {item.icon}

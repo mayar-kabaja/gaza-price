@@ -8,6 +8,28 @@ import { apiFetchAdmin } from "@/lib/api/fetch";
 
 const PAGE_SIZE = 20;
 
+const FOOD_TYPE_OPTIONS = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "cafe", label: "Cafe" },
+  { value: "both", label: "Both" },
+];
+
+const STORE_CATEGORIES = [
+  { label: "مواد غذائية وبقالة", icon: "🛒", types: ["بقالية عامة", "سوبرماركت", "خضار وفواكه", "لحوم", "سمك", "مخبز", "حلويات ومعجنات", "بهارات وتوابل"] },
+  { label: "صحة وصيدلية", icon: "💊", types: ["صيدلية", "عيادة وطب", "مستلزمات طبية", "بصريات"] },
+  { label: "ملابس وأزياء", icon: "👕", types: ["ملابس رجالي", "ملابس حريمي", "ملابس أطفال", "أحذية", "إكسسوارات", "خياطة وتعديل"] },
+  { label: "منزل وأثاث", icon: "🏠", types: ["أثاث منزلي", "مفروشات وستائر", "أدوات منزلية", "كهرباء ولوازم منزلية", "نظافة ومنظفات", "أدوات صحية وسباكة"] },
+  { label: "إلكترونيات وتقنية", icon: "📱", types: ["موبايل وإكسسوارات", "كمبيوتر ولاب توب", "كهربائيات", "طاقة شمسية", "إصلاح وصيانة"] },
+  { label: "بناء ومواد", icon: "🏗️", types: ["مواد بناء", "حديد وألمنيوم", "دهانات وديكور", "أخشاب", "سيراميك وبلاط"] },
+  { label: "تعليم وثقافة", icon: "📚", types: ["مكتبة وقرطاسية", "ألعاب أطفال", "أدوات رسم وفنون"] },
+  { label: "خدمات شخصية", icon: "💈", types: ["حلاقة وصالون", "عطور وكوزمتيك", "تصوير"] },
+  { label: "سيارات", icon: "🚗", types: ["قطع غيار سيارات", "كراج وميكانيك", "إطارات"] },
+  { label: "زراعة وحيوانات", icon: "🌿", types: ["مستلزمات زراعية", "علف وبيطري"] },
+  { label: "أخرى", icon: "📦", types: ["أخرى"] },
+];
+
+const STORE_TYPE_VALUES = Array.from(new Set(STORE_CATEGORIES.flatMap((c) => c.types)));
+
 export default function AdminPlacesPage() {
   const { toast } = useAdminToast();
   const queryClient = useQueryClient();
@@ -132,6 +154,18 @@ export default function AdminPlacesPage() {
 
   async function handleSaveEdit() {
     if (!editPlace) return;
+    const isValidType =
+      editSection === "store"
+        ? STORE_TYPE_VALUES.includes(editType)
+        : editSection === "workspace"
+          ? editType === "workspace"
+          : editSection === "food"
+            ? FOOD_TYPE_OPTIONS.some((t) => t.value === editType)
+            : false;
+    if (!isValidType) {
+      toast("Please select a valid Type for this Section");
+      return;
+    }
     setSaving(true);
     try {
       const body: Record<string, string | boolean> = {};
@@ -538,7 +572,21 @@ export default function AdminPlacesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Section</label>
-                  <select value={editSection} onChange={(e) => setEditSection(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                  <select
+                    value={editSection}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setEditSection(next);
+                      if (next === "store") {
+                        if (!STORE_TYPE_VALUES.includes(editType)) setEditType(STORE_TYPE_VALUES[0] ?? "");
+                      } else if (next === "workspace") {
+                        setEditType("workspace");
+                      } else {
+                        if (!FOOD_TYPE_OPTIONS.some((t) => t.value === editType)) setEditType("restaurant");
+                      }
+                    }}
+                    className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+                  >
                     <option value="food">Food</option>
                     <option value="store">Store</option>
                     <option value="workspace">Workspace</option>
@@ -546,13 +594,45 @@ export default function AdminPlacesPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Type</label>
-                  <select value={editType} onChange={(e) => setEditType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
-                    <option value="">Select type...</option>
-                    <option value="restaurant">Restaurant</option>
-                    <option value="cafe">Cafe</option>
-                    <option value="both">Both</option>
-                    <option value="workspace">Workspace</option>
-                  </select>
+                  {editSection === "store" ? (
+                    <select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                      className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+                    >
+                      <option value="">Select store type...</option>
+                      {STORE_CATEGORIES.map((cat) => (
+                        <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
+                          {cat.types.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  ) : editSection === "workspace" ? (
+                    <select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                      className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+                    >
+                      <option value="workspace">Workspace</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                      className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+                    >
+                      <option value="">Select type...</option>
+                      {FOOD_TYPE_OPTIONS.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
               <div>
@@ -571,7 +651,20 @@ export default function AdminPlacesPage() {
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setEditPlace(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>
-              <button onClick={handleSaveEdit} disabled={saving} className="flex-1 rounded-lg bg-[#4A7C59] py-2 text-xs font-bold text-white hover:bg-[#3A6347] disabled:opacity-50">
+              <button
+                onClick={handleSaveEdit}
+                disabled={
+                  saving ||
+                  (editSection === "store"
+                    ? !STORE_TYPE_VALUES.includes(editType)
+                    : editSection === "workspace"
+                      ? editType !== "workspace"
+                      : editSection === "food"
+                        ? !FOOD_TYPE_OPTIONS.some((t) => t.value === editType)
+                        : true)
+                }
+                className="flex-1 rounded-lg bg-[#4A7C59] py-2 text-xs font-bold text-white hover:bg-[#3A6347] disabled:opacity-50"
+              >
                 {saving ? "Saving..." : "Save"}
               </button>
             </div>
@@ -592,7 +685,17 @@ export default function AdminPlacesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Section</label>
-                  <select value={addSection} onChange={(e) => setAddSection(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                    <select
+                      value={addSection}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setAddSection(next);
+                        if (next === "store") setAddType(STORE_TYPE_VALUES[0] ?? "");
+                        else if (next === "workspace") setAddType("workspace");
+                        else setAddType("restaurant");
+                      }}
+                      className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]"
+                    >
                     <option value="food">Food</option>
                     <option value="store">Store</option>
                     <option value="workspace">Workspace</option>
@@ -600,13 +703,32 @@ export default function AdminPlacesPage() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Type</label>
-                  <select value={addType} onChange={(e) => setAddType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
-                    <option value="">Select type...</option>
-                    <option value="restaurant">Restaurant</option>
-                    <option value="cafe">Cafe</option>
-                    <option value="both">Both</option>
-                    <option value="workspace">Workspace</option>
-                  </select>
+                    {addSection === "store" ? (
+                      <select value={addType} onChange={(e) => setAddType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                        {STORE_CATEGORIES.map((cat) => (
+                          <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
+                            {cat.types.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    ) : addSection === "workspace" ? (
+                      <select value={addType} onChange={(e) => setAddType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                        <option value="workspace">Workspace</option>
+                      </select>
+                    ) : (
+                      <select value={addType} onChange={(e) => setAddType(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                        <option value="">Select type...</option>
+                        {FOOD_TYPE_OPTIONS.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                 </div>
               </div>
               <div>
