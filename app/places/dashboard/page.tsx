@@ -141,12 +141,48 @@ function OwnerDashboardPage() {
     setTimeout(() => setToast(null), 2000);
   }
 
+  async function compressImageForUpload(file: File): Promise<File> {
+    if (!file.type.startsWith("image/")) return file;
+    // Keep unsupported/animated formats untouched.
+    if (file.type === "image/gif" || file.type === "image/svg+xml") return file;
+    // Small images don't need compression.
+    if (file.size <= 2 * 1024 * 1024) return file;
+
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 1600;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+
+      ctx.drawImage(bitmap, 0, 0, width, height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.82)
+      );
+      if (!blob) return file;
+
+      if (blob.size >= file.size) return file;
+      const safeName = file.name.replace(/\.[^.]+$/, "");
+      return new File([blob], `${safeName}.jpg`, { type: "image/jpeg" });
+    } catch {
+      // Some formats (e.g. HEIC in unsupported browsers) may fail decode.
+      return file;
+    }
+  }
+
   async function uploadProductPhoto(file: File): Promise<string | null> {
     setUploadingPhoto(true);
     try {
       const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+      const prepared = await compressImageForUpload(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", prepared);
       const res = await fetch(`${base}/upload/product`, { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.url) return data.url;
