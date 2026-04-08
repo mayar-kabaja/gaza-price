@@ -162,7 +162,7 @@ function OwnerDashboardPage() {
     // Keep unsupported/animated formats untouched.
     if (file.type === "image/gif" || file.type === "image/svg+xml") return file;
     // Small images don't need compression.
-    if (file.size <= 1 * 1024 * 1024) return file;
+    if (file.size <= 500 * 1024) return file;
 
     try {
       const canvas = document.createElement("canvas");
@@ -178,7 +178,7 @@ function OwnerDashboardPage() {
             el.onerror = reject;
             el.src = imageUrl;
           });
-          const maxSide = 1280;
+          const maxSide = 1024;
           const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
           canvas.width = Math.max(1, Math.round(img.width * scale));
           canvas.height = Math.max(1, Math.round(img.height * scale));
@@ -190,7 +190,7 @@ function OwnerDashboardPage() {
 
       try {
         const bitmap = await createImageBitmap(file);
-        const maxSide = 1280;
+        const maxSide = 1024;
         const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
         canvas.width = Math.max(1, Math.round(bitmap.width * scale));
         canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -200,15 +200,35 @@ function OwnerDashboardPage() {
         await drawFromImage();
       }
 
-      const qualitySteps = [0.72, 0.62, 0.52, 0.45];
-      const targetSize = 900 * 1024; // ~900KB for faster upload on mobile networks
+      // For weak internet: target a very light file (~300KB).
+      const targetSize = 320 * 1024;
+      const qualitySteps = [0.68, 0.58, 0.5, 0.42, 0.35];
       let blob: Blob | null = null;
-      for (const q of qualitySteps) {
-        blob = await new Promise<Blob | null>((resolve) =>
-          canvas.toBlob(resolve, "image/jpeg", q)
-        );
-        if (!blob) break;
+      let attempts = 0;
+      while (attempts < 4) {
+        for (const q of qualitySteps) {
+          blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, "image/jpeg", q)
+          );
+          if (!blob) break;
+          if (blob.size <= targetSize) break;
+        }
+        if (!blob) return file;
         if (blob.size <= targetSize) break;
+        // If still too big, downscale further and retry encoding.
+        const nextW = Math.max(480, Math.round(canvas.width * 0.8));
+        const nextH = Math.max(480, Math.round(canvas.height * 0.8));
+        const tmp = document.createElement("canvas");
+        tmp.width = nextW;
+        tmp.height = nextH;
+        const tctx = tmp.getContext("2d");
+        if (!tctx) break;
+        tctx.drawImage(canvas, 0, 0, nextW, nextH);
+        canvas.width = nextW;
+        canvas.height = nextH;
+        ctx.clearRect(0, 0, nextW, nextH);
+        ctx.drawImage(tmp, 0, 0);
+        attempts += 1;
       }
       if (!blob) return file;
 
@@ -228,8 +248,17 @@ function OwnerDashboardPage() {
       const prepared = await compressImageForUpload(file);
       const fd = new FormData();
       fd.append("file", prepared);
-      const res = await fetch(`${base}/upload/product`, { method: "POST", body: fd });
-      const data = await res.json().catch(() => ({}));
+      const uploadOnce = async () => {
+        const res = await fetch(`${base}/upload/product`, { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        return { res, data };
+      };
+      let { res, data } = await uploadOnce();
+      // One quick retry helps flaky mobile connections.
+      if (!res.ok && (res.status >= 500 || res.status === 429)) {
+        await new Promise((r) => setTimeout(r, 900));
+        ({ res, data } = await uploadOnce());
+      }
       if (res.ok && data.url) return normalizeImageUrl(data.url);
       showToast("فشل رفع الصورة");
       return null;
