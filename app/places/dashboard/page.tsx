@@ -126,6 +126,15 @@ function OwnerDashboardPage() {
 
   const qs = `token=${token}`;
   const isWorkspace = place?.section === 'workspace';
+  const itemNamePlaceholder = place?.section === "store"
+    ? "مثال: اسم المنتج"
+    : place?.type === "cafe" || place?.type === "كافيه" || place?.type === "مقهى"
+      ? "مثال: قهوة تركية"
+      : place?.type === "restaurant" || place?.type === "مطعم" || place?.type === "both" || place?.type === "مطعم وكافيه"
+        ? "مثال: شاورما لحمة"
+        : isWorkspace
+          ? "مثال: ساعة عمل مشتركة"
+          : "مثال: اسم الصنف";
 
   function showToast(msg: string) {
     setToast(msg);
@@ -795,7 +804,7 @@ function OwnerDashboardPage() {
               {place.menu.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
-          <FormField label="اسم الصنف" value={addItemName} onChange={setAddItemName} placeholder="مثال: شاورما لحمة" />
+          <FormField label="اسم الصنف" value={addItemName} onChange={setAddItemName} placeholder={itemNamePlaceholder} />
           <FormField label="السعر (₪)" value={addItemPrice} onChange={setAddItemPrice} type="number" placeholder="0" />
           <FormField label="وصف (اختياري)" value={addItemDesc} onChange={setAddItemDesc} placeholder="وصف قصير..." />
           {/* Photo upload */}
