@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Arabic, Tajawal } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AreaProvider } from "@/contexts/AreaContext";
@@ -11,18 +11,11 @@ import { RegisterSW } from "@/components/sw/RegisterSW";
 import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
 import { Analytics } from "@vercel/analytics/next";
 
-const notoSansArabic = Noto_Sans_Arabic({
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-noto-arabic",
-});
-
-const tajawal = Tajawal({
+const cairo = Cairo({
   subsets: ["arabic", "latin"],
-  weight: ["500", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-tajawal",
+  variable: "--font-cairo",
 });
 
 const appUrl =
@@ -77,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={`${notoSansArabic.variable} ${tajawal.variable}`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={cairo.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

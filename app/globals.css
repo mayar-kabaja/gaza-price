@@ -15,8 +15,8 @@
   --details-bg: #F5FAF6;
   --details-border: #D8EADC;
 
-  --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
-  --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
+  --font-body: var(--font-cairo), "Segoe UI", Tahoma, sans-serif;
+  --font-display: var(--font-cairo), "Segoe UI", Tahoma, sans-serif;
 }
 
 .dark {
