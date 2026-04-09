@@ -2052,7 +2052,9 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
   const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
   const [menuLoading, setMenuLoading] = useState(true);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ url: string; name?: string; description?: string | null } | null>(null);
+  const imagePreviewUrl = imagePreview?.url ?? null;
+  const setImagePreviewUrl = (url: string | null) => setImagePreview(url ? { url } : null);
 
   // Flag state
   const [flagItem, setFlagItem] = useState<MenuItem | null>(null);
@@ -2229,7 +2231,7 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                     key={item.id || `${item.name}-${idx}`}
                     className={`bg-surface rounded-2xl mb-2.5 shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md ${!item.available ? 'opacity-45' : ''}`}
                   >
-                    <div className="flex items-center gap-0">
+                    <div className="flex items-stretch gap-0">
                       {/* Square image */}
                       {photoUrl ? (
                         <div className="w-[110px] h-[110px] flex-shrink-0 p-2 flex flex-col">
@@ -2242,8 +2244,8 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                             />
                             <button
                               type="button"
-                              onClick={() => setImagePreviewUrl(photoUrl)}
-                              className="absolute bottom-1 left-1 bg-olive text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow"
+                              onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })}
+                              className="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow"
                             >
                               عرض الصورة
                             </button>
@@ -2258,31 +2260,31 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                       ) : null}
 
                       {/* Content */}
-                      <div className="flex-1 px-3 py-3 min-w-0">
-                        {/* Name row + عرض الصورة badge */}
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
-                          {!item.available && (
-                            <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>
+                      <div className={`flex-1 px-3 py-3 min-w-0 flex flex-col ${item.description ? 'justify-between' : 'justify-center gap-2'}`}>
+                        {/* Top: name + unavailable badge */}
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
+                            {!item.available && (
+                              <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>
+                            )}
+                          </div>
+                          {item.description && (
+                            <p className="text-[11px] text-mist leading-snug line-clamp-2 mt-1">{item.description}</p>
                           )}
                         </div>
 
-                        {/* Description */}
-                        {item.description && (
-                          <p className="text-[11px] text-mist leading-snug line-clamp-2 mb-1.5">{item.description}</p>
-                        )}
-
-                        {/* Price + flag row */}
-                        <div className="flex items-center justify-between mt-1">
+                        {/* Bottom: price + flag */}
+                        <div className="flex items-center justify-between mt-2">
                           {item.available && Number(item.price) > 0 ? (
                             <span className="font-display font-black text-[17px] text-olive">
                               {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
                             </span>
                           ) : item.available ? (
                             <span className="text-[11px] text-mist">—</span>
-                          ) : null}
+                          ) : <span />}
                           {item.id && (
-                            <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors mr-auto mr-0">
+                            <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">
                               🚩 إبلاغ
                             </button>
                           )}
@@ -2468,8 +2470,18 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                   <img
                     src={imagePreviewUrl}
                     alt=""
-                    className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                    className="w-full h-auto max-h-[65vh] object-contain bg-black"
                   />
+                  {(imagePreview?.name || imagePreview?.description) && (
+                    <div className="px-4 py-3 border-t border-gray-100">
+                      {imagePreview.name && (
+                        <div className="font-bold text-[15px] text-[#111827]">{imagePreview.name}</div>
+                      )}
+                      {imagePreview.description && (
+                        <div className="text-[12px] text-[#6B7280] mt-0.5 leading-relaxed">{imagePreview.description}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
