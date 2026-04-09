@@ -200,34 +200,38 @@ export default function PlacesPage() {
     if (section === 'store') {
       filtered = [...filtered].sort((a, b) => ((b as any).menu_items_count ?? 0) - ((a as any).menu_items_count ?? 0));
     }
-    // Sort workspaces: first 4 by featured_order, then priority names, then rest
+    // Sort workspaces: by featured_order first, then by completeness score
     if (section === 'workspace') {
-      const PRIORITY_NAMES = [
-        'Grow Space', 'Badwan Space', 'Meras Space', 'Space Noon',
-        'PDX Space', 'Alqaser Space', 'sham space', 'Continental Hub',
-        'Sultan Hub', 'Diamond Hub', 'Taqat Hub', 'Ahram Space', 'Phoenix Hub',
-      ];
-      const priorityLower = PRIORITY_NAMES.map(n => n.toLowerCase());
-
-      // Split into featured-top-4 vs rest
-      const withOrder = filtered.filter(p => p.featured_order != null).sort((a, b) => a.featured_order! - b.featured_order!);
-      const top4 = withOrder.slice(0, 4);
-      const remaining = filtered.filter(p => !top4.includes(p));
-
-      // From remaining, pick priority-named ones in order
-      const priorityPlaces: typeof remaining = [];
-      for (const name of priorityLower) {
-        const found = remaining.find(p => p.name.toLowerCase() === name);
-        if (found) priorityPlaces.push(found);
+      function wsScore(p: Place): number {
+        const wd = (p as any).workspace_details;
+        const hasAvatar = !!p.avatar_url;
+        const hasContact = !!(p.phone || p.whatsapp);
+        const hasAddress = !!p.address;
+        const hasDetails = !!(wd && (wd.price_hour || wd.price_day || wd.total_seats));
+        const hasServices = Array.isArray((p as any).workspace_services) && (p as any).workspace_services.length > 0;
+        // Truly empty: no avatar, no contact, no address, no details → last
+        if (!hasAvatar && !hasContact && !hasAddress && !hasDetails) return 0;
+        let score = 0;
+        if (hasAvatar) score += 2;
+        if (hasContact) score += 1;
+        if (hasAddress) score += 1;
+        if (hasDetails) score += 2;
+        if (hasServices) score += 1;
+        return score;
       }
-      const prioritySet = new Set(priorityPlaces);
-      const rest = remaining.filter(p => !prioritySet.has(p)).sort((a, b) => {
-        const aO = a.featured_order ?? 9999;
-        const bO = b.featured_order ?? 9999;
-        return aO - bO;
-      });
 
-      filtered = [...top4, ...priorityPlaces, ...rest];
+      filtered = [...filtered].sort((a, b) => {
+        const aScore = wsScore(a);
+        const bScore = wsScore(b);
+        // Score 0 (no avatar / empty) always goes last
+        if (aScore === 0 && bScore > 0) return 1;
+        if (bScore === 0 && aScore > 0) return -1;
+        // Both have content → respect featured_order, break ties by score
+        const aOrder = a.featured_order ?? 9999;
+        const bOrder = b.featured_order ?? 9999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return bScore - aScore;
+      });
     }
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips, section]);
