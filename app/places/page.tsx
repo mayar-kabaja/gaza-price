@@ -196,6 +196,10 @@ export default function PlacesPage() {
         }
       }
     }
+    // Sort stores: most items first
+    if (section === 'store') {
+      filtered = [...filtered].sort((a, b) => ((b as any).menu_items_count ?? 0) - ((a as any).menu_items_count ?? 0));
+    }
     // Sort workspaces: first 4 by featured_order, then priority names, then rest
     if (section === 'workspace') {
       const PRIORITY_NAMES = [
