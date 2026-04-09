@@ -1887,6 +1887,7 @@ interface MenuItem {
   available: boolean;
   icon?: string | null;
   photo_url?: string | null;
+  description?: string | null;
   updated_at?: string;
 }
 
