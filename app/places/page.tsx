@@ -144,7 +144,7 @@ const BG_MAP: Record<string, [string, string]> = {
 
 export default function PlacesPage() {
   const isDesktop = useIsDesktop();
-  const [section, setSection] = useState<Section>('food');
+  const [section, setSection] = useState<Section>('store');
   const [chip, setChip] = useState(0);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
@@ -284,9 +284,9 @@ export default function PlacesPage() {
               <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الأقسام</div>
               <div className="space-y-0.5">
                 {([
-                  { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
-                  { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
                   { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
+                  { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
+                  { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
                 ] as const).map((item) => (
                   <button
                     key={item.key}
@@ -608,7 +608,7 @@ export default function PlacesPage() {
                       <span className="font-display font-black text-[14px] text-ink">الكل</span>
                     </div>
                     <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
-                      {places.length} متجر
+                      {count} متجر
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -864,14 +864,14 @@ export default function PlacesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-0 bg-fog rounded-2xl p-1">
             <button
-              onClick={() => { setSection('food'); setChip(0); setPage(0); }}
+              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                section === 'food'
+                section === 'store'
                   ? 'bg-olive text-white shadow-lg'
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              مطاعم
+              متاجر
             </button>
             <button
               onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
@@ -884,14 +884,14 @@ export default function PlacesPage() {
               مساحات عمل
             </button>
             <button
-              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
+              onClick={() => { setSection('food'); setChip(0); setPage(0); }}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                section === 'store'
+                section === 'food'
                   ? 'bg-olive text-white shadow-lg'
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              متاجر
+              مطاعم
             </button>
           </div>
         </div>
@@ -2221,79 +2221,76 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
                 <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-2">
                   {sec.name}
                 </div>
-                {sec.items.map((item, idx) => (
+                {sec.items.map((item, idx) => {
+                  const photoUrl = resolvePublicImageUrl(item.photo_url);
+                  return (
                   <div
                     key={item.id || `${item.name}-${idx}`}
-                    className={`p-3 bg-surface rounded-[11px] mb-1.5 border border-border hover:border-olive/25 ${
-                      !item.available ? 'opacity-40' : ''
-                    }`}
+                    className={`bg-surface rounded-2xl mb-2.5 shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md ${!item.available ? 'opacity-45' : ''}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        {resolvePublicImageUrl(item.photo_url) ? (
-                          <div className="relative w-[52px] h-[52px] rounded-[12px] bg-olive-pale flex-shrink-0 overflow-hidden">
-                            <div className="absolute inset-0 flex items-center justify-center text-[18px]">🏷️</div>
+                    <div className="flex items-center gap-0">
+                      {/* Square image */}
+                      {photoUrl ? (
+                        <div className="w-[110px] h-[110px] flex-shrink-0 p-2 flex flex-col">
+                          <div className="relative flex-1 rounded-xl overflow-hidden">
                             <img
-                              src={resolvePublicImageUrl(item.photo_url)!}
+                              src={photoUrl}
                               alt={item.name}
-                              className="absolute inset-0 w-full h-full object-cover"
+                              className="w-full h-full object-cover"
                               loading="lazy"
                             />
                             <button
                               type="button"
-                              onClick={() => setImagePreviewUrl(resolvePublicImageUrl(item.photo_url)!)}
-                              className="absolute inset-x-1 bottom-1 rounded-md bg-black/55 text-white text-[9px] font-bold py-0.5"
+                              onClick={() => setImagePreviewUrl(photoUrl)}
+                              className="absolute bottom-1 left-1 bg-olive text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow"
                             >
                               عرض الصورة
                             </button>
                           </div>
-                        ) : item.icon ? (
-                          <span className="w-[52px] h-[52px] rounded-[12px] bg-olive-pale flex items-center justify-center text-[20px] flex-shrink-0">
+                        </div>
+                      ) : item.icon ? (
+                        <div className="w-[110px] h-[110px] flex-shrink-0 p-2">
+                          <div className="w-full h-full bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">
                             {item.icon}
-                          </span>
-                        ) : null}
-                        <div className="text-[13px] font-semibold text-ink">{item.name}</div>
-                      </div>
-                      <div>
-                        {item.available ? (
-                          Number(item.price) > 0 ? (
-                            <span className="font-display font-black text-[15px] text-olive">
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* Content */}
+                      <div className="flex-1 px-3 py-3 min-w-0">
+                        {/* Name row + عرض الصورة badge */}
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
+                          {!item.available && (
+                            <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {item.description && (
+                          <p className="text-[11px] text-mist leading-snug line-clamp-2 mb-1.5">{item.description}</p>
+                        )}
+
+                        {/* Price + flag row */}
+                        <div className="flex items-center justify-between mt-1">
+                          {item.available && Number(item.price) > 0 ? (
+                            <span className="font-display font-black text-[17px] text-olive">
                               {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-mist font-semibold">—</span>
-                          )
-                        ) : (
-                          <span className="text-[10px] text-orange-500 font-semibold">غير متوفر</span>
-                        )}
+                          ) : item.available ? (
+                            <span className="text-[11px] text-mist">—</span>
+                          ) : null}
+                          {item.id && (
+                            <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors mr-auto mr-0">
+                              🚩 إبلاغ
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {/* Bottom row: freshness + flag */}
-                    <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/50">
-                      <span className="text-[9px] text-mist flex items-center gap-1">
-                        {item.updated_at ? (
-                          <>
-                            <span className={`w-[5px] h-[5px] rounded-full ${
-                              Date.now() - new Date(item.updated_at).getTime() < 86400000 * 7
-                                ? 'bg-olive' : 'bg-amber-400'
-                            }`} />
-                            تحديث {timeAgo(item.updated_at)}
-                          </>
-                        ) : (
-                          <span className="text-mist/50">بدون تاريخ</span>
-                        )}
-                      </span>
-                      {item.id && (
-                        <button
-                          onClick={() => openFlag(item)}
-                          className="text-[10px] font-semibold text-mist hover:text-sand transition-colors px-1.5 py-0.5 rounded"
-                        >
-                          🚩 إبلاغ
-                        </button>
-                      )}
-                    </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
             </>
