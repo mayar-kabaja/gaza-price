@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/market", icon: "market", label: "السوق" },
   { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
+  { href: "/market/chat", icon: "chat", label: "المحادثات" },
   { href: "/account", icon: "account", label: "حسابي" },
 ] as const;
 
