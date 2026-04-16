@@ -389,7 +389,6 @@ export interface Listing {
   condition: 'new' | 'used' | 'urgent';
   area_id: string | null;
   area: { name_ar: string, id: string } | null;
-  status: string;
   is_negotiable: boolean;
   whatsapp: string | null;
   phone: string | null;
