@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: "/market", icon: "market", label: "السوق" },
   { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
-  { href: "/market/chat", icon: "chat", label: "المحادثات" },
+  // { href: "/market/chat", icon: "chat", label: "المحادثات" },
   { href: "/account", icon: "account", label: "حسابي" },
 ] as const;
 
@@ -55,12 +55,12 @@ function NavIcon({ icon, active, className }: { icon: string; active: boolean; c
           <path d="M9 9h1M9 13h1M15 9h1M15 13h1" />
         </svg>
       );
-    case "chat":
-      return (
-        <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-        </svg>
-      );
+    // case "chat":
+    //   return (
+    //     <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
+    //       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    //     </svg>
+    //   );
     case "account":
       return (
         <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
@@ -106,14 +106,14 @@ export function BottomNav() {
                 active ? "text-olive" : "text-mist"
               )}
             >
-              <div className="relative">
+              {/* <div className="relative">
                 <NavIcon icon={icon} active={active} />
                 {icon === "chat" && unread > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
-              </div>
+              </div> */}
               <span className={cn("text-[10px] font-body truncate w-full text-center px-0.5", active && "font-semibold")}>
                 {label}
               </span>
