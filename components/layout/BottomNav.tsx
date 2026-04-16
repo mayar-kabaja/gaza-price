@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api/fetch";
 
 const NAV_ITEMS = [
   { href: "/", icon: "home", label: "الرئيسية" },
-  { href: "/categories", icon: "categories", label: "التصنيفات" },
+  { href: "/market", icon: "market", label: "السوق" },
   { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
   { href: "/account", icon: "account", label: "حسابي" },
@@ -24,13 +26,12 @@ function NavIcon({ icon, active, className }: { icon: string; active: boolean; c
           <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       );
-    case "categories":
+    case "market":
       return (
         <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
-          <rect x={3} y={3} width={7} height={7} rx={1.5} />
-          <rect x={14} y={3} width={7} height={7} rx={1.5} />
-          <rect x={3} y={14} width={7} height={7} rx={1.5} />
-          <rect x={14} y={14} width={7} height={7} rx={1.5} />
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
         </svg>
       );
     case "add":
@@ -53,6 +54,12 @@ function NavIcon({ icon, active, className }: { icon: string; active: boolean; c
           <path d="M9 9h1M9 13h1M15 9h1M15 13h1" />
         </svg>
       );
+    case "chat":
+      return (
+        <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+        </svg>
+      );
     case "account":
       return (
         <svg fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className={cls}>
@@ -66,6 +73,23 @@ function NavIcon({ icon, active, className }: { icon: string; active: boolean; c
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const res = await apiFetch("/api/chat/conversations");
+        if (!res.ok) return;
+        const data = await res.json();
+        const total = (data as { unread_count?: number }[])
+          .reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
+        setUnread(total);
+      } catch {}
+    }
+    fetchUnread();
+    const t = setInterval(fetchUnread, 15000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <nav className="fixed bottom-0 inset-x-0 w-full bg-surface border-t border-border flex z-40" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -81,7 +105,14 @@ export function BottomNav() {
                 active ? "text-olive" : "text-mist"
               )}
             >
-              <NavIcon icon={icon} active={active} />
+              <div className="relative">
+                <NavIcon icon={icon} active={active} />
+                {icon === "chat" && unread > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </div>
               <span className={cn("text-[10px] font-body truncate w-full text-center px-0.5", active && "font-semibold")}>
                 {label}
               </span>

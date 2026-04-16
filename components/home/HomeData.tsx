@@ -21,13 +21,13 @@ import type { DesktopFilter, DesktopSort } from "@/components/desktop/DesktopFil
 // Desktop components — lazy-loaded so mobile never downloads them
 const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
 const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebar })), { ssr: false });
-const DesktopSidebarCTA = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebarCTA })), { ssr: false });
 const DesktopBreadcrumb = dynamic(() => import("@/components/desktop/DesktopBreadcrumb").then(m => ({ default: m.DesktopBreadcrumb })), { ssr: false });
 const DesktopStatsStrip = dynamic(() => import("@/components/desktop/DesktopStatsStrip").then(m => ({ default: m.DesktopStatsStrip })), { ssr: false });
 const DesktopFilterBar = dynamic(() => import("@/components/desktop/DesktopFilterBar").then(m => ({ default: m.DesktopFilterBar })), { ssr: false });
 const DesktopPriceGrid = dynamic(() => import("@/components/desktop/DesktopPriceGrid").then(m => ({ default: m.DesktopPriceGrid })), { ssr: false });
 const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
 const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
+const DesktopMarketModal = dynamic(() => import("@/components/desktop/DesktopMarketModal").then(m => ({ default: m.DesktopMarketModal })), { ssr: false });
 
 const ALL_CATEGORY_ID = "__all__";
 
@@ -54,6 +54,7 @@ export function HomeData() {
   const modalFromUrl = searchParams?.get("modal") ?? null;
   const [submitModalOpen, setSubmitModalOpen] = useState(modalFromUrl === "submit");
   const [suggestModalOpen, setSuggestModalOpen] = useState(modalFromUrl === "suggest");
+  const [marketModalOpen, setMarketModalOpen] = useState(false);
 
   // Sync from URL when navigating from /categories or /account
   useEffect(() => {
@@ -196,6 +197,7 @@ export function HomeData() {
         <DesktopHeader
           onSubmitClick={() => setSubmitModalOpen(true)}
           onSuggestClick={() => setSuggestModalOpen(true)}
+          onMarketClick={() => setMarketModalOpen(true)}
           onProfileClick={() => router.push("/account")}
         />
         <div className="flex-1 overflow-y-auto bg-fog">
@@ -207,7 +209,6 @@ export function HomeData() {
               onAreaSelect={(a) => setBrowseAreaId(a.id)}
               onCategorySelect={selectCategory}
             />
-            <DesktopSidebarCTA onSubmitClick={() => setSubmitModalOpen(true)} />
           </div>
           <main className="flex-1 p-8">
             {/* Welcome toast */}
@@ -323,6 +324,7 @@ export function HomeData() {
         </div>
         <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
         <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
+        <DesktopMarketModal open={marketModalOpen} onClose={() => setMarketModalOpen(false)} />
       </div>
     );
   }

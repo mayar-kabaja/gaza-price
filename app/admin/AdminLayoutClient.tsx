@@ -66,6 +66,7 @@ function useAdminAuth() {
         logsRes,
         snapshotsRes,
         pendingPlacesRes,
+        pendingListingsRes,
       ] = await Promise.all([
         fetch("/api/admin/products/pending?limit=1&offset=0", { headers }),
         fetch("/api/admin/flags?limit=1&offset=0", { headers }),
@@ -78,6 +79,7 @@ function useAdminAuth() {
         fetch("/api/admin/logs/search?limit=1&offset=0", { headers }),
         fetch("/api/admin/logs/snapshots?limit=1&offset=0", { headers }),
         fetch("/api/admin/places?status=pending&limit=1&offset=0", { headers }),
+        fetch("/api/admin/listings/pending?limit=1&offset=0", { headers }),
       ]);
       const counts: Record<string, number> = {};
       if (pendingRes.ok) {
@@ -125,6 +127,10 @@ function useAdminAuth() {
       if (pendingPlacesRes.ok) {
         const d = (await pendingPlacesRes.json()) as { total?: number };
         counts.pendingPlaces = d.total ?? 0;
+      }
+      if (pendingListingsRes.ok) {
+        const d = (await pendingListingsRes.json()) as { total?: number };
+        counts.pendingListings = d.total ?? 0;
       }
       setSidebarCounts(counts);
     } catch {

@@ -33,7 +33,8 @@ function resolveUrl(url: string): string {
 export async function refreshToken(): Promise<string | null> {
   try {
     const base = getBackendUrl();
-    const res = await fetch(`${base}/auth/session`, {
+    const sessionUrl = base ? `${base}/auth/session` : "/api/auth/session";
+    const res = await fetch(sessionUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({}),

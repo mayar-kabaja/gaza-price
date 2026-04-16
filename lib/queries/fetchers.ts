@@ -369,3 +369,63 @@ export async function fetchPlaces(section: string, areaId?: string, limit = 20, 
     total: data?.pagination?.total ?? 0,
   };
 }
+
+// ── Marketplace Listings ──────────────────────────────────────────────────────
+
+export interface ListingImage {
+  id: string;
+  url: string;
+  sort_order: number;
+}
+
+export interface Listing {
+  id: string;
+  seller_id: string;
+  seller: { id: string; display_handle: string | null };
+  title: string;
+  description: string | null;
+  price: number;
+  category: string;
+  condition: 'new' | 'used' | 'urgent';
+  area_id: string | null;
+  area: { name_ar: string } | null;
+  status: string;
+  is_negotiable: boolean;
+  whatsapp: string | null;
+  phone: string | null;
+  images: ListingImage[];
+  created_at: string;
+  is_saved?: boolean;
+  status: 'pending' | 'active' | 'sold' | 'deleted';
+}
+
+export async function fetchListings(params: {
+  category?: string;
+  area_id?: string;
+  condition?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ listings: Listing[]; total: number; next_offset: number | null }> {
+  const sp = new URLSearchParams();
+  if (params.category) sp.set('category', params.category);
+  if (params.area_id) sp.set('area_id', params.area_id);
+  if (params.condition) sp.set('condition', params.condition);
+  if (params.search) sp.set('search', params.search);
+  if (params.limit) sp.set('limit', String(params.limit));
+  if (params.offset != null) sp.set('offset', String(params.offset));
+  const res = await apiFetch(`/api/listings?${sp}`, { credentials: 'include' });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return {
+    listings: data?.listings ?? [],
+    total: data?.total ?? 0,
+    next_offset: data?.next_offset ?? null,
+  };
+}
+
+export async function fetchListing(id: string): Promise<Listing | null> {
+  const res = await apiFetch(`/api/listings/${id}`, { credentials: 'include' });
+  if (!res.ok) return null;
+  return res.json();
+}

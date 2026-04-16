@@ -19,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/logs": "Logs",
   "/admin/snapshots": "Price Snapshots",
   "/admin/places": "Places",
+  "/admin/listings": "Listings",
 };
 
 const navItems = [
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/admin/categories", label: "Categories", icon: "tag" },
   { href: "/admin/areas", label: "Areas", icon: "map" },
   { href: "/admin/places", label: "Places", icon: "map", badge: "pending" },
+  { href: "/admin/listings", label: "Listings", icon: "store", badge: "pending" },
   { href: "/admin/users", label: "Users", icon: "users", badge: "sand" },
   { href: "/admin/flags", label: "Flags", icon: "bell", badge: "red" },
   { href: "/admin/reports", label: "Reports", icon: "message" },
@@ -246,6 +248,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
         <NavLink href="/admin/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
         <NavLink href="/admin/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
         <NavLink href="/admin/places" label="Places" icon="map" badge="pending" badgeCount={sidebarCounts.pendingPlaces} pathname={pathname} />
+        <NavLink href="/admin/listings" label="Listings" icon="store" badge="pending" badgeCount={sidebarCounts.pendingListings} pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">

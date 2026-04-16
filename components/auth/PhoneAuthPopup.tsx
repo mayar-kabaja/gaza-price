@@ -17,6 +17,7 @@ interface PhoneAuthPopupProps {
   onClose: () => void;
   onVerified: (accessToken: string) => void;
   priceDetails?: PriceDetails;
+  mode?: "submit" | "login";
 }
 
 export function PhoneAuthPopup({
@@ -24,6 +25,7 @@ export function PhoneAuthPopup({
   onClose,
   onVerified,
   priceDetails,
+  mode = "submit",
 }: PhoneAuthPopupProps) {
   const [step, setStep] = useState<Step>("phone");
   const [countryCode, setCountryCode] = useState<"970" | "972">("970");
@@ -321,7 +323,7 @@ export function PhoneAuthPopup({
               <p className="text-[13px] text-mist text-center leading-relaxed mb-6">
                 سنرسل لك كود تحقق مجاني عبر{" "}
                 <strong className="text-slate font-semibold">WhatsApp</strong>
-                {" "}لنشر سعرك مباشرةً
+                {mode === "login" ? " لتسجيل دخولك" : " لنشر سعرك مباشرةً"}
               </p>
 
               {/* Phone input */}
@@ -554,7 +556,7 @@ export function PhoneAuthPopup({
                 ) : (
                   <>
                     <span className="text-[17px]">✓</span>
-                    <span>تحقق وأرسل السعر</span>
+                    <span>{mode === "login" ? "تحقق وسجّل الدخول" : "تحقق وأرسل السعر"}</span>
                   </>
                 )}
               </button>
@@ -598,31 +600,35 @@ export function PhoneAuthPopup({
                 تم التحقق! 🎉
               </h2>
               <p className="text-[13px] text-mist leading-relaxed mb-6">
-                رقمك مسجّل — سعرك يُرسل الآن
+                {mode === "login"
+                  ? "رقمك مسجّل — أهلاً بك في غزة بريس"
+                  : "رقمك مسجّل — سعرك يُرسل الآن"}
                 <br />
                 بدون الحاجة للتحقق مرة أخرى
               </p>
 
-              {/* Auto-submit progress */}
-              <div className="flex items-center gap-2.5 bg-fog border-[1.5px] border-border rounded-xl p-3.5 mb-2">
-                <div className="w-[18px] h-[18px] border-2 border-olive-mid border-t-olive rounded-full animate-spin shrink-0" />
-                <div className="flex-1 text-right">
-                  <div className="text-[13px] font-semibold text-slate">
-                    جاري نشر السعر...
-                  </div>
-                  {priceDetails && (
-                    <div className="text-[11px] text-mist mt-0.5">
-                      {priceDetails.productName}
-                      {priceDetails.price && ` — ${priceDetails.price} ₪`}
-                      {priceDetails.areaName && ` — ${priceDetails.areaName}`}
+              {mode === "submit" && (
+                <>
+                  <div className="flex items-center gap-2.5 bg-fog border-[1.5px] border-border rounded-xl p-3.5 mb-2">
+                    <div className="w-[18px] h-[18px] border-2 border-olive-mid border-t-olive rounded-full animate-spin shrink-0" />
+                    <div className="flex-1 text-right">
+                      <div className="text-[13px] font-semibold text-slate">
+                        جاري نشر السعر...
+                      </div>
+                      {priceDetails && (
+                        <div className="text-[11px] text-mist mt-0.5">
+                          {priceDetails.productName}
+                          {priceDetails.price && ` — ${priceDetails.price} ₪`}
+                          {priceDetails.areaName && ` — ${priceDetails.areaName}`}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-mist text-center mt-1.5">
-                ستُغلق هذه النافذة تلقائياً بعد النشر
-              </p>
+                  </div>
+                  <p className="text-[11px] text-mist text-center mt-1.5">
+                    ستُغلق هذه النافذة تلقائياً بعد النشر
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

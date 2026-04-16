@@ -17,6 +17,8 @@ import Link from "next/link";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { handleApiError } from "@/lib/api/errors";
 import { apiFetch } from "@/lib/api/fetch";
+import { clearStoredToken } from "@/lib/auth/token";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor } from "@/types/app";
 import type { Area } from "@/types/app";
@@ -120,6 +122,8 @@ function MobileAccountPage() {
   const [isUpdatingArea, setIsUpdatingArea] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showChangePhone, setShowChangePhone] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [soundMuted, setSoundMuted] = useSoundMuted();
 
   const areas = areasData?.areas ?? [];
@@ -186,6 +190,11 @@ function MobileAccountPage() {
         },
       }
     );
+  };
+
+  const handleLogout = () => {
+    clearStoredToken();
+    window.location.reload();
   };
 
   const confirmDelete = async () => {
@@ -435,6 +444,28 @@ function MobileAccountPage() {
                 />
               </button>
             </div>
+            {contributor?.phone_verified && (
+              <div className="border-b border-fog">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePhone(true)}
+                  className="w-full flex items-center justify-between px-4 py-3.5"
+                >
+                  <span className="text-sm text-ink">تغيير رقم الهاتف</span>
+                  <span className="text-mist text-sm">›</span>
+                </button>
+              </div>
+            )}
+            <div className="border-b border-fog">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(true)}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <span className="text-sm text-amber-700">تسجيل الخروج</span>
+                <span className="text-amber-700 text-sm">›</span>
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}
@@ -530,6 +561,51 @@ function MobileAccountPage() {
             </div>
           </>
         )}
+
+        {/* Logout confirmation */}
+        {showLogoutConfirm && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowLogoutConfirm(false)} />
+            <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-5 shadow-xl">
+              <div className="flex flex-col items-center text-center mb-5">
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+                  </svg>
+                </div>
+                <h3 className="font-display font-bold text-ink text-base mb-1">تسجيل الخروج</h3>
+                <p className="text-sm text-mist">هل تريد تسجيل الخروج من حسابك؟</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-border text-ink font-semibold text-sm"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-sm"
+                >
+                  خروج
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Change phone popup */}
+        <PhoneAuthPopup
+          open={showChangePhone}
+          onClose={() => setShowChangePhone(false)}
+          mode="login"
+          onVerified={() => {
+            setShowChangePhone(false);
+            window.location.reload();
+          }}
+        />
 
         {/* Delete confirmation */}
         {showDeleteConfirm && (

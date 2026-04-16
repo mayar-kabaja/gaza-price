@@ -20,6 +20,8 @@ import {
   fetchPlaces,
   fetchPlacesSearch,
   fetchAdminPlaces,
+  fetchListings,
+  fetchListing,
 } from "@/lib/queries/fetchers";
 import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -408,5 +410,34 @@ export function useReviewProduct() {
       queryClient.invalidateQueries({ queryKey: queryKeys.adminStats });
       queryClient.invalidateQueries({ queryKey: ["admin", "pending-products"] });
     },
+  });
+}
+
+// ── Marketplace listings ──────────────────────────────────────────────────────
+
+const LISTINGS_PAGE_SIZE = 20;
+
+export function useListingsInfinite(params: {
+  category?: string;
+  area_id?: string;
+  condition?: string;
+  search?: string;
+}) {
+  return useInfiniteQuery({
+    queryKey: ["listings", params],
+    queryFn: ({ pageParam = 0 }) =>
+      fetchListings({ ...params, limit: LISTINGS_PAGE_SIZE, offset: pageParam as number }),
+    getNextPageParam: (lastPage) => lastPage.next_offset ?? undefined,
+    initialPageParam: 0,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useListing(id: string | null) {
+  return useQuery({
+    queryKey: ["listings", id],
+    queryFn: () => fetchListing(id!),
+    enabled: !!id,
+    staleTime: 60 * 1000,
   });
 }

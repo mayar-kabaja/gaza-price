@@ -3,6 +3,13 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  images: {
+    unoptimized: process.env.NODE_ENV === "development",
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
+      { protocol: "https", hostname: "teckuowftbmrgvmexcly.supabase.co", pathname: "/**" },
+    ],
+  },
   async headers() {
     return [
       {

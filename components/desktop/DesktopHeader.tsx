@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+// onMarketClick kept in props for back-compat but no longer used (السوق is now a Link)
 import { DesktopSearchBar } from "./DesktopSearchBar";
 import type { Area, Governorate } from "@/types/app";
 import { useAreas } from "@/lib/queries/hooks";
@@ -19,11 +20,13 @@ const GOV_ORDER: Governorate[] = ["central", "south", "north"];
 interface DesktopHeaderProps {
   onSubmitClick: () => void;
   onSuggestClick: () => void;
+  onNewListingClick?: () => void;
+  onMarketClick?: () => void;
   onProfileClick?: () => void;
   isProfileActive?: boolean;
 }
 
-export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
+export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick, onMarketClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
   const { area, saveArea, clearArea } = useArea();
   const { theme, toggle: toggleTheme } = useTheme();
   const { data: areasData } = useAreas();
@@ -60,34 +63,6 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, i
           <div className="text-[10px] text-white/50 font-body leading-none">أسعار شفافة</div>
         </div>
       </Link>
-
-      {/* Divider */}
-      <div className="w-px h-7 bg-white/12 flex-shrink-0" />
-
-      {/* Nav links */}
-      <nav className="flex items-center gap-1 flex-shrink-0">
-        <Link
-          href="/places"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/75 text-[13px] font-body hover:bg-white/8 hover:text-white transition-colors whitespace-nowrap"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          محلات
-        </Link>
-        <button
-          type="button"
-          onClick={onSuggestClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/75 text-[13px] font-body hover:bg-white/8 hover:text-white transition-colors whitespace-nowrap cursor-pointer bg-transparent border-none"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          اقتراح منتج
-        </button>
-      </nav>
 
       {/* Divider */}
       <div className="w-px h-7 bg-white/12 flex-shrink-0" />
@@ -172,6 +147,27 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onProfileClick, i
 
       {/* Actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Add listing button — only on market pages */}
+        {onNewListingClick && (
+          <button
+            type="button"
+            onClick={onNewListingClick}
+            className="flex items-center gap-1.5 px-4 py-[7px] rounded-lg bg-white/15 text-white text-[13px] font-display font-bold hover:bg-white/25 transition-all whitespace-nowrap cursor-pointer"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            إعلان جديد
+          </button>
+        )}
+        {/* Add product button */}
+        <button
+          type="button"
+          onClick={onSuggestClick}
+          className="flex items-center gap-1.5 px-4 py-[7px] rounded-lg bg-transparent border border-white/20 text-white/80 text-[13px] font-display font-bold hover:bg-white/10 hover:-translate-y-px transition-all whitespace-nowrap cursor-pointer"
+        >
+          + أضف منتج
+        </button>
         {/* Primary CTA */}
         <button
           type="button"

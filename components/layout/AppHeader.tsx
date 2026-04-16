@@ -7,6 +7,7 @@ import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { SearchBar } from "@/components/search/SearchBar";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { handleApiError } from "@/lib/api/errors";
@@ -33,6 +34,8 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
   const [areaJustChanged, setAreaJustChanged] = useState(false);
 
   const { theme, toggle: toggleTheme } = useTheme();
+  const { contributor, refreshContributor } = useSession();
+  const [showLogin, setShowLogin] = useState(false);
   const { data: areasData, isError: areasError } = useAreas();
   const areas = areasData?.areas ?? [];
   const updateMe = useUpdateContributorMe();
@@ -73,89 +76,102 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
 
   return (
   <>
-    <div className="bg-olive px-5 pt-4 pb-3 relative overflow-visible flex-shrink-0 z-30">
-      {/* BG circles (clipped to header) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-44 h-44 rounded-full bg-white/5 -bottom-14 -left-12" />
-        <div className="absolute w-24 h-24 rounded-full bg-white/4 -top-8 right-5" />
-      </div>
+    <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0 z-30">
 
-      {/* Top row */}
-      <div className="flex items-center justify-between mb-3 relative z-10">
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
-          <span className="font-display font-extrabold text-xl text-white leading-none">
+      {/* Single top row */}
+      <div className="flex items-center gap-3 mb-3">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <img src="/logo.svg" alt="" className="w-7 h-7 rounded-full" />
+          <span className="font-display font-extrabold text-lg text-white leading-none">
             غزة <span className="text-sand">بريس</span>
           </span>
         </Link>
-        <div className="flex items-center gap-2">
+
+        <div className="flex-1" />
+
+        {/* Area */}
+        {!hideActions && (
           <button
             type="button"
-            onClick={toggleTheme}
-            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:bg-white/20 transition-colors cursor-pointer"
-            aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+            onClick={() => setOpenAreaPicker(true)}
+            className={cn(
+              "flex items-center gap-1.5 bg-white/10 hover:bg-white/20 transition-all rounded-full px-3 py-1.5 text-[12px] font-semibold text-white cursor-pointer max-w-[110px]",
+              areaJustChanged && "ring-2 ring-white/50"
+            )}
           >
-            {theme === "dark" ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0 opacity-80">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span className="truncate">{area?.name_ar || "المنطقة"}</span>
+          </button>
+        )}
+
+        {/* My reports */}
+        {/* {!hideActions && (
+          <Link
+            href="/reports"
+            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors flex-shrink-0"
+            aria-label="تقاريري"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </Link>
+        )} */}
+
+       
+
+        {/* Login / profile */}
+        {contributor?.phone_verified ? (
+          <Link
+            href="/account"
+            className="w-8 h-8 rounded-full bg-sand flex items-center justify-center text-olive-deep flex-shrink-0"
+          >
+            {contributor.display_handle ? (
+              <span className="text-[11px] font-black">{contributor.display_handle.slice(0, 1).toUpperCase()}</span>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
               </svg>
             )}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowLogin(true)}
+            className="bg-white/15 hover:bg-white/25 transition-colors rounded-full px-3 py-1.5 text-[12px] font-semibold text-white cursor-pointer flex-shrink-0"
+          >
+            دخول
           </button>
-        </div>
-      </div>
+        )}
 
-      {!hideActions && (
-        <p className="text-[13px] text-white/60 font-body mb-3 relative z-10">
-          أسعار شفافة · قوة المجتمع
-        </p>
-      )}
-
-      {/* Quick action pills */}
-      {!hideActions && (
-      <div className="flex items-center gap-2 mb-3 relative z-10">
+         {/* Theme toggle */}
         <button
           type="button"
-          onClick={() => setOpenAreaPicker(true)}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-[5px] bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-all cursor-pointer hover:bg-white dark:hover:bg-white/20",
-            areaJustChanged && "ring-2 ring-white shadow-[0_0_0_2px_rgba(255,255,255,0.3)]"
+          onClick={toggleTheme}
+          className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors cursor-pointer flex-shrink-0"
+          aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+        >
+          {theme === "dark" ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
           )}
-        >
-          {!areaJustChanged && <div className="w-1.5 h-1.5 rounded-full bg-sand" />}
-          {area?.name_ar || "المنطقة"}
         </button>
-        <Link
-          href="/reports"
-          className="flex-1 flex items-center justify-center gap-1.5 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-colors hover:bg-white dark:hover:bg-white/20"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          تقاريري
-        </Link>
-        <Link
-          href="/favorites"
-          className="flex-1 flex items-center justify-center gap-1.5 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl px-3 py-1.5 text-[13px] font-semibold text-mist dark:text-white font-body transition-colors hover:bg-white dark:hover:bg-white/20"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-          المفضلة
-        </Link>
       </div>
-      )}
 
-      {/* SearchBar */}
+      {/* Search */}
       {!hideSearch && (
-        <div className={cn("relative z-10", !hideActions && "mb-1")}>
+        <div className="relative z-10">
           <SearchBar hideActions={hideActions} />
         </div>
       )}
@@ -233,6 +249,16 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
         </>
       )}
     </div>
+
+    <PhoneAuthPopup
+      open={showLogin}
+      mode="login"
+      onClose={() => setShowLogin(false)}
+      onVerified={async () => {
+        await refreshContributor();
+        setShowLogin(false);
+      }}
+    />
   </>
   );
 }

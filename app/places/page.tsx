@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
 const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
 const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
+const DesktopMarketModal = dynamic(() => import("@/components/desktop/DesktopMarketModal").then(m => ({ default: m.DesktopMarketModal })), { ssr: false });
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -165,6 +166,7 @@ export default function PlacesPage() {
   const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [suggestModalOpen, setSuggestModalOpen] = useState(false);
+  const [marketModalOpen, setMarketModalOpen] = useState(false);
 
   // "الكل" chip (0) = all areas, other chips = user's saved area
   const activeArea = placesArea;
@@ -255,6 +257,7 @@ export default function PlacesPage() {
         <DesktopHeader
           onSubmitClick={() => setSubmitModalOpen(true)}
           onSuggestClick={() => setSuggestModalOpen(true)}
+          onMarketClick={() => setMarketModalOpen(true)}
           onProfileClick={() => window.location.href = '/account'}
           isProfileActive={false}
         />
@@ -831,6 +834,7 @@ export default function PlacesPage() {
         )}
         <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
         <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
+        <DesktopMarketModal open={marketModalOpen} onClose={() => setMarketModalOpen(false)} />
       </div>
     );
   }
