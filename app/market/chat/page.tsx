@@ -240,45 +240,94 @@ export default function ChatInboxPage() {
   // MOBILE
   return (
     <div className="flex flex-col min-h-dvh bg-fog" dir="rtl">
-      <div className="bg-surface border-b px-4 py-3">
-        <h1 className="font-display font-bold text-lg">المحادثات</h1>
+      <div className="bg-olive px-4 py-3">
+        <h1 className="font-display font-bold text-lg text-white">المحادثات</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-24 flex items-center justify-center">
-        {loading && <div>جاري التحميل...</div>}
+      <div className="flex-1 overflow-y-auto pb-24">
+        {loading && (
+          <div className="p-3 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex gap-3 p-3 rounded-xl animate-pulse">
+                <div className="w-12 h-12 rounded-xl bg-border flex-shrink-0" />
+                <div className="flex-1 space-y-2 pt-1">
+                  <div className="h-3.5 w-2/3 bg-border rounded" />
+                  <div className="h-3 w-full bg-border rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {!loading && error && (
-          <div className="text-center">
-            <div className="text-4xl mb-3">⚠️</div>
-            <p className="mb-3">{error}</p>
-            <button
-              onClick={fetchConversations}
-              className="px-5 py-2 bg-olive text-white rounded-full"
-            >
-              إعادة المحاولة
-            </button>
+          <div className="flex-1 flex items-center justify-center p-8 text-center">
+            <div>
+              <div className="text-4xl mb-3">⚠️</div>
+              <p className="mb-3 text-sm text-mist">{error}</p>
+              <button
+                onClick={fetchConversations}
+                className="px-5 py-2 bg-olive text-white rounded-full text-sm font-semibold"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
           </div>
         )}
 
         {!loading && !error && conversations.length === 0 && (
-          <div className="text-center">
-            <div className="text-5xl mb-4">💬</div>
-            <div className="font-bold mb-1">لا توجد محادثات بعد</div>
-            <p className="text-sm text-mist">
-              تصفح السوق وراسل البائعين للبدء
-            </p>
+          <div className="flex items-center justify-center h-64 text-center">
+            <div>
+              <div className="text-5xl mb-4">💬</div>
+              <div className="font-bold mb-1">لا توجد محادثات بعد</div>
+              <p className="text-sm text-mist">تصفح السوق وراسل البائعين للبدء</p>
+            </div>
           </div>
         )}
 
         {!loading && !error && conversations.length > 0 && (
-          <div className="w-full px-4 space-y-3 self-start">
+          <div className="bg-surface">
             {conversations.map((conv) => (
               <button
                 key={conv.id}
                 onClick={() => router.push(`/market/chat/${conv.id}`)}
-                className="w-full bg-surface p-4 rounded-2xl border text-right"
+                className="w-full flex gap-3 px-4 py-3.5 text-right border-b border-border/40 active:bg-fog transition-colors"
               >
-                {conv.listing_title}
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
+                  {conv.listing_image ? (
+                    <Image
+                      src={conv.listing_image}
+                      alt={conv.listing_title ?? ""}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="text-xl">📦</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-0.5">
+                    <span className="font-display font-bold text-sm text-ink truncate">
+                      {conv.listing_title ?? "إعلان محذوف"}
+                    </span>
+                    <span className="text-[10px] text-mist flex-shrink-0 mr-2">
+                      {timeAgo(conv.last_message_at ?? conv.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-mist truncate">
+                    {conv.last_message
+                      ? conv.last_message.type === "image"
+                        ? "📷 صورة"
+                        : conv.last_message.content
+                      : "ابدأ المحادثة"}
+                  </p>
+                </div>
+                {conv.unread_count > 0 && (
+                  <div className="w-5 h-5 rounded-full bg-olive flex items-center justify-center flex-shrink-0 self-center">
+                    <span className="text-[10px] font-bold text-white">{conv.unread_count}</span>
+                  </div>
+                )}
               </button>
             ))}
           </div>
