@@ -9,9 +9,9 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error("[error-boundary]", error);
-  }, [error]);
+  // useEffect(() => {
+  //   console.error("[error-boundary]", error);
+  // }, [error]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center bg-surface">

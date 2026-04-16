@@ -23,7 +23,7 @@ interface DesktopSidebarProps {
   onSubmitClick?: () => void;
 }
 
-export function DesktopSidebar({
+export default function DesktopSidebar({
   selectedAreaId,
   selectedCategoryId,
   onAreaSelect,
@@ -69,10 +69,18 @@ export function DesktopSidebar({
   const pathname = usePathname();
 
   return (
-    <aside className="flex-1 min-h-0 bg-surface border border-border rounded-2xl shadow-sm flex flex-col overflow-hidden">
+    <aside className="flex-1 min-h-0 bg-surface flex flex-col overflow-hidden">
 
       {/* Fixed nav links — always visible */}
-      <div className="flex-shrink-0 p-3 border-b border-border space-y-0.5">
+      {/* <div className="flex-shrink-0 p-3 border-b border-border space-y-0.5">
+        <Link href="/"
+          className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-body transition-colors",
+            pathname === "/" ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          الرئيسية
+        </Link>
         <Link href="/market"
           className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-body transition-colors",
             pathname === "/market" ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
@@ -97,11 +105,11 @@ export function DesktopSidebar({
           </svg>
           رسائل
         </Link>
-      </div>
+      </div> */}
 
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* Nav tree */}
-        <div className="p-5">
+        <div className="">
           <h3 className="text-xs font-display font-bold text-mist uppercase tracking-wide mb-3">الأقسام والتصنيفات</h3>
           {sectionsLoading ? (
             <div className="space-y-2">

@@ -18,6 +18,7 @@ interface PhoneAuthPopupProps {
   onVerified: (accessToken: string) => void;
   priceDetails?: PriceDetails;
   mode?: "submit" | "login";
+  reason?: string; // message shown to user explaining why login is needed
 }
 
 export function PhoneAuthPopup({
@@ -26,6 +27,7 @@ export function PhoneAuthPopup({
   onVerified,
   priceDetails,
   mode = "submit",
+  reason,
 }: PhoneAuthPopupProps) {
   const [step, setStep] = useState<Step>("phone");
   const [countryCode, setCountryCode] = useState<"970" | "972">("970");
@@ -267,10 +269,30 @@ export function PhoneAuthPopup({
           max-h-[90vh] flex flex-col
         `}
       >
-        {/* Drag handle (mobile) */}
-        <div className="flex justify-center pt-3 pb-0 sm:hidden">
-          <div className="w-9 h-1 bg-border rounded-full" />
+        {/* Header row: drag handle (mobile) + X button */}
+        <div className="relative flex items-center justify-center px-4 pt-3 pb-0">
+          <div className="w-9 h-1 bg-border rounded-full sm:hidden" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute left-4 w-8 h-8 rounded-full flex items-center justify-center text-mist hover:bg-fog hover:text-ink transition-colors flex-shrink-0"
+            aria-label="إغلاق"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
+
+        {/* Reason message */}
+        {reason && (
+          <div className="mx-6 mt-3 flex items-center gap-2.5 bg-olive-pale border border-olive-mid/40 rounded-xl px-3.5 py-2.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" className="w-4 h-4 flex-shrink-0">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+            </svg>
+            <p className="text-[12px] font-semibold text-olive leading-snug">{reason}</p>
+          </div>
+        )}
 
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 px-6 pb-8 pt-2">

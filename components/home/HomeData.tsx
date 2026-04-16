@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -9,25 +9,14 @@ import { HomeProductCard } from "@/components/home/HomeProductCard";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { HomeProductCardSkeleton } from "@/components/ui/Skeleton";
 import { useArea } from "@/hooks/useArea";
-import { LOCAL_STORAGE_KEYS } from "@/lib/constants";
 import type { Category } from "@/types/app";
 import { useBootstrap, useProductsInfinite, useReportsInfinite } from "@/lib/queries/hooks";
 import { ReportCard } from "@/components/reports/ReportCard";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
-import { isStale as checkStale } from "@/lib/price";
-import type { DesktopFilter, DesktopSort } from "@/components/desktop/DesktopFilterBar";
+import { useGlobalSidebar } from "@/components/layout/GlobalDesktopShell";
 
-// Desktop components — lazy-loaded so mobile never downloads them
-const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
-const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar").then(m => ({ default: m.DesktopSidebar })), { ssr: false });
-const DesktopBreadcrumb = dynamic(() => import("@/components/desktop/DesktopBreadcrumb").then(m => ({ default: m.DesktopBreadcrumb })), { ssr: false });
-const DesktopStatsStrip = dynamic(() => import("@/components/desktop/DesktopStatsStrip").then(m => ({ default: m.DesktopStatsStrip })), { ssr: false });
-const DesktopFilterBar = dynamic(() => import("@/components/desktop/DesktopFilterBar").then(m => ({ default: m.DesktopFilterBar })), { ssr: false });
-const DesktopPriceGrid = dynamic(() => import("@/components/desktop/DesktopPriceGrid").then(m => ({ default: m.DesktopPriceGrid })), { ssr: false });
-const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
-const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
-const DesktopMarketModal = dynamic(() => import("@/components/desktop/DesktopMarketModal").then(m => ({ default: m.DesktopMarketModal })), { ssr: false });
+const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar"), { ssr: false });
 
 const ALL_CATEGORY_ID = "__all__";
 
@@ -37,7 +26,6 @@ export function HomeData() {
   const categoryFromUrl = searchParams?.get("category") ?? null;
   const areaFromUrl = searchParams?.get("area") ?? null;
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(categoryFromUrl ?? ALL_CATEGORY_ID);
-  const [showWelcomeToast, setShowWelcomeToast] = useState(false);
   const [showDemoBanner, setShowDemoBanner] = useState(true);
   const { area } = useArea();
   const connection = useConnectionQuality();
@@ -48,14 +36,6 @@ export function HomeData() {
   const [browseAreaId, setBrowseAreaId] = useState<string | null>(areaFromUrl);
   const activeAreaId = (isDesktop ? browseAreaId : null) ?? area?.id ?? null;
 
-  // Desktop filter/sort state
-  const [desktopFilter, setDesktopFilter] = useState<DesktopFilter>("all");
-  const [desktopSort, setDesktopSort] = useState<DesktopSort>("newest");
-  const modalFromUrl = searchParams?.get("modal") ?? null;
-  const [submitModalOpen, setSubmitModalOpen] = useState(modalFromUrl === "submit");
-  const [suggestModalOpen, setSuggestModalOpen] = useState(modalFromUrl === "suggest");
-  const [marketModalOpen, setMarketModalOpen] = useState(false);
-
   // Sync from URL when navigating from /categories or /account
   useEffect(() => {
     if (categoryFromUrl) setSelectedCategoryId(categoryFromUrl);
@@ -64,11 +44,6 @@ export function HomeData() {
   useEffect(() => {
     if (areaFromUrl) setBrowseAreaId(areaFromUrl);
   }, [areaFromUrl]);
-
-  useEffect(() => {
-    if (modalFromUrl === "submit") setSubmitModalOpen(true);
-    if (modalFromUrl === "suggest") setSuggestModalOpen(true);
-  }, [modalFromUrl]);
 
   function selectCategory(id: string) {
     setSelectedCategoryId(id);
@@ -83,6 +58,17 @@ export function HomeData() {
   const isAllTab = (categoryFromUrl ?? selectedCategoryId) === ALL_CATEGORY_ID || (!categoryFromUrl && !selectedCategoryId);
   const effectiveCategoryId =
     categoryFromUrl ?? selectedCategoryId ?? ALL_CATEGORY_ID;
+
+  useGlobalSidebar(
+    isDesktop ? (
+      <DesktopSidebar
+        selectedAreaId={activeAreaId}
+        selectedCategoryId={effectiveCategoryId}
+        onAreaSelect={(a) => setBrowseAreaId(a.id)}
+        onCategorySelect={selectCategory}
+      />
+    ) : null
+  );
 
   const {
     data: infiniteData,
@@ -123,64 +109,11 @@ export function HomeData() {
     return aHasPrices ? -1 : 1;
   });
 
-  // Desktop filtered/sorted products
-  const desktopProducts = useMemo(() => {
-    let filtered = [...products];
-
-    // Apply desktop filter
-    if (desktopFilter === "confirmed") {
-      filtered = filtered.filter((p) =>
-        (p.price_preview ?? []).some((pp) => pp.confirmation_count > 0)
-      );
-    } else if (desktopFilter === "recent") {
-      filtered = filtered.filter((p) =>
-        (p.price_preview ?? []).some((pp) => !checkStale(pp.reported_at))
-      );
-    }
-
-    // Apply desktop sort
-    if (desktopSort === "cheapest") {
-      filtered.sort((a, b) => {
-        const aMin = Math.min(...(a.price_preview ?? []).map((pp) => pp.price));
-        const bMin = Math.min(...(b.price_preview ?? []).map((pp) => pp.price));
-        return aMin - bMin;
-      });
-    } else {
-      // newest — sort by latest reported_at
-      filtered.sort((a, b) => {
-        const aLatest = Math.max(...(a.price_preview ?? []).map((pp) => new Date(pp.reported_at).getTime()));
-        const bLatest = Math.max(...(b.price_preview ?? []).map((pp) => new Date(pp.reported_at).getTime()));
-        return bLatest - aLatest;
-      });
-    }
-
-    return filtered;
-  }, [products, desktopFilter, desktopSort]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const dismissed = localStorage.getItem(
-      LOCAL_STORAGE_KEYS.welcome_toast_dismissed
-    );
-    if (!dismissed) {
-      setShowWelcomeToast(true);
-      setTimeout(() => {
-        setShowWelcomeToast(false);
-        localStorage.setItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed, "1");
-      }, 5000);
-    }
-  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setShowDemoBanner(false), 10000);
     return () => clearTimeout(t);
   }, []);
-
-  function dismissWelcomeToast() {
-    setShowWelcomeToast(false);
-    if (typeof window !== "undefined")
-      localStorage.setItem(LOCAL_STORAGE_KEYS.welcome_toast_dismissed, "1");
-  }
 
   const scrollToSelected = useCallback((el: HTMLButtonElement | null) => {
     if (el) el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
@@ -190,149 +123,13 @@ export function HomeData() {
   const showSkeletons = categoriesLoading || (isAllTab ? reportsLoading : (!!effectiveCategoryId && productsLoading));
   const error = (isAllTab ? reportsError : productsError) ? "تعذر تحميل البيانات" : null;
 
-  // ── Desktop layout ──
-  if (isDesktop) {
-    return (
-      <div className="h-screen grid grid-rows-[60px_1fr]">
-        <DesktopHeader
-          onSubmitClick={() => setSubmitModalOpen(true)}
-          onSuggestClick={() => setSuggestModalOpen(true)}
-          onMarketClick={() => setMarketModalOpen(true)}
-          onProfileClick={() => router.push("/account")}
-        />
-        <div className="flex-1 overflow-y-auto bg-fog">
-          <div className="max-w-[900px] mx-auto flex min-h-full">
-          <div className="w-[280px] flex-shrink-0 sticky top-0 self-start h-[calc(100vh-60px)] flex flex-col py-4 mr-4">
-            <DesktopSidebar
-              selectedAreaId={activeAreaId}
-              selectedCategoryId={effectiveCategoryId}
-              onAreaSelect={(a) => setBrowseAreaId(a.id)}
-              onCategorySelect={selectCategory}
-            />
-          </div>
-          <main className="flex-1 p-8">
-            {/* Welcome toast */}
-            {showDemoBanner && (
-            <div className="fixed bottom-6 left-6 z-50 w-[380px] rounded-xl overflow-hidden bg-surface border border-border shadow-xl animate-slideIn">
-              <button
-                type="button"
-                onClick={() => setShowDemoBanner(false)}
-                className="absolute top-2.5 left-2.5 text-mist/50 text-base p-0.5 z-10 hover:text-mist cursor-pointer"
-                aria-label="إغلاق"
-              >
-                ×
-              </button>
-              <div className="bg-olive-pale px-4 py-2.5 flex items-center gap-2">
-                <span className="text-base">👋</span>
-                <span className="font-display font-bold text-sm text-olive">اهلاً بك في غزة بريس!</span>
-              </div>
-              <div className="px-4 py-3 flex items-start gap-2">
-                <span className="text-sm mt-0.5 flex-shrink-0">&#9888;&#65039;</span>
-                <span className="text-[13px] text-ink/70 leading-relaxed"><span className="font-bold text-ink">تنبيه:</span> الأسعار التجريبية مكتوب عليها &quot;تجريبي&quot; وباقي الأسعار حقيقية. إضافة أسعار مزيفة ستؤدي لحظر رقمك نهائياً.</span>
-              </div>
-              <div className="h-[3px] w-full bg-olive/10">
-                <div className="h-full bg-olive/50 rounded-full" style={{ animation: "toastProgress 10s linear forwards" }} />
-              </div>
-            </div>
-            )}
-            <DesktopBreadcrumb categoryId={isAllTab ? null : effectiveCategoryId} />
-            {isAllTab ? (
-              /* Desktop "الكل" — reports feed */
-              showSkeletons ? (
-                <div className="space-y-3 mt-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="bg-surface rounded-2xl p-4 border border-border animate-pulse">
-                      <div className="h-4 bg-fog rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-fog rounded w-1/2 mb-2" />
-                      <div className="h-5 bg-fog rounded w-1/4" />
-                    </div>
-                  ))}
-                </div>
-              ) : allReports.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="text-4xl mb-3">🔍</div>
-                  <div className="font-display font-bold text-ink mb-1">
-                    {activeAreaId ? "لا أسعار في منطقتك حالياً" : "لا أسعار حالياً"}
-                  </div>
-                  <div className="text-sm text-mist">كن أول من يضيف سعراً</div>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {allReports.map((report) => (
-                    <ReportCard key={report.id} report={report} />
-                  ))}
-                  {hasNextReports && (
-                    <div className="py-4 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => fetchNextReports()}
-                        disabled={isFetchingNextReports}
-                        className="px-6 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50"
-                      >
-                        {isFetchingNextReports ? "جاري التحميل..." : "تحميل المزيد"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            ) : (
-              showSkeletons ? (
-                <div className="space-y-3 mt-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="bg-surface rounded-xl p-3 border border-border animate-pulse">
-                      <div className="h-3.5 bg-fog rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-fog rounded w-1/2 mb-2" />
-                      <div className="h-4 bg-fog rounded w-1/4" />
-                    </div>
-                  ))}
-                </div>
-              ) : desktopProducts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="text-4xl mb-3">🔍</div>
-                  <div className="font-display font-bold text-ink mb-1">
-                    {activeAreaId ? "لا أسعار في منطقتك لهذه الفئة" : "لا منتجات في هذه الفئة"}
-                  </div>
-                  <div className="text-sm text-mist">جرب فئة أخرى أو غيّر المنطقة</div>
-                </div>
-              ) : (
-                <div className="mt-4">
-                  {desktopProducts.map((product) => (
-                    <HomeProductCard
-                      key={product.id}
-                      product={product}
-                      areaId={activeAreaId}
-                      isRefetching={productsFetching}
-                    />
-                  ))}
-                  {hasNextPage && (
-                    <div className="py-4 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className="px-6 py-2.5 rounded-xl bg-olive-pale border border-olive-mid text-olive text-sm font-body font-medium disabled:opacity-50 cursor-pointer"
-                      >
-                        {isFetchingNextPage ? "جاري التحميل..." : "تحميل المزيد"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            )}
-          </main>
-          </div>
-        </div>
-        <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
-        <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
-        <DesktopMarketModal open={marketModalOpen} onClose={() => setMarketModalOpen(false)} />
-      </div>
-    );
-  }
-
-  // ── Mobile layout (unchanged) ──
   return (
-    <div className="flex flex-col min-h-dvh">
-      <AppHeader />
+    <div
+  className={`flex flex-col min-h-dvh ${
+    isDesktop ? "mt-4" : ""
+  }`}
+>
+      {isDesktop ? null : <AppHeader />}
 
       {/* Welcome + Warning banner */}
       {showDemoBanner && (
@@ -365,7 +162,7 @@ export function HomeData() {
       )}
 
       {/* Category tabs — show immediately; skeleton chips while categories load */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-surface border-b border-border">
+  {!isDesktop &&     <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar flex-shrink-0 bg-surface border-b border-border">
         {/* "الكل" tab — always first, always visible */}
         <button
           key={ALL_CATEGORY_ID}
@@ -410,7 +207,7 @@ export function HomeData() {
         ) : (
           <div className="text-xs text-mist font-body px-2">لا توجد تصنيفات</div>
         )}
-      </div>
+      </div>}
 
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
         {showSkeletons ? (

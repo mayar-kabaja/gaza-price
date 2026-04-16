@@ -8,7 +8,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { ListingCardSkeleton } from "@/components/market/ListingCard";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
-import { useMarketSidebar } from "@/app/market/layout";
+import { useMarketSidebar, useMarketContext } from "@/app/market/layout";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/lib/queries/fetchers";
 
@@ -163,6 +163,7 @@ function ListingRow({ listing, markingSoldId, handleMarkSold }: {
 export default function MyListingsPage() {
   const isDesktop = useIsDesktop();
   const router = useRouter();
+  const { openNewListingModal } = useMarketContext();
   const { tab, setTab, listings, filtered, loading, markingSoldId, handleMarkSold } = useMyListings();
   const [category, setCategory] = useState("");
 
@@ -221,6 +222,10 @@ export default function MyListingsPage() {
           <div className="flex items-center gap-2">
             <Link href="/market" className="text-xs font-semibold text-mist hover:text-ink">السوق</Link>
             <Link href="/market/saved" className="text-xs font-semibold text-mist hover:text-ink">المحفوظات</Link>
+            <button onClick={openNewListingModal} className="flex items-center gap-1.5 bg-olive text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-olive-deep transition-colors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><path d="M12 5v14M5 12h14" strokeLinecap="round"/></svg>
+              إعلان جديد
+            </button>
           </div>
         </div>
 
@@ -236,7 +241,7 @@ export default function MyListingsPage() {
               {tab === "all" && !category ? "أضف أول إعلان لك الآن" : "جرب تغيير الفلاتر"}
             </div>
             {tab === "all" && !category && (
-              <Link href="/market/new" className="px-5 py-2 bg-olive text-white rounded-full font-semibold text-sm">أضف إعلاناً</Link>
+              <button onClick={openNewListingModal} className="px-5 py-2 bg-olive text-white rounded-full font-semibold text-sm">أضف إعلاناً</button>
             )}
           </div>
         )}
@@ -261,12 +266,12 @@ export default function MyListingsPage() {
           </svg>
         </button>
         <h1 className="font-display font-bold text-ink flex-1">إعلاناتي</h1>
-        <Link href="/market/new" className="flex items-center gap-1.5 bg-olive text-white text-xs font-bold px-3 py-1.5 rounded-full">
+        <button onClick={() => router.push("/market/new")} className="flex items-center gap-1.5 bg-olive text-white text-xs font-bold px-3 py-1.5 rounded-full">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
             <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
           </svg>
           إعلان جديد
-        </Link>
+        </button>
       </div>
 
       <div className="bg-surface border-b border-border px-4 flex gap-1 overflow-x-auto scrollbar-none flex-shrink-0">
@@ -296,7 +301,7 @@ export default function MyListingsPage() {
               {tab === "all" ? "لا توجد إعلانات بعد" : `لا توجد إعلانات ${STATUS_LABEL[tab] ?? ""}`}
             </div>
             <div className="text-sm text-mist mb-6">{tab === "all" ? "أضف أول إعلان لك الآن" : "جرب تصفية أخرى"}</div>
-            {tab === "all" && <Link href="/market/new" className="px-5 py-2.5 bg-olive text-white rounded-full font-semibold text-sm">أضف إعلاناً</Link>}
+            {tab === "all" && <button onClick={() => router.push("/market/new")} className="px-5 py-2.5 bg-olive text-white rounded-full font-semibold text-sm">أضف إعلاناً</button>}
           </div>
         )}
 

@@ -50,32 +50,50 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
   const [saved, setSaved] = useState(isSaved);
   const [saving, setSaving] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "verify">("login");
 
-  async function handleSave(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (saving) return;
-    if (!contributor?.phone_verified) {
-      setShowLogin(true);
-      return;
-    }
-    setSaving(true);
-    const next = !saved;
-    setSaved(next);
-    try {
-      const res = await apiFetch(`/api/listings/${listing.id}/save`, { method: "POST" });
-      if (res.ok) {
-        const data = await res.json();
-        setSaved(data.saved);
-        onSaveToggle?.(listing.id, data.saved);
-      } else {
-        setSaved(!next);
-      }
-    } catch {
-      setSaved(!next);
-    } finally {
-      setSaving(false);
-    }
+ async function handleSave(e: React.MouseEvent) {
+  e.stopPropagation();
+  if (saving) return;
+
+  // 1) Not logged in at all → login
+  if (!contributor) {
+    setAuthMode("login");
+    setShowLogin(true);
+    return;
   }
+
+  // 2) Logged in but not verified → phone verify
+  if (!contributor.phone_verified) {
+    setAuthMode("verify");
+    setShowLogin(true);
+    return;
+  }
+
+  setSaving(true);
+
+  const next = !saved;
+  setSaved(next);
+
+  try {
+    const res = await apiFetch(
+      `/api/listings/${listing.id}/save`,
+      { method: "POST" }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      setSaved(data.saved);
+      onSaveToggle?.(listing.id, data.saved);
+    } else {
+      setSaved(!next);
+    }
+  } catch {
+    setSaved(!next);
+  } finally {
+    setSaving(false);
+  }
+}
   const cat = CATEGORY_CONFIG[listing.category] ?? CATEGORY_CONFIG.other;
   const cond = CONDITION_BADGE[listing.condition] ?? CONDITION_BADGE.used;
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];

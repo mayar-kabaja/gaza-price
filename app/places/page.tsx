@@ -14,11 +14,7 @@ import { uploadReceiptPhoto } from '@/lib/api/upload';
 import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
-
-const DesktopHeader = dynamic(() => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })), { ssr: false });
-const DesktopSubmitModal = dynamic(() => import("@/components/desktop/DesktopSubmitModal").then(m => ({ default: m.DesktopSubmitModal })), { ssr: false });
-const DesktopSuggestModal = dynamic(() => import("@/components/desktop/DesktopSuggestModal").then(m => ({ default: m.DesktopSuggestModal })), { ssr: false });
-const DesktopMarketModal = dynamic(() => import("@/components/desktop/DesktopMarketModal").then(m => ({ default: m.DesktopMarketModal })), { ssr: false });
+import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -164,9 +160,6 @@ export default function PlacesPage() {
   const areas = areasData?.areas ?? [];
   const [placesArea, setPlacesArea] = useState<Area | null>(null);
   const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
-  const [submitModalOpen, setSubmitModalOpen] = useState(false);
-  const [suggestModalOpen, setSuggestModalOpen] = useState(false);
-  const [marketModalOpen, setMarketModalOpen] = useState(false);
 
   // "الكل" chip (0) = all areas, other chips = user's saved area
   const activeArea = placesArea;
@@ -250,209 +243,200 @@ export default function PlacesPage() {
   }, {});
   const govOrder = ['central', 'south', 'north'];
 
+  useGlobalSidebar(isDesktop ? (
+    <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col -m-3">
+      {/* Search */}
+      <div className="p-4 pb-2">
+        <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
+          <span className="text-xs text-mist">🔍</span>
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
+            className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0 font-semibold"
+            dir="rtl"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="text-mist text-sm leading-none hover:text-ink">×</button>
+          )}
+        </div>
+      </div>
+
+      {/* Section nav */}
+      <div className="px-4 pb-3">
+        <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الأقسام</div>
+        <div className="space-y-0.5">
+          {([
+            { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
+            { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
+            { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
+          ] as const).map((item) => (
+            <button
+              key={item.key}
+              onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
+              className={cn(
+                'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors text-right cursor-pointer',
+                section === item.key
+                  ? 'bg-olive-pale text-olive border border-olive-mid'
+                  : 'text-ink hover:bg-fog'
+              )}
+            >
+              <span className="text-sm">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Area filter */}
+      <div className="px-4 pb-3">
+        <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">المنطقة</div>
+        <button
+          onClick={() => { setPlacesArea(null); setPage(0); }}
+          className={cn(
+            'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body transition-colors text-right mb-1',
+            !placesArea ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
+          )}
+        >
+          <span className={cn('w-2 h-2 rounded-full', !placesArea ? 'bg-olive' : 'bg-border')} />
+          كل المناطق
+        </button>
+        {govOrder.map((gov) => {
+          const govAreas = grouped[gov];
+          if (!govAreas?.length) return null;
+          const isGovOpen = openGovs[gov] ?? false;
+          return (
+            <div key={gov} className="mb-1">
+              <button
+                type="button"
+                onClick={() => setOpenGovs((prev) => ({ ...prev, [gov]: !prev[gov] }))}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-mist/70 uppercase tracking-wider hover:text-mist transition-colors cursor-pointer"
+              >
+                <span>{GOV_LABELS[gov] || gov}</span>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 12 12"
+                  className={cn("text-mist transition-transform", isGovOpen && "rotate-90")}
+                >
+                  <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </button>
+              {isGovOpen && govAreas.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => { setPlacesArea(a); setPage(0); }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-body transition-colors text-right',
+                    placesArea?.id === a.id ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
+                  )}
+                >
+                  <span className={cn('w-1.5 h-1.5 rounded-full', placesArea?.id === a.id ? 'bg-olive' : 'bg-border')} />
+                  {a.name_ar}
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Chips / categories */}
+      {section === 'food' && (
+        <div className="px-4 pb-3 border-t border-border pt-3">
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                  chip === i
+                    ? 'bg-olive-pale border-olive text-olive font-semibold'
+                    : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {section === 'workspace' && (
+        <div className="px-4 pb-3 border-t border-border pt-3">
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                  chip === i
+                    ? 'bg-olive-pale border-olive text-olive font-semibold'
+                    : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {section === 'store' && (
+        <div className="px-4 pb-3 border-t border-border pt-3">
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+          <div className="flex flex-wrap gap-1.5">
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                  chip === i
+                    ? 'bg-olive-pale border-olive text-olive font-semibold'
+                    : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Register CTA */}
+      <div className="mt-auto p-4 border-t border-border">
+        <Link
+          href={`/places/register?section=${section}`}
+          className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
+        >
+          {section === 'food' ? '🍽️' : section === 'store' ? '🏪' : '💻'} سجّل {section === 'workspace' ? 'مساحة عملك' : 'محلك'} مجاناً
+        </Link>
+      </div>
+    </div>
+  ) : null);
+
   /* ═══ DESKTOP LAYOUT ═══ */
   if (isDesktop) {
     return (
-      <div className="h-screen grid grid-rows-[60px_1fr]" dir="rtl">
-        <DesktopHeader
-          onSubmitClick={() => setSubmitModalOpen(true)}
-          onSuggestClick={() => setSuggestModalOpen(true)}
-          onMarketClick={() => setMarketModalOpen(true)}
-          onProfileClick={() => window.location.href = '/account'}
-          isProfileActive={false}
-        />
-        <div className="flex-1 overflow-y-auto bg-fog">
-          <div className="max-w-[900px] mx-auto flex min-h-full">
-          {/* ── Sidebar ── */}
-          <aside className="w-[280px] flex-shrink-0 bg-surface border border-border rounded-2xl shadow-sm overflow-y-auto no-scrollbar flex flex-col sticky top-0 h-fit max-h-screen my-4 mr-4">
-            {/* Search */}
-            <div className="p-4 pb-2">
-              <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
-                <span className="text-xs text-mist">🔍</span>
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
-                  className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0 font-semibold"
-                  dir="rtl"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-mist text-sm leading-none hover:text-ink">×</button>
-                )}
-              </div>
-            </div>
-
-            {/* Section nav */}
-            <div className="px-4 pb-3">
-              <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الأقسام</div>
-              <div className="space-y-0.5">
-                {([
-                  { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
-                  { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
-                  { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
-                ] as const).map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors text-right cursor-pointer',
-                      section === item.key
-                        ? 'bg-olive-pale text-olive border border-olive-mid'
-                        : 'text-ink hover:bg-fog'
-                    )}
-                  >
-                    <span className="text-sm">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Area filter */}
-            <div className="px-4 pb-3">
-              <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">المنطقة</div>
-              <button
-                onClick={() => { setPlacesArea(null); setPage(0); }}
-                className={cn(
-                  'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-body transition-colors text-right mb-1',
-                  !placesArea ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
-                )}
-              >
-                <span className={cn('w-2 h-2 rounded-full', !placesArea ? 'bg-olive' : 'bg-border')} />
-                كل المناطق
-              </button>
-              {govOrder.map((gov) => {
-                const govAreas = grouped[gov];
-                if (!govAreas?.length) return null;
-                const isGovOpen = openGovs[gov] ?? false;
-                return (
-                  <div key={gov} className="mb-1">
-                    <button
-                      type="button"
-                      onClick={() => setOpenGovs((prev) => ({ ...prev, [gov]: !prev[gov] }))}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-mist/70 uppercase tracking-wider hover:text-mist transition-colors cursor-pointer"
-                    >
-                      <span>{GOV_LABELS[gov] || gov}</span>
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 12 12"
-                        className={cn("text-mist transition-transform", isGovOpen && "rotate-90")}
-                      >
-                        <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                      </svg>
-                    </button>
-                    {isGovOpen && govAreas.map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => { setPlacesArea(a); setPage(0); }}
-                        className={cn(
-                          'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-body transition-colors text-right',
-                          placesArea?.id === a.id ? 'bg-olive-pale text-olive font-semibold' : 'text-slate hover:bg-fog hover:text-ink'
-                        )}
-                      >
-                        <span className={cn('w-1.5 h-1.5 rounded-full', placesArea?.id === a.id ? 'bg-olive' : 'bg-border')} />
-                        {a.name_ar}
-                      </button>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Chips / categories */}
-            {section === 'food' && (
-              <div className="px-4 pb-3 border-t border-border pt-3">
-                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {chips.map((label, i) => (
-                    <button
-                      key={label}
-                      onClick={() => { setChip(i); setPage(0); }}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
-                        chip === i
-                          ? 'bg-olive-pale border-olive text-olive font-semibold'
-                          : 'bg-surface border-border text-slate hover:border-olive/50'
-                      }`}
-                    >
-                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {section === 'workspace' && (
-              <div className="px-4 pb-3 border-t border-border pt-3">
-                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {chips.map((label, i) => (
-                    <button
-                      key={label}
-                      onClick={() => { setChip(i); setPage(0); }}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
-                        chip === i
-                          ? 'bg-olive-pale border-olive text-olive font-semibold'
-                          : 'bg-surface border-border text-slate hover:border-olive/50'
-                      }`}
-                    >
-                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {section === 'store' && (
-              <div className="px-4 pb-3 border-t border-border pt-3">
-                <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {chips.map((label, i) => (
-                    <button
-                      key={label}
-                      onClick={() => { setChip(i); setPage(0); }}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
-                        chip === i
-                          ? 'bg-olive-pale border-olive text-olive font-semibold'
-                          : 'bg-surface border-border text-slate hover:border-olive/50'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Register CTA */}
-            <div className="mt-auto p-4 border-t border-border">
-              <Link
-                href={`/places/register?section=${section}`}
-                className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
-              >
-                {section === 'food' ? '🍽️' : section === 'store' ? '🏪' : '💻'} سجّل {section === 'workspace' ? 'مساحة عملك' : 'محلك'} مجاناً
-              </Link>
-            </div>
-          </aside>
-
+      <>
+        <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
           {/* ── Main Content ── */}
-          <main className="flex-1 p-8 min-h-0">
-            {/* Header bar */}
-            <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
-              <div className="flex items-center gap-3">
-                <h1 className="font-display font-black text-lg text-ink">
-                  {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
-                </h1>
-                <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
-                  {count} مكان
-                </span>
-              </div>
-              {activeArea && (
-                <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
-              )}
+          <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <h1 className="font-display font-black text-lg text-ink">
+                {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
+              </h1>
+              <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
+                {count} مكان
+              </span>
             </div>
+            {activeArea && (
+              <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
+            )}
+          </div>
 
-            {section === 'store' ? (
+          {section === 'store' ? (
               isSearching ? (
                 (searchLoading) ? (
                   <div className="bg-surface border-b border-border divide-y divide-border">
@@ -614,7 +598,7 @@ export default function PlacesPage() {
                       {count} متجر
                     </span>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {places.map((place, i) => (
                       <StoreCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                     ))}
@@ -824,18 +808,11 @@ export default function PlacesPage() {
                 )}
               </>
             )}
-          </main>
-          </div>
         </div>
-
-        {/* Detail Sheet — same for desktop */}
         {selectedPlace && (
           <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
         )}
-        <DesktopSubmitModal open={submitModalOpen} onClose={() => setSubmitModalOpen(false)} />
-        <DesktopSuggestModal open={suggestModalOpen} onClose={() => setSuggestModalOpen(false)} />
-        <DesktopMarketModal open={marketModalOpen} onClose={() => setMarketModalOpen(false)} />
-      </div>
+      </>
     );
   }
 

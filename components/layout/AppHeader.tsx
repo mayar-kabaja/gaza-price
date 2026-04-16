@@ -32,7 +32,6 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [areaError, setAreaError] = useState<string | null>(null);
   const [areaJustChanged, setAreaJustChanged] = useState(false);
-
   const { theme, toggle: toggleTheme } = useTheme();
   const { contributor, refreshContributor } = useSession();
   const [showLogin, setShowLogin] = useState(false);
@@ -255,7 +254,7 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
       mode="login"
       onClose={() => setShowLogin(false)}
       onVerified={async () => {
-        await refreshContributor();
+        const data = await refreshContributor();
         setShowLogin(false);
       }}
     />

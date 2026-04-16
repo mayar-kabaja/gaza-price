@@ -10,6 +10,7 @@ import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 import { RegisterSW } from "@/components/sw/RegisterSW";
 import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
 import { Analytics } from "@vercel/analytics/next";
+import { GlobalDesktopShell } from "@/components/layout/GlobalDesktopShell";
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -93,7 +94,9 @@ export default function RootLayout({
             <FlagOverridesProvider>
               <ConfirmFlagExclusivityProvider>
               <div className="app-shell">
-                {children}
+                <GlobalDesktopShell>
+                  {children}
+                </GlobalDesktopShell>
               </div>
               <OfflineQueueSync />
               </ConfirmFlagExclusivityProvider>

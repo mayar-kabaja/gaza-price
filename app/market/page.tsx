@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useListingsInfinite, useAreas } from "@/lib/queries/hooks";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ListingCard, ListingCardSkeleton } from "@/components/market/ListingCard";
@@ -45,8 +46,8 @@ export default function MarketPage() {
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
+  const queryClient = useQueryClient();
 
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
@@ -59,16 +60,25 @@ export default function MarketPage() {
   }, {});
   const govOrder = ["central", "south", "north"];
 
-  useEffect(() => {
-    apiFetch("/api/listings/saved")
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.listings) {
-          setSavedIds(new Set((data.listings as { id: string }[]).map((l) => l.id)));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { data: savedIdsData } = useQuery({
+    queryKey: ["savedIds"],
+    queryFn: async () => {
+      const r = await apiFetch("/api/listings/saved");
+      if (!r.ok) return new Set<string>();
+      const data = await r.json();
+      return new Set<string>((data?.listings ?? []).map((l: { id: string }) => l.id));
+    },
+    staleTime: 0,
+  });
+  const savedIds = savedIdsData ?? new Set<string>();
+
+  function toggleSavedId(id: string, saved: boolean) {
+    queryClient.setQueryData<Set<string>>(["savedIds"], (prev) => {
+      const next = new Set(prev ?? []);
+      saved ? next.add(id) : next.delete(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     async function fetchUnread() {
@@ -227,7 +237,7 @@ export default function MarketPage() {
               {allListings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing}
                   isSaved={savedIds.has(listing.id)}
-                  onSaveToggle={(id, saved) => setSavedIds((prev) => { const next = new Set(prev); saved ? next.add(id) : next.delete(id); return next; })}
+                  onSaveToggle={toggleSavedId}
                 />
               ))}
             </div>
@@ -398,11 +408,7 @@ export default function MarketPage() {
                 key={listing.id}
                 listing={listing}
                 isSaved={savedIds.has(listing.id)}
-                onSaveToggle={(id, saved) => setSavedIds((prev) => {
-                  const next = new Set(prev);
-                  saved ? next.add(id) : next.delete(id);
-                  return next;
-                })}
+                onSaveToggle={toggleSavedId}
               />
             ))}
             {isFetchingNextPage && (

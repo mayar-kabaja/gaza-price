@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import { useSoundMuted } from "@/hooks/useSoundMuted";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { DesktopProfilePanel } from "@/components/desktop/DesktopProfilePanel";
-import { DesktopLayout } from "@/components/desktop/DesktopLayout";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -95,11 +94,7 @@ export default function AccountPage() {
   const isDesktop = useIsDesktop();
 
   if (isDesktop) {
-    return (
-      <DesktopLayout>
-        <DesktopProfilePanel />
-      </DesktopLayout>
-    );
+    return <DesktopProfilePanel />;
   }
 
   return <MobileAccountPage />;

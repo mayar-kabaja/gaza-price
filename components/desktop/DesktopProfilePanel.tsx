@@ -19,6 +19,8 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor, Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { useSoundMuted } from "@/hooks/useSoundMuted";
+import { clearStoredToken } from "@/lib/auth/token";
+import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -104,6 +106,8 @@ export function DesktopProfilePanel() {
   const [isUpdatingArea, setIsUpdatingArea] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showChangePhone, setShowChangePhone] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [soundMuted, setSoundMuted] = useSoundMuted();
 
   const areas = areasData?.areas ?? [];
@@ -170,6 +174,11 @@ export function DesktopProfilePanel() {
     );
   };
 
+  const handleLogout = () => {
+    clearStoredToken();
+    window.location.reload();
+  };
+
   const confirmDelete = async () => {
     setDeleteError(null);
     try {
@@ -190,7 +199,7 @@ export function DesktopProfilePanel() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 pt-6 pr-2 pb-8 pl-6">
       {/* Profile header */}
       <div className="rounded-2xl px-6 pt-6 pb-5 bg-olive">
         <div className="flex items-center gap-4 mb-5">
@@ -262,6 +271,28 @@ export function DesktopProfilePanel() {
       {contributor?.is_banned && (
         <div className="rounded-xl bg-red-100 border border-red-300 px-4 py-3 text-red-800 text-sm font-body text-center">
           حسابك موقوف
+        </div>
+      )}
+
+      {/* Login prompt for unverified users */}
+      {!statsLoading && contributor && !contributor.phone_verified && (
+        <div className="bg-surface rounded-2xl border border-olive-mid/40 px-5 py-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-olive-pale flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.18 19.79 19.79 0 01.88 2.27 2 2 0 012.88.09H5.9a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.72 6.72l1.19-1.19a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-sm text-ink mb-0.5">سجّل دخولك برقم هاتفك</div>
+            <div className="text-xs text-mist">لحفظ بياناتك ومزامنتها عبر أجهزتك</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowChangePhone(true)}
+            className="flex-shrink-0 bg-olive text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-olive-deep transition-colors cursor-pointer"
+          >
+            تسجيل الدخول
+          </button>
         </div>
       )}
 
@@ -447,6 +478,28 @@ export function DesktopProfilePanel() {
               />
             </button>
           </div>
+          {contributor?.phone_verified && (
+            <div className="border-b border-fog">
+              <button
+                type="button"
+                onClick={() => setShowChangePhone(true)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-fog/50 transition-colors cursor-pointer"
+              >
+                <span className="text-sm text-ink">تغيير رقم الهاتف</span>
+                <span className="text-mist text-sm">›</span>
+              </button>
+            </div>
+          )}
+          <div className="border-b border-fog">
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-amber-50/50 transition-colors cursor-pointer"
+            >
+              <span className="text-sm text-amber-700">تسجيل الخروج</span>
+              <span className="text-amber-700 text-sm">›</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}
@@ -498,6 +551,45 @@ export function DesktopProfilePanel() {
           </div>
         </>
       )}
+
+      {/* Logout confirmation */}
+      {showLogoutConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowLogoutConfirm(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-5 shadow-xl" style={{ width: "min(24rem, calc(100vw - 2rem))" }}>
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+              </div>
+              <h3 className="font-display font-bold text-ink text-base mb-1">تسجيل الخروج</h3>
+              <p className="text-sm text-mist">هل تريد تسجيل الخروج من حسابك؟</p>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-border text-ink font-semibold text-sm hover:bg-fog transition-colors cursor-pointer">
+                إلغاء
+              </button>
+              <button type="button" onClick={handleLogout}
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-sm hover:bg-amber-700 transition-colors cursor-pointer">
+                خروج
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Change / login phone popup */}
+      <PhoneAuthPopup
+        open={showChangePhone}
+        onClose={() => setShowChangePhone(false)}
+        mode="login"
+        onVerified={() => {
+          setShowChangePhone(false);
+          window.location.reload();
+        }}
+      />
 
       {/* Delete confirmation — centered */}
       {showDeleteConfirm && (

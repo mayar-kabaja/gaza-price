@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useRef, useState } from "react";
+import { use, useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useListing, useAreas } from "@/lib/queries/hooks";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { LoaderDots } from "@/components/ui/LoaderDots";
@@ -48,10 +49,12 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   const { data: listing, isLoading, isError } = useListing(id);
   const [imgIndex, setImgIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
-  const [saved, setSaved] = useState(() => listing?.is_saved ?? false);
+  const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
   const [chatLoading, setChatLoading] = useState(false);
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
+  const [phoneAuthReason, setPhoneAuthReason] = useState<"chat" | "save">("chat");
   const [showShare, setShowShare] = useState(false);
   const [listingStatus, setListingStatus] = useState<string | null>(null);
   const [markingSold, setMarkingSold] = useState(false);
@@ -76,11 +79,51 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Sync saved state when listing data loads / changes
+  useEffect(() => {
+    if (listing) setSaved(listing.is_saved ?? false);
+  }, [listing?.is_saved]);
+
   // Desktop
   const isDesktop = useIsDesktop();
 
+  // Inject listing context into the global sidebar slot
+  const cond_for_sidebar = listing ? (CONDITION_LABEL[listing.condition] ?? CONDITION_LABEL.used) : null;
+  useMarketSidebar(
+    isDesktop && listing ? (
+      <div className="space-y-4">
+        <Link href="/market" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors font-semibold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M19 12H5M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          العودة للسوق
+        </Link>
+        <div className="h-px bg-border" />
+        <div className="space-y-4">
+          <div>
+            <div className="text-[10px] font-bold text-mist uppercase tracking-widest mb-1.5">التصنيف</div>
+            <span className="text-sm font-semibold text-ink">{CATEGORY_LABEL[listing.category]}</span>
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-mist uppercase tracking-widest mb-1.5">الحالة</div>
+            <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border", cond_for_sidebar!.cls)}>{cond_for_sidebar!.label}</span>
+          </div>
+          {listing.area && (
+            <div>
+              <div className="text-[10px] font-bold text-mist uppercase tracking-widest mb-1.5">المنطقة</div>
+              <span className="text-sm font-semibold text-ink">{listing.area.name_ar}</span>
+            </div>
+          )}
+          <div>
+            <div className="text-[10px] font-bold text-mist uppercase tracking-widest mb-1.5">تاريخ النشر</div>
+            <span className="text-xs text-mist">{timeAgo(listing.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    ) : null
+  );
+
   async function handleChatClick() {
     if (!contributor?.phone_verified) {
+      setPhoneAuthReason("chat");
       setShowPhoneAuth(true);
       return;
     }
@@ -157,6 +200,11 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   }
 
   async function handleSave() {
+    if (!contributor?.phone_verified) {
+      setPhoneAuthReason("save");
+      setShowPhoneAuth(true);
+      return;
+    }
     if (saving) return;
     setSaving(true);
     const next = !saved;
@@ -166,6 +214,8 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       if (res.ok) {
         const data = await res.json();
         setSaved(data.saved);
+        queryClient.invalidateQueries({ queryKey: ["savedIds"] });
+        queryClient.invalidateQueries({ queryKey: ["listings"] });
       } else {
         setSaved(!next);
       }
@@ -281,185 +331,157 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   // ── Desktop layout ──
   if (isDesktop) {
     return (
-      <>
-        {/* Sidebar */}
-        <aside className="w-[200px] flex-shrink-0 bg-surface border-l border-border flex flex-col overflow-hidden">
-          {/* Listing context */}
-          <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-5">
-            <Link href="/market" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors">
-              ← العودة للسوق
-            </Link>
-            <div className="space-y-4">
+      <div className="h-full overflow-y-auto bg-fog">
+        <div className="max-w-2xl mx-auto p-6">
+
+          {/* Status banners */}
+          {currentStatus === "pending" && (
+            <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" className="w-4 h-4 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" strokeLinecap="round"/><circle cx="12" cy="16" r="0.5" fill="#D97706"/></svg>
               <div>
-                <div className="text-[10px] font-bold text-mist/70 uppercase tracking-widest mb-1">التصنيف</div>
-                <span className="text-sm font-semibold text-ink">{CATEGORY_LABEL[listing.category]}</span>
-              </div>
-              <div>
-                <div className="text-[10px] font-bold text-mist/70 uppercase tracking-widest mb-1">الحالة</div>
-                <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border", cond.cls)}>{cond.label}</span>
-              </div>
-              {listing.area && (
-                <div>
-                  <div className="text-[10px] font-bold text-mist/70 uppercase tracking-widest mb-1">المنطقة</div>
-                  <span className="text-sm font-semibold text-ink">{listing.area.name_ar}</span>
-                </div>
-              )}
-              <div>
-                <div className="text-[10px] font-bold text-mist/70 uppercase tracking-widest mb-1">تاريخ النشر</div>
-                <span className="text-xs text-mist">{timeAgo(listing.created_at)}</span>
+                <p className="text-xs font-bold text-amber-800">قيد المراجعة</p>
+                <p className="text-[10px] text-amber-600">إعلانك قيد مراجعة الإدارة وسيظهر للعامة بعد الموافقة</p>
               </div>
             </div>
-          </div>
-        </aside>
+          )}
+          {currentStatus === "sold" && (
+            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-5">
+              <p className="text-xs font-bold text-slate-500">تم البيع — هذا الإعلان لم يعد متاحاً</p>
+            </div>
+          )}
 
-        <main className="flex-1 overflow-y-auto bg-fog p-6">
+          {/* Main card */}
+          <div className="bg-surface rounded-2xl border border-border/60 shadow-sm overflow-hidden">
 
-              {/* Status banners */}
-              {currentStatus === "pending" && (
-                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" className="w-4 h-4 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" strokeLinecap="round"/><circle cx="12" cy="16" r="0.5" fill="#D97706"/></svg>
-                  <div>
-                    <p className="text-xs font-bold text-amber-800">قيد المراجعة</p>
-                    <p className="text-[10px] text-amber-600">إعلانك قيد مراجعة الإدارة وسيظهر للعامة بعد الموافقة</p>
-                  </div>
-                </div>
+            {/* Image */}
+            <div className="relative w-full bg-fog" style={{ height: 340 }}>
+              {sortedImages.length > 0 ? (
+                <Image
+                  src={sortedImages[imgIndex].url}
+                  alt={listing.title}
+                  fill
+                  className="object-cover cursor-zoom-in"
+                  sizes="672px"
+                  onClick={() => setLightbox(true)}
+                  unoptimized
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-7xl bg-olive-pale">📦</div>
               )}
-              {currentStatus === "sold" && (
-                <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 mb-4">
-                  <p className="text-xs font-bold text-slate-500">تم البيع — هذا الإعلان لم يعد متاحاً</p>
-                </div>
+              {sortedImages.length > 1 && imgIndex > 0 && (
+                <button onClick={() => setImgIndex(i => i - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><path d="M15 18l-6-6 6-6" strokeLinecap="round"/></svg>
+                </button>
               )}
+              {sortedImages.length > 1 && imgIndex < sortedImages.length - 1 && (
+                <button onClick={() => setImgIndex(i => i + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><path d="M9 18l6-6-6-6" strokeLinecap="round"/></svg>
+                </button>
+              )}
+            </div>
 
-              <div className="flex gap-5">
-
-                {/* Image column */}
-                <div className="w-[360px] flex-shrink-0">
-                  <div className="relative w-full rounded-2xl overflow-hidden bg-fog" style={{ height: 300 }}>
-                    {sortedImages.length > 0 ? (
-                      <Image
-                        src={sortedImages[imgIndex].url}
-                        alt={listing.title}
-                        fill
-                        className="object-cover cursor-zoom-in"
-                        sizes="360px"
-                        onClick={() => setLightbox(true)}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-olive-pale flex items-center justify-center text-7xl">📦</div>
-                    )}
-                    {sortedImages.length > 1 && imgIndex > 0 && (
-                      <button onClick={() => setImgIndex(i => i - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><path d="M15 18l-6-6 6-6" strokeLinecap="round"/></svg>
-                      </button>
-                    )}
-                    {sortedImages.length > 1 && imgIndex < sortedImages.length - 1 && (
-                      <button onClick={() => setImgIndex(i => i + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4"><path d="M9 18l6-6-6-6" strokeLinecap="round"/></svg>
-                      </button>
-                    )}
-                  </div>
-                  {sortedImages.length > 1 && (
-                    <div className="flex gap-2 mt-2 overflow-x-auto no-scrollbar">
-                      {sortedImages.map((img, i) => (
-                        <button key={i} onClick={() => setImgIndex(i)} className={cn("w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-colors", i === imgIndex ? "border-olive" : "border-transparent opacity-60 hover:opacity-100")}>
-                          <Image src={img.url} alt="" width={56} height={56} className="w-full h-full object-cover" unoptimized />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info column */}
-                <div className="flex-1 min-w-0 flex flex-col gap-0">
-
-                  {/* Title */}
-                  <h1 className="font-display font-black text-2xl text-ink leading-tight mb-1">{listing.title}</h1>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-2 mb-3" dir="ltr">
-                    <span className="font-display font-black text-4xl text-olive-deep">{Number(listing.price).toLocaleString()}</span>
-                    <span className="text-base text-mist font-body">₪</span>
-                    {listing.is_negotiable && (
-                      <span className="text-[11px] font-semibold text-mist bg-fog border border-border px-2.5 py-1 rounded-full mr-1" dir="rtl">قابل للتفاوض</span>
-                    )}
-                  </div>
-
-                  <div className="h-px bg-border mb-4" />
-
-                  {/* Seller */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-olive flex items-center justify-center flex-shrink-0">
-                      {listing.seller.display_handle ? (
-                        <span className="text-white font-black text-sm">{listing.seller.display_handle.slice(0, 1).toUpperCase()}</span>
-                      ) : (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-ink">{listing.seller.display_handle ?? "بائع"}</div>
-                      <div className="text-[11px] text-mist">بائع في السوق المحلي</div>
-                    </div>
-                    {isMine && <span className="text-[10px] font-bold text-olive bg-olive-pale px-2 py-0.5 rounded-full mr-auto">إعلانك</span>}
-                  </div>
-
-                  {/* Description */}
-                  {listing.description && (
-                    <>
-                      <div className="h-px bg-border mb-4" />
-                      <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line mb-4">{listing.description}</p>
-                    </>
-                  )}
-
-                  <div className="flex-1" />
-
-                  {/* Action buttons */}
-                  <div className="flex flex-col gap-2.5 mt-2">
-                    {isMine ? (
-                      <div className="flex gap-2">
-                        <button onClick={openEdit}
-                          className="flex-1 flex items-center justify-center gap-2 bg-olive text-white text-sm font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity">
-                          تعديل الإعلان
-                        </button>
-                        {currentStatus === "active" && (
-                          <button onClick={handleMarkSold} disabled={markingSold}
-                            className="flex items-center gap-2 bg-slate-100 text-slate-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 disabled:opacity-60">
-                            {markingSold ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : "✓ تم البيع"}
-                          </button>
-                        )}
-                        <button onClick={() => setShowDeleteConfirm(true)}
-                          className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-red-100 border border-red-100">
-                          حذف
-                        </button>
-                      </div>
-                    ) : (
-                      currentStatus === "active" && (
-                        <button onClick={handleChatClick} disabled={chatLoading}
-                          className="w-full flex items-center justify-center gap-2 bg-olive text-white text-sm font-bold py-3 rounded-xl shadow-sm hover:opacity-90 transition-opacity disabled:opacity-60">
-                          {chatLoading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : (
-                            <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/></svg> راسل البائع</>
-                          )}
-                        </button>
-                      )
-                    )}
-                    <div className="flex gap-2">
-                      <button onClick={handleShare}
-                        className="flex-1 flex items-center justify-center gap-2 bg-surface text-slate-600 text-sm font-semibold py-2.5 rounded-xl border border-border hover:bg-fog transition-colors">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" strokeLinecap="round"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" strokeLinecap="round"/></svg>
-                        مشاركة
-                      </button>
-                      <button onClick={handleSave}
-                        className={cn("flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-xl border transition-colors",
-                          saved ? "bg-olive-pale text-olive border-olive-mid" : "bg-surface text-slate-600 border-border hover:bg-fog")}>
-                        <svg viewBox="0 0 24 24" className={cn("w-4 h-4", saved ? "fill-olive stroke-olive" : "fill-none stroke-current")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-                        </svg>
-                        {saved ? "محفوظ" : "حفظ"}
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
+            {/* Thumbnails */}
+            {sortedImages.length > 1 && (
+              <div className="flex gap-2 px-5 py-3 border-b border-border overflow-x-auto no-scrollbar">
+                {sortedImages.map((img, i) => (
+                  <button key={i} onClick={() => setImgIndex(i)} className={cn("w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-colors", i === imgIndex ? "border-olive" : "border-transparent opacity-50 hover:opacity-80")}>
+                    <Image src={img.url} alt="" width={56} height={56} className="w-full h-full object-cover" unoptimized />
+                  </button>
+                ))}
               </div>
+            )}
+
+            {/* Info */}
+            <div className="p-5">
+
+              {/* Title + price row */}
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex-1 min-w-0">
+                  <h1 className="font-display font-black text-xl text-ink leading-snug mb-2">{listing.title}</h1>
+                  <div className="flex items-baseline gap-1.5" dir="ltr">
+                    <span className="font-display font-black text-3xl text-olive-deep">{Number(listing.price).toLocaleString()}</span>
+                    <span className="text-sm text-mist font-body">₪</span>
+                  </div>
+                  {listing.is_negotiable && (
+                    <span className="inline-block mt-1.5 text-[11px] font-semibold text-mist bg-fog border border-border px-2.5 py-0.5 rounded-full">قابل للتفاوض</span>
+                  )}
+                </div>
+                {/* Quick save button */}
+                <button onClick={handleSave}
+                  className={cn("w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors",
+                    saved ? "bg-olive-pale border-olive-mid text-olive" : "bg-fog border-border text-mist hover:text-ink")}>
+                  <svg viewBox="0 0 24 24" className={cn("w-4.5 h-4.5", saved ? "fill-olive stroke-olive" : "fill-none stroke-current")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div className="h-px bg-border mb-4" />
+
+              {/* Seller */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-olive flex items-center justify-center flex-shrink-0">
+                  {listing.seller.display_handle ? (
+                    <span className="text-white font-black text-sm">{listing.seller.display_handle.slice(0, 1).toUpperCase()}</span>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-ink">{listing.seller.display_handle ?? "بائع"}</div>
+                  <div className="text-[11px] text-mist">بائع في السوق المحلي</div>
+                </div>
+                {isMine && <span className="text-[10px] font-bold text-olive bg-olive-pale px-2.5 py-1 rounded-full border border-olive-mid">إعلانك</span>}
+              </div>
+
+              {/* Description */}
+              {listing.description && (
+                <>
+                  <div className="h-px bg-border mb-4" />
+                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{listing.description}</p>
+                </>
+              )}
+
+              <div className="h-px bg-border my-4" />
+
+              {/* Action buttons */}
+              {isMine ? (
+                <div className="flex gap-2">
+                  <button onClick={openEdit}
+                    className="flex-1 flex items-center justify-center gap-2 bg-olive text-white text-sm font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity">
+                    تعديل الإعلان
+                  </button>
+                  {currentStatus === "active" && (
+                    <button onClick={handleMarkSold} disabled={markingSold}
+                      className="flex items-center gap-2 bg-slate-100 text-slate-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 disabled:opacity-60">
+                      {markingSold ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : "✓ تم البيع"}
+                    </button>
+                  )}
+                  <button onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-red-100 border border-red-100">
+                    حذف
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {currentStatus === "active" && (
+                    <button onClick={handleChatClick} disabled={chatLoading}
+                      className="flex-1 flex items-center justify-center gap-2 bg-olive text-white text-sm font-bold py-2.5 rounded-xl shadow-sm hover:opacity-90 transition-opacity disabled:opacity-60">
+                      {chatLoading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : (
+                        <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/></svg>راسل البائع</>
+                      )}
+                    </button>
+                  )}
+                  <button onClick={handleShare}
+                    className="flex items-center justify-center gap-2 bg-fog text-slate-600 text-sm font-semibold px-4 py-2.5 rounded-xl border border-border hover:bg-border/60 transition-colors">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" strokeLinecap="round"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" strokeLinecap="round"/></svg>
+                    مشاركة
+                  </button>
+                </div>
+              )}
+
+            </div>
+          </div>
 
               {/* Edit bottom sheet */}
               {showEdit && (
@@ -648,14 +670,16 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
               <PhoneAuthPopup
                 open={showPhoneAuth}
                 onClose={() => setShowPhoneAuth(false)}
+                reason={phoneAuthReason === "save" ? "لحفظ هذا الإعلان يجب تسجيل الدخول أولاً" : "لمراسلة البائع يجب تسجيل الدخول أولاً"}
                 onVerified={async () => {
                   setShowPhoneAuth(false);
-                  await startChat();
+                  if (phoneAuthReason === "chat") await startChat();
+                  else { setSaved(true); queryClient.invalidateQueries({ queryKey: ["savedIds"] }); queryClient.invalidateQueries({ queryKey: ["listings"] }); }
                 }}
               />
 
-            </main>
-      </>
+        </div>
+      </div>
     );
   }
 
