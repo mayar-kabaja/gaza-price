@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListing, useAreas } from "@/lib/queries/hooks";
+import { DEMO_LISTINGS } from "@/lib/demo-saves";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,12 @@ function timeAgo(dateStr: string): string {
 export default function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { data: listing, isLoading, isError } = useListing(id);
+  const isDemo = id.startsWith("demo-");
+  const demoListing = isDemo ? DEMO_LISTINGS.find((l) => l.id === id) ?? null : null;
+  const { data: apiListing, isLoading: apiLoading, isError: apiError } = useListing(isDemo ? null : id);
+  const listing = isDemo ? demoListing : apiListing;
+  const isLoading = isDemo ? false : apiLoading;
+  const isError = isDemo ? !demoListing : apiError;
   const [imgIndex, setImgIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [saved, setSaved] = useState(false);

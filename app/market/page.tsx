@@ -128,7 +128,7 @@ export default function MarketPage() {
       area_id: selectedArea?.id || undefined,
     });
 
-  const realListings = (data?.pages.flatMap((p) => p.listings) ?? []).map((l) => ({ ...l, is_demo: true }));
+  const realListings = (data?.pages.flatMap((p) => p.listings) ?? []).map((l) => ({ ...l, is_demo: false }));
   const allListings = [...DEMO_LISTINGS, ...realListings];
   const total = data?.pages[0]?.total ?? 0;
 

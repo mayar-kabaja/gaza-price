@@ -4,6 +4,7 @@ import { useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 const TYPE_OPTIONS = [
   { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
@@ -123,6 +124,7 @@ export default function RegisterPageWrapper() {
 
 function RegisterPlacePage() {
   const router = useRouter();
+  const isDesktop = useIsDesktop();
   const searchParams = useSearchParams();
   const sectionParam = searchParams.get("section");
   const preselectedType = sectionParam ? SECTION_TO_TYPE[sectionParam] ?? null : null;
@@ -271,66 +273,111 @@ function RegisterPlacePage() {
 
   const areaName = areas.find((a) => a.id === areaId)?.name_ar ?? "";
 
-  return (
-    <div className="min-h-screen bg-[#F9FAFB]" dir="rtl">
-      {/* Header */}
-      <div className="bg-[#4A7C59] px-4 pt-3 pb-5 relative overflow-hidden">
-        <div className="absolute w-40 h-40 rounded-full bg-white/5 -top-14 -left-10" />
-        <div className="flex items-center gap-3 mb-4 relative z-10">
-          <button
-            onClick={() => {
-              const minStep = skipTypeStep ? 2 : 1;
-              if (step > minStep && step < 5) setStep(step - 1);
-              else router.back();
-            }}
-            className="w-9 h-9 bg-white/10 rounded-[10px] flex items-center justify-center"
-          >
-            <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <h1 className="font-bold text-base text-white">سجّل {placeWordShort}</h1>
-        </div>
+  const stepperSteps = skipTypeStep
+    ? [
+        { n: 2, label: "البيانات" },
+        { n: 3, label: "التواصل" },
+        { n: 4, label: "مراجعة" },
+      ]
+    : [
+        { n: 1, label: "النوع" },
+        { n: 2, label: "البيانات" },
+        { n: 3, label: "التواصل" },
+        { n: 4, label: "مراجعة" },
+      ];
 
-        {/* Stepper */}
-        {step < 5 && (
-          <div className="flex items-center relative z-10">
-            {(skipTypeStep
-              ? [
-                  { n: 2, label: "البيانات" },
-                  { n: 3, label: "التواصل" },
-                  { n: 4, label: "مراجعة" },
-                ]
-              : [
-                  { n: 1, label: "النوع" },
-                  { n: 2, label: "البيانات" },
-                  { n: 3, label: "التواصل" },
-                  { n: 4, label: "مراجعة" },
-                ]
-            ).map((s, i, arr) => (
-              <div key={s.n} className="flex items-center flex-1 last:flex-none">
-                <div className="flex flex-col items-center gap-1">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold
-                      ${s.n < step ? "bg-white text-[#4A7C59]" : s.n === step ? "bg-white/25 border-2 border-white text-white" : "bg-white/10 border-2 border-white/25 text-white/50"}`}
-                  >
-                    {s.n < step ? "✓" : ["١", "٢", "٣", "٤"][s.n - 1]}
-                  </div>
-                  <span className={`text-[9px] font-semibold ${s.n === step ? "text-white" : "text-white/50"}`}>
-                    {s.label}
-                  </span>
-                </div>
-                {i < arr.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 mb-3 max-w-[30px] ${s.n < step ? "bg-white/60" : "bg-white/20"}`} />
-                )}
-              </div>
-            ))}
+  return (
+    <div className={isDesktop ? "h-full overflow-y-auto bg-fog" : "min-h-screen bg-[#F9FAFB]"} dir="rtl">
+      {/* Header — mobile: green, desktop: simple white */}
+      {isDesktop ? (
+        <div className="px-5 pt-5 pb-3">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => {
+                const minStep = skipTypeStep ? 2 : 1;
+                if (step > minStep && step < 5) setStep(step - 1);
+                else router.back();
+              }}
+              className="w-8 h-8 rounded-xl border border-border bg-surface flex items-center justify-center text-mist hover:text-ink transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <h1 className="font-display font-bold text-lg text-ink">سجّل {placeWordShort}</h1>
           </div>
-        )}
-      </div>
+
+          {/* Stepper — desktop */}
+          {step < 5 && (
+            <div className="flex items-center max-w-md">
+              {stepperSteps.map((s, i, arr) => (
+                <div key={s.n} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold
+                        ${s.n < step ? "bg-olive text-white" : s.n === step ? "bg-olive-pale border-2 border-olive text-olive" : "bg-fog border-2 border-border text-mist"}`}
+                    >
+                      {s.n < step ? "✓" : ["١", "٢", "٣", "٤"][s.n - 1]}
+                    </div>
+                    <span className={`text-[9px] font-semibold ${s.n === step ? "text-olive" : "text-mist"}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-1 mb-3 max-w-[30px] ${s.n < step ? "bg-olive" : "bg-border"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-[#4A7C59] px-4 pt-3 pb-5 relative overflow-hidden">
+          <div className="absolute w-40 h-40 rounded-full bg-white/5 -top-14 -left-10" />
+          <div className="flex items-center gap-3 mb-4 relative z-10">
+            <button
+              onClick={() => {
+                const minStep = skipTypeStep ? 2 : 1;
+                if (step > minStep && step < 5) setStep(step - 1);
+                else router.back();
+              }}
+              className="w-9 h-9 bg-white/10 rounded-[10px] flex items-center justify-center"
+            >
+              <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <h1 className="font-bold text-base text-white">سجّل {placeWordShort}</h1>
+          </div>
+
+          {/* Stepper — mobile */}
+          {step < 5 && (
+            <div className="flex items-center relative z-10">
+              {stepperSteps.map((s, i, arr) => (
+                <div key={s.n} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold
+                        ${s.n < step ? "bg-white text-[#4A7C59]" : s.n === step ? "bg-white/25 border-2 border-white text-white" : "bg-white/10 border-2 border-white/25 text-white/50"}`}
+                    >
+                      {s.n < step ? "✓" : ["١", "٢", "٣", "٤"][s.n - 1]}
+                    </div>
+                    <span className={`text-[9px] font-semibold ${s.n === step ? "text-white" : "text-white/50"}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-1 mb-3 max-w-[30px] ${s.n < step ? "bg-white/60" : "bg-white/20"}`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-5 pb-28">
+      <div className={isDesktop ? "max-w-lg mx-auto px-5 py-5 pb-24" : "max-w-lg mx-auto px-4 py-5 pb-28"}>
         {/* Step 1: Type */}
         {step === 1 && (
           <div className="animate-fadeIn">
@@ -941,34 +988,58 @@ function RegisterPlacePage() {
 
       {/* Bottom bar */}
       {step >= 1 && step <= 4 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E7EB] px-4 py-3 pb-5 z-10">
-          <div className="max-w-lg mx-auto">
-            <button
-              onClick={handleNext}
-              disabled={!canNext() || submitting}
-              className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-40 transition-opacity"
-            >
-              {submitting ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <>
-                  <span>{step === 4 ? "إرسال الطلب" : "التالي"}</span>
-                  <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
-                    <path d="M9 18l-6-6 6-6" />
-                  </svg>
-                </>
-              )}
-            </button>
+        isDesktop ? (
+          <div className="max-w-lg mx-auto px-5 pb-6 flex items-center gap-3">
             {step > (skipTypeStep ? 2 : 1) && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="w-full text-[#6B7280] font-semibold text-[13px] py-2 mt-1.5"
+                className="px-5 py-2.5 rounded-xl border border-border bg-surface text-sm font-semibold text-ink hover:bg-fog transition-colors"
               >
                 رجوع
               </button>
             )}
+            <button
+              onClick={handleNext}
+              disabled={!canNext() || submitting}
+              className="px-8 py-2.5 rounded-xl bg-olive text-white font-bold text-sm flex items-center gap-2 hover:bg-olive-deep transition-colors disabled:opacity-40 mr-auto"
+            >
+              {submitting ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <span>{step === 4 ? "إرسال الطلب" : "التالي"}</span>
+              )}
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#E5E7EB] px-4 py-3 pb-5 z-10">
+            <div className="max-w-lg mx-auto">
+              <button
+                onClick={handleNext}
+                disabled={!canNext() || submitting}
+                className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-40 transition-opacity"
+              >
+                {submitting ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <>
+                    <span>{step === 4 ? "إرسال الطلب" : "التالي"}</span>
+                    <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+                      <path d="M9 18l-6-6 6-6" />
+                    </svg>
+                  </>
+                )}
+              </button>
+              {step > (skipTypeStep ? 2 : 1) && (
+                <button
+                  onClick={() => setStep(step - 1)}
+                  className="w-full text-[#6B7280] font-semibold text-[13px] py-2 mt-1.5"
+                >
+                  رجوع
+                </button>
+              )}
+            </div>
+          </div>
+        )
       )}
 
       <style jsx>{`

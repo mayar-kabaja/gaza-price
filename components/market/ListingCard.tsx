@@ -102,7 +102,7 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
   return (
     <>
     <div
-      onClick={() => listing.is_demo ? undefined : router.push(`/market/${listing.id}`)}
+      onClick={() => router.push(`/market/${listing.id}`)}
       className="bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md cursor-pointer active:scale-[0.99]"
     >
       {/* Desktop: vertical layout (image top) */}
