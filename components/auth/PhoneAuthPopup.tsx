@@ -388,6 +388,7 @@ export function PhoneAuthPopup({
                     setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
                     setError("");
                   }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !sending) handleSendOtp(); }}
                   placeholder="059 000 0000"
                   maxLength={10}
                   className="flex-1 border-none outline-none py-3.5 px-3.5 font-body text-base text-ink bg-transparent text-right tracking-wide placeholder:text-mist"

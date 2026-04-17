@@ -390,7 +390,7 @@ export default function ChatDetailPage({ params }: { params: Promise<{ id: strin
 
   if (isDesktop) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden p-3 ps-0">
+      <div className="flex-1 flex flex-col overflow-hidden p-3 pe-0">
         <div className="flex-1 flex flex-col overflow-hidden bg-surface rounded-2xl border border-border/60 shadow-sm">
           <MessagesView id={id} />
         </div>

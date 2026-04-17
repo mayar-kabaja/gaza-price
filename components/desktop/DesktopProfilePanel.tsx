@@ -536,6 +536,7 @@ export function DesktopProfilePanel() {
               type="text"
               value={handleInput}
               onChange={(e) => setHandleInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") submitHandle(); }}
               maxLength={31}
               placeholder="اختياري، ٣٠ حرفاً كحد أقصى"
               className="w-full rounded-xl border border-border px-4 py-3 text-ink font-body text-sm outline-none"

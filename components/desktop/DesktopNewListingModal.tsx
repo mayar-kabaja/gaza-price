@@ -157,15 +157,16 @@ export function DesktopNewListingModal({ open, onClose }: Props) {
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div
+        <form
           className="pointer-events-auto bg-surface rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fade-up"
           dir="rtl"
           onClick={(e) => e.stopPropagation()}
+          onSubmit={(e) => { e.preventDefault(); if (!submitting) handleSubmit(); }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
             <h2 className="font-display font-bold text-lg text-ink">إضافة إعلان جديد</h2>
-            <button onClick={handleClose} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-mist hover:text-ink transition-colors">
+            <button type="button" onClick={handleClose} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-mist hover:text-ink transition-colors">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                 <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
               </svg>
@@ -182,7 +183,7 @@ export function DesktopNewListingModal({ open, onClose }: Props) {
                 {images.map((img, idx) => (
                   <div key={idx} className="relative w-[72px] h-[72px] rounded-xl overflow-hidden border border-border flex-shrink-0">
                     <Image src={img.preview} alt="" fill className="object-cover" sizes="72px" />
-                    <button onClick={() => removeImage(idx)} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center">
+                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center">
                       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3">
                         <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
                       </svg>
@@ -190,7 +191,7 @@ export function DesktopNewListingModal({ open, onClose }: Props) {
                   </div>
                 ))}
                 {images.length < 5 && (
-                  <button onClick={() => fileInputRef.current?.click()}
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
                     className={cn("flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-mist hover:border-olive transition-colors",
                       images.length === 0 ? "w-full h-24" : "w-[72px] h-[72px] flex-shrink-0")}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={images.length === 0 ? "w-7 h-7" : "w-5 h-5"}>
@@ -234,7 +235,7 @@ export function DesktopNewListingModal({ open, onClose }: Props) {
               <label className="block text-sm font-bold text-ink mb-1.5">الحالة</label>
               <div className="grid grid-cols-3 gap-2">
                 {CONDITIONS.map((cond) => (
-                  <button key={cond.value} onClick={() => setCondition(cond.value)}
+                  <button type="button" key={cond.value} onClick={() => setCondition(cond.value)}
                     className={cn("py-2.5 rounded-xl border text-sm font-bold transition-all",
                       condition === cond.value ? "bg-olive-pale border-olive text-olive" : "bg-fog border-border text-ink")}>
                     <span className="block text-base leading-none mb-0.5">{cond.emoji}</span>
@@ -298,12 +299,12 @@ export function DesktopNewListingModal({ open, onClose }: Props) {
                 {error}
               </div>
             )}
-            <button onClick={handleSubmit} disabled={submitting}
+            <button type="submit" disabled={submitting}
               className="w-full bg-olive text-white font-bold py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-60">
               {uploading ? "جارٍ رفع الصور..." : submitting ? "جارٍ النشر..." : "نشر الإعلان"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
 
       <PhoneAuthPopup
