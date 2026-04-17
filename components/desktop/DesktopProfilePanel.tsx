@@ -19,7 +19,6 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import type { Contributor, Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { useSoundMuted } from "@/hooks/useSoundMuted";
-import { clearStoredToken } from "@/lib/auth/token";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { useGlobalSidebar } from "@/components/layout/GlobalDesktopShell";
 
@@ -81,7 +80,7 @@ function useProfile() {
 
 export function DesktopProfilePanel() {
   const { contributor, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
-  const { accessToken } = useSession();
+  const { accessToken, logout, refreshContributor } = useSession();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -188,8 +187,8 @@ export function DesktopProfilePanel() {
   };
 
   const handleLogout = () => {
-    clearStoredToken();
-    window.location.reload();
+    setShowLogoutConfirm(false);
+    logout();
   };
 
   const confirmDelete = async () => {
@@ -601,9 +600,9 @@ export function DesktopProfilePanel() {
         open={showChangePhone}
         onClose={() => setShowChangePhone(false)}
         mode="login"
-        onVerified={() => {
+        onVerified={async () => {
           setShowChangePhone(false);
-          window.location.reload();
+          await refreshContributor();
         }}
       />
 

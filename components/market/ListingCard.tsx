@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api/fetch";
+import { toggleDemoSaved } from "@/lib/demo-saves";
 import { useSession } from "@/hooks/useSession";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { Listing } from "@/lib/queries/fetchers";
@@ -46,54 +47,54 @@ interface ListingCardProps {
 
 export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingCardProps) {
   const router = useRouter();
-  const { contributor } = useSession();
+  const { contributor, refreshContributor } = useSession();
   const [saved, setSaved] = useState(isSaved);
   const [saving, setSaving] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "verify">("login");
 
- async function handleSave(e: React.MouseEvent) {
-  e.stopPropagation();
-  if (saving) return;
+  async function doSave() {
+    const next = !saved;
 
-  // 1) Not logged in at all → login
-  if (!contributor) {
-    setAuthMode("login");
-    setShowLogin(true);
-    return;
-  }
-
-  // 2) Logged in but not verified → phone verify
-  if (!contributor.phone_verified) {
-    setAuthMode("verify");
-    setShowLogin(true);
-    return;
-  }
-
-  setSaving(true);
-
-  const next = !saved;
-  setSaved(next);
-
-  try {
-    const res = await apiFetch(
-      `/api/listings/${listing.id}/save`,
-      { method: "POST" }
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      setSaved(data.saved);
-      onSaveToggle?.(listing.id, data.saved);
-    } else {
-      setSaved(!next);
+    // Demo listings don't exist in backend — toggle in localStorage
+    if (listing.is_demo) {
+      const nowSaved = toggleDemoSaved(listing.id);
+      setSaved(nowSaved);
+      onSaveToggle?.(listing.id, nowSaved);
+      return;
     }
-  } catch {
-    setSaved(!next);
-  } finally {
-    setSaving(false);
+
+    setSaving(true);
+    setSaved(next);
+    try {
+      const res = await apiFetch(
+        `/api/listings/${listing.id}/save`,
+        { method: "POST" }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setSaved(data.saved);
+        onSaveToggle?.(listing.id, data.saved);
+      } else {
+        setSaved(!next);
+      }
+    } catch {
+      setSaved(!next);
+    } finally {
+      setSaving(false);
+    }
   }
-}
+
+  async function handleSave(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (saving) return;
+
+    if (!contributor || !contributor.phone_verified) {
+      setShowLogin(true);
+      return;
+    }
+
+    doSave();
+  }
   const cat = CATEGORY_CONFIG[listing.category] ?? CATEGORY_CONFIG.other;
   const cond = CONDITION_BADGE[listing.condition] ?? CONDITION_BADGE.used;
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
@@ -200,7 +201,11 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
       open={showLogin}
       onClose={() => setShowLogin(false)}
       mode="login"
-      onVerified={() => setShowLogin(false)}
+      onVerified={async () => {
+        setShowLogin(false);
+        await refreshContributor();
+        doSave();
+      }}
     />
     </>
   );

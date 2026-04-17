@@ -102,7 +102,7 @@ export default function AccountPage() {
 
 function MobileAccountPage() {
   const { contributor, loading, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
-  const { accessToken } = useSession();
+  const { accessToken, logout, refreshContributor } = useSession();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -188,8 +188,9 @@ function MobileAccountPage() {
   };
 
   const handleLogout = () => {
-    clearStoredToken();
-    window.location.reload();
+    setShowLogoutConfirm(false);
+    logout();
+    router.push("/");
   };
 
   const confirmDelete = async () => {
@@ -439,7 +440,7 @@ function MobileAccountPage() {
                 />
               </button>
             </div>
-            {contributor?.phone_verified && (
+            {contributor?.phone_verified ? (
               <div className="border-b border-fog">
                 <button
                   type="button"
@@ -450,17 +451,35 @@ function MobileAccountPage() {
                   <span className="text-mist text-sm">›</span>
                 </button>
               </div>
+            ) : (
+              <div className="border-b border-fog">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePhone(true)}
+                  className="w-full flex items-center justify-between px-4 py-3.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 9.18 19.79 19.79 0 01.88 2.27 2 2 0 012.88.09H5.9a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.72 6.72l1.19-1.19a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                    </svg>
+                    <span className="text-sm text-olive font-semibold">تسجيل الدخول برقم الهاتف</span>
+                  </div>
+                  <span className="text-olive text-sm">›</span>
+                </button>
+              </div>
             )}
-            <div className="border-b border-fog">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(true)}
-                className="w-full flex items-center justify-between px-4 py-3.5"
-              >
-                <span className="text-sm text-amber-700">تسجيل الخروج</span>
-                <span className="text-amber-700 text-sm">›</span>
-              </button>
-            </div>
+            {contributor?.phone_verified && (
+              <div className="border-b border-fog">
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="w-full flex items-center justify-between px-4 py-3.5"
+                >
+                  <span className="text-sm text-amber-700">تسجيل الخروج</span>
+                  <span className="text-amber-700 text-sm">›</span>
+                </button>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}
@@ -596,9 +615,9 @@ function MobileAccountPage() {
           open={showChangePhone}
           onClose={() => setShowChangePhone(false)}
           mode="login"
-          onVerified={() => {
+          onVerified={async () => {
             setShowChangePhone(false);
-            window.location.reload();
+            await refreshContributor();
           }}
         />
 

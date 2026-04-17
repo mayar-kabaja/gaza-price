@@ -10,6 +10,7 @@ import { useSession } from "@/hooks/useSession";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
 import { cn } from "@/lib/utils";
+import { getDemoSavedIds, getSavedDemoListings } from "@/lib/demo-saves";
 import type { Listing } from "@/lib/queries/fetchers";
 
 const CATEGORIES = [
@@ -41,25 +42,41 @@ function useSavedListings() {
 
   useEffect(() => {
     if (sessionLoading) return;
-    if (!contributor?.phone_verified) { setLoading(false); return; }
+
+    // Always include saved demo listings from localStorage
+    const demoListings = getSavedDemoListings();
+    const demoIds = getDemoSavedIds();
+
+    if (!contributor?.phone_verified) {
+      setListings(demoListings);
+      setSavedIds(demoIds);
+      setLoading(false);
+      return;
+    }
+
     apiFetch("/api/listings/saved")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
-        const items: Listing[] = data?.listings ?? [];
-        setListings(items);
-        setSavedIds(new Set(items.map((l) => l.id)));
+        const apiItems: Listing[] = data?.listings ?? [];
+        // Merge: demo saved listings first, then API listings
+        setListings([...demoListings, ...apiItems]);
+        const allIds = new Set([...demoIds, ...apiItems.map((l) => l.id)]);
+        setSavedIds(allIds);
       })
-      .catch(() => {})
+      .catch(() => {
+        setListings(demoListings);
+        setSavedIds(demoIds);
+      })
       .finally(() => setLoading(false));
   }, [sessionLoading, contributor?.phone_verified]);
 
-  function handleSaveToggle(id: string, saved: boolean) {
+  function handleSaveToggle(id: string, nowSaved: boolean) {
     setSavedIds((prev) => {
       const next = new Set(prev);
-      saved ? next.add(id) : next.delete(id);
+      nowSaved ? next.add(id) : next.delete(id);
       return next;
     });
-    if (!saved) setListings((prev) => prev.filter((l) => l.id !== id));
+    if (!nowSaved) setListings((prev) => prev.filter((l) => l.id !== id));
   }
 
   return { listings, savedIds, loading, handleSaveToggle };

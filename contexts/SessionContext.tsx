@@ -60,6 +60,7 @@ type SessionContextValue = {
   accessToken: string | null;
   loading: boolean;
   refreshContributor: () => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -115,18 +116,53 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     load();
   }, [load]);
 
-  // When apiFetch refreshes the token and writes to localStorage, sync into state
+  // Sync token changes via storage event (cross-tab + same-tab via dispatchEvent)
   useEffect(() => {
-    const interval = setInterval(() => {
-      const stored = getStoredToken();
-      setAccessToken((prev) => (stored !== prev ? stored : prev));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    function onStorage(e: StorageEvent) {
+      if (e.key !== "gaza_price_access_token") return;
+      const newToken = e.newValue;
+      if (newToken && newToken !== accessToken) {
+        setAccessToken(newToken);
+        loadContributor(newToken).catch(() => {});
+      } else if (!newToken) {
+        // Token was cleared (logout) — create fresh anonymous session
+        setAccessToken(null);
+        setContributor(null);
+        load();
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [accessToken, loadContributor, load]);
 
   const refreshContributor = useCallback(async () => {
     const token = getStoredToken();
-    if (token) await loadContributor(token);
+    if (token) {
+      setAccessToken(token);
+      await loadContributor(token);
+    }
+  }, [loadContributor]);
+
+  const logout = useCallback(async () => {
+    clearStoredToken();
+    setContributor(null);
+    setAccessToken(null);
+    // Create a new anonymous session immediately
+    try {
+      const res = await apiFetch("/api/auth/session", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const token = data.access_token;
+        setStoredToken(token);
+        setAccessToken(token);
+        await loadContributor(token);
+      }
+    } catch {
+      // If anonymous session fails, user stays logged out
+    }
   }, [loadContributor]);
 
   const value: SessionContextValue = {
@@ -134,6 +170,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     accessToken,
     loading,
     refreshContributor,
+    logout,
   };
 
   return (
