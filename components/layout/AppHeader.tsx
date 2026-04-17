@@ -7,6 +7,7 @@ import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
 import { SearchBar } from "@/components/search/SearchBar";
+import { TickerStrip } from "@/components/layout/TickerStrip";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
@@ -248,6 +249,8 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
         </>
       )}
     </div>
+
+    <TickerStrip />
 
     <PhoneAuthPopup
       open={showLogin}

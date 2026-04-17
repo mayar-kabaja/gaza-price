@@ -370,6 +370,22 @@ export async function fetchPlaces(section: string, areaId?: string, limit = 20, 
   };
 }
 
+// ── Ticker Ads ──────────────────────────────────────────────────────────────
+
+export interface TickerAd {
+  id: string;
+  name: string;
+  type: string;
+  area_name_ar: string;
+}
+
+export async function fetchTickerAds(): Promise<TickerAd[]> {
+  const res = await apiFetch("/api/places/ticker-ads");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data?.data ?? [];
+}
+
 // ── Marketplace Listings ──────────────────────────────────────────────────────
 
 export interface ListingImage {

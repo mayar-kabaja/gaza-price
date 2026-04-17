@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { TickerStrip } from "@/components/layout/TickerStrip";
 
 const DesktopHeader = dynamic(
   () => import("@/components/desktop/DesktopHeader").then(m => ({ default: m.DesktopHeader })),
@@ -135,7 +136,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
       openSuggestModal: () => setSuggestOpen(true),
       openNewListingModal: () => setNewListingOpen(true),
     }}>
-      <div className="h-screen grid grid-rows-[60px_1fr]" dir="rtl">
+      <div className="h-screen grid grid-rows-[60px_34px_1fr]" dir="rtl">
         <DesktopHeader
           onSubmitClick={() => setSubmitOpen(true)}
           onSuggestClick={() => setSuggestOpen(true)}
@@ -143,6 +144,8 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
           onProfileClick={() => { window.location.href = "/account"; }}
           isProfileActive={false}
         />
+
+        <TickerStrip />
 
         <div className="flex overflow-hidden bg-fog">
           <div className="max-w-[960px] w-full mx-auto flex min-h-full">

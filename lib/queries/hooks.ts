@@ -22,6 +22,7 @@ import {
   fetchAdminPlaces,
   fetchListings,
   fetchListing,
+  fetchTickerAds,
 } from "@/lib/queries/fetchers";
 import { apiFetch, apiFetchAdmin } from "@/lib/api/fetch";
 import { setStoredToken } from "@/lib/auth/token";
@@ -439,5 +440,14 @@ export function useListing(id: string | null) {
     queryFn: () => fetchListing(id!),
     enabled: !!id,
     staleTime: 60 * 1000,
+  });
+}
+
+// ── Ticker Ads ──
+export function useTickerAds() {
+  return useQuery({
+    queryKey: ["tickerAds"],
+    queryFn: fetchTickerAds,
+    staleTime: 5 * 60 * 1000, // 5 min
   });
 }
