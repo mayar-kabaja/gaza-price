@@ -64,6 +64,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   const [showShare, setShowShare] = useState(false);
   const [listingStatus, setListingStatus] = useState<string | null>(null);
   const [markingSold, setMarkingSold] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const { contributor } = useSession();
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
@@ -127,6 +128,11 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
     ) : null
   );
 
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
   async function handleChatClick() {
     if (!contributor?.phone_verified) {
       setPhoneAuthReason("chat");
@@ -137,6 +143,10 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   }
 
   async function startChat() {
+    if (isDemo) {
+      showToast("هذا إعلان تجريبي — المحادثة غير متاحة حالياً");
+      return;
+    }
     setChatLoading(true);
     try {
       const res = await apiFetch("/api/chat/conversations", {
@@ -145,13 +155,13 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.message || "تعذر بدء المحادثة");
+        showToast(data.message || "تعذر بدء المحادثة");
         return;
       }
       const conv = await res.json();
       router.push(`/market/chat/${conv.id}`);
     } catch {
-      alert("تعذر الاتصال — تحقق من الإنترنت");
+      showToast("تعذر الاتصال — تحقق من الإنترنت");
     } finally {
       setChatLoading(false);
     }
@@ -192,20 +202,22 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   const currentStatus = listingStatus ?? listing.status;
 
   async function handleMarkSold() {
+    if (isDemo) { showToast("هذا إعلان تجريبي"); return; }
     if (markingSold) return;
     setMarkingSold(true);
     try {
       const res = await apiFetch(`/api/listings/${id}/sold`, { method: "PATCH" });
       if (res.ok) setListingStatus("sold");
-      else alert("تعذر تحديث الإعلان");
+      else showToast("تعذر تحديث الإعلان");
     } catch {
-      alert("تعذر الاتصال");
+      showToast("تعذر الاتصال");
     } finally {
       setMarkingSold(false);
     }
   }
 
   async function handleSave() {
+    if (isDemo) { showToast("هذا إعلان تجريبي"); return; }
     if (!contributor?.phone_verified) {
       setPhoneAuthReason("save");
       setShowPhoneAuth(true);
@@ -683,6 +695,14 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
                   else { setSaved(true); queryClient.invalidateQueries({ queryKey: ["savedIds"] }); queryClient.invalidateQueries({ queryKey: ["listings"] }); }
                 }}
               />
+
+              {toast && (
+                <div className="fixed top-4 left-4 right-4 z-[60] flex justify-center pointer-events-none">
+                  <div className="bg-ink/90 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto">
+                    {toast}
+                  </div>
+                </div>
+              )}
 
         </div>
       </div>
@@ -1200,6 +1220,14 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
           await startChat();
         }}
       />
+
+      {toast && (
+        <div className="fixed top-4 left-4 right-4 z-[60] flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-2">
+          <div className="bg-ink/90 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto">
+            {toast}
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
