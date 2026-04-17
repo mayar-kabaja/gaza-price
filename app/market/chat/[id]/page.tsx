@@ -227,7 +227,7 @@ function MessagesView({ id }: { id: string }) {
   return (
     <>
       {/* Chat header */}
-      <div className="bg-surface border-b border-border flex items-center gap-3 px-4 py-3 flex-shrink-0">
+      <div className="bg-surface border-b border-border flex items-center gap-3 px-4 py-3 flex-shrink-0 rounded-t-2xl">
         <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-fog flex items-center justify-center">
           {conversation?.listing_image ? (
             <Image src={conversation.listing_image} alt="" width={36} height={36} className="w-full h-full object-cover" unoptimized />
@@ -252,7 +252,7 @@ function MessagesView({ id }: { id: string }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 bg-fog/30">
         {hasOlderMessages && (
           <div className="flex justify-center py-2">
             <button onClick={() => setVisibleCount((c) => c + 40)} className="text-[11px] font-semibold text-olive bg-olive/10 px-4 py-1.5 rounded-full">
@@ -309,7 +309,7 @@ function MessagesView({ id }: { id: string }) {
       </div>
 
       {/* Input */}
-      <div className="bg-surface border-t border-border px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-surface border-t border-border px-4 py-3 flex items-center gap-3 flex-shrink-0 rounded-b-2xl">
         <input
           type="text"
           value={inputText}
@@ -390,8 +390,10 @@ export default function ChatDetailPage({ params }: { params: Promise<{ id: strin
 
   if (isDesktop) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden bg-fog">
-        <MessagesView id={id} />
+      <div className="flex-1 flex flex-col overflow-hidden p-3 ps-0">
+        <div className="flex-1 flex flex-col overflow-hidden bg-surface rounded-2xl border border-border/60 shadow-sm">
+          <MessagesView id={id} />
+        </div>
       </div>
     );
   }

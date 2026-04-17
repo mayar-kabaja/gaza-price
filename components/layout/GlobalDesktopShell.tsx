@@ -145,11 +145,11 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
         />
 
         <div className="flex overflow-hidden bg-fog">
-          <div className="max-w-[900px] w-full mx-auto flex min-h-full">
+          <div className="max-w-[960px] w-full mx-auto flex min-h-full">
 
             {/* ONE unified sidebar */}
-            <aside className="w-[240px] flex-shrink-0 flex flex-col overflow-hidden">
-              <div className="flex flex-col overflow-hidden bg-surface rounded-2xl shadow-sm border border-border/60 mt-4 mr-3 flex-1">
+            <aside className="w-[260px] flex-shrink-0 flex flex-col overflow-hidden">
+              <div className="flex flex-col overflow-hidden bg-surface rounded-2xl shadow-sm border border-border/60 mt-4 mr-3 mb-3 flex-1">
                 {/* Fixed nav */}
                 <div className="flex-shrink-0 p-3 space-y-0.5">
                   {NAV_LINKS.map(({ href, label, icon }) => (
@@ -158,7 +158,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
                       href={href}
                       className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-body transition-colors ${
                         isLinkActive(href, pathname)
-                          ? "bg-olive-pale text-olive font-semibold"
+                          ? "bg-olive text-white font-semibold"
                           : "text-slate hover:bg-fog hover:text-ink"
                       }`}
                     >
@@ -166,7 +166,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
                     </Link>
                   ))}
                 </div>
-                <div className="h-px bg-border flex-shrink-0" />
+                <div className="mx-3 border-t border-border/80 flex-shrink-0" />
                 {/* Page-specific content injected by pages */}
                 <div className="flex-1 overflow-y-auto no-scrollbar p-3">
                   <SidebarSlot />
@@ -175,7 +175,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 overflow-y-auto bg-fog min-w-0">
+            <main className="flex-1 overflow-y-auto bg-fog min-w-0 relative">
               {children}
             </main>
 

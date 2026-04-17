@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useSoundMuted } from "@/hooks/useSoundMuted";
 import { clearStoredToken } from "@/lib/auth/token";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
+import { useGlobalSidebar } from "@/components/layout/GlobalDesktopShell";
 
 const GOV_LABELS: Record<string, string> = {
   north: "شمال غزة",
@@ -85,6 +86,18 @@ export function DesktopProfilePanel() {
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
   const { saveArea, area: savedArea } = useArea();
+
+  useGlobalSidebar(
+    <div className="space-y-1">
+      <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">حسابي</div>
+      <Link href="/account" className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+        مستوى الثقة
+      </Link>
+      <Link href="/account/reports" className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+        مساهماتي
+      </Link>
+    </div>
+  );
 
   const [openEditHandle, setOpenEditHandle] = useState(false);
   const [handleInput, setHandleInput] = useState("");
@@ -199,7 +212,7 @@ export function DesktopProfilePanel() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pt-6 pr-2 pb-8 pl-6">
+    <div className="max-w-2xl mx-auto space-y-6 p-6">
       {/* Profile header */}
       <div className="rounded-2xl px-6 pt-6 pb-5 bg-olive">
         <div className="flex items-center gap-4 mb-5">
@@ -296,68 +309,71 @@ export function DesktopProfilePanel() {
         </div>
       )}
 
-      {/* Trust level */}
-      <div>
-        <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مستوى الثقة</div>
-        <div className="bg-surface rounded-2xl p-5 border border-border">
-          {statsLoading ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-5 w-12 rounded-full" />
+      {/* Trust level + Contributions grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Trust level */}
+        <div>
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مستوى الثقة</div>
+          <div className="bg-surface rounded-2xl p-5 border border-border">
+            {statsLoading ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-12 rounded-full" />
+                </div>
+                <Skeleton className="h-8 w-full rounded" />
+                <Skeleton className="h-8 w-3/4 mx-auto rounded-lg" />
               </div>
-              <Skeleton className="h-8 w-full rounded" />
-              <Skeleton className="h-8 w-3/4 mx-auto rounded-lg" />
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display font-bold text-sm text-ink">
+                    {TRUST_LEVEL_LABELS[contributor?.trust_level ?? "new"]}
+                  </span>
+                  <span className="text-xs text-mist bg-fog border border-border rounded-full px-2.5 py-0.5">
+                    المستوى {contributor?.trust_level === "new" ? "1" : contributor?.trust_level === "regular" ? "2" : contributor?.trust_level === "trusted" ? "3" : "4"}
+                  </span>
+                </div>
+                <TrustLevelBar level={contributor?.trust_level ?? "new"} />
+                {contributor && (
+                  <div className="mt-3 text-xs text-mist text-center bg-fog rounded-lg px-3 py-2">
+                    {getReportsToNextLevel(contributor.trust_level, contributor.report_count) > 0
+                      ? `أضف ${toArabicNumerals(getReportsToNextLevel(contributor.trust_level, contributor.report_count))} أسعار للانتقال للمستوى التالي`
+                      : "وصلت للمستوى الأعلى 🎉"}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* My contributions */}
+        <div>
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مساهماتي</div>
+          {contributionsLoading ? (
+            <div className="bg-surface rounded-2xl p-6 border border-border">
+              <div className="space-y-3 flex flex-col items-center">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-10 w-32 rounded-full" />
+              </div>
+            </div>
+          ) : (contributor?.report_count ?? 0) === 0 ? (
+            <div className="bg-surface rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
+              <div className="text-3xl mb-2">📋</div>
+              <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر أو منتج بعد</div>
+              <div className="text-xs text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</div>
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-display font-bold text-sm text-ink">
-                  {TRUST_LEVEL_LABELS[contributor?.trust_level ?? "new"]}
-                </span>
-                <span className="text-xs text-mist bg-fog border border-border rounded-full px-2.5 py-0.5">
-                  المستوى {contributor?.trust_level === "new" ? "1" : contributor?.trust_level === "regular" ? "2" : contributor?.trust_level === "trusted" ? "3" : "4"}
-                </span>
-              </div>
-              <TrustLevelBar level={contributor?.trust_level ?? "new"} />
-              {contributor && (
-                <div className="mt-3 text-xs text-mist text-center bg-fog rounded-lg px-3 py-2">
-                  {getReportsToNextLevel(contributor.trust_level, contributor.report_count) > 0
-                    ? `أضف ${toArabicNumerals(getReportsToNextLevel(contributor.trust_level, contributor.report_count))} أسعار للانتقال للمستوى التالي`
-                    : "وصلت للمستوى الأعلى 🎉"}
-                </div>
-              )}
-            </>
+            <Link
+              href="/account/reports"
+              className="bg-surface rounded-2xl px-5 py-4 border border-border flex items-center justify-between hover:border-olive/50 transition-colors"
+            >
+              <span className="text-sm font-display font-bold text-ink">عرض أسعاري ومنتجاتي</span>
+              <span className="text-mist text-sm">‹</span>
+            </Link>
           )}
         </div>
-      </div>
-
-      {/* My contributions */}
-      <div>
-        <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مساهماتي</div>
-        {contributionsLoading ? (
-          <div className="bg-surface rounded-2xl p-6 border border-border">
-            <div className="space-y-3 flex flex-col items-center">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-10 w-32 rounded-full" />
-            </div>
-          </div>
-        ) : (contributor?.report_count ?? 0) === 0 ? (
-          <div className="bg-surface rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
-            <div className="text-3xl mb-2">📋</div>
-            <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر أو منتج بعد</div>
-            <div className="text-xs text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</div>
-          </div>
-        ) : (
-          <Link
-            href="/account/reports"
-            className="bg-surface rounded-2xl px-5 py-4 border border-border flex items-center justify-between hover:border-olive/50 transition-colors"
-          >
-            <span className="text-sm font-display font-bold text-ink">عرض أسعاري ومنتجاتي</span>
-            <span className="text-mist text-sm">‹</span>
-          </Link>
-        )}
       </div>
 
       {/* Settings */}

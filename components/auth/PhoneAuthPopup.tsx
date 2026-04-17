@@ -275,7 +275,7 @@ export function PhoneAuthPopup({
           <button
             type="button"
             onClick={onClose}
-            className="absolute left-4 w-8 h-8 rounded-full flex items-center justify-center text-mist hover:bg-fog hover:text-ink transition-colors flex-shrink-0"
+            className="absolute left-3 top-3 w-9 h-9 rounded-full bg-fog border border-border flex items-center justify-center text-mist hover:bg-border hover:text-ink transition-colors flex-shrink-0 z-10"
             aria-label="إغلاق"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
@@ -326,26 +326,35 @@ export function PhoneAuthPopup({
           {/* ═══ STEP 1: Phone Number ═══ */}
           {step === "phone" && (
             <div>
-              {/* WA Icon */}
+              {/* Icon */}
               <div className="flex justify-center mb-5">
                 <div
-                  className="w-16 h-16 rounded-[20px] flex items-center justify-center text-3xl shadow-lg"
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-lg"
                   style={{
-                    background: "linear-gradient(135deg, #25D366, #128C7E)",
-                    boxShadow: "0 8px 24px rgba(37,211,102,0.3)",
+                    background: mode === "login"
+                      ? "linear-gradient(135deg, #4A7C59, #3A6347)"
+                      : "linear-gradient(135deg, #25D366, #128C7E)",
+                    boxShadow: mode === "login"
+                      ? "0 8px 24px rgba(74,124,89,0.3)"
+                      : "0 8px 24px rgba(37,211,102,0.3)",
                   }}
                 >
-                  📱
+                  {mode === "login" ? "👋" : "📱"}
                 </div>
               </div>
 
               <h2 className="font-display font-extrabold text-xl text-ink text-center mb-1.5">
-                أدخل رقم هاتفك
+                {mode === "login" ? "أهلاً بك في غزة بريس" : "أدخل رقم هاتفك"}
               </h2>
-              <p className="text-[13px] text-mist text-center leading-relaxed mb-6">
-                سنرسل لك كود تحقق مجاني عبر{" "}
-                <strong className="text-slate font-semibold">WhatsApp</strong>
-                {mode === "login" ? " لتسجيل دخولك" : " لنشر سعرك مباشرةً"}
+              <p className="text-[13px] text-mist text-center leading-relaxed mb-1">
+                {mode === "login"
+                  ? "أدخل رقم هاتفك للدخول إلى حسابك في غزة بريس"
+                  : "سنرسل لك كود تحقق مجاني لنشر سعرك مباشرةً"}
+              </p>
+              <p className="text-[11px] text-mist/70 text-center mb-5">
+                سيصلك كود عبر{" "}
+                <strong className="text-[#1DAA58] font-semibold">WhatsApp</strong>
+                {" "}— بدون تكلفة، بدون كلمة مرور
               </p>
 
               {/* Phone input */}
@@ -619,14 +628,14 @@ export function PhoneAuthPopup({
               </div>
 
               <h2 className="font-display font-extrabold text-[22px] text-ink mb-1.5">
-                تم التحقق! 🎉
+                {mode === "login" ? "تم تسجيل الدخول! 🎉" : "تم التحقق! 🎉"}
               </h2>
               <p className="text-[13px] text-mist leading-relaxed mb-6">
                 {mode === "login"
-                  ? "رقمك مسجّل — أهلاً بك في غزة بريس"
+                  ? "مرحباً بك — حسابك جاهز الآن"
                   : "رقمك مسجّل — سعرك يُرسل الآن"}
                 <br />
-                بدون الحاجة للتحقق مرة أخرى
+                <span className="text-[11px]">لن تحتاج للتحقق مرة أخرى</span>
               </p>
 
               {mode === "submit" && (

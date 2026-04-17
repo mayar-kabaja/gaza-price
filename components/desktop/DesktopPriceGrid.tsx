@@ -25,7 +25,7 @@ export function DesktopPriceGrid({
 }: DesktopPriceGridProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-surface rounded-xl overflow-hidden shadow-sm">
             <div className="h-[3px] bg-fog animate-pulse" />
@@ -106,7 +106,7 @@ export function DesktopPriceGrid({
               <div className="flex-1 h-px bg-border" />
             </div>
           )}
-          <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+          <div className="grid gap-4 mb-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
             {group.products.map((product) => {
               const idx = cardIndex++;
               return <DesktopPriceCard key={product.id} product={product} index={idx} />;

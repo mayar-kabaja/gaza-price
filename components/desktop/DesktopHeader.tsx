@@ -67,6 +67,9 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
       {/* Divider */}
       <div className="w-px h-7 bg-white/12 flex-shrink-0" />
 
+      {/* Search */}
+      <DesktopSearchBar />
+
       {/* Area picker */}
       <div className="relative flex-shrink-0" ref={ref}>
         <button
@@ -142,19 +145,19 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
         )}
       </div>
 
-      {/* Search — takes remaining space */}
-      <DesktopSearchBar />
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         {/* Add listing button — only on market pages */}
         {onNewListingClick && (
           <button
             type="button"
             onClick={onNewListingClick}
-            className="flex items-center gap-1.5 px-4 py-[7px] rounded-lg bg-white/15 text-white text-[13px] font-display font-bold hover:bg-white/25 transition-all whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sand/90 text-olive-deep text-[12px] font-display font-bold hover:bg-sand transition-all whitespace-nowrap cursor-pointer"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 5v14M5 12h14"/>
             </svg>
             إعلان جديد
@@ -164,30 +167,32 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
         <button
           type="button"
           onClick={onSuggestClick}
-          className="flex items-center gap-1.5 px-4 py-[7px] rounded-lg bg-transparent border border-white/20 text-white/80 text-[13px] font-display font-bold hover:bg-white/10 hover:-translate-y-px transition-all whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white/80 text-[12px] font-display font-bold hover:bg-white/18 transition-all whitespace-nowrap cursor-pointer"
         >
-          + أضف منتج
+          أضف منتج
         </button>
         {/* Primary CTA */}
         <button
           type="button"
           onClick={onSubmitClick}
-          className="flex items-center gap-1.5 px-4 py-[7px] rounded-lg bg-transparent border border-sand text-sand text-[13px] font-display font-bold hover:bg-sand/10 hover:-translate-y-px transition-all whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sand text-[12px] font-display font-bold hover:bg-white/18 transition-all whitespace-nowrap cursor-pointer"
         >
-          + أضف سعر
+          أضف سعر
         </button>
+
+        <div className="w-px h-5 bg-white/12 mx-1" />
 
         {/* Profile */}
         <button
           type="button"
           onClick={onProfileClick}
           className={cn(
-            "w-[34px] h-[34px] rounded-full border border-white/12 flex items-center justify-center text-white/60 hover:bg-white/8 hover:text-white transition-colors cursor-pointer flex-shrink-0",
-            isProfileActive && "bg-white/15 border-sand text-white"
+            "w-[32px] h-[32px] rounded-full flex items-center justify-center text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer flex-shrink-0",
+            isProfileActive && "bg-white/15 text-white"
           )}
           title="حسابي"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="8" r="4" />
             <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
           </svg>
@@ -197,11 +202,11 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
         <button
           type="button"
           onClick={toggleTheme}
-          className="w-[34px] h-[34px] rounded-full border border-white/12 flex items-center justify-center text-white/60 hover:bg-white/8 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+          className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer flex-shrink-0"
           aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
         >
           {theme === "dark" ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="5" />
               <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
               <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
@@ -209,7 +214,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
               <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           )}

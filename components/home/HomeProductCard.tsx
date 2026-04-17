@@ -10,6 +10,7 @@ import { PriceStats } from "@/components/prices/PriceStats";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import type { Price, PriceStats as PriceStatsType } from "@/types/app";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { previewToPrice } from "@/lib/price";
 
 const PRICES_PREVIEW = 5;
@@ -23,6 +24,7 @@ interface HomeProductCardProps {
 
 export const HomeProductCard = memo(function HomeProductCard({ product, areaId = null, isRefetching = false }: HomeProductCardProps) {
   const { accessToken, loading: sessionLoading } = useSession();
+  const isDesktop = useIsDesktop();
   const connection = useConnectionQuality();
   const priceLimit = connection === "slow" ? PRICES_PREVIEW_SLOW : PRICES_PREVIEW;
   const hasPricePreview = Array.isArray(product.price_preview) && product.price_preview.length > 0;
@@ -58,9 +60,11 @@ export const HomeProductCard = memo(function HomeProductCard({ product, areaId =
     report_count: total,
   };
 
+  const px = isDesktop ? '' : 'px-4';
+
   return (
-    <section className="mb-6">
-      <div className="flex items-center justify-between gap-2 mb-2 px-4">
+    <section className={isDesktop ? 'bg-surface rounded-xl border border-border p-3.5' : 'mb-6'}>
+      <div className={`flex items-center justify-between gap-2 mb-2 ${px}`}>
         <Link
           href={`/product/${product.id}`}
           className="font-display font-bold text-sm text-ink shrink-0 hover:text-olive transition-colors"
@@ -71,7 +75,7 @@ export const HomeProductCard = memo(function HomeProductCard({ product, areaId =
           <PriceStats stats={stats} />
         )}
       </div>
-      <div className="space-y-2 px-4">
+      <div className={`space-y-2 ${px}`}>
         {showLoading ? (
           <div className="flex items-center justify-center py-6">
             <LoaderDots size="sm" />

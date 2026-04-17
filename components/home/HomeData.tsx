@@ -211,8 +211,8 @@ export function HomeData() {
 
       <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
         {showSkeletons ? (
-          <div className="px-4">
-            {[...Array(isSlow ? 3 : 5)].map((_, i) => (
+          <div className={isDesktop ? "grid grid-cols-2 gap-3 px-4" : "px-4"}>
+            {[...Array(isSlow ? 3 : 6)].map((_, i) => (
               <HomeProductCardSkeleton key={i} />
             ))}
           </div>
@@ -233,7 +233,7 @@ export function HomeData() {
               </div>
             </div>
           ) : (
-            <div className="px-4 space-y-3">
+            <div className={`px-4 ${isDesktop ? 'grid grid-cols-2 gap-3' : 'space-y-3'}`}>
               {allReports.map((report) => (
                 <ReportCard key={report.id} report={report} />
               ))}
@@ -273,6 +273,7 @@ export function HomeData() {
           </div>
         ) : (
           <>
+            <div className={`${isDesktop ? 'grid grid-cols-2 gap-3 px-4' : ''}`}>
             {products.map((product) => (
               <HomeProductCard
                 key={product.id}
@@ -281,6 +282,7 @@ export function HomeData() {
                 isRefetching={productsFetching}
               />
             ))}
+            </div>
             {hasNextPage && (
               <div className="px-4 pt-2 pb-4">
                 <button

@@ -127,7 +127,7 @@ export default function SavedListingsPage() {
           </div>
         </div>
 
-        {loading && <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
+        {loading && <div className="grid grid-cols-2 gap-3">{Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
 
         {!loading && display.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-surface rounded-2xl border border-border">
@@ -145,7 +145,7 @@ export default function SavedListingsPage() {
         )}
 
         {!loading && display.length > 0 && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             {display.map((l) => (
               <ListingCard key={l.id} listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={handleSaveToggle} />
             ))}
@@ -169,7 +169,7 @@ export default function SavedListingsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-24">
-        {loading && <div className="px-4 pt-4">{Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
+        {loading && <div className="px-4 pt-4 space-y-3">{Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
 
         {!loading && listings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
@@ -183,7 +183,7 @@ export default function SavedListingsPage() {
         )}
 
         {!loading && listings.length > 0 && (
-          <div className="px-4 pt-4">
+          <div className="px-4 pt-4 space-y-3">
             {listings.map((l) => (
               <ListingCard key={l.id} listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={handleSaveToggle} />
             ))}

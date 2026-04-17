@@ -16,7 +16,7 @@ export function PriceList({ prices, stats, productName, isRefetching = false }: 
         <h2 className="font-display font-bold text-sm text-ink shrink-0">{productName}</h2>
         <PriceStats stats={stats} />
       </div>
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {prices.map((price) => (
           <PriceCard key={price.id} price={price} isRefetching={isRefetching} />
         ))}

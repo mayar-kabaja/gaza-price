@@ -88,16 +88,12 @@ body {
   text-align: left;
 }
 
-/* Hide scrollbar */
+/* Hide all scrollbars globally (keep scroll functionality) */
+::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar { width: 8px; height: 8px; }
-.dark ::-webkit-scrollbar-track { background: #18212C; border-radius: 4px; }
-.dark ::-webkit-scrollbar-thumb { background: #243040; border-radius: 4px; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #2E3D50; }
-.dark { scrollbar-color: #243040 #18212C; }
 
 /* Dark mode: desktop search bar — solid dark bg, no green bleed */
 .dark .desktop-search-wrap {

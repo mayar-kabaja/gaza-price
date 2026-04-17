@@ -25,13 +25,13 @@ export function DesktopSearchBar() {
   const showNoResults = showDropdown && !hasResults;
 
   return (
-    <div className="relative flex-1 min-w-0">
+    <div className="relative w-[260px] flex-shrink-0">
       <div className="desktop-search-wrap relative">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="ابحث عن منتج... سكر، أرز، زيت"
-          className="w-full h-[38px] bg-white/8 border border-white/14 rounded-[10px] pr-3.5 pl-10 text-[13px] font-body text-white/90 placeholder:text-white/35 outline-none focus:bg-white/12 focus:border-sand/50 transition-colors"
+          placeholder="ابحث عن منتج..."
+          className="w-full h-[34px] bg-white/8 border border-white/12 rounded-full pr-3.5 pl-9 text-[12px] font-body text-white/90 placeholder:text-white/35 outline-none focus:bg-white/12 focus:border-sand/50 transition-colors"
           dir="rtl"
         />
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">

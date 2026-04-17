@@ -214,9 +214,11 @@ export default function ChatInboxPage() {
   // DESKTOP
   if (isDesktop) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-fog text-center">
-        <div>
-          <div className="text-5xl mb-4">💬</div>
+      <div className="h-full flex items-center justify-center bg-fog text-center">
+        <div className="bg-surface rounded-2xl border border-border shadow-sm px-10 py-12 text-center max-w-sm">
+          <div className="w-16 h-16 mx-auto rounded-full bg-olive-pale flex items-center justify-center mb-4">
+            <span className="text-3xl">💬</span>
+          </div>
           {conversations.length === 0 ? (
             <>
               <div className="font-bold">لا توجد محادثات بعد</div>
@@ -240,7 +242,12 @@ export default function ChatInboxPage() {
   // MOBILE
   return (
     <div className="flex flex-col min-h-dvh bg-fog" dir="rtl">
-      <div className="bg-olive px-4 py-3">
+      <div className="bg-olive px-4 py-3 flex items-center gap-3">
+        <button onClick={() => router.back()} className="text-white p-1 rounded-lg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         <h1 className="font-display font-bold text-lg text-white">المحادثات</h1>
       </div>
 

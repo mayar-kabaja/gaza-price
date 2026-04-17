@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api/fetch';
 import { uploadReceiptPhoto } from '@/lib/api/upload';
 import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 
 /* ─── Constants ─── */
 
@@ -369,10 +371,11 @@ function MenuContent({ place }: { place: Place }) {
           <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-2">
             {sec.name}
           </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           {sec.items.map((item, idx) => (
             <div
               key={item.id || `${item.name}-${idx}`}
-              className={`p-3 bg-surface rounded-[11px] mb-1.5 border border-border hover:border-olive/25 ${!item.available ? 'opacity-40' : ''}`}
+              className={`p-3 bg-surface rounded-[11px] border border-border hover:border-olive/25 ${!item.available ? 'opacity-40' : ''}`}
             >
               <div className="flex items-start justify-between gap-2.5">
                 <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -429,6 +432,7 @@ function MenuContent({ place }: { place: Place }) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       ))}
 
@@ -505,6 +509,7 @@ function MenuContent({ place }: { place: Place }) {
 export default function PlaceDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const isDesktop = useIsDesktop();
 
   const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
@@ -525,7 +530,52 @@ export default function PlaceDetailPage() {
     if (id) fetchPlace();
   }, [id]);
 
+  const isBoth = !loading && !error && place ? place.type === 'both' : false;
+  const emoji = place ? (isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'))) : '🏪';
+
+  useGlobalSidebar(
+    isDesktop ? (
+      <div className="space-y-1">
+        <Link href="/places" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors font-semibold mb-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M19 12H5M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          العودة للمحلات
+        </Link>
+        {place && (
+          <div className="bg-olive-pale rounded-xl p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">{isBoth ? '🍴☕' : emoji}</span>
+              <span className="font-display font-bold text-sm text-ink truncate">{place.name}</span>
+            </div>
+            {place.area?.name_ar && (
+              <div className="text-[11px] text-mist">📍 {place.area.name_ar}</div>
+            )}
+            {place.is_open && (
+              <div className="flex items-center gap-1 mt-1 text-[11px] font-bold text-olive">
+                <span className="w-[5px] h-[5px] rounded-full bg-olive animate-pulse" />
+                مفتوح الآن
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
   if (loading) {
+    if (isDesktop) {
+      return (
+        <div className="h-full overflow-y-auto bg-fog">
+          <div className="max-w-2xl mx-auto p-6 space-y-4">
+            <div className="h-6 w-40 bg-border/40 rounded animate-pulse" />
+            <div className="bg-surface rounded-2xl border border-border p-6 space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-14 rounded-[14px] bg-border/40 animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-fog flex flex-col">
         <div className="bg-olive p-4 pb-5">
@@ -549,7 +599,7 @@ export default function PlaceDetailPage() {
 
   if (error || !place) {
     return (
-      <div className="min-h-screen bg-fog flex flex-col items-center justify-center px-6 text-center">
+      <div className={`${isDesktop ? 'h-full' : 'min-h-screen'} bg-fog flex flex-col items-center justify-center px-6 text-center`}>
         <p className="text-4xl mb-4">😕</p>
         <h1 className="font-display font-black text-xl text-ink mb-2">المكان غير موجود</h1>
         <p className="text-sm text-mist mb-6">قد يكون الرابط خاطئاً أو أن المكان لم يعد متاحاً</p>
@@ -560,10 +610,63 @@ export default function PlaceDetailPage() {
     );
   }
 
-  const isBoth = place.type === 'both';
-  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const sectionTitle = place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر';
 
+  // ── Desktop layout ──
+  if (isDesktop) {
+    return (
+      <div className="h-full overflow-y-auto bg-fog" dir="rtl">
+        <div className="max-w-2xl mx-auto p-6">
+          {/* Place info row */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className={`w-11 h-11 rounded-xl bg-olive-pale flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-lg' : ''}`}>
+              {place.avatar_url ? (
+                <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+              ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display font-bold text-lg text-ink">{place.name}</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[11px] text-mist">📍 {place.area?.name_ar}</span>
+                {place.is_open && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-olive">
+                    <span className="w-[5px] h-[5px] rounded-full bg-olive animate-pulse" />
+                    مفتوح
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              {place.phone && (
+                <a href={`tel:${place.phone}`} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-sm">
+                  📞
+                </a>
+              )}
+              {place.whatsapp && (
+                <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-sm">
+                  💬
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Section title */}
+          <h2 className="font-display font-bold text-sm text-ink mb-3">{sectionTitle}</h2>
+
+          {/* Content */}
+          <div className="bg-surface rounded-2xl border border-border p-5">
+            {place.section === 'workspace' ? (
+              <WorkspaceContent place={place} />
+            ) : (
+              <MenuContent place={place} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mobile layout ──
   return (
     <div className="min-h-screen bg-fog flex flex-col" dir="rtl">
       {/* Header */}

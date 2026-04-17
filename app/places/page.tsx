@@ -246,7 +246,7 @@ export default function PlacesPage() {
   useGlobalSidebar(isDesktop ? (
     <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col -m-3">
       {/* Search */}
-      <div className="p-4 pb-2">
+      <div className="p-4 pb-3">
         <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
           <span className="text-xs text-mist">🔍</span>
           <input
@@ -262,10 +262,13 @@ export default function PlacesPage() {
         </div>
       </div>
 
-      {/* Section nav */}
+      {/* Place types — nested under محلات */}
       <div className="px-4 pb-3">
-        <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الأقسام</div>
-        <div className="space-y-0.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="text-olive text-base">🏠</span>
+          <span className="text-sm font-display font-extrabold text-ink">محلات</span>
+        </div>
+        <div className="space-y-0.5 pr-2">
           {([
             { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
             { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
@@ -275,21 +278,26 @@ export default function PlacesPage() {
               key={item.key}
               onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
               className={cn(
-                'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors text-right cursor-pointer',
+                'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-body transition-colors text-right cursor-pointer',
                 section === item.key
-                  ? 'bg-olive-pale text-olive border border-olive-mid'
-                  : 'text-ink hover:bg-fog'
+                  ? 'bg-olive-pale text-olive font-semibold'
+                  : 'text-slate hover:bg-fog hover:text-ink'
               )}
             >
               <span className="text-sm">{item.icon}</span>
               <span>{item.label}</span>
+              {section === item.key && (
+                <span className="mr-auto w-1.5 h-1.5 rounded-full bg-olive" />
+              )}
             </button>
           ))}
         </div>
       </div>
 
+      <div className="mx-4 border-t border-border/60" />
+
       {/* Area filter */}
-      <div className="px-4 pb-3">
+      <div className="px-4 py-3">
         <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">المنطقة</div>
         <button
           onClick={() => { setPlacesArea(null); setPage(0); }}
@@ -341,8 +349,9 @@ export default function PlacesPage() {
       </div>
 
       {/* Chips / categories */}
+      <div className="mx-4 border-t border-border/60" />
       {section === 'food' && (
-        <div className="px-4 pb-3 border-t border-border pt-3">
+        <div className="px-4 pb-3 pt-3">
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
           <div className="flex flex-wrap gap-1.5">
             {chips.map((label, i) => (
@@ -363,7 +372,7 @@ export default function PlacesPage() {
       )}
 
       {section === 'workspace' && (
-        <div className="px-4 pb-3 border-t border-border pt-3">
+        <div className="px-4 pb-3 pt-3">
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
           <div className="flex flex-wrap gap-1.5">
             {chips.map((label, i) => (
@@ -384,7 +393,7 @@ export default function PlacesPage() {
       )}
 
       {section === 'store' && (
-        <div className="px-4 pb-3 border-t border-border pt-3">
+        <div className="px-4 pb-3 pt-3">
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
           <div className="flex flex-wrap gap-1.5">
             {chips.map((label, i) => (
@@ -422,7 +431,7 @@ export default function PlacesPage() {
       <>
         <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
           {/* ── Main Content ── */}
-          <div className="flex items-center justify-between px-8 py-4 bg-surface border-b border-border sticky top-0 z-10">
+          <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-3">
               <h1 className="font-display font-black text-lg text-ink">
                 {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
@@ -776,7 +785,7 @@ export default function PlacesPage() {
                           <span className="font-display font-bold text-[12px] text-mist">الكل</span>
                           <span className="text-[10px] text-mist">{chip === 0 && page === 0 ? (places.length > 3 ? places.length - 3 : 0) : places.length} مكان</span>
                         </div>
-                        <div className="bg-surface border-b border-border divide-y divide-border/50">
+                        <div className="grid grid-cols-2 gap-3 px-1">
                           {(chip === 0 && page === 0 ? places.slice(3) : places).map((place, i) => (
                             <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
                           ))}
@@ -810,7 +819,7 @@ export default function PlacesPage() {
             )}
         </div>
         {selectedPlace && (
-          <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
+          <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} isDesktop />
         )}
       </>
     );
@@ -2028,7 +2037,7 @@ function WorkspaceSheetContent({ place }: { place: Place }) {
   );
 }
 
-function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
+function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () => void; isDesktop?: boolean }) {
   const isBoth = place.type === 'both';
   const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
@@ -2111,66 +2120,116 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
     fetchMenu();
   }, [place.id]);
 
+  const pos = isDesktop ? 'absolute' : 'fixed';
+
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      {/* Backdrop — mobile only */}
+      {!isDesktop && <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />}
 
       {/* Sheet */}
-      <div className="fixed inset-0 bg-fog z-50 flex flex-col animate-slideIn">
+      <div className={`${pos} inset-0 bg-fog z-50 flex flex-col ${isDesktop ? '' : 'animate-slideIn'}`}>
         {/* Header */}
-        <div className="bg-olive p-4 pb-5 flex-shrink-0 relative overflow-hidden">
-          <div className="absolute w-[140px] h-[140px] rounded-full bg-white/[0.06] -bottom-[50px] -left-5 pointer-events-none" />
-
-          {/* Back row */}
-          <div className="flex items-center gap-2 mb-3 relative z-[1]">
-            <button
-              onClick={onClose}
-              className="w-[30px] h-[30px] bg-white/[0.12] rounded-lg flex items-center justify-center text-white font-bold text-[15px]"
-            >
-              {'›'}
-            </button>
-            <span className="font-display font-bold text-[13px] text-white">
-              {place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر'}
-            </span>
-          </div>
-
-          {/* Place info */}
-          <div className="flex items-center gap-3 relative z-[1]">
-            <div className={`w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-2xl' : ''}`}>
-              {place.avatar_url ? (
-                <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-              ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
+        {isDesktop ? (
+          <div className="px-5 pt-5 pb-3 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={onClose}
+                className="w-7 h-7 rounded-lg bg-fog border border-border flex items-center justify-center text-mist hover:text-ink transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-12"/><path d="M15 18l-6-12" transform="rotate(90 12 12)"/>
+                </svg>
+              </button>
+              <h2 className="font-display font-bold text-base text-ink">
+                {place.name}
+              </h2>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-display font-black text-[17px] text-white mb-1">{place.name}</div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] text-white/55">📍 {place.area?.name_ar}</span>
-                {place.is_open && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-[#7DEAAA]">
-                    <span className="w-[5px] h-[5px] rounded-full bg-[#7DEAAA] animate-pulse" />
-                    مفتوح الآن
-                  </span>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl bg-olive-pale flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-lg' : ''}`}>
+                {place.avatar_url ? (
+                  <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-[12px] text-mist">
+                  <span>📍 {place.area?.name_ar}</span>
+                  {place.is_open && (
+                    <span className="flex items-center gap-1 font-bold text-olive">
+                      <span className="w-[5px] h-[5px] rounded-full bg-olive animate-pulse" />
+                      مفتوح
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                {place.phone && (
+                  <a href={`tel:${place.phone}`} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-sm">
+                    📞
+                  </a>
+                )}
+                {place.whatsapp && (
+                  <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-sm">
+                    💬
+                  </a>
                 )}
               </div>
-              {place.address && (
-                <div className="text-[10px] text-white/40 mt-0.5 truncate">{place.address}</div>
-              )}
-            </div>
-            <div className="flex flex-col gap-2 flex-shrink-0">
-              {place.phone && (
-                <a href={`tel:${place.phone}`} className="w-9 h-9 rounded-full bg-white/10 border border-white/[0.18] flex items-center justify-center text-[16px]">
-                  📞
-                </a>
-              )}
-              {place.whatsapp && (
-                <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
-                  💬
-                </a>
-              )}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-olive p-4 pb-5 flex-shrink-0 relative overflow-hidden">
+            <div className="absolute w-[140px] h-[140px] rounded-full bg-white/[0.06] -bottom-[50px] -left-5 pointer-events-none" />
+
+            {/* Back row */}
+            <div className="flex items-center gap-2 mb-3 relative z-[1]">
+              <button
+                onClick={onClose}
+                className="w-[30px] h-[30px] bg-white/[0.12] rounded-lg flex items-center justify-center text-white font-bold text-[15px]"
+              >
+                {'›'}
+              </button>
+              <span className="font-display font-bold text-[13px] text-white">
+                {place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر'}
+              </span>
+            </div>
+
+            {/* Place info */}
+            <div className="flex items-center gap-3 relative z-[1]">
+              <div className={`w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-2xl' : ''}`}>
+                {place.avatar_url ? (
+                  <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-black text-[17px] text-white mb-1">{place.name}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-white/55">📍 {place.area?.name_ar}</span>
+                  {place.is_open && (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#7DEAAA]">
+                      <span className="w-[5px] h-[5px] rounded-full bg-[#7DEAAA] animate-pulse" />
+                      مفتوح الآن
+                    </span>
+                  )}
+                </div>
+                {place.address && (
+                  <div className="text-[10px] text-white/40 mt-0.5 truncate">{place.address}</div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                {place.phone && (
+                  <a href={`tel:${place.phone}`} className="w-9 h-9 rounded-full bg-white/10 border border-white/[0.18] flex items-center justify-center text-[16px]">
+                    📞
+                  </a>
+                )}
+                {place.whatsapp && (
+                  <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
+                    💬
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-24">
@@ -2178,14 +2237,30 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
             <WorkspaceSheetContent place={place} />
           ) : menuLoading ? (
             <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(2)].map((_, i) => (
                 <div key={i}>
                   <div className="h-4 w-24 rounded-md bg-border/60 animate-pulse mb-3" />
-                  <div className="space-y-1.5">
-                    {[...Array(3)].map((_, j) => (
-                      <div key={j} className="flex items-center justify-between p-3 bg-surface rounded-[11px] border border-border">
-                        <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                        <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
+                  <div className={isDesktop ? "grid grid-cols-2 gap-2.5" : "space-y-1.5"}>
+                    {[...Array(isDesktop ? 4 : 3)].map((_, j) => (
+                      <div key={j} className="bg-surface rounded-2xl border border-border overflow-hidden">
+                        {isDesktop ? (
+                          <>
+                            <div className="p-2 pb-0"><div className="w-full aspect-[4/3] rounded-xl bg-border/60 animate-pulse" /></div>
+                            <div className="px-3 py-2.5 space-y-2">
+                              <div className="h-3.5 w-3/4 rounded-md bg-border/60 animate-pulse" />
+                              <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-3 p-3">
+                            <div className="w-[46px] h-[46px] rounded-[10px] bg-border/60 animate-pulse flex-shrink-0" />
+                            <div className="flex-1 space-y-2">
+                              <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
+                              <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                            </div>
+                            <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -2202,79 +2277,82 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
               )}
             {menuSections.map((sec) => (
               <div key={sec.name} className="mb-5">
-                <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-2">
+                <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-3">
                   {sec.name}
                 </div>
+                <div className={isDesktop ? "grid grid-cols-2 gap-2.5" : "space-y-2.5"}>
                 {sec.items.map((item, idx) => {
                   const photoUrl = resolvePublicImageUrl(item.photo_url);
                   return (
                   <div
                     key={item.id || `${item.name}-${idx}`}
-                    className={`bg-surface rounded-2xl mb-2.5 shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md ${!item.available ? 'opacity-45' : ''}`}
+                    className={`bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md ${!item.available ? 'opacity-45' : ''}`}
                   >
-                    <div className="flex items-stretch gap-0">
-                      {/* Square image */}
-                      {photoUrl ? (
-                        <div className="w-[110px] h-[110px] flex-shrink-0 p-2 flex flex-col">
-                          <div className="relative flex-1 rounded-xl overflow-hidden">
-                            <img
-                              src={photoUrl}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })}
-                              className="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow"
-                            >
-                              عرض الصورة
-                            </button>
+                    {isDesktop ? (
+                      <>
+                        {/* Desktop: vertical card */}
+                        {photoUrl ? (
+                          <div className="p-2 pb-0">
+                            <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden">
+                              <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                              <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">عرض الصورة</button>
+                            </div>
                           </div>
-                        </div>
-                      ) : item.icon ? (
-                        <div className="w-[110px] h-[110px] flex-shrink-0 p-2">
-                          <div className="w-full h-full bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">
-                            {item.icon}
+                        ) : item.icon ? (
+                          <div className="p-2 pb-0">
+                            <div className="w-full aspect-[4/3] bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">{item.icon}</div>
                           </div>
-                        </div>
-                      ) : null}
-
-                      {/* Content */}
-                      <div className={`flex-1 px-3 py-3 min-w-0 flex flex-col ${item.description ? 'justify-between' : 'justify-center gap-2'}`}>
-                        {/* Top: name + unavailable badge */}
-                        <div>
+                        ) : null}
+                        <div className="px-3 py-2.5 min-w-0 flex flex-col gap-1.5">
                           <div className="flex items-start justify-between gap-2">
                             <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
-                            {!item.available && (
-                              <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>
-                            )}
+                            {!item.available && <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>}
                           </div>
-                          {item.description && (
-                            <p className="text-[11px] text-mist leading-snug line-clamp-2 mt-1">{item.description}</p>
-                          )}
+                          {item.description && <p className="text-[11px] text-mist leading-snug line-clamp-2">{item.description}</p>}
+                          <div className="flex items-center justify-between mt-auto pt-1">
+                            {item.available && Number(item.price) > 0 ? (
+                              <span className="font-display font-black text-[16px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
+                            ) : item.available ? <span className="text-[11px] text-mist">—</span> : <span />}
+                            {item.id && <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">🚩 إبلاغ</button>}
+                          </div>
                         </div>
-
-                        {/* Bottom: price + flag */}
-                        <div className="flex items-center justify-between mt-2">
-                          {item.available && Number(item.price) > 0 ? (
-                            <span className="font-display font-black text-[17px] text-olive">
-                              {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
-                            </span>
-                          ) : item.available ? (
-                            <span className="text-[11px] text-mist">—</span>
-                          ) : <span />}
-                          {item.id && (
-                            <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">
-                              🚩 إبلاغ
-                            </button>
-                          )}
+                      </>
+                    ) : (
+                      /* Mobile: original horizontal layout */
+                      <div className="flex items-stretch gap-0">
+                        {photoUrl ? (
+                          <div className="w-[110px] h-[110px] flex-shrink-0 p-2 flex flex-col">
+                            <div className="relative flex-1 rounded-xl overflow-hidden">
+                              <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                              <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">عرض الصورة</button>
+                            </div>
+                          </div>
+                        ) : item.icon ? (
+                          <div className="w-[110px] h-[110px] flex-shrink-0 p-2">
+                            <div className="w-full h-full bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">{item.icon}</div>
+                          </div>
+                        ) : null}
+                        <div className={`flex-1 px-3 py-3 min-w-0 flex flex-col ${item.description ? 'justify-between' : 'justify-center gap-2'}`}>
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
+                              {!item.available && <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>}
+                            </div>
+                            {item.description && <p className="text-[11px] text-mist leading-snug line-clamp-2 mt-1">{item.description}</p>}
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            {item.available && Number(item.price) > 0 ? (
+                              <span className="font-display font-black text-[17px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
+                            ) : item.available ? <span className="text-[11px] text-mist">—</span> : <span />}
+                            {item.id && <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">🚩 إبلاغ</button>}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   );
                 })}
+                </div>
               </div>
             ))}
             </>
@@ -2289,8 +2367,8 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
         {/* ══ FLAG SHEET ══ */}
         {flagItem && (
           <>
-            <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => !flagSubmitting && setFlagItem(null)} />
-            <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)]" dir="rtl">
+            <div className={`${pos} inset-0 bg-black/40 z-[60]`} onClick={() => !flagSubmitting && setFlagItem(null)} />
+            <div className={`${pos} bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)]`} dir="rtl">
               {/* Header */}
               <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
                 <div>
@@ -2434,10 +2512,10 @@ function PlaceSheet({ place, onClose }: { place: Place; onClose: () => void }) {
         {imagePreviewUrl && (
           <>
             <div
-              className="fixed inset-0 bg-black/60 z-[80]"
+              className={`${pos} inset-0 bg-black/60 z-[80]`}
               onClick={() => setImagePreviewUrl(null)}
             />
-            <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" dir="rtl">
+            <div className={`${pos} inset-0 z-[90] flex items-center justify-center p-4`} dir="rtl">
               <div className="relative w-full max-w-md">
                 <button
                   type="button"
