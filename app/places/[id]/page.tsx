@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api/fetch';
@@ -8,6 +8,7 @@ import { uploadReceiptPhoto } from '@/lib/api/upload';
 import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
+import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 
 /* ─── Constants ─── */
 
@@ -52,6 +53,75 @@ interface MenuItem {
   photo_url?: string | null;
   updated_at?: string;
 }
+
+const ITEM_EMOJI_MAP: [RegExp, string, string][] = [
+  // [pattern, emoji, bg color]
+  // Drinks
+  [/قهوة|كابتشينو|لاتيه|اسبرسو|إسبريسو|موكا|أمريكان|تركي|فلتر/i, '☕', '#FFF8E8'],
+  [/شاي|شاى/i, '🍵', '#E8F5EE'],
+  [/عصير|جوس|سموذي|كوكتيل|ليمون/i, '🥤', '#FFF0F5'],
+  [/ماء|مياه|مويه/i, '💧', '#EFF6FF'],
+  [/حليب|لبن/i, '🥛', '#FFF8E8'],
+  [/بيبسي|كولا|غازي|صودا|سفن|سبرايت|ميرندا|فانتا/i, '🥤', '#FEF0EB'],
+  [/موهيتو|نعناع/i, '🍹', '#E8F5EE'],
+  // Sweets & desserts
+  [/كيك|كعك|تورت/i, '🎂', '#FFF0F5'],
+  [/تشيز/i, '🍰', '#FFF0F5'],
+  [/بسكوت|كوكيز|بسكويت/i, '🍪', '#FFF8E8'],
+  [/آيس كريم|بوظة|جيلاتو|ايس كريم/i, '🍦', '#F0FDF4'],
+  [/شوكولا|نوتيلا|كاكاو/i, '🍫', '#FFF8E8'],
+  [/كنافة|كنافه/i, '🍮', '#FFF8E8'],
+  [/حلو|بقلاو|معمول|بسبوس|هريسة|قطايف/i, '🍬', '#FFF8E8'],
+  [/وافل/i, '🧇', '#FFF8E8'],
+  [/كريب|بان كيك|بانكيك/i, '🥞', '#FFF8E8'],
+  [/دونات/i, '🍩', '#FFF0F5'],
+  // Main dishes
+  [/شاورما|شاورمة/i, '🥙', '#E8F5EE'],
+  [/برجر|بيرغر|همبرجر|باركر/i, '🍔', '#FFF8E8'],
+  [/بيتزا/i, '🍕', '#FEF0EB'],
+  [/فلافل|طعمية/i, '🧆', '#E8F5EE'],
+  [/حمص|مسبحة/i, '🧆', '#FFF8E8'],
+  [/فول/i, '🫘', '#FFF8E8'],
+  [/مشوي|شوي|مشاوي|كباب|كفت|شيش/i, '🥩', '#FEF0EB'],
+  [/ستيك|لحم/i, '🥩', '#FEF0EB'],
+  [/دجاج|فراخ|تشكن|دجاجة/i, '🍗', '#FEF0EB'],
+  [/سمك|سمكة|جمبري|كاليمار|بحري/i, '🐟', '#EFF6FF'],
+  [/مقلوبة|منسف|كبسة|مندي|مضغوط|بريان/i, '🍛', '#FFF8E8'],
+  [/معكرونة|باستا|مكرونة|سباغيت|فيتوتشيني|بيني/i, '🍝', '#FEF0EB'],
+  [/أرز|رز|ارز/i, '🍚', '#F0FDF4'],
+  // Sandwiches & wraps
+  [/ساندويش|سندويش|توست|خبز|صاج|لفة|راب/i, '🥪', '#FFF8E8'],
+  [/هوت دوج|هوت دوغ|نقانق/i, '🌭', '#FEF0EB'],
+  [/تاكو/i, '🌮', '#FFF8E8'],
+  // Breakfast
+  [/فطور|إفطار|فطار/i, '🍳', '#FFF8E8'],
+  [/بيض|عجة|شكشوك/i, '🥚', '#FFF8E8'],
+  // Sides & salads
+  [/سلطة|سلطات|فتوش|تبولة/i, '🥗', '#F0FDF4'],
+  [/بطاطا|بطاطس|فرايز|فرنسي/i, '🍟', '#FFF8E8'],
+  [/ناجتس|نجتس/i, '🍗', '#FFF8E8'],
+  // Soups
+  [/شوربة|شوربه|حساء/i, '🍲', '#FFF8E8'],
+  // Bakery
+  [/خبز|صمون|عيش|كماج|طابون/i, '🫓', '#FFF8E8'],
+  [/مناقيش|منقوش|فطيرة|فطير|بيتزا|زعتر/i, '🫓', '#E8F5EE'],
+  [/معجنات|سمبوسة|سمبوسك|رقاق|بورك/i, '🥟', '#FFF8E8'],
+  // Fruits
+  [/فواكه|فاكهة|فراولة|موز|تفاح|برتقال|مانجو/i, '🍓', '#FFF0F5'],
+  // Store items
+  [/زيت/i, '🫒', '#E8F5EE'],
+  [/سكر/i, '🧂', '#F0FDF4'],
+  [/طحين|دقيق/i, '🌾', '#FFF8E8'],
+];
+
+function getItemEmoji(name: string): { emoji: string; bg: string } {
+  const lower = name.toLowerCase();
+  for (const [pattern, emoji, bg] of ITEM_EMOJI_MAP) {
+    if (pattern.test(lower)) return { emoji, bg };
+  }
+  return { emoji: '🏷️', bg: '#F2FAF5' };
+}
+
 
 interface MenuSection {
   name: string;
@@ -251,7 +321,7 @@ function WorkspaceContent({ place }: { place: Place }) {
 
 /* ─── Menu Content ─── */
 
-function MenuContent({ place }: { place: Place }) {
+function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; cart?: Map<string, CartItem>; onAddToCart?: (item: MenuItem) => void; onUpdateQty?: (id: string, delta: number) => void }) {
   const [menuSections, setMenuSections] = useState<MenuSection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -368,70 +438,88 @@ function MenuContent({ place }: { place: Place }) {
       )}
       {menuSections.map((sec) => (
         <div key={sec.name} className="mb-5">
-          <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-2">
-            {sec.name}
+          {/* Section divider */}
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="flex-1 h-px bg-border" />
+            <div className="flex items-center gap-1.5 font-display font-bold text-[12px] text-mist whitespace-nowrap">
+              <span className="w-[22px] h-[22px] rounded-[6px] bg-olive-pale flex items-center justify-center text-[11px]">🍽️</span>
+              {sec.name}
+            </div>
+            <div className="flex-1 h-px bg-border" />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-          {sec.items.map((item, idx) => (
+          <div className="flex flex-col gap-2">
+          {sec.items.map((item, idx) => {
+            const inCart = cart?.get(item.id!);
+            const canOrder = onAddToCart && item.available && Number(item.price) > 0 && item.id;
+            return (
             <div
               key={item.id || `${item.name}-${idx}`}
-              className={`p-3 bg-surface rounded-[11px] border border-border hover:border-olive/25 ${!item.available ? 'opacity-40' : ''}`}
+              className={`flex items-center gap-3 p-3 bg-surface rounded-[14px] border border-border hover:border-olive/20 hover:shadow-[0_3px_10px_rgba(0,0,0,0.08)] transition-all ${!item.available ? 'opacity-40' : ''}`}
             >
-              <div className="flex items-start justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  {resolvePublicImageUrl(item.photo_url) ? (
-                    <div className="relative w-[48px] h-[48px] rounded-[10px] flex-shrink-0 border border-border overflow-hidden bg-olive-pale">
-                      <div className="absolute inset-0 flex items-center justify-center text-[18px]">🏷️</div>
-                      <img
-                        src={resolvePublicImageUrl(item.photo_url)!}
-                        alt={item.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  ) : item.icon ? (
-                    <span className="w-[34px] h-[34px] rounded-[10px] bg-olive-pale flex items-center justify-center text-[17px] flex-shrink-0">
-                      {item.icon}
-                    </span>
-                  ) : null}
-                  <div className="text-[13px] font-semibold text-ink">{item.name}</div>
+              {/* Emoji / Photo */}
+              {resolvePublicImageUrl(item.photo_url) ? (
+                <div className="relative w-[46px] h-[46px] rounded-[12px] flex-shrink-0 overflow-hidden bg-olive-pale">
+                  <img src={resolvePublicImageUrl(item.photo_url)!} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
                 </div>
-                <div className="flex-shrink-0">
-                  {item.available ? (
-                    Number(item.price) > 0 ? (
-                      <span className="font-display font-black text-[15px] text-olive">
-                        {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-mist font-semibold">—</span>
-                    )
-                  ) : (
-                    <span className="text-[10px] text-orange-500 font-semibold">غير متوفر</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/50">
-                <span className="text-[9px] text-mist flex items-center gap-1">
-                  {item.updated_at ? (
-                    <>
-                      <span className={`w-[5px] h-[5px] rounded-full ${Date.now() - new Date(item.updated_at).getTime() < 86400000 * 7 ? 'bg-olive' : 'bg-amber-400'}`} />
-                      تحديث {timeAgo(item.updated_at)}
-                    </>
-                  ) : (
-                    <span className="text-mist/50">بدون تاريخ</span>
-                  )}
-                </span>
+              ) : (() => {
+                const ie = getItemEmoji(item.name);
+                return (
+                  <div className="w-[46px] h-[46px] rounded-[12px] flex items-center justify-center text-[22px] flex-shrink-0" style={{ background: ie.bg }}>
+                    {item.icon || ie.emoji}
+                  </div>
+                );
+              })()}
+
+              {/* Name + description */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-bold text-ink">{item.name}</div>
                 {item.id && (
+                  <button onClick={() => openFlag(item)} className="text-[9px] text-mist/60 hover:text-mist mt-1">🚩 إبلاغ</button>
+                )}
+              </div>
+
+              {/* Price + add/qty */}
+              <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                {item.available ? (
+                  Number(item.price) > 0 ? (
+                    <span className="font-display font-black text-[15px] text-olive">
+                      {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-mist font-semibold">—</span>
+                  )
+                ) : (
+                  <span className="text-[10px] text-orange-500 font-semibold">غير متوفر</span>
+                )}
+                {canOrder && !inCart && (
                   <button
-                    onClick={() => openFlag(item)}
-                    className="text-[10px] font-semibold text-mist hover:text-sand transition-colors px-1.5 py-0.5 rounded"
+                    onClick={() => onAddToCart(item)}
+                    className="w-[30px] h-[30px] rounded-full bg-olive flex items-center justify-center shadow-[0_2px_8px_rgba(74,124,89,0.25)] hover:bg-olive-deep transition-all"
                   >
-                    🚩 إبلاغ
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
+                )}
+                {canOrder && inCart && onUpdateQty && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => onUpdateQty(item.id!, -1)}
+                      className="w-[26px] h-[26px] rounded-full border-[1.5px] border-red-300 bg-white flex items-center justify-center text-red-500 text-[15px] font-bold"
+                    >
+                      −
+                    </button>
+                    <span className="font-display font-extrabold text-[14px] text-ink min-w-[16px] text-center">{inCart.quantity}</span>
+                    <button
+                      onClick={() => onUpdateQty(item.id!, 1)}
+                      className="w-[26px] h-[26px] rounded-full border-[1.5px] border-olive bg-olive flex items-center justify-center text-white text-[14px] font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
           </div>
         </div>
       ))}
@@ -514,6 +602,38 @@ export default function PlaceDetailPage() {
   const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const [showCart, setShowCart] = useState(false);
+
+  const addToCart = useCallback((item: MenuItem) => {
+    if (!item.id) return;
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(item.id!);
+      if (existing) {
+        next.set(item.id!, { ...existing, quantity: existing.quantity + 1 });
+      } else {
+        next.set(item.id!, { menu_item_id: item.id!, name: item.name, price: Number(item.price), quantity: 1 });
+      }
+      return next;
+    });
+  }, []);
+
+  const updateCartQty = useCallback((id: string, delta: number) => {
+    setCart((prev) => {
+      const next = new Map(prev);
+      const item = next.get(id);
+      if (!item) return prev;
+      const newQty = item.quantity + delta;
+      if (newQty <= 0) { next.delete(id); } else { next.set(id, { ...item, quantity: newQty }); }
+      return next;
+    });
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCart(new Map());
+    setShowCart(false);
+  }, []);
 
   useEffect(() => {
     const fetchPlace = async () => {
@@ -611,6 +731,12 @@ export default function PlaceDetailPage() {
   }
 
   const sectionTitle = place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر';
+  const ordersEnabled = place.orders_enabled === true;
+  // DEBUG — remove after confirming
+  console.log('[DEBUG] orders_enabled:', place.orders_enabled, 'ordersEnabled:', ordersEnabled, 'section:', place.section);
+  const cartItems = Array.from(cart.values());
+  const cartCount = cartItems.reduce((s, i) => s + i.quantity, 0);
+  const cartTotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
   // ── Desktop layout ──
   if (isDesktop) {
@@ -658,9 +784,35 @@ export default function PlaceDetailPage() {
             {place.section === 'workspace' ? (
               <WorkspaceContent place={place} />
             ) : (
-              <MenuContent place={place} />
+              <MenuContent place={place} cart={ordersEnabled ? cart : undefined} onAddToCart={ordersEnabled ? addToCart : undefined} onUpdateQty={ordersEnabled ? updateCartQty : undefined} />
             )}
           </div>
+
+          {/* Desktop cart */}
+          {ordersEnabled && (
+            <>
+              <CartBar itemCount={cartCount} total={cartTotal} onClick={() => setShowCart(true)} />
+              {showCart && (
+                <>
+                  <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowCart(false)} />
+                  <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-w-lg mx-auto" dir="rtl">
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+                      <h3 className="font-display font-bold text-[14px] text-ink">🛒 سلة الطلب</h3>
+                      <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                    </div>
+                    <OrderSheet
+                      placeId={id}
+                      placeWhatsapp={place.whatsapp}
+                      cart={cart}
+                      onUpdateQty={updateCartQty}
+                      onClear={clearCart}
+                      onOrderPlaced={() => {}}
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     );
@@ -726,9 +878,34 @@ export default function PlaceDetailPage() {
         {place.section === 'workspace' ? (
           <WorkspaceContent place={place} />
         ) : (
-          <MenuContent place={place} />
+          <MenuContent place={place} cart={ordersEnabled ? cart : undefined} onAddToCart={ordersEnabled ? addToCart : undefined} onUpdateQty={ordersEnabled ? updateCartQty : undefined} />
         )}
       </div>
+
+      {/* Cart bar + order sheet */}
+      {ordersEnabled && (
+        <>
+          <CartBar itemCount={cartCount} total={cartTotal} onClick={() => setShowCart(true)} />
+          {showCart && (
+            <>
+              <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowCart(false)} />
+              <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)]" dir="rtl">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+                  <h3 className="font-display font-bold text-[14px] text-ink">🛒 سلة الطلب</h3>
+                  <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                </div>
+                <OrderSheet
+                  placeId={id}
+                  cart={cart}
+                  onUpdateQty={updateCartQty}
+                  onClear={clearCart}
+                  onOrderPlaced={() => {}}
+                />
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

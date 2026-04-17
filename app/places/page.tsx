@@ -15,6 +15,8 @@ import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
+import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
+import { getItemIcon, getItemBgColor } from '@/components/places/FoodIcons';
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -1889,6 +1891,31 @@ function resolvePublicImageUrl(url?: string | null): string | null {
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
+function getItemEmoji(name: string): string {
+  const m: [RegExp, string][] = [
+    [/قهوة|كابتشينو|لاتيه|اسبرسو|موكا|أمريكان|تركي|قهوه/, '☕'],
+    [/شاي|شاى/, '🍵'], [/عصير|سموذي|كوكتيل|ليمون/, '🥤'],
+    [/كيك|كعك|تورت|بان كيك/, '🥞'], [/تشيز كيك|تشيز/, '🍰'], [/شوكولا|نوتيلا/, '🍫'],
+    [/بوظة|آيس كريم|ايس كريم|جيلاتو/, '🍦'], [/كنافة|كنافه|قشطوطة|قشطة|نابلسية/, '🍮'],
+    [/وافل/, '🧇'], [/كريب/, '🥞'], [/دونات/, '🍩'],
+    [/شاورما|شاورمة/, '🥙'], [/برجر|بيرغر|همبرجر/, '🍔'],
+    [/بيتزا/, '🍕'], [/فلافل|طعمية/, '🧆'], [/حمص|مسبحة/, '🧆'],
+    [/مشوي|مشاوي|كباب|كفت|شيش/, '🥩'], [/ستيك|لحم/, '🥩'],
+    [/دجاج|فراخ|تشكن/, '🍗'], [/سمك|جمبري/, '🐟'],
+    [/فوتشيني|معكرونة|باستا|مكرونة|سباغيت|بيني|فيتوتشيني/, '🍝'], [/أرز|رز/, '🍚'],
+    [/ساندويش|سندويش|توست|خبز|راب/, '🥪'], [/سلطة|فتوش|تبولة/, '🥗'],
+    [/بطاطا|بطاطس|فرايز/, '🍟'], [/شوربة|حساء/, '🍲'],
+    [/فطور|إفطار|بيض|شكشوك/, '🍳'], [/مناقيش|زعتر|فطيرة/, '🫓'],
+    [/بيبسي|كولا|غازي|سفن|سبرايت|موهيتو/, '🥤'], [/فول/, '🫘'],
+    [/حلو|بقلاو|معمول|بسبوس|هريسة/, '🍬'], [/بسكوت|كوكيز/, '🍪'],
+    [/سان سبيستيان|باسك|تشيز بيرن/, '🍰'], [/ميلك شيك|ميلكشيك|شيك/, '🥛'],
+    [/موز/, '🍌'], [/فراولة|فروالة|توت/, '🍓'], [/مانجو|مانجا/, '🥭'],
+  ];
+  const l = name;
+  for (const [p, e] of m) { if (p.test(l)) return e; }
+  return '🍽️';
+}
+
 const FLAG_REASONS = [
   { value: 'wrong_price', label: 'السعر غلط' },
   { value: 'not_available', label: 'غير متوفر' },
@@ -2045,6 +2072,44 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
   const [imagePreview, setImagePreview] = useState<{ url: string; name?: string; description?: string | null } | null>(null);
   const imagePreviewUrl = imagePreview?.url ?? null;
   const setImagePreviewUrl = (url: string | null) => setImagePreview(url ? { url } : null);
+
+  // Cart state
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const [showOrderSheet, setShowOrderSheet] = useState(false);
+  const ordersEnabled = place.section === 'food' && place.orders_enabled;
+
+  function addToCart(item: MenuItem) {
+    if (!item.id || !item.available || Number(item.price) <= 0) return;
+    setCart(prev => {
+      const next = new Map(prev);
+      const existing = next.get(item.id!);
+      if (existing) {
+        next.set(item.id!, { ...existing, quantity: existing.quantity + 1 });
+      } else {
+        next.set(item.id!, { menu_item_id: item.id!, name: item.name, price: Number(item.price), quantity: 1 });
+      }
+      return next;
+    });
+  }
+
+  function updateCartQty(id: string, delta: number) {
+    setCart(prev => {
+      const next = new Map(prev);
+      const existing = next.get(id);
+      if (!existing) return prev;
+      const newQty = existing.quantity + delta;
+      if (newQty <= 0) { next.delete(id); } else { next.set(id, { ...existing, quantity: newQty }); }
+      return next;
+    });
+  }
+
+  function clearCart() {
+    setCart(new Map());
+    setShowOrderSheet(false);
+  }
+
+  const cartItemCount = Array.from(cart.values()).reduce((s, i) => s + i.quantity, 0);
+  const cartTotal = Array.from(cart.values()).reduce((s, i) => s + i.price * i.quantity, 0);
 
   // Flag state
   const [flagItem, setFlagItem] = useState<MenuItem | null>(null);
@@ -2277,82 +2342,66 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
               )}
             {menuSections.map((sec) => (
               <div key={sec.name} className="mb-5">
-                <div className="font-display font-extrabold text-[13px] text-ink pb-[7px] border-b-2 border-olive-pale mb-3">
-                  {sec.name}
+                <div className="flex items-center gap-[7px] py-3">
+                  <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                  <span className="font-display font-extrabold text-[13px] text-ink">{sec.name}</span>
                 </div>
-                <div className={isDesktop ? "grid grid-cols-2 gap-2.5" : "space-y-2.5"}>
-                {sec.items.map((item, idx) => {
-                  const photoUrl = resolvePublicImageUrl(item.photo_url);
-                  return (
-                  <div
-                    key={item.id || `${item.name}-${idx}`}
-                    className={`bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md ${!item.available ? 'opacity-45' : ''}`}
-                  >
-                    {isDesktop ? (
-                      <>
-                        {/* Desktop: vertical card */}
-                        {photoUrl ? (
-                          <div className="p-2 pb-0">
-                            <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden">
-                              <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                              <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">عرض الصورة</button>
-                            </div>
-                          </div>
-                        ) : item.icon ? (
-                          <div className="p-2 pb-0">
-                            <div className="w-full aspect-[4/3] bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">{item.icon}</div>
-                          </div>
-                        ) : null}
-                        <div className="px-3 py-2.5 min-w-0 flex flex-col gap-1.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
-                            {!item.available && <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>}
-                          </div>
-                          {item.description && <p className="text-[11px] text-mist leading-snug line-clamp-2">{item.description}</p>}
-                          <div className="flex items-center justify-between mt-auto pt-1">
-                            {item.available && Number(item.price) > 0 ? (
-                              <span className="font-display font-black text-[16px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
-                            ) : item.available ? <span className="text-[11px] text-mist">—</span> : <span />}
-                            {item.id && <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">🚩 إبلاغ</button>}
-                          </div>
+                {/* Style C — minimal list (both mobile & desktop) */}
+                {(
+                  <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
+                  {sec.items.map((item, idx) => {
+                    const photoUrl = resolvePublicImageUrl(item.photo_url);
+                    const cartItem = item.id ? cart.get(item.id) : undefined;
+                    const qtyInCart = cartItem?.quantity || 0;
+                    return (
+                    <div
+                      key={item.id || `${item.name}-${idx}`}
+                      className={`flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#F2FAF5] ${idx < sec.items.length - 1 ? 'border-b border-border' : ''} ${!item.available ? 'opacity-45' : ''}`}
+                    >
+                      {/* Icon / photo */}
+                      {photoUrl ? (
+                        <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="w-10 h-10 rounded-[10px] flex-shrink-0 overflow-hidden">
+                          <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+                        </button>
+                      ) : (
+                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 text-olive/60" style={{ background: getItemBgColor(item.name) }}>
+                          {getItemIcon(item.name)('w-5 h-5')}
                         </div>
-                      </>
-                    ) : (
-                      /* Mobile: original horizontal layout */
-                      <div className="flex items-stretch gap-0">
-                        {photoUrl ? (
-                          <div className="w-[110px] h-[110px] flex-shrink-0 p-2 flex flex-col">
-                            <div className="relative flex-1 rounded-xl overflow-hidden">
-                              <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                              <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="absolute bottom-1 left-1 bg-black/60 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">عرض الصورة</button>
-                            </div>
-                          </div>
-                        ) : item.icon ? (
-                          <div className="w-[110px] h-[110px] flex-shrink-0 p-2">
-                            <div className="w-full h-full bg-olive-pale rounded-xl flex items-center justify-center text-[32px]">{item.icon}</div>
-                          </div>
-                        ) : null}
-                        <div className={`flex-1 px-3 py-3 min-w-0 flex flex-col ${item.description ? 'justify-between' : 'justify-center gap-2'}`}>
-                          <div>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="font-bold text-[13px] text-ink leading-snug flex-1">{item.name}</div>
-                              {!item.available && <span className="flex-shrink-0 bg-orange-50 text-orange-500 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200">غير متوفر</span>}
-                            </div>
-                            {item.description && <p className="text-[11px] text-mist leading-snug line-clamp-2 mt-1">{item.description}</p>}
-                          </div>
-                          <div className="flex items-center justify-between mt-2">
-                            {item.available && Number(item.price) > 0 ? (
-                              <span className="font-display font-black text-[17px] text-olive">{item.price} <span className="text-[10px] font-normal text-mist">₪</span></span>
-                            ) : item.available ? <span className="text-[11px] text-mist">—</span> : <span />}
-                            {item.id && <button onClick={() => openFlag(item)} className="text-[9px] font-semibold text-mist/50 hover:text-sand transition-colors">🚩 إبلاغ</button>}
-                          </div>
-                        </div>
+                      )}
+                      {/* Name + description */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-[13px] text-ink mb-0.5">{item.name}</div>
+                        {item.description && <div className="text-[11px] text-mist truncate">{item.description}</div>}
                       </div>
-                    )}
+                      {/* Right side: flag, price, add */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {item.id && (
+                          <button onClick={() => openFlag(item)} className="flex items-center gap-0.5 text-[10px] text-[#E05C35]/60 hover:text-[#E05C35] transition-colors">
+                            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                          </button>
+                        )}
+                        {item.available && Number(item.price) > 0 ? (
+                          <span className="font-display font-black text-[15px] text-olive">{item.price} <span className="text-[9px] font-normal text-mist">₪</span></span>
+                        ) : item.available ? <span className="text-[11px] text-mist">—</span> : null}
+                        {ordersEnabled && item.available && item.id && Number(item.price) > 0 ? (
+                          qtyInCart > 0 ? (
+                            <div className="flex items-center gap-[5px]">
+                              <button onClick={() => updateCartQty(item.id!, -1)} className="w-[26px] h-[26px] rounded-full bg-[#FEF0EB] border-[1.5px] border-[#E05C35]/20 text-[#E05C35] flex items-center justify-center text-[16px] leading-none">−</button>
+                              <span className="font-display font-extrabold text-[14px] text-ink min-w-[16px] text-center">{qtyInCart}</span>
+                              <button onClick={() => updateCartQty(item.id!, 1)} className="w-[26px] h-[26px] rounded-full bg-olive-pale border-[1.5px] border-olive/20 text-olive flex items-center justify-center text-[14px] leading-none">+</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => addToCart(item)} className="w-7 h-7 rounded-full bg-olive text-white flex items-center justify-center shadow-[0_2px_8px_rgba(30,77,43,0.3)] active:scale-95 transition-transform">
+                              <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                          )
+                        ) : null}
+                      </div>
+                    </div>
+                    );
+                  })}
                   </div>
-                  );
-                })}
-                </div>
+                )}
               </div>
             ))}
             </>
@@ -2363,6 +2412,34 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
             </div>
           )}
         </div>
+
+        {/* ══ CART BAR ══ */}
+        {ordersEnabled && cartItemCount > 0 && !showOrderSheet && (
+          <CartBar itemCount={cartItemCount} total={cartTotal} onClick={() => setShowOrderSheet(true)} />
+        )}
+
+        {/* ══ ORDER SHEET ══ */}
+        {showOrderSheet && (
+          <>
+            <div className={`${pos} inset-0 bg-black/40 z-[55]`} onClick={() => setShowOrderSheet(false)} />
+            <div className={`${pos} bottom-0 left-0 right-0 z-[60] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)]`} dir="rtl">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+                <h3 className="font-display font-bold text-[14px] text-ink">🛒 سلة الطلب</h3>
+                <button onClick={() => setShowOrderSheet(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+              </div>
+              <div className="overflow-y-auto flex-1">
+                <OrderSheet
+                  placeId={place.id}
+                  placeWhatsapp={place.whatsapp}
+                  cart={cart}
+                  onUpdateQty={updateCartQty}
+                  onClear={clearCart}
+                  onOrderPlaced={() => {}}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ══ FLAG SHEET ══ */}
         {flagItem && (

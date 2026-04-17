@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
+import { DashboardOrders } from "@/components/places/DashboardOrders";
+import { DashboardDiscountCodes } from "@/components/places/DashboardDiscountCodes";
 
 /* ── Types ── */
 type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null };
@@ -15,6 +17,7 @@ type PlaceData = {
   is_open: boolean; status: string; plan: string;
   avatar_url?: string | null;
   plan_expires_at?: string | null; menu: MenuSection[];
+  orders_enabled?: boolean;
 };
 type WorkspaceDetailsForm = {
   price_hour: string; price_half_day: string; price_day: string; price_week: string; price_month: string;
@@ -305,6 +308,18 @@ function OwnerDashboardPage() {
         showToast(data.is_open ? (isWorkspace ? "المساحة مفتوحة الآن ✓" : "المحل مفتوح الآن ✓") : (isWorkspace ? "المساحة مغلقة الآن ✓" : "المحل مغلق الآن ✓"));
       }
     } catch { showToast("حدث خطأ"); } finally { setToggling(false); setActionLoading(null); }
+  }
+
+  async function handleToggleOrders() {
+    if (!token) return;
+    try {
+      const res = await apiFetch(`/api/places/dashboard/toggle-orders?${qs}`, { method: "PATCH" });
+      const data = await res.json();
+      if (data.success && place) {
+        setPlace({ ...place, orders_enabled: data.orders_enabled });
+        showToast(data.orders_enabled ? "استقبال الطلبات مفعّل ✓" : "تم إيقاف استقبال الطلبات");
+      }
+    } catch { showToast("حدث خطأ"); }
   }
 
   async function handleSaveEdit() {
@@ -685,6 +700,24 @@ function OwnerDashboardPage() {
               )}
             </div>
           </>
+        )}
+
+        {/* Orders section — food places only */}
+        {place.section === "food" && token && (
+          <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
+            <DashboardOrders
+              token={token}
+              ordersEnabled={place.orders_enabled ?? false}
+              onToggleOrders={handleToggleOrders}
+            />
+          </div>
+        )}
+
+        {/* Discount codes — food places only */}
+        {place.section === "food" && token && (
+          <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
+            <DashboardDiscountCodes token={token} />
+          </div>
         )}
       </div>
 

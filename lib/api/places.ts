@@ -31,6 +31,7 @@ export interface Place {
   status: string;
   plan?: string;
   avatar_url?: string | null;
+  orders_enabled?: boolean;
   featured_order?: number | null;
   created_at?: string;
   workspace_details?: WorkspaceDetailsData | null;
