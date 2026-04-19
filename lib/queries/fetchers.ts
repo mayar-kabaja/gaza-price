@@ -411,7 +411,6 @@ export interface Listing {
   images: ListingImage[];
   created_at: string;
   is_saved?: boolean;
-  is_demo?: boolean;
   status: 'pending' | 'active' | 'sold' | 'deleted';
 }
 

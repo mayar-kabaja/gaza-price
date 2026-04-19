@@ -10,7 +10,6 @@ import { useSession } from "@/hooks/useSession";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
 import { cn } from "@/lib/utils";
-import { getDemoSavedIds, getSavedDemoListings } from "@/lib/demo-saves";
 import type { Listing } from "@/lib/queries/fetchers";
 
 const CATEGORIES = [
@@ -43,13 +42,9 @@ function useSavedListings() {
   useEffect(() => {
     if (sessionLoading) return;
 
-    // Always include saved demo listings from localStorage
-    const demoListings = getSavedDemoListings();
-    const demoIds = getDemoSavedIds();
-
     if (!contributor?.phone_verified) {
-      setListings(demoListings);
-      setSavedIds(demoIds);
+      setListings([]);
+      setSavedIds(new Set());
       setLoading(false);
       return;
     }
@@ -58,14 +53,12 @@ function useSavedListings() {
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         const apiItems: Listing[] = data?.listings ?? [];
-        // Merge: demo saved listings first, then API listings
-        setListings([...demoListings, ...apiItems]);
-        const allIds = new Set([...demoIds, ...apiItems.map((l) => l.id)]);
-        setSavedIds(allIds);
+        setListings(apiItems);
+        setSavedIds(new Set(apiItems.map((l) => l.id)));
       })
       .catch(() => {
-        setListings(demoListings);
-        setSavedIds(demoIds);
+        setListings([]);
+        setSavedIds(new Set());
       })
       .finally(() => setLoading(false));
   }, [sessionLoading, contributor?.phone_verified]);

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api/fetch";
-import { toggleDemoSaved } from "@/lib/demo-saves";
 import { useSession } from "@/hooks/useSession";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { Listing } from "@/lib/queries/fetchers";
@@ -54,14 +53,6 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
 
   async function doSave() {
     const next = !saved;
-
-    // Demo listings don't exist in backend — toggle in localStorage
-    if (listing.is_demo) {
-      const nowSaved = toggleDemoSaved(listing.id);
-      setSaved(nowSaved);
-      onSaveToggle?.(listing.id, nowSaved);
-      return;
-    }
 
     setSaving(true);
     setSaved(next);
@@ -117,9 +108,6 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
             ) : (
               <span className="text-[36px] select-none">{cat.emoji}</span>
             )}
-            {listing.is_demo && (
-              <div className="absolute top-0 left-0 text-white text-[9px] font-bold font-display px-2 py-[3px] z-[2] demo-badge" style={{ borderRadius: "0 0 10px 0" }}>تجريبي</div>
-            )}
             <button onClick={handleSave} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center text-white transition-colors" aria-label="حفظ">
               <svg viewBox="0 0 24 24" className={cn("w-[14px] h-[14px] transition-colors", saved ? "fill-white stroke-white" : "fill-none stroke-current")} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
@@ -159,9 +147,6 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
               <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="130px" />
             ) : (
               <span className="text-[36px] select-none">{cat.emoji}</span>
-            )}
-            {listing.is_demo && (
-              <div className="absolute top-0 left-0 text-white text-[9px] font-bold font-display px-2 py-[3px] z-[2] demo-badge" style={{ borderRadius: "0 0 10px 0" }}>تجريبي</div>
             )}
           </div>
         </div>

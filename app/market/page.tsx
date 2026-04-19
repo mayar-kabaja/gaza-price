@@ -14,7 +14,6 @@ import { useSession } from "@/hooks/useSession";
 import { useMarketSidebar } from "@/app/market/layout";
 import { cn } from "@/lib/utils";
 import type { Area } from "@/types/app";
-import { getDemoSavedIds, DEMO_LISTINGS } from "@/lib/demo-saves";
 import type { Listing } from "@/lib/queries/fetchers";
 
 const GOV_LABELS: Record<string, string> = {
@@ -72,12 +71,9 @@ export default function MarketPage() {
     queryKey: ["savedIds"],
     queryFn: async () => {
       const r = await apiFetch("/api/listings/saved");
-      const apiIds = r.ok
+      return r.ok
         ? new Set<string>((await r.json())?.listings?.map((l: { id: string }) => l.id) ?? [])
         : new Set<string>();
-      // Merge demo saved IDs from localStorage
-      for (const id of getDemoSavedIds()) apiIds.add(id);
-      return apiIds;
     },
     staleTime: 0,
   });
@@ -128,8 +124,7 @@ export default function MarketPage() {
       area_id: selectedArea?.id || undefined,
     });
 
-  const realListings = (data?.pages.flatMap((p) => p.listings) ?? []).map((l) => ({ ...l, is_demo: false }));
-  const allListings = [...DEMO_LISTINGS, ...realListings];
+  const allListings = data?.pages.flatMap((p) => p.listings) ?? [];
   const total = data?.pages[0]?.total ?? 0;
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
