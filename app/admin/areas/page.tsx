@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 
 type Area = {
   id: string;
@@ -16,6 +17,7 @@ const FORM_EMPTY = { name_ar: "", governorate: "", is_active: true };
 
 export default function AdminAreasPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -240,7 +242,7 @@ export default function AdminAreasPage() {
                             <div className="fixed inset-0 z-20" onClick={() => setActionMenuId(null)} />
                             <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
                               <button onClick={() => { setActionMenuId(null); openEditModal(a); }} className="w-full px-3 py-1.5 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] transition-colors">Edit</button>
-                              <button onClick={() => { setActionMenuId(null); setDeleteTarget(a); }} className="w-full px-3 py-1.5 text-left text-xs text-[#D49088] hover:bg-[#243040] transition-colors">Remove</button>
+                              {isSuperAdmin && <button onClick={() => { setActionMenuId(null); setDeleteTarget(a); }} className="w-full px-3 py-1.5 text-left text-xs text-[#D49088] hover:bg-[#243040] transition-colors">Remove</button>}
                             </div>
                           </>
                         )}

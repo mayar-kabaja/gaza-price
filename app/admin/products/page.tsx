@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 import { PRODUCT_UNITS } from "@/lib/constants";
 
 type Category = {
@@ -32,6 +33,7 @@ const EMPTY_FORM = {
 
 export default function AdminProductsPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -327,7 +329,7 @@ export default function AdminProductsPage() {
                             <div className="absolute right-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
                               <a href={`/product/${p.id}`} target="_blank" className="block w-full text-left px-3 py-1.5 text-xs text-[#D8E4F0] hover:bg-[#243040]">View</a>
                               <button onClick={() => { setActionMenuId(null); openEditModal(p); }} className="w-full text-left px-3 py-1.5 text-xs text-[#D8E4F0] hover:bg-[#243040]">Edit</button>
-                              <button onClick={() => { setActionMenuId(null); openDeleteModal(p); }} className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#243040]">Remove</button>
+                              {isSuperAdmin && <button onClick={() => { setActionMenuId(null); openDeleteModal(p); }} className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#243040]">Remove</button>}
                             </div>
                           </>
                         )}

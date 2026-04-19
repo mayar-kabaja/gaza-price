@@ -10,7 +10,7 @@ const ADMIN_LOGIN = "/admin/login";
 
 function useAdminAuth() {
   const [loading, setLoading] = useState(true);
-  const [admin, setAdmin] = useState<{ email?: string; id?: string } | null>(null);
+  const [admin, setAdmin] = useState<{ email?: string; id?: string; role?: string } | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [flagsCount, setFlagsCount] = useState(0);
   const checkIdRef = useRef(0);
@@ -35,9 +35,9 @@ function useAdminAuth() {
         setLoading(false);
         return null;
       }
-      const data = (await res.json()) as { email?: string; id?: string };
+      const data = (await res.json()) as { email?: string; id?: string; role?: string };
       if (id !== checkIdRef.current) return null;
-      setAdmin({ email: data.email ?? "Admin", id: data.id });
+      setAdmin({ email: data.email ?? "Admin", id: data.id, role: data.role ?? "moderator" });
       return data;
     } catch {
       if (id !== checkIdRef.current) return null;
@@ -205,6 +205,7 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
     <AdminToastProvider>
       <AdminLayout
         adminName={admin.email ?? "Admin"}
+        adminRole={admin.role ?? "moderator"}
         pendingCount={pendingCount}
         flagsCount={flagsCount}
         sidebarCounts={sidebarCounts}

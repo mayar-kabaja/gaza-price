@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 import { useAdminPlaces, useAreas } from "@/lib/queries/hooks";
 import { apiFetchAdmin } from "@/lib/api/fetch";
 
@@ -32,6 +33,7 @@ const STORE_TYPE_VALUES = Array.from(new Set(STORE_CATEGORIES.flatMap((c) => c.t
 
 export default function AdminPlacesPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -525,7 +527,7 @@ export default function AdminPlacesPage() {
                                   ✅ Reactivate
                                 </button>
                               )}
-                              {p.status !== "suspended" && (
+                              {isSuperAdmin && p.status !== "suspended" && (
                                 <>
                                   <div className="h-px bg-[#243040] my-1" />
                                   <button onClick={() => { setDeleteId(p.id); setDeleteName(p.name); setActionMenuId(null); }} className="w-full px-3 py-2 text-left text-xs text-[#D49088] hover:bg-[#243040] flex items-center gap-2">

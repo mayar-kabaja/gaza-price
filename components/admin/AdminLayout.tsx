@@ -121,9 +121,18 @@ export function useAdminHeader() {
   return ctx ?? { setRight: () => {} };
 }
 
+const AdminRoleContext = createContext<string>("moderator");
+export function useAdminRole() {
+  return useContext(AdminRoleContext);
+}
+export function useIsSuperAdmin() {
+  return useAdminRole() === "super_admin";
+}
+
 type AdminLayoutProps = {
   children: ReactNode;
   adminName?: string;
+  adminRole?: string;
   pendingCount?: number;
   flagsCount?: number;
   sidebarCounts?: Record<string, number>;
@@ -185,7 +194,7 @@ function NavLink({
   );
 }
 
-export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, flagsCount = 0, sidebarCounts = {} }: AdminLayoutProps) {
+export function AdminLayout({ children, adminName = "Admin", adminRole = "moderator", pendingCount = 0, flagsCount = 0, sidebarCounts = {} }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -271,7 +280,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-[#D8E4F0]">{adminName}</div>
-            <div className="text-[10px] text-[#4E6070]">Super Admin</div>
+            <div className="text-[10px] text-[#4E6070]">{adminRole === "super_admin" ? "Super Admin" : "Moderator"}</div>
           </div>
           <button
             onClick={handleLogout}
@@ -285,6 +294,7 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
   );
 
   return (
+    <AdminRoleContext.Provider value={adminRole}>
     <AdminHeaderContext.Provider value={{ setRight: setHeaderRight }}>
       <div
         className={`admin-root flex bg-[#0B0F14] text-[#D8E4F0] min-h-screen ${
@@ -409,5 +419,6 @@ export function AdminLayout({ children, adminName = "Admin", pendingCount = 0, f
         </nav>
       </div>
     </AdminHeaderContext.Provider>
+    </AdminRoleContext.Provider>
   );
 }

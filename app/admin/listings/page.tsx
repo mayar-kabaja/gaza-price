@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 import Image from "next/image";
 
 const CATEGORY_OPTIONS = [
@@ -96,6 +97,7 @@ const FilterIcon = ({ active }: { active: boolean }) => (
 
 export default function AdminListingsPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const [listings, setListings] = useState<AdminListing[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [total, setTotal] = useState(0);
@@ -739,6 +741,7 @@ export default function AdminListingsPage() {
                                     </button>
                                   </>
                                 )}
+                                {isSuperAdmin && <>
                                 <div className="h-px bg-[#243040] my-1" />
                                 <button
                                   onClick={() => { setDeleteTarget(listing); setActionMenuId(null); }}
@@ -746,6 +749,7 @@ export default function AdminListingsPage() {
                                 >
                                   🗑 Delete
                                 </button>
+                                </>}
                               </div>
                             </>
                           )}

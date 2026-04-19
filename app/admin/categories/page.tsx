@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 
 type Category = {
   id: string;
@@ -31,6 +32,7 @@ const EMPTY_FORM = {
 
 export default function AdminCategoriesPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -310,12 +312,12 @@ export default function AdminCategoriesPage() {
                               >
                                 Edit
                               </button>
-                              <button
+                              {isSuperAdmin && <button
                                 onClick={() => { setActionMenuId(null); openDeleteModal(c); }}
                                 className="w-full text-left px-3 py-1.5 text-xs text-[#D49088] hover:bg-[#243040] transition-colors"
                               >
                                 Remove
-                              </button>
+                              </button>}
                             </div>
                           </>
                         )}

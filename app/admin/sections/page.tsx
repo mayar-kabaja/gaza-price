@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
+import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 
 type Section = {
   id: string;
@@ -20,6 +21,7 @@ const EMPTY_FORM = {
 
 export default function AdminSectionsPage() {
   const { toast } = useAdminToast();
+  const isSuperAdmin = useIsSuperAdmin();
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -286,12 +288,12 @@ export default function AdminSectionsPage() {
                             >
                               Edit
                             </button>
-                            <button
+                            {isSuperAdmin && <button
                               onClick={() => { setDeleteTarget(s); setActionMenuId(null); }}
                               className="w-full px-3 py-1.5 text-left text-xs text-[#D49088] hover:bg-[#243040] transition-colors"
                             >
                               Remove
-                            </button>
+                            </button>}
                           </div>
                         )}
                       </div>
