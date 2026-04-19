@@ -12,12 +12,32 @@ export function getStoredToken(): string | null {
 
 export function setStoredToken(token: string): void {
   if (typeof window === "undefined") return;
+  const oldValue = localStorage.getItem(AUTH_TOKEN_KEY);
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  // Manually dispatch storage event so the same tab picks up the change
+  // (native storage events only fire in other tabs)
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: AUTH_TOKEN_KEY,
+      oldValue,
+      newValue: token,
+      storageArea: localStorage,
+    })
+  );
 }
 
 export function clearStoredToken(): void {
   if (typeof window === "undefined") return;
+  const oldValue = localStorage.getItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.dispatchEvent(
+    new StorageEvent("storage", {
+      key: AUTH_TOKEN_KEY,
+      oldValue,
+      newValue: null,
+      storageArea: localStorage,
+    })
+  );
 }
 
 export function getAdminToken(): string | null {
