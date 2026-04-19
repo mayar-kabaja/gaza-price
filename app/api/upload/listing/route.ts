@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/api/client";
 
+// Allow up to 10MB uploads (iPhone photos can be large)
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
+export const dynamic = "force-dynamic";
+
 function getAuthHeader(req: NextRequest): string | null {
   const auth = req.headers.get("authorization");
   if (auth?.startsWith("Bearer ")) return auth;

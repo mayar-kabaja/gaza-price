@@ -29,10 +29,42 @@ const CONDITIONS = [
   { value: "urgent", label: "عاجل",    emoji: "⚡" },
 ];
 
+/** Compress image client-side to stay under Vercel's body limit */
+function compressImage(file: File, maxWidth = 1200, quality = 0.8): Promise<File> {
+  return new Promise((resolve, reject) => {
+    // If already small enough, skip compression
+    if (file.size <= 1024 * 1024) { resolve(file); return; }
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('فشل ضغط الصورة')); };
+    img.src = url;
+  });
+}
+
 async function uploadListingImage(file: File): Promise<string> {
+  const compressed = await compressImage(file);
   const token = getStoredToken();
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", compressed);
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch("/api/upload/listing", {
