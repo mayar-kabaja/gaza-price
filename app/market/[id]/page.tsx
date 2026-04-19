@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListing, useAreas } from "@/lib/queries/hooks";
+import { compressImage } from "@/lib/compress-image";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { cn } from "@/lib/utils";
@@ -266,8 +267,9 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   }
 
   async function uploadImage(file: File): Promise<string> {
+    const compressed = await compressImage(file);
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", compressed);
     const res = await apiFetch("/api/upload/listing", { method: "POST", body: form });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(d?.message ?? "فشل رفع الصورة");

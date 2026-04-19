@@ -1,3 +1,5 @@
+import { compressImage } from "@/lib/compress-image";
+
 /**
  * Upload receipt photo directly to backend. Returns public URL or throws.
  */
@@ -5,9 +7,10 @@ export async function uploadReceiptPhoto(
   file: File,
   accessToken?: string | null
 ): Promise<string> {
+  const compressed = await compressImage(file);
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", compressed);
 
   const headers: Record<string, string> = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;

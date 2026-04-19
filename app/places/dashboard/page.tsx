@@ -875,9 +875,10 @@ function OwnerDashboardPage() {
                     if (!file || saving) return;
                     setSaving(true);
                     try {
+                      const compressed = await compressImageForUpload(file);
                       const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
                       const fd = new FormData();
-                      fd.append("file", file);
+                      fd.append("file", compressed);
                       const up = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
                       const upData = await up.json();
                       if (upData.url) {

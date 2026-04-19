@@ -5,6 +5,7 @@ import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 import Image from "next/image";
+import { compressImage } from "@/lib/compress-image";
 
 const CATEGORY_OPTIONS = [
   { value: "electronics", label: "إلكترونيات" },
@@ -291,9 +292,10 @@ export default function AdminListingsPage() {
   }
 
   async function uploadListingImage(file: File): Promise<string> {
+    const compressed = await compressImage(file);
     const token = getAdminToken();
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressed);
     const res = await fetch("/api/upload/listing", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },

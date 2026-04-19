@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { compressImage } from "@/lib/compress-image";
 
 const TYPE_OPTIONS = [
   { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
@@ -199,9 +200,10 @@ function RegisterPlacePage() {
     setAvatarPreview(URL.createObjectURL(file));
     setUploadingAvatar(true);
     try {
+      const compressed = await compressImage(file);
       const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       const res = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.url) {
