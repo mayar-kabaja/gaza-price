@@ -54,10 +54,11 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   const fullUrl = resolveUrl(url);
   const token = getStoredToken();
 
+  const customHeaders = (options.headers ?? {}) as Record<string, string>;
   const mergedHeaders: HeadersInit = {
     "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...customHeaders,
   };
 
   const firstRes = await fetch(fullUrl, {

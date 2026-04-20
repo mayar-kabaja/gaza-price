@@ -40,7 +40,7 @@ function SuggestContent() {
   const nameFromUrl = searchParams.get("name")?.trim() ?? "";
 
   useEffect(() => {
-    if (isDesktop) router.replace("/?modal=suggest");
+    if (isDesktop) router.replace("/");
   }, [isDesktop, router]);
 
   const { accessToken, contributor } = useSession();

@@ -18,6 +18,7 @@ import { enqueueReport } from "@/lib/offline/queue";
 import { playSound } from "@/lib/sounds";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { StoreNameInput } from "@/components/StoreNameInput";
 
@@ -44,9 +45,7 @@ function SubmitForm() {
   const { accessToken, contributor } = useSession();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
-  useEffect(() => {
-    if (isDesktop) router.replace("/?modal=submit");
-  }, [isDesktop, router]);
+  // Desktop redirect handled by SubmitPageInner
 
   const { query, setQuery, results, loading, open, setOpen, clear } = useSearch();
   const { data: productFromUrl } = useProduct(productIdFromUrl);
@@ -486,10 +485,159 @@ function SubmitForm() {
   );
 }
 
+/* ── Action Chooser ── */
+function AddChooser({ onSelect }: { onSelect: (action: string) => void }) {
+  const router = useRouter();
+
+  const options = [
+    {
+      key: "price",
+      title: "أضف سعر منتج",
+      desc: "عندك سعر من محل؟ ساعد الناس يعرفوا الأسعار الحقيقية",
+      exampleText: "كيلو أرز في محل أبو أحمد = 12₪",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="#1E4D2B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+          <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </svg>
+      ),
+      iconBg: "bg-[#E8F5EE]",
+      stripColor: "border-r-[#2D6B3F]",
+      arrowBg: "bg-[#E8F5EE]",
+      arrowStroke: "#1E4D2B",
+    },
+    {
+      key: "product",
+      title: "اقترح منتج جديد",
+      desc: "منتج مش موجود في القائمة؟ اقترحه وأضف أول سعر له",
+      exampleText: "حليب بودرة نيدو 900غ",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+      ),
+      iconBg: "bg-[#FFFBEB]",
+      stripColor: "border-r-[#F59E0B]",
+      arrowBg: "bg-[#FFFBEB]",
+      arrowStroke: "#F59E0B",
+    },
+    {
+      key: "listing",
+      title: "أضف إعلان في السوق",
+      desc: "عندك شي للبيع؟ انشر إعلان مجاني في السوق المحلي",
+      exampleText: "جوال · أثاث · ملابس",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+      ),
+      iconBg: "bg-[#EFF6FF]",
+      stripColor: "border-r-[#3B82F6]",
+      arrowBg: "bg-[#EFF6FF]",
+      arrowStroke: "#3B82F6",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col min-h-dvh bg-fog">
+      {/* Header */}
+      <div className="bg-olive px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden">
+        <div className="absolute w-40 h-40 rounded-full bg-white/5 -top-16 -left-8" />
+        <div className="flex items-center gap-2 mb-1 relative z-[1]">
+          <button onClick={() => router.back()} className="w-[30px] h-[30px] bg-white/10 border border-white/20 rounded-lg flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" className="w-3.5 h-3.5"><path d="M15 18l-6-6 6-6" strokeLinecap="round"/></svg>
+          </button>
+          <h1 className="font-display font-black text-[17px] text-white">إضافة</h1>
+        </div>
+        <p className="text-white/55 text-xs font-body relative z-[1]">شو بدك تضيف؟</p>
+      </div>
+
+      {/* Options */}
+      <div className="flex-1 px-4 pt-5 pb-28 space-y-3">
+        {options.map((opt) => (
+          <button
+            key={opt.key}
+            onClick={() => {
+              if (opt.key === "listing") {
+                router.push("/market/new");
+              } else {
+                onSelect(opt.key);
+              }
+            }}
+            className="w-full text-right bg-white border border-[#E5E7EB] rounded-[20px] p-[18px] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-all duration-150 active:scale-[0.98] hover:-translate-x-[3px] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] overflow-hidden relative"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className={`w-[52px] h-[52px] ${opt.iconBg} rounded-2xl flex items-center justify-center flex-shrink-0`}>
+                {opt.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-black text-[15px] text-ink mb-1">{opt.title}</div>
+                <p className="text-xs text-[#6B7280] leading-relaxed mb-1.5">{opt.desc}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-[#9CA3AF]">مثال:</span>
+                  <span className="text-[10px] text-[#9CA3AF] bg-[#F8F9FA] border border-[#E5E7EB] px-2 py-0.5 rounded-full">{opt.exampleText}</span>
+                </div>
+              </div>
+              <div className={`w-7 h-7 ${opt.arrowBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+                <svg viewBox="0 0 24 24" fill="none" stroke={opt.arrowStroke} strokeWidth="2.5" className="w-[13px] h-[13px]" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </div>
+            </div>
+          </button>
+        ))}
+
+        {/* Tip box */}
+        <div className="bg-[#E8F5EE] border border-[#1E4D2B]/15 rounded-2xl p-3.5 flex items-start gap-2.5 mt-1">
+          <div className="w-8 h-8 bg-[#1E4D2B] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>
+            </svg>
+          </div>
+          <div>
+            <div className="font-display text-xs font-extrabold text-[#1E4D2B] mb-0.5">كل مساهمة تفرق</div>
+            <div className="text-[11px] text-[#2D6B3F] leading-relaxed">كل سعر تضيفه يساعد عائلة في غزة تتخذ قرار أفضل. شكراً لك.</div>
+          </div>
+        </div>
+      </div>
+
+      <BottomNav />
+    </div>
+  );
+}
+
 export default function SubmitPage() {
   return (
     <Suspense>
-      <SubmitForm />
+      <SubmitPageInner />
     </Suspense>
   );
+}
+
+function SubmitPageInner() {
+  const searchParams = useSearchParams();
+  const isDesktop = useIsDesktop();
+  const router = useRouter();
+  const productIdFromUrl = searchParams.get("product_id");
+  const modeFromUrl = searchParams.get("mode");
+  const [selected, setSelected] = useState<string | null>(
+    productIdFromUrl ? "price" : modeFromUrl ?? null
+  );
+
+  useEffect(() => {
+    if (isDesktop) router.replace("/");
+  }, [isDesktop, router]);
+
+  if (selected === "price") {
+    return <SubmitForm />;
+  }
+
+  if (selected === "product") {
+    router.push("/suggest");
+    return null;
+  }
+
+  return <AddChooser onSelect={setSelected} />;
 }

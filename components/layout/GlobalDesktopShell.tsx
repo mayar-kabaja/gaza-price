@@ -23,6 +23,10 @@ const DesktopNewListingModal = dynamic(
   () => import("@/components/desktop/DesktopNewListingModal").then(m => ({ default: m.DesktopNewListingModal })),
   { ssr: false }
 );
+const DesktopAddChooser = dynamic(
+  () => import("@/components/desktop/DesktopAddChooser").then(m => ({ default: m.DesktopAddChooser })),
+  { ssr: false }
+);
 
 // ── Global sidebar store (external store pattern — avoids React update cycles) ──
 let _sidebarSnapshot: { content: React.ReactNode } = { content: null };
@@ -124,6 +128,7 @@ function isLinkActive(href: string, pathname: string): boolean {
 export function GlobalDesktopShell({ children }: { children: React.ReactNode }) {
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
+  const [addChooserOpen, setAddChooserOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [newListingOpen, setNewListingOpen] = useState(false);
@@ -138,6 +143,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
     }}>
       <div className="h-screen grid grid-rows-[60px_34px_1fr]" dir="rtl">
         <DesktopHeader
+          onAddClick={() => setAddChooserOpen(true)}
           onSubmitClick={() => setSubmitOpen(true)}
           onSuggestClick={() => setSuggestOpen(true)}
           onNewListingClick={() => setNewListingOpen(true)}
@@ -185,6 +191,13 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
+        <DesktopAddChooser
+          open={addChooserOpen}
+          onClose={() => setAddChooserOpen(false)}
+          onSubmit={() => setSubmitOpen(true)}
+          onSuggest={() => setSuggestOpen(true)}
+          onListing={() => setNewListingOpen(true)}
+        />
         <DesktopSubmitModal open={submitOpen} onClose={() => setSubmitOpen(false)} />
         <DesktopSuggestModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
         <DesktopNewListingModal open={newListingOpen} onClose={() => setNewListingOpen(false)} />

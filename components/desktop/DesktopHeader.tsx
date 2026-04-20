@@ -22,12 +22,13 @@ interface DesktopHeaderProps {
   onSubmitClick: () => void;
   onSuggestClick: () => void;
   onNewListingClick?: () => void;
+  onAddClick?: () => void;
   onMarketClick?: () => void;
   onProfileClick?: () => void;
   isProfileActive?: boolean;
 }
 
-export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick, onMarketClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
+export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick, onAddClick, onMarketClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
   const { area, saveArea, clearArea } = useArea();
   const { theme, toggle: toggleTheme } = useTheme();
   const { contributor, refreshContributor, logout } = useSession();
@@ -165,37 +166,16 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        {/* Add listing button — only on market pages */}
-        {onNewListingClick && (
-          <button
-            type="button"
-            onClick={() => {
-              if (!contributor?.phone_verified) { setShowLogin(true); return; }
-              onNewListingClick();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sand/90 text-olive-deep text-[12px] font-display font-bold hover:bg-sand transition-all whitespace-nowrap cursor-pointer"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            إعلان جديد
-          </button>
-        )}
-        {/* Add product button */}
+        {/* Single Add button */}
         <button
           type="button"
-          onClick={onSuggestClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white/80 text-[12px] font-display font-bold hover:bg-white/18 transition-all whitespace-nowrap cursor-pointer"
+          onClick={onAddClick}
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/15 border border-white/20 text-white text-[12px] font-display font-bold hover:bg-white/25 transition-all whitespace-nowrap cursor-pointer"
         >
-          أضف منتج
-        </button>
-        {/* Primary CTA */}
-        <button
-          type="button"
-          onClick={onSubmitClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-sand text-[12px] font-display font-bold hover:bg-white/18 transition-all whitespace-nowrap cursor-pointer"
-        >
-          أضف سعر
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          إضافة
         </button>
 
         <div className="w-px h-5 bg-white/12 mx-1" />
@@ -207,7 +187,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
               type="button"
               onClick={() => setShowProfileMenu((v) => !v)}
               className={cn(
-                "w-[32px] h-[32px] rounded-full flex items-center justify-center text-olive-deep font-display font-bold text-[12px] bg-sand hover:bg-sand/80 transition-colors cursor-pointer flex-shrink-0",
+                "w-[32px] h-[32px] rounded-full flex items-center justify-center text-white font-display font-bold text-[12px] bg-white/15 border border-white/20 hover:bg-white/25 transition-colors cursor-pointer flex-shrink-0",
                 isProfileActive && "ring-2 ring-white/40"
               )}
               title="حسابي"
@@ -265,7 +245,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
           <button
             type="button"
             onClick={() => setShowLogin(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sand/90 text-olive-deep text-[12px] font-display font-bold hover:bg-sand transition-all whitespace-nowrap cursor-pointer flex-shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-white text-[12px] font-display font-bold hover:bg-white/25 transition-all whitespace-nowrap cursor-pointer flex-shrink-0"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
