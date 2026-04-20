@@ -245,6 +245,10 @@ export default function AdminReportsPage() {
           product_id: data?.product_id ?? data?.product?.id ?? "",
           area_id: data?.area_id ?? data?.area?.id ?? "",
           price: data?.price != null ? String(data.price) : "",
+          store_name_raw: data?.store_name_raw ?? "",
+          store_phone: data?.store_phone ?? "",
+          store_address: data?.store_address ?? "",
+          receipt_photo_url: data?.receipt_photo_url ?? "",
         });
       } else {
         toast("Could not load report details", "error");
