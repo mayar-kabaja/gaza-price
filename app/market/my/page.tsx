@@ -149,7 +149,7 @@ function ListingRow({ listing, markingSoldId, handleMarkSold }: {
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
-              تم البيع
+              تحديد كمُباع
             </button>
           ) : (
             <span className="text-[10px] text-mist">{timeAgo(listing.created_at)}</span>

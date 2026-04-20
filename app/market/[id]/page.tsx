@@ -462,7 +462,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
                   {currentStatus === "active" && (
                     <button onClick={handleMarkSold} disabled={markingSold}
                       className="flex items-center gap-2 bg-slate-100 text-slate-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 disabled:opacity-60">
-                      {markingSold ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : "✓ تم البيع"}
+                      {markingSold ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : "✓ تحديد كمُباع"}
                     </button>
                   )}
                   <button onClick={() => setShowDeleteConfirm(true)}
@@ -929,7 +929,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  تم البيع
+                  تحديد كمُباع
                 </>
               )}
             </button>
