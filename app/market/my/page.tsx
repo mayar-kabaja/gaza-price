@@ -85,26 +85,29 @@ function useMyListings() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleMarkSold(e: React.MouseEvent, id: string) {
+  async function handleToggleSold(e: React.MouseEvent, id: string) {
     e.preventDefault();
     if (markingSoldId) return;
     setMarkingSoldId(id);
     try {
       const res = await apiFetch(`/api/listings/${id}/sold`, { method: "PATCH" });
-      if (res.ok) setListings((prev) => prev.map((l) => l.id === id ? { ...l, status: "sold" } : l));
+      if (res.ok) {
+        const data = await res.json();
+        setListings((prev) => prev.map((l) => l.id === id ? { ...l, status: data?.status ?? (l.status === "sold" ? "active" : "sold") } : l));
+      }
     } catch { /* silent */ } finally { setMarkingSoldId(null); }
   }
 
   const filtered = tab === "all" ? listings : listings.filter((l) => l.status === tab);
-  return { tab, setTab, listings, filtered, loading, markingSoldId, handleMarkSold };
+  return { tab, setTab, listings, filtered, loading, markingSoldId, handleToggleSold };
 }
 
 // ── Listing row (shared) ──────────────────────────────────────────────────────
 
-function ListingRow({ listing, markingSoldId, handleMarkSold }: {
+function ListingRow({ listing, markingSoldId, handleToggleSold }: {
   listing: Listing;
   markingSoldId: string | null;
-  handleMarkSold: (e: React.MouseEvent, id: string) => void;
+  handleToggleSold: (e: React.MouseEvent, id: string) => void;
 }) {
   const cat = CATEGORY_CONFIG[listing.category] ?? CATEGORY_CONFIG.other;
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
@@ -136,20 +139,20 @@ function ListingRow({ listing, markingSoldId, handleMarkSold }: {
           <span className="font-display font-black text-[16px] text-olive-deep leading-none" dir="ltr">
             ₪{Number(listing.price).toLocaleString()}
           </span>
-          {listing.status === "active" ? (
+          {(listing.status === "active" || listing.status === "sold") ? (
             <button
-              onClick={(e) => handleMarkSold(e, listing.id)}
+              onClick={(e) => handleToggleSold(e, listing.id)}
               disabled={markingSoldId === listing.id}
-              className="flex items-center gap-1 bg-slate-100 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-full transition-transform disabled:opacity-60 flex-shrink-0"
+              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full transition-transform disabled:opacity-60 flex-shrink-0 ${listing.status === "sold" ? "bg-olive/10 text-olive" : "bg-slate-100 text-slate-600"}`}
             >
               {markingSoldId === listing.id ? (
                 <div className="w-3 h-3 border-[1.5px] border-slate-400 border-t-slate-700 rounded-full animate-spin" />
               ) : (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d={listing.status === "sold" ? "M4 4l16 16M4 20L20 4" : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
-              تحديد كمُباع
+              {listing.status === "sold" ? "إعادة للنشط" : "تحديد كمُباع"}
             </button>
           ) : (
             <span className="text-[10px] text-mist">{timeAgo(listing.created_at)}</span>
@@ -167,7 +170,7 @@ export default function MyListingsPage() {
   const router = useRouter();
   const { openNewListingModal } = useMarketContext();
   const { contributor, refreshContributor } = useSession();
-  const { tab, setTab, listings, filtered, loading, markingSoldId, handleMarkSold } = useMyListings();
+  const { tab, setTab, listings, filtered, loading, markingSoldId, handleToggleSold } = useMyListings();
   const [category, setCategory] = useState("");
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
@@ -264,7 +267,7 @@ export default function MyListingsPage() {
 
         {!loading && display.length > 0 && (
           <div className="grid grid-cols-2 gap-3">
-            {display.map((l) => <ListingRow key={l.id} listing={l} markingSoldId={markingSoldId} handleMarkSold={handleMarkSold} />)}
+            {display.map((l) => <ListingRow key={l.id} listing={l} markingSoldId={markingSoldId} handleToggleSold={handleToggleSold} />)}
           </div>
         )}
         <PhoneAuthPopup
@@ -334,7 +337,7 @@ export default function MyListingsPage() {
 
         {!loading && filtered.length > 0 && (
           <div className="px-4 pt-4 space-y-3">
-            {filtered.map((l) => <ListingRow key={l.id} listing={l} markingSoldId={markingSoldId} handleMarkSold={handleMarkSold} />)}
+            {filtered.map((l) => <ListingRow key={l.id} listing={l} markingSoldId={markingSoldId} handleToggleSold={handleToggleSold} />)}
           </div>
         )}
       </div>

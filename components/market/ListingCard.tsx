@@ -90,11 +90,13 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
   const cond = CONDITION_BADGE[listing.condition] ?? CONDITION_BADGE.used;
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
 
+  const isSold = listing.status === "sold";
+
   return (
     <>
     <div
       onClick={() => router.push(`/market/${listing.id}`)}
-      className="bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md cursor-pointer active:scale-[0.99]"
+      className={cn("bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md cursor-pointer active:scale-[0.99] relative", isSold && "opacity-70")}
     >
       {/* Desktop: vertical layout (image top) */}
       <div className="hidden lg:block">
@@ -108,7 +110,12 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
             ) : (
               <span className="text-[36px] select-none">{cat.emoji}</span>
             )}
-            <button onClick={handleSave} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center text-white transition-colors" aria-label="حفظ">
+            {isSold && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1]">
+                <span className="bg-white/90 text-slate-700 text-[11px] font-bold px-3 py-1 rounded-full">تم البيع</span>
+              </div>
+            )}
+            <button onClick={handleSave} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center text-white transition-colors z-[2]" aria-label="حفظ">
               <svg viewBox="0 0 24 24" className={cn("w-[14px] h-[14px] transition-colors", saved ? "fill-white stroke-white" : "fill-none stroke-current")} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
               </svg>
@@ -147,6 +154,11 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
               <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="130px" />
             ) : (
               <span className="text-[36px] select-none">{cat.emoji}</span>
+            )}
+            {isSold && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1] rounded-xl">
+                <span className="bg-white/90 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">تم البيع</span>
+              </div>
             )}
           </div>
         </div>

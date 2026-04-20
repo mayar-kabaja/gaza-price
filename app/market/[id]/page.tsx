@@ -192,13 +192,15 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   const isMine = listing.seller_id === contributor?.id;
   const currentStatus = listingStatus ?? listing.status;
 
-  async function handleMarkSold() {
+  async function handleToggleSold() {
     if (markingSold) return;
     setMarkingSold(true);
     try {
       const res = await apiFetch(`/api/listings/${id}/sold`, { method: "PATCH" });
-      if (res.ok) setListingStatus("sold");
-      else showToast("تعذر تحديث الإعلان");
+      if (res.ok) {
+        const data = await res.json();
+        setListingStatus(data?.status ?? (currentStatus === "sold" ? "active" : "sold"));
+      } else showToast("تعذر تحديث الإعلان");
     } catch {
       showToast("تعذر الاتصال");
     } finally {
@@ -442,6 +444,28 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
                 {isMine && <span className="text-[10px] font-bold text-olive bg-olive-pale px-2.5 py-1 rounded-full border border-olive-mid">إعلانك</span>}
               </div>
 
+              {/* Sold toggle */}
+              {isMine && (currentStatus === "active" || currentStatus === "sold") && (
+                <div className="flex items-center justify-between bg-fog border border-border rounded-xl px-4 py-3 mb-4">
+                  <div>
+                    <div className="text-sm font-bold text-ink">تم البيع</div>
+                    <div className="text-[11px] text-mist">حدد إذا تم بيع هذا المنتج</div>
+                  </div>
+                  {markingSold ? (
+                    <div className="w-11 h-6 flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-olive/30 border-t-olive rounded-full animate-spin" />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleToggleSold}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${currentStatus === "sold" ? "bg-olive" : "bg-slate-300"}`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${currentStatus === "sold" ? "left-[22px]" : "left-0.5"}`} />
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Description */}
               {listing.description && (
                 <>
@@ -459,12 +483,6 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
                     className="flex-1 flex items-center justify-center gap-2 bg-olive text-white text-sm font-bold py-2.5 rounded-xl hover:opacity-90 transition-opacity">
                     تعديل الإعلان
                   </button>
-                  {currentStatus === "active" && (
-                    <button onClick={handleMarkSold} disabled={markingSold}
-                      className="flex items-center gap-2 bg-slate-100 text-slate-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 disabled:opacity-60">
-                      {markingSold ? <div className="w-4 h-4 border-2 border-slate-400 border-t-slate-700 rounded-full animate-spin" /> : "✓ تحديد كمُباع"}
-                    </button>
-                  )}
                   <button onClick={() => setShowDeleteConfirm(true)}
                     className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-red-100 border border-red-100">
                     حذف
@@ -878,6 +896,23 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
+        {/* ── Sold toggle ── */}
+        {isMine && (currentStatus === "active" || currentStatus === "sold") && (
+          <div className="mx-4 mt-3 flex items-center justify-between bg-surface rounded-2xl border border-border px-4 py-3 shadow-sm">
+            <div>
+              <div className="text-sm font-bold text-ink">تم البيع</div>
+              <div className="text-[11px] text-mist">حدد إذا تم بيع هذا المنتج</div>
+            </div>
+            <button
+              onClick={handleToggleSold}
+              disabled={markingSold}
+              className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-60 ${currentStatus === "sold" ? "bg-olive" : "bg-slate-300"}`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${currentStatus === "sold" ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+        )}
+
         {/* ── Description ── */}
         {listing.description && (
           <div className="mx-4 mt-3 bg-surface rounded-2xl border border-border p-4 shadow-sm">
@@ -916,24 +951,6 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       {/* ── Floating action button ── */}
       {isMine ? (
         <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] left-4 z-10 flex items-center gap-2">
-          {currentStatus === "active" && (
-            <button
-              onClick={handleMarkSold}
-              disabled={markingSold}
-              className="flex items-center gap-2 bg-slate-600 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform disabled:opacity-60"
-            >
-              {markingSold ? (
-                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  تحديد كمُباع
-                </>
-              )}
-            </button>
-          )}
           <button
             onClick={openEdit}
             className="flex items-center gap-2 bg-olive text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform"

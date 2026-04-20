@@ -206,21 +206,27 @@ export function DesktopMarketModal({ open, onClose }: Props) {
 function ListingCardDesktop({ listing, onClose }: { listing: Listing; onClose: () => void }) {
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
   const cond = CONDITION_BADGE[listing.condition] ?? CONDITION_BADGE.used;
+  const isSold = listing.status === "sold";
 
   return (
     <Link
       href={`/market/${listing.id}`}
       onClick={onClose}
-      className="flex gap-3 bg-fog hover:bg-border/40 rounded-xl p-3 transition-colors border border-border/60 hover:border-border"
+      className={cn("flex gap-3 bg-fog hover:bg-border/40 rounded-xl p-3 transition-colors border border-border/60 hover:border-border", isSold && "opacity-70")}
     >
       {/* Image */}
-      <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-olive-pale flex items-center justify-center">
+      <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-olive-pale flex items-center justify-center relative">
         {firstImage ? (
           <div className="relative w-full h-full">
             <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="80px" unoptimized />
           </div>
         ) : (
           <span className="text-2xl">{CATEGORY_EMOJI[listing.category] ?? "📦"}</span>
+        )}
+        {isSold && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1] rounded-lg">
+            <span className="bg-white/90 text-slate-700 text-[9px] font-bold px-2 py-0.5 rounded-full">تم البيع</span>
+          </div>
         )}
       </div>
 
