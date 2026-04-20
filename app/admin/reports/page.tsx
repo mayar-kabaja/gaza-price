@@ -78,10 +78,13 @@ export default function AdminReportsPage() {
   const [viewLoadingId, setViewLoadingId] = useState<string | null>(null);
 
   function load() {
+    const token = getAdminToken();
     setLoading(true);
     const params = new URLSearchParams({ filter, limit: String(limit), offset: String(offset) });
     if (filterProduct.trim()) params.set("search", filterProduct.trim());
-    fetch(`/api/reports?${params}`)
+    fetch(`/api/admin/reports?${params}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then((r) => r.json())
       .then((d) => {
         setReports(d?.reports ?? []);
