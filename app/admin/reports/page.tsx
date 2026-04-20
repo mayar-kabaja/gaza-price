@@ -4,22 +4,34 @@ import { useEffect, useRef, useState } from "react";
 import { getAdminToken } from "@/lib/auth/token";
 import { useAdminToast } from "@/components/admin/AdminToast";
 import { ViewIcon, EditIcon, ApproveIcon, UnapproveIcon, RemoveIcon } from "@/components/admin/AdminActionIcons";
+import { normalizeDigits } from "@/lib/normalize-digits";
+import { uploadReceiptPhoto } from "@/lib/api/upload";
 
 type Report = {
   id: string;
   product_id?: string;
-  product?: { id?: string; name_ar?: string };
+  product?: { id?: string; name_ar?: string; unit?: string; unit_size?: number; category?: { icon?: string; name_ar?: string } };
   price?: number;
+  currency?: string;
   status?: string;
-  area?: { name_ar?: string };
+  area?: { id?: string; name_ar?: string };
+  store?: { name_ar?: string };
+  store_name_raw?: string;
+  store_address?: string;
+  store_phone?: string;
   confirmation_count?: number;
+  flag_count?: number;
+  trust_score?: number;
   reported_at?: string;
+  has_receipt?: boolean;
+  receipt_photo_url?: string;
+  reporter?: { id?: string; display_handle?: string; phone_number?: string; trust_level?: string };
 };
 
 type Product = { id: string; name_ar: string };
 type Area = { id: string; name_ar: string };
 
-const ADD_FORM_EMPTY = { product_id: "", area_id: "", price: "" };
+const ADD_FORM_EMPTY = { product_id: "", area_id: "", price: "", store_name_raw: "", store_phone: "", store_address: "", receipt_photo_url: "" };
 
 export default function AdminReportsPage() {
   const { toast } = useAdminToast();
@@ -44,6 +56,8 @@ export default function AdminReportsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState(ADD_FORM_EMPTY);
   const [addSaving, setAddSaving] = useState(false);
+  const [addReceiptUploading, setAddReceiptUploading] = useState(false);
+  const addReceiptRef = useRef<HTMLInputElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [addOptionsLoading, setAddOptionsLoading] = useState(false);
@@ -310,6 +324,10 @@ export default function AdminReportsPage() {
           product_id: addForm.product_id,
           area_id: addForm.area_id,
           price: priceNum,
+          store_name_raw: addForm.store_name_raw.trim() || undefined,
+          store_phone: addForm.store_phone.trim() || undefined,
+          store_address: addForm.store_address.trim() || undefined,
+          receipt_photo_url: addForm.receipt_photo_url || undefined,
         }),
       });
       const data = await res.json();
@@ -399,11 +417,11 @@ export default function AdminReportsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto overflow-y-auto">
-              <table className="w-full min-w-[480px]">
+              <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="border-b border-[#243040]">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-12">#</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-10">#</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
                       <div className="relative inline-flex items-center gap-1">
                         Product
                         <button onClick={() => setOpenFilter(openFilter === "product" ? null : "product")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterProduct ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
@@ -429,8 +447,9 @@ export default function AdminReportsPage() {
                         )}
                       </div>
                     </th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Price</th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Price</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Store</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
                       <div className="relative inline-flex items-center gap-1">
                         Area
                         <button onClick={() => setOpenFilter(openFilter === "area" ? null : "area")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${filterArea ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
@@ -456,7 +475,8 @@ export default function AdminReportsPage() {
                         )}
                       </div>
                     </th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Reporter</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">
                       <div className="relative inline-flex items-center gap-1">
                         Status
                         <button onClick={() => setOpenFilter(openFilter === "status" ? null : "status")} className={`p-0.5 rounded hover:bg-[#243040] transition-colors ${statusFilter !== "all" ? "text-[#4A7C59]" : "text-[#4E6070]"}`}>
@@ -480,28 +500,51 @@ export default function AdminReportsPage() {
                         )}
                       </div>
                     </th>
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Confirmations</th>
-                    <th className="px-5 py-2.5 text-center">
-                      <button
-                        onClick={openAddModal}
-                        className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-                      </button>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Date</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Trust</th>
+                    <th className="px-3 py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => load()}
+                          className="w-7 h-7 rounded-full border border-[#243040] bg-[#18212C] text-[#8FA3B8] hover:bg-[#243040] hover:text-[#D8E4F0] transition-colors inline-flex items-center justify-center"
+                          title="Reload"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                        </button>
+                        <button
+                          onClick={openAddModal}
+                          className="w-7 h-7 rounded-full bg-[#4A7C59] text-white hover:bg-[#3A6347] transition-colors inline-flex items-center justify-center"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                      </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredReports.length === 0 && (
-                    <tr><td colSpan={7} className="py-12 text-center text-sm text-[#4E6070]">{reports.length > 0 ? "No reports match filters" : "No reports"}</td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center text-sm text-[#4E6070]">{reports.length > 0 ? "No reports match filters" : "No reports"}</td></tr>
                   )}
                   {filteredReports.map((r, i) => (
                     <tr key={r.id} className="border-b border-[#243040] hover:bg-[#18212C]">
-                      <td className="px-5 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
-                      <td className="px-5 py-3 text-sm text-[#D8E4F0]">{r.product?.name_ar ?? "—"}</td>
-                      <td className="px-5 py-3 font-mono text-xs">₪ {r.price ?? "—"}</td>
-                      <td className="px-5 py-3 text-xs text-[#8FA3B8]">{r.area?.name_ar ?? "—"}</td>
-                      <td className="px-5 py-3">
+                      <td className="px-3 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
+                      <td className="px-3 py-3">
+                        <div className="text-sm text-[#D8E4F0]">{r.product?.name_ar ?? "—"}</div>
+                        {r.product?.unit && <div className="text-[10px] text-[#4E6070]">{r.product.unit_size} {r.product.unit}</div>}
+                      </td>
+                      <td className="px-3 py-3 font-mono text-xs text-[#D8E4F0]">₪{r.price ?? "—"}</td>
+                      <td className="px-3 py-3">
+                        <div className="text-xs text-[#D8E4F0]">{r.store?.name_ar ?? r.store_name_raw ?? "—"}</div>
+                        {r.store_phone && <div className="text-[10px] text-[#4E6070] font-mono" dir="ltr">{normalizeDigits(r.store_phone)}</div>}
+                        {r.store_address && <div className="text-[10px] text-[#4E6070] truncate max-w-[120px]" title={r.store_address}>{r.store_address}</div>}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-[#8FA3B8]">{r.area?.name_ar ?? "—"}</td>
+                      <td className="px-3 py-3">
+                        <div className="text-xs text-[#D8E4F0]">{r.reporter?.display_handle ?? "—"}</div>
+                        {r.reporter?.phone_number && <div className="text-[10px] text-[#4E6070] font-mono" dir="ltr">{normalizeDigits(r.reporter.phone_number)}</div>}
+                        {r.reporter?.trust_level && <div className="text-[9px] text-[#4E6070] uppercase">{r.reporter.trust_level}</div>}
+                      </td>
+                      <td className="px-3 py-3">
                         <div className="relative">
                           {loadingStatusId === r.id ? (
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#243040] bg-[#18212C] px-2.5 py-0.5 text-[10px] text-[#8FA3B8]">
@@ -521,39 +564,31 @@ export default function AdminReportsPage() {
                               <div className="fixed inset-0 z-20" onClick={() => setStatusDropdownId(null)} />
                               <div className="absolute left-0 top-full mt-1 z-30 w-36 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
                                 {r.status !== "confirmed" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleStatusChange(r, "confirmed")}
-                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
-                                  >
-                                    🟢 Confirmed
-                                  </button>
+                                  <button type="button" onClick={() => handleStatusChange(r, "confirmed")} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">🟢 Confirmed</button>
                                 )}
                                 {r.status !== "pending" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleStatusChange(r, "pending")}
-                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
-                                  >
-                                    🟡 Pending
-                                  </button>
+                                  <button type="button" onClick={() => handleStatusChange(r, "pending")} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">🟡 Pending</button>
                                 )}
                                 {r.status !== "rejected" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleStatusChange(r, "rejected")}
-                                    className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2"
-                                  >
-                                    🔴 Rejected
-                                  </button>
+                                  <button type="button" onClick={() => handleStatusChange(r, "rejected")} className="w-full px-3 py-2 text-left text-xs text-[#D8E4F0] hover:bg-[#243040] flex items-center gap-2">🔴 Rejected</button>
                                 )}
                               </div>
                             </>
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3 font-mono text-xs">{r.confirmation_count ?? 0}</td>
-                      <td className="px-5 py-3 text-center">
+                      <td className="px-3 py-3 text-[10px] text-[#4E6070] whitespace-nowrap">
+                        {r.reported_at ? new Date(r.reported_at).toLocaleDateString("ar-EG", { month: "short", day: "numeric" }) : "—"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-[#8FA3B8]">{r.trust_score ?? 0}</span>
+                          {r.has_receipt && <span title="Has receipt" className="text-[10px]">🧾</span>}
+                          {(r.confirmation_count ?? 0) > 0 && <span className="text-[10px] text-[#6BA880]">✓{r.confirmation_count}</span>}
+                          {(r.flag_count ?? 0) > 0 && <span className="text-[10px] text-[#D49088]">⚑{r.flag_count}</span>}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
                         <div className="relative">
                           <button
                             onClick={() => setActionMenuId(actionMenuId === r.id ? null : r.id)}
@@ -787,7 +822,77 @@ export default function AdminReportsPage() {
                   lang="en"
                   className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
                 />
-                <p className="mt-1 text-[10px] text-[#4E6070]">Use English digits (0-9) only</p>
+              </div>
+              <div>
+                <label className="block text-xs text-[#4E6070] mb-1">Store Name</label>
+                <input
+                  type="text"
+                  value={addForm.store_name_raw}
+                  onChange={(e) => setAddForm((f) => ({ ...f, store_name_raw: e.target.value }))}
+                  placeholder="اسم المتجر"
+                  dir="rtl"
+                  className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#4E6070] mb-1">Store Phone</label>
+                <input
+                  type="tel"
+                  value={addForm.store_phone}
+                  onChange={(e) => setAddForm((f) => ({ ...f, store_phone: normalizeDigits(e.target.value) }))}
+                  placeholder="05XXXXXXXX"
+                  dir="ltr"
+                  className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#4E6070] mb-1">Store Address</label>
+                <input
+                  type="text"
+                  value={addForm.store_address}
+                  onChange={(e) => setAddForm((f) => ({ ...f, store_address: e.target.value }))}
+                  placeholder="العنوان (اختياري)"
+                  dir="rtl"
+                  className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#4E6070] mb-1">Proof Image</label>
+                <input ref={addReceiptRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) { toast("Max 5MB", "error"); return; }
+                  setAddReceiptUploading(true);
+                  try {
+                    const token = getAdminToken();
+                    const url = await uploadReceiptPhoto(file, token);
+                    setAddForm((f) => ({ ...f, receipt_photo_url: url }));
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Upload failed", "error");
+                  } finally {
+                    setAddReceiptUploading(false);
+                  }
+                }} />
+                {addReceiptUploading ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-[#243040] bg-[#111820] px-3 py-2.5">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+                    <span className="text-xs text-[#8FA3B8]">Uploading...</span>
+                  </div>
+                ) : addForm.receipt_photo_url ? (
+                  <div className="flex items-center justify-between rounded-lg border border-[#4A7C59] bg-[#111820] px-3 py-2">
+                    <span className="text-xs text-[#6BA880]">Uploaded</span>
+                    <button type="button" onClick={() => setAddForm((f) => ({ ...f, receipt_photo_url: "" }))} className="text-xs text-[#D49088] hover:text-[#E8B870]">Remove</button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => addReceiptRef.current?.click()}
+                    className="w-full rounded-lg border border-dashed border-[#243040] bg-[#111820] px-3 py-2.5 text-xs text-[#8FA3B8] hover:border-[#4A7C59] hover:text-[#D8E4F0] transition-colors"
+                  >
+                    Click to upload proof image
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex gap-2 mt-4">

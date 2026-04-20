@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/actions/ConfirmButton";
 import { FlagButton } from "@/components/actions/FlagButton";
 import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
 import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
+import { normalizeDigits } from "@/lib/normalize-digits";
 import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
@@ -37,7 +38,7 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const isDemo = !!report.is_demo;
   const store_address = report.store_address;
-  const store_phone = report.store_phone;
+  const store_phone = report.store_phone ? normalizeDigits(report.store_phone) : report.store_phone;
   const hasDetails = !!(store_address || store_phone);
   const [detailsOpen, setDetailsOpen] = useState(false);
 

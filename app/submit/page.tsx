@@ -13,6 +13,7 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import { validateSubmitPrice, validatePhone } from "@/lib/validation/submit-price";
 import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
+import { normalizeDigits } from "@/lib/normalize-digits";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
 import { playSound } from "@/lib/sounds";
@@ -405,7 +406,7 @@ function SubmitForm() {
             inputMode="tel"
             dir="ltr"
             value={storePhone}
-            onChange={e => setStorePhone(e.target.value)}
+            onChange={e => setStorePhone(normalizeDigits(e.target.value))}
             placeholder="مثال: 0599123456"
             className="w-full bg-surface border border-border rounded-2xl px-4 py-3.5 text-sm font-body text-ink outline-none text-left"
           />

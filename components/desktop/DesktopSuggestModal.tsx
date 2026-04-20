@@ -13,6 +13,7 @@ import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { PRODUCT_UNITS } from "@/lib/constants";
 import { playSound } from "@/lib/sounds";
+import { normalizeDigits } from "@/lib/normalize-digits";
 import { ProductNameInput } from "@/components/ProductNameInput";
 import { StoreNameInput } from "@/components/StoreNameInput";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
@@ -336,7 +337,7 @@ export function DesktopSuggestModal({ open, onClose }: DesktopSuggestModalProps)
               type="tel"
               inputMode="tel"
               value={storePhone}
-              onChange={(e) => setStorePhone(e.target.value)}
+              onChange={(e) => setStorePhone(normalizeDigits(e.target.value))}
               placeholder="مثال: 0599123456"
               className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none"
               dir="ltr"

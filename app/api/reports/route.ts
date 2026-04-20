@@ -136,6 +136,7 @@ export async function POST(req: NextRequest) {
         store_id: body.store_id != null ? String(body.store_id) : null,
         store_name_raw: body.store_name_raw != null ? String(body.store_name_raw) : null,
         store_phone: body.store_phone != null ? String(body.store_phone) : null,
+        store_address: body.store_address != null ? String(body.store_address) : null,
         receipt_photo_url: body.receipt_photo_url != null ? String(body.receipt_photo_url) : null,
       },
       { Authorization: `Bearer ${token}` }

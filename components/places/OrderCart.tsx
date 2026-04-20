@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/api/fetch";
+import { normalizeDigits } from "@/lib/normalize-digits";
 
 function getItemEmoji(name: string): string {
   const m: [RegExp, string][] = [
@@ -295,7 +296,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
           />
           <input
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(normalizeDigits(e.target.value))}
             placeholder="رقم الهاتف *"
             type="tel"
             inputMode="tel"

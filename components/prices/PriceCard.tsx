@@ -8,6 +8,7 @@ import { FlagButton } from "@/components/actions/FlagButton";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
 import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
+import { normalizeDigits } from "@/lib/normalize-digits";
 import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
@@ -34,7 +35,7 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
 
   const isDemo = !!price.is_demo;
   const store_address = price.store_address;
-  const store_phone = price.store_phone;
+  const store_phone = price.store_phone ? normalizeDigits(price.store_phone) : price.store_phone;
   const hasDetails = !!(store_address || store_phone);
   const [detailsOpen, setDetailsOpen] = useState(false);
 

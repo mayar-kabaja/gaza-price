@@ -6,6 +6,7 @@ import { useAdminToast } from "@/components/admin/AdminToast";
 import { useIsSuperAdmin } from "@/components/admin/AdminLayout";
 import Image from "next/image";
 import { compressImage } from "@/lib/compress-image";
+import { normalizeDigits } from "@/lib/normalize-digits";
 
 const CATEGORY_OPTIONS = [
   { value: "electronics", label: "إلكترونيات" },
@@ -921,7 +922,7 @@ export default function AdminListingsPage() {
                     {sellerSelected ? (
                       <div className="flex items-center justify-between rounded-lg border border-[#4A7C59] bg-[#111820] px-3 py-2">
                         <div>
-                          <p className="text-sm text-[#D8E4F0] font-medium font-mono">{sellerSelected.phone_number ?? sellerSelected.display_handle ?? "—"}</p>
+                          <p className="text-sm text-[#D8E4F0] font-medium font-mono">{sellerSelected.phone_number ? normalizeDigits(sellerSelected.phone_number) : sellerSelected.display_handle ?? "—"}</p>
                           <p className="text-[10px] text-[#4E6070] mt-0.5">{sellerSelected.display_handle ?? sellerSelected.id.slice(0, 8)}</p>
                         </div>
                         <button
@@ -952,7 +953,7 @@ export default function AdminListingsPage() {
                                 onClick={() => { setSellerSelected(s); setAddForm((f) => ({ ...f, seller_id: s.id })); setSellerSearch(""); setSellerResults([]); }}
                                 className="w-full px-3 py-2 text-left hover:bg-[#243040] flex items-center justify-between gap-2"
                               >
-                                <span className="text-sm text-[#D8E4F0] font-mono">{s.phone_number ?? "—"}</span>
+                                <span className="text-sm text-[#D8E4F0] font-mono">{s.phone_number ? normalizeDigits(s.phone_number) : "—"}</span>
                                 <span className="text-xs text-[#4E6070]">{s.display_handle ?? s.id.slice(0, 8)}</span>
                               </button>
                             ))}

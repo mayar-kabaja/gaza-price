@@ -13,6 +13,7 @@ import { validateSubmitPrice, validatePhone } from "@/lib/validation/submit-pric
 import { useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
+import { normalizeDigits } from "@/lib/normalize-digits";
 import { enqueueReport } from "@/lib/offline/queue";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { playSound } from "@/lib/sounds";
@@ -393,7 +394,7 @@ export function DesktopSubmitModal({ open, onClose }: DesktopSubmitModalProps) {
               inputMode="tel"
               dir="ltr"
               value={storePhone}
-              onChange={(e) => setStorePhone(e.target.value)}
+              onChange={(e) => setStorePhone(normalizeDigits(e.target.value))}
               placeholder="مثال: 0599123456"
               className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm font-body text-ink outline-none text-left"
             />

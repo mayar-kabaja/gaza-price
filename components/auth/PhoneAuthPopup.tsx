@@ -129,7 +129,8 @@ export function PhoneAuthPopup({
 
   // ── Step 2: OTP input handlers ──
   function handleOtpChange(index: number, value: string) {
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const normalized = value.replace(/[٠-٩]/g, (d: string) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const digit = normalized.replace(/\D/g, "").slice(-1);
     const newOtp = [...otp];
     newOtp[index] = digit;
     setOtp(newOtp);
@@ -164,7 +165,8 @@ export function PhoneAuthPopup({
 
   function handleOtpPaste(e: React.ClipboardEvent) {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const raw = e.clipboardData.getData("text").replace(/[٠-٩]/g, (d: string) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const pasted = raw.replace(/\D/g, "").slice(0, 6);
     if (pasted.length === 6) {
       const newOtp = pasted.split("");
       setOtp(newOtp);
@@ -385,7 +387,8 @@ export function PhoneAuthPopup({
                   dir="ltr"
                   value={phone}
                   onChange={(e) => {
-                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                    const normalized = e.target.value.replace(/[٠-٩]/g, (d: string) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+                    setPhone(normalized.replace(/\D/g, "").slice(0, 10));
                     setError("");
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" && !sending) handleSendOtp(); }}

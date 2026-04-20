@@ -6,6 +6,7 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { compressImage } from "@/lib/compress-image";
+import { normalizeDigits } from "@/lib/normalize-digits";
 
 const TYPE_OPTIONS = [
   { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
@@ -638,7 +639,7 @@ function RegisterPlacePage() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(normalizeDigits(e.target.value))}
                   placeholder="059 XXX XXXX"
                   className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none placeholder:text-[#9CA3AF] focus:border-[#3A6347]"
                 />
