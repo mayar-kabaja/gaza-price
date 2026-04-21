@@ -50,6 +50,7 @@ function normalizeContributor(raw: unknown): Contributor | null {
     report_count: typeof r.report_count === "number" ? r.report_count : 0,
     confirmation_count: typeof r.confirmation_count === "number" ? r.confirmation_count : 0,
     flag_count: typeof r.flag_count === "number" ? r.flag_count : 0,
+    phone_verified: Boolean(r.phone_verified),
     is_banned: Boolean(r.is_banned),
     joined_at: typeof r.joined_at === "string" ? r.joined_at : new Date().toISOString(),
     last_active_at:
@@ -468,18 +469,16 @@ function MobileAccountPage() {
                 </button>
               </div>
             )}
-            {contributor?.phone_verified && (
-              <div className="border-b border-fog">
-                <button
-                  type="button"
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="w-full flex items-center justify-between px-4 py-3.5"
-                >
-                  <span className="text-sm text-amber-700">تسجيل الخروج</span>
-                  <span className="text-amber-700 text-sm">›</span>
-                </button>
-              </div>
-            )}
+            <div className="border-b border-fog">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(true)}
+                className="w-full flex items-center justify-between px-4 py-3.5"
+              >
+                <span className="text-sm text-amber-700">تسجيل الخروج</span>
+                <span className="text-amber-700 text-sm">›</span>
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}

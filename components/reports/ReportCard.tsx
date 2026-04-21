@@ -178,14 +178,6 @@ export function ReportCard({ report }: ReportCardProps) {
           </span>
         ) : (
           <>
-            {showExclusivityHint && (
-              <div
-                className="text-[10px] text-sand bg-sand-light/50 border border-sand/30 rounded-md px-2 py-1 text-right flex-1"
-                role="status"
-              >
-                {isConfirmedByMe ? "أكّدت — لا يمكن الإبلاغ" : "أبلغت — لا يمكن التأكيد"}
-              </div>
-            )}
             <div className="flex items-center gap-2 mr-auto">
               <ConfirmButton
                 priceId={report.id}

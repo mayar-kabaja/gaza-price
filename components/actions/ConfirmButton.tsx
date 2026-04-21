@@ -4,7 +4,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
 import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
 import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
-import { toArabicNumerals } from "@/lib/arabic";
+
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
@@ -36,8 +36,7 @@ export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe 
     },
   });
 
-  const isFlaggedByMe = flaggedOverrides[priceId] ?? flaggedByMe;
-  const disabled = loading || isFlaggedByMe;
+  const disabled = loading;
 
   return (
     <div className="flex flex-col items-start gap-1">
@@ -51,11 +50,10 @@ export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe 
           setTimeout(() => confirm(), 0);
         }}
         disabled={disabled}
-        title={isFlaggedByMe ? "لا يمكن التأكيد لأنك أبلغت عن هذا السعر" : undefined}
         className={cn(
           "px-2.5 py-1 rounded-md text-[11px] font-semibold font-body transition-all leading-tight",
           confirmed
-            ? "bg-olive text-white"
+            ? "bg-olive text-white hover:bg-olive/80 active:scale-95"
             : "bg-olive-pale border border-olive-mid text-olive hover:bg-olive-mid active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
