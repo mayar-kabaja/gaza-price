@@ -541,6 +541,22 @@ function AddChooser({ onSelect }: { onSelect: (action: string) => void }) {
       arrowBg: "bg-blue-50 dark:bg-blue-500/15",
       arrowCls: "stroke-blue-500 dark:stroke-blue-400",
     },
+    {
+      key: "place",
+      title: "سجّل مكانك",
+      desc: "عندك محل، مطعم، كافيه أو مساحة عمل؟ أضف مكانك ليظهر للجميع",
+      exampleText: "مطعم · كافيه · محل · مساحة عمل",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 stroke-purple-500 dark:stroke-purple-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      ),
+      iconBg: "bg-purple-50 dark:bg-purple-500/15",
+      stripColor: "border-r-purple-500",
+      arrowBg: "bg-purple-50 dark:bg-purple-500/15",
+      arrowCls: "stroke-purple-500 dark:stroke-purple-400",
+    },
   ];
 
   return (
@@ -565,6 +581,8 @@ function AddChooser({ onSelect }: { onSelect: (action: string) => void }) {
             onClick={() => {
               if (opt.key === "listing") {
                 router.push("/market/new");
+              } else if (opt.key === "place") {
+                router.push("/places/register");
               } else {
                 onSelect(opt.key);
               }
