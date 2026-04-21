@@ -133,7 +133,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [newListingOpen, setNewListingOpen] = useState(false);
 
-  if (!isDesktop || pathname.startsWith("/admin")) return <>{children}</>;
+  if (!isDesktop || pathname.startsWith("/admin") || pathname.startsWith("/places/dashboard")) return <>{children}</>;
 
   return (
     <GlobalContext.Provider value={{
