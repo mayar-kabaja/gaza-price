@@ -235,7 +235,8 @@ export default function PlacesPage() {
 
   const totalPages = Math.max(1, Math.ceil(filteredPlaces.length / PAGE_SIZE));
   const places = filteredPlaces.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const count = filteredPlaces.length;
+  const isAllChip = !chips[chip] || chips[chip] === 'الكل';
+  const count = isAllChip && !isSearching ? (placesData?.total ?? filteredPlaces.length) : filteredPlaces.length;
 
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
     const g = a.governorate;
@@ -1108,7 +1109,7 @@ export default function PlacesPage() {
                     <span className="font-display font-black text-[14px] text-ink">الكل</span>
                   </div>
                   <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
-                    {places.length} متجر
+                    {count} متجر
                   </span>
                 </div>
                 <div className="flex flex-col gap-2 pb-4">
@@ -1153,7 +1154,7 @@ export default function PlacesPage() {
               <div className="w-1 h-4 bg-olive rounded-sm" />
               <span className="font-display font-bold text-[13px] text-ink">مساحات العمل</span>
             </div>
-            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">{places.length} مكان</span>
+            <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">{count} مكان</span>
           </div>
 
           {loading ? (
