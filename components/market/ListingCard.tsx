@@ -174,27 +174,29 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
           </div>
         </div>
         <div className="flex-1 px-3 py-3 min-w-0 flex flex-col justify-between">
-          <div className="flex items-start justify-between gap-1 mb-1">
-            <div className="font-bold text-[13px] text-ink leading-snug flex-1 line-clamp-2">{listing.title}</div>
-            <button onClick={handleSave} className="flex-shrink-0 p-0.5 -mt-0.5 text-mist transition-colors" aria-label="حفظ">
-              <svg viewBox="0 0 24 24" className={cn("w-[18px] h-[18px] transition-colors", saved ? "fill-olive stroke-olive" : "fill-none stroke-current")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-              </svg>
-            </button>
-          </div>
-          {listing.description && (
-            <p className="text-[11px] text-mist leading-snug line-clamp-2 mb-1.5">{listing.description}</p>
-          )}
-          <div className="flex items-center gap-1.5 flex-wrap mb-2">
-            <span className={cn("text-[10px] font-bold px-2 py-[2px] rounded-full", cond.cls)}>{cond.label}</span>
-            {listing.area?.name_ar && (
-              <span className="text-[10px] text-mist flex items-center gap-[2px]">
-                <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {listing.area.name_ar}
-              </span>
+          <div>
+            <div className="flex items-start justify-between gap-1 mb-1">
+              <div className="font-bold text-[13px] text-ink leading-snug flex-1 line-clamp-2">{listing.title}</div>
+              <button onClick={handleSave} className="flex-shrink-0 p-0.5 -mt-0.5 text-mist transition-colors" aria-label="حفظ">
+                <svg viewBox="0 0 24 24" className={cn("w-[18px] h-[18px] transition-colors", saved ? "fill-olive stroke-olive" : "fill-none stroke-current")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                </svg>
+              </button>
+            </div>
+            {listing.description && (
+              <p className="text-[11px] text-mist leading-snug line-clamp-2 mb-1.5">{listing.description}</p>
             )}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={cn("text-[10px] font-bold px-2 py-[2px] rounded-full", cond.cls)}>{cond.label}</span>
+              {listing.area?.name_ar && (
+                <span className="text-[10px] text-mist flex items-center gap-[2px]">
+                  <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {listing.area.name_ar}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <span className="font-display font-black text-[17px] text-olive-deep leading-none" dir="ltr">₪{Number(listing.price).toLocaleString()}</span>
             <span className="text-[10px] text-mist flex items-center gap-[3px]">
               <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
