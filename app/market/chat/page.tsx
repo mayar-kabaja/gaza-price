@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -76,7 +76,16 @@ function useConversations() {
     };
   }, []);
 
-  return { conversations, loading, error, fetchConversations };
+  const deleteConversation = useCallback(async (convId: string) => {
+    setConversations((prev) => prev.filter((c) => c.id !== convId));
+    try {
+      await apiFetch(`/api/chat/conversations/${convId}`, { method: "DELETE" });
+    } catch {
+      fetchConversations();
+    }
+  }, []);
+
+  return { conversations, loading, error, fetchConversations, deleteConversation };
 }
 
 export function ConversationList({
@@ -86,6 +95,7 @@ export function ConversationList({
   activeId,
   onSelect,
   onRetry,
+  onDelete,
 }: {
   conversations: Conversation[];
   loading: boolean;
@@ -93,9 +103,49 @@ export function ConversationList({
   activeId?: string;
   onSelect: (id: string) => void;
   onRetry: () => void;
+  onDelete?: (id: string) => void;
 }) {
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handlePointerDown(convId: string) {
+    longPressTimer.current = setTimeout(() => { setMenuId(convId); }, 500);
+  }
+  function handlePointerUp() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  }
+
   return (
     <div className="flex flex-col h-full">
+      {/* Context menu overlay */}
+      {menuId && (
+        <>
+          <div className="fixed inset-0 z-[200]" onClick={() => setMenuId(null)} />
+          <div className="fixed inset-0 z-[201] flex items-center justify-center px-8" onClick={() => setMenuId(null)}>
+            <div className="bg-surface rounded-2xl border border-border shadow-xl w-full max-w-[260px] overflow-hidden" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="px-4 py-3 border-b border-border/50 text-center">
+                <span className="font-display font-bold text-sm text-ink">خيارات المحادثة</span>
+              </div>
+              <button
+                onClick={() => { if (onDelete) onDelete(menuId); setMenuId(null); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-red-50 transition-colors"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] text-red-500 flex-shrink-0">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
+                <span className="font-display font-bold text-[13px] text-red-500">حذف المحادثة</span>
+              </button>
+              <button
+                onClick={() => setMenuId(null)}
+                className="w-full px-4 py-3 border-t border-border/50 text-center"
+              >
+                <span className="font-display font-bold text-[13px] text-mist">إلغاء</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {loading && (
         <div className="p-3 space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -140,45 +190,56 @@ export function ConversationList({
       {!loading && !error && conversations.length > 0 && (
         <div className="flex-1 overflow-y-auto no-scrollbar">
           {conversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => onSelect(conv.id)}
-              className="w-full flex gap-3 px-3 py-3 text-right border-b border-border/40 hover:bg-fog transition-colors"
-            >
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
-                {conv.listing_image ? (
-                  <Image
-                    src={conv.listing_image}
-                    alt={conv.listing_title ?? ""}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="text-xl">📦</span>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start mb-0.5">
-                  <span className="font-display font-bold text-xs truncate">
-                    {conv.listing_title ?? "إعلان محذوف"}
-                  </span>
-                  <span className="text-[10px] text-mist">
-                    {timeAgo(conv.last_message_at ?? conv.created_at)}
-                  </span>
+            <div key={conv.id} className="flex items-center border-b border-border/40">
+              <button
+                onClick={() => onSelect(conv.id)}
+                className="flex-1 flex gap-3 px-3 py-3 text-right hover:bg-fog transition-colors min-w-0"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
+                  {conv.listing_image ? (
+                    <Image
+                      src={conv.listing_image}
+                      alt={conv.listing_title ?? ""}
+                      width={48}
+                      height={48}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="text-xl">📦</span>
+                  )}
                 </div>
 
-                <p className="text-[11px] text-mist truncate">
-                  {conv.last_message
-                    ? conv.last_message.type === "image"
-                      ? "📷 صورة"
-                      : conv.last_message.content
-                    : "ابدأ المحادثة"}
-                </p>
-              </div>
-            </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-0.5">
+                    <span className="font-display font-bold text-xs truncate">
+                      {conv.listing_title ?? "إعلان محذوف"}
+                    </span>
+                    <span className="text-[10px] text-mist">
+                      {timeAgo(conv.last_message_at ?? conv.created_at)}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-mist truncate">
+                    {conv.last_message
+                      ? conv.last_message.type === "image"
+                        ? "📷 صورة"
+                        : conv.last_message.content
+                      : "ابدأ المحادثة"}
+                  </p>
+                </div>
+              </button>
+              {onDelete && (
+                <button
+                  onClick={() => setMenuId(conv.id)}
+                  className="px-2.5 py-3 flex-shrink-0 self-stretch flex items-center"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-mist hover:text-ink transition-colors">
+                    <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                  </svg>
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -191,7 +252,7 @@ export function ConversationList({
 export default function ChatInboxPage() {
   const isDesktop = useIsDesktop();
   const router = useRouter();
-  const { conversations, loading, error, fetchConversations } =
+  const { conversations, loading, error, fetchConversations, deleteConversation } =
     useConversations();
 
   useMarketSidebar(
@@ -206,6 +267,7 @@ export default function ChatInboxPage() {
           error={error}
           onSelect={(id) => router.push(`/market/chat/${id}`)}
           onRetry={fetchConversations}
+          onDelete={deleteConversation}
         />
       </div>
     ) : null
@@ -239,7 +301,27 @@ export default function ChatInboxPage() {
     );
   }
 
-  // MOBILE
+  // MOBILE — swipeable conversation rows
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const touchStart = useRef<{ x: number; y: number; id: string } | null>(null);
+
+  function handleTouchStart(convId: string, e: React.TouchEvent) {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, id: convId };
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStart.current.y);
+    // RTL: swipe right reveals delete (positive dx). Threshold 60px, ignore vertical scrolls
+    if (dx > 60 && dy < 40) {
+      setSwipedId(touchStart.current.id);
+    } else if (dx < -30) {
+      setSwipedId(null);
+    }
+    touchStart.current = null;
+  }
+
   return (
     <div className="flex flex-col min-h-dvh bg-fog" dir="rtl">
       <div className="bg-olive px-4 py-3 flex items-center gap-3">
@@ -250,6 +332,40 @@ export default function ChatInboxPage() {
         </button>
         <h1 className="font-display font-bold text-lg text-white">المحادثات</h1>
       </div>
+
+      {/* Delete confirmation popup */}
+      {confirmDeleteId && (
+        <>
+          <div className="fixed inset-0 z-[200] bg-black/40" onClick={() => setConfirmDeleteId(null)} />
+          <div className="fixed inset-0 z-[201] flex items-center justify-center px-8">
+            <div className="bg-surface rounded-2xl border border-border shadow-xl w-full max-w-[280px] overflow-hidden" dir="rtl">
+              <div className="px-5 pt-5 pb-3 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-red-50 flex items-center justify-center mb-3">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-red-500">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                  </svg>
+                </div>
+                <p className="font-display font-bold text-sm text-ink mb-1">حذف المحادثة؟</p>
+                <p className="text-xs text-mist leading-relaxed">سيتم إخفاء المحادثة من قائمتك. إذا أرسل الطرف الآخر رسالة جديدة ستظهر مجدداً.</p>
+              </div>
+              <div className="flex border-t border-border/50">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 py-3 text-center font-display font-bold text-[13px] text-mist border-l border-border/50"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={() => { deleteConversation(confirmDeleteId); setConfirmDeleteId(null); }}
+                  className="flex-1 py-3 text-center font-display font-bold text-[13px] text-red-500"
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="flex-1 overflow-y-auto pb-24">
         {loading && (
@@ -293,50 +409,78 @@ export default function ChatInboxPage() {
 
         {!loading && !error && conversations.length > 0 && (
           <div className="bg-surface">
-            {conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => router.push(`/market/chat/${conv.id}`)}
-                className="w-full flex gap-3 px-4 py-3.5 text-right border-b border-border/40 active:bg-fog transition-colors"
-              >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
-                  {conv.listing_image ? (
-                    <Image
-                      src={conv.listing_image}
-                      alt={conv.listing_title ?? ""}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="text-xl">📦</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-0.5">
-                    <span className="font-display font-bold text-sm text-ink truncate">
-                      {conv.listing_title ?? "إعلان محذوف"}
-                    </span>
-                    <span className="text-[10px] text-mist flex-shrink-0 mr-2">
-                      {timeAgo(conv.last_message_at ?? conv.created_at)}
-                    </span>
+            {conversations.map((conv) => {
+              const isSwiped = swipedId === conv.id;
+              return (
+                <div key={conv.id} className="relative overflow-hidden border-b border-border/40">
+                  {/* Delete action behind */}
+                  <div className="absolute inset-y-0 left-0 w-20 bg-red-500 flex items-center justify-center">
+                    <button
+                      onClick={() => { setConfirmDeleteId(conv.id); setSwipedId(null); }}
+                      className="flex flex-col items-center gap-0.5"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                      </svg>
+                      <span className="text-[10px] font-bold text-white">حذف</span>
+                    </button>
                   </div>
-                  <p className="text-xs text-mist truncate">
-                    {conv.last_message
-                      ? conv.last_message.type === "image"
-                        ? "📷 صورة"
-                        : conv.last_message.content
-                      : "ابدأ المحادثة"}
-                  </p>
-                </div>
-                {conv.unread_count > 0 && (
-                  <div className="w-5 h-5 rounded-full bg-olive flex items-center justify-center flex-shrink-0 self-center">
-                    <span className="text-[10px] font-bold text-white">{conv.unread_count}</span>
+
+                  {/* Conversation row */}
+                  <div
+                    className="relative bg-surface transition-transform duration-200 ease-out"
+                    style={{ transform: isSwiped ? "translateX(80px)" : "translateX(0)" }}
+                    onTouchStart={(e) => handleTouchStart(conv.id, e)}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <button
+                      onClick={() => {
+                        if (isSwiped) { setSwipedId(null); return; }
+                        router.push(`/market/chat/${conv.id}`);
+                      }}
+                      className="w-full flex gap-3 px-4 py-3.5 text-right active:bg-fog transition-colors"
+                    >
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
+                        {conv.listing_image ? (
+                          <Image
+                            src={conv.listing_image}
+                            alt={conv.listing_title ?? ""}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <span className="text-xl">📦</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-0.5">
+                          <span className="font-display font-bold text-sm text-ink truncate">
+                            {conv.listing_title ?? "إعلان محذوف"}
+                          </span>
+                          <span className="text-[10px] text-mist flex-shrink-0 mr-2">
+                            {timeAgo(conv.last_message_at ?? conv.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-mist truncate">
+                          {conv.last_message
+                            ? conv.last_message.type === "image"
+                              ? "📷 صورة"
+                              : conv.last_message.content
+                            : "ابدأ المحادثة"}
+                        </p>
+                      </div>
+                      {conv.unread_count > 0 && (
+                        <div className="w-5 h-5 rounded-full bg-olive flex items-center justify-center flex-shrink-0 self-center">
+                          <span className="text-[10px] font-bold text-white">{conv.unread_count}</span>
+                        </div>
+                      )}
+                    </button>
                   </div>
-                )}
-              </button>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
