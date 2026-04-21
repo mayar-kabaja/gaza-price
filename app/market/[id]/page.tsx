@@ -299,7 +299,8 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       });
       if (!res.ok) { alert("تعذر حفظ التعديلات"); return; }
       setShowEdit(false);
-      window.location.reload();
+      await queryClient.invalidateQueries({ queryKey: ["listings", id] });
+      await queryClient.invalidateQueries({ queryKey: ["listings"] });
     } catch {
       alert("تعذر الاتصال");
     } finally {
