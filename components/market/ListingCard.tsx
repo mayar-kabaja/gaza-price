@@ -91,6 +91,7 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
 
   const isSold = listing.status === "sold";
+  const isDemo = !!listing.is_demo;
 
   return (
     <>
@@ -113,6 +114,11 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
             {isSold && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1]">
                 <span className="bg-white/90 text-slate-700 text-[11px] font-bold px-3 py-1 rounded-full">تم البيع</span>
+              </div>
+            )}
+            {isDemo && (
+              <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 text-white text-[9px] font-bold px-2 py-[3px] z-[2]" style={{ borderRadius: "0 0 10px 0" }}>
+                تجريبي
               </div>
             )}
             <button onClick={handleSave} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center text-white transition-colors z-[2]" aria-label="حفظ">
@@ -158,6 +164,11 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
             {isSold && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1] rounded-xl">
                 <span className="bg-white/90 text-slate-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">تم البيع</span>
+              </div>
+            )}
+            {isDemo && (
+              <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 text-white text-[8px] font-bold px-1.5 py-[2px] z-[2]" style={{ borderRadius: "0 0 8px 0" }}>
+                تجريبي
               </div>
             )}
           </div>

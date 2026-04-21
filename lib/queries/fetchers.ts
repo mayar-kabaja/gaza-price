@@ -408,6 +408,7 @@ export interface Listing {
   is_negotiable: boolean;
   whatsapp: string | null;
   phone: string | null;
+  is_demo: boolean;
   images: ListingImage[];
   created_at: string;
   is_saved?: boolean;
