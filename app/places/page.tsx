@@ -1027,13 +1027,20 @@ export default function PlacesPage() {
               </div>
             )
           ) : loading ? (
-            <div className="bg-surface border-b border-border divide-y divide-border pb-28">
+            <div className="px-4 pt-4 pb-28 flex flex-col gap-2">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                <div key={i} className="bg-surface rounded-2xl border border-border flex items-center gap-3 px-3 py-2.5">
+                  <div className="w-[42px] h-[42px] rounded-full bg-border/60 animate-pulse flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                    <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-[18px] w-14 rounded-full bg-border/60 animate-pulse" />
+                      <div className="h-2.5 w-16 rounded-md bg-border/60 animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="h-2.5 w-10 rounded-md bg-border/60 animate-pulse" />
+                    <div className="h-2 w-8 rounded-md bg-border/60 animate-pulse" />
                   </div>
                 </div>
               ))}
@@ -2302,31 +2309,22 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
           {place.section === 'workspace' ? (
             <WorkspaceSheetContent place={place} />
           ) : menuLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {[...Array(2)].map((_, i) => (
                 <div key={i}>
-                  <div className="h-4 w-24 rounded-md bg-border/60 animate-pulse mb-3" />
-                  <div className={isDesktop ? "grid grid-cols-2 gap-2.5" : "space-y-1.5"}>
-                    {[...Array(isDesktop ? 4 : 3)].map((_, j) => (
-                      <div key={j} className="bg-surface rounded-2xl border border-border overflow-hidden">
-                        {isDesktop ? (
-                          <>
-                            <div className="p-2 pb-0"><div className="w-full aspect-[4/3] rounded-xl bg-border/60 animate-pulse" /></div>
-                            <div className="px-3 py-2.5 space-y-2">
-                              <div className="h-3.5 w-3/4 rounded-md bg-border/60 animate-pulse" />
-                              <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-3 p-3">
-                            <div className="w-[46px] h-[46px] rounded-[10px] bg-border/60 animate-pulse flex-shrink-0" />
-                            <div className="flex-1 space-y-2">
-                              <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                              <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
-                            </div>
-                            <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
-                          </div>
-                        )}
+                  <div className="flex items-center gap-[7px] py-3">
+                    <div className="w-1 h-[18px] rounded-sm bg-border/60 animate-pulse" />
+                    <div className="h-3.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                  </div>
+                  <div className="bg-surface border border-border rounded-[14px] overflow-hidden">
+                    {[...Array(4)].map((_, j) => (
+                      <div key={j} className={`flex items-center gap-3 px-3.5 py-3 ${j < 3 ? 'border-b border-border' : ''}`}>
+                        <div className="w-10 h-10 rounded-[10px] bg-border/60 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3.5 w-24 rounded-md bg-border/60 animate-pulse" />
+                          <div className="h-2.5 w-32 rounded-md bg-border/60 animate-pulse" />
+                        </div>
+                        <div className="h-5 w-12 rounded-md bg-border/60 animate-pulse flex-shrink-0" />
                       </div>
                     ))}
                   </div>
@@ -2590,10 +2588,10 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
         {imagePreviewUrl && (
           <>
             <div
-              className={`${pos} inset-0 bg-black/60 z-[80]`}
+              className="fixed inset-0 bg-black/60 z-[200]"
               onClick={() => setImagePreviewUrl(null)}
             />
-            <div className={`${pos} inset-0 z-[90] flex items-center justify-center p-4`} dir="rtl">
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4" dir="rtl">
               <div className="relative w-full max-w-md">
                 <button
                   type="button"

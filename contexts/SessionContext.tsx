@@ -1,10 +1,11 @@
 "use client";
 
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -70,6 +71,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [contributor, setContributor] = useState<Contributor | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const sessionRetryRef = useRef(false);
 
   const loadContributor = useCallback(async (token: string) => {
     const res = await apiFetch("/api/contributors/me", {
@@ -87,10 +89,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
+    // Prevent concurrent/rapid session retries
+    if (sessionRetryRef.current) return;
     try {
       let token = getStoredToken();
 
       if (!token) {
+        sessionRetryRef.current = true;
         const res = await apiFetch("/api/auth/session", {
           method: "POST",
           body: JSON.stringify({}),
@@ -104,11 +109,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(token);
       await loadContributor(token!);
     } catch {
-      clearStoredToken();
+      // Don't clear token on failure — prevents retry loop via storage event
       setAccessToken(null);
       setContributor(null);
     } finally {
       setLoading(false);
+      // Allow retry after a cooldown (30s)
+      setTimeout(() => { sessionRetryRef.current = false; }, 30_000);
     }
   }, [loadContributor, pathname]);
 
