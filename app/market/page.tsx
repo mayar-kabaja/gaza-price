@@ -53,6 +53,7 @@ export default function MarketPage() {
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
   const queryClient = useQueryClient();
 
@@ -281,53 +282,32 @@ export default function MarketPage() {
     <div className="flex flex-col min-h-dvh bg-fog">
 
       {/* ── Header (olive) ── */}
-      <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0">
+      <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0 relative">
+        <div className="absolute w-[140px] h-[140px] rounded-full bg-white/[0.04] -top-[50px] -left-[30px] pointer-events-none" />
         {/* Top row */}
-        <div className="flex items-center gap-2 mb-2.5">
+        <div className="flex items-center gap-2 mb-2.5 relative z-10">
           {/* Title */}
-          <span className="font-display font-extrabold text-base text-white leading-none flex-1">
+          <span className="font-display font-extrabold text-[17px] text-white leading-none flex-1">
             السوق المحلي
           </span>
 
-          {/* Icon buttons */}
-          <Link href="/market/my" aria-label="إعلاناتي"
-            className="w-7 h-7 flex items-center justify-center bg-white/15 rounded-full">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-3.5 h-3.5">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-          </Link>
-          <Link href="/market/saved" aria-label="المحفوظات"
-            className="w-7 h-7 flex items-center justify-center bg-white/15 rounded-full">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-3.5 h-3.5">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </Link>
-          <Link href="/market/chat" aria-label="رسائل"
-            className="relative w-7 h-7 flex items-center justify-center bg-white/15 rounded-full">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-3.5 h-3.5">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Burger menu */}
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="relative w-[34px] h-[34px] flex items-center justify-center bg-white/10 rounded-[10px]"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
             </svg>
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[13px] h-[13px] bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
-                {unread > 9 ? "9+" : unread}
-              </span>
+              <span className="absolute top-[4px] right-[4px] w-[7px] h-[7px] rounded-full bg-sand border-[1.5px] border-olive" />
             )}
-          </Link>
-
-          {/* Add listing button */}
-          <button onClick={handleNewListing}
-            className="flex items-center gap-1 bg-white/15 hover:bg-white/25 transition-colors text-white text-[12px] font-semibold px-3 py-1.5 rounded-full flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-              <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
-            </svg>
-            إعلان
           </button>
         </div>
 
         {/* Search bar */}
-        <div className="bg-white/15 rounded-xl flex items-center gap-2 px-3 py-2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 opacity-70 flex-shrink-0">
+        <div className="bg-white/[0.12] border border-white/15 rounded-xl flex items-center gap-2 px-3.5 py-2.5 relative z-10">
+          <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 flex-shrink-0">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input
@@ -343,6 +323,51 @@ export default function MarketPage() {
           )}
         </div>
       </div>
+
+      {/* Burger dropdown */}
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setMenuOpen(false)} />
+          <div className="fixed top-[52px] left-4 w-48 bg-surface rounded-xl shadow-lg border border-border overflow-hidden z-[101]" dir="rtl">
+            <button onClick={() => { setMenuOpen(false); handleNewListing(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-fog transition-colors border-b border-border/50 text-right">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-[18px] h-[18px] text-olive flex-shrink-0">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span className="font-display font-bold text-[13px] text-ink">إضافة إعلان</span>
+            </button>
+            <Link href="/market/my" onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-fog transition-colors border-b border-border/50">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] text-olive flex-shrink-0">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+              </svg>
+              <span className="font-display font-bold text-[13px] text-ink">إعلاناتي</span>
+            </Link>
+            <Link href="/market/saved" onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-fog transition-colors border-b border-border/50">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] text-olive flex-shrink-0">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+              <span className="font-display font-bold text-[13px] text-ink">المحفوظات</span>
+            </Link>
+            <Link href="/market/chat" onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-fog transition-colors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] text-olive flex-shrink-0">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+              <div className="flex items-center gap-2">
+                <span className="font-display font-bold text-[13px] text-ink">الرسائل</span>
+                {unread > 0 && (
+                  <span className="min-w-[18px] h-[18px] bg-sand text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </div>
+            </Link>
+          </div>
+        </>
+      )}
 
       {/* ── Filters ── */}
       <div className="bg-surface border-b border-border flex-shrink-0">
