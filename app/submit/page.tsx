@@ -13,6 +13,7 @@ import type { ApiErrorResponse } from "@/lib/api/errors";
 import { validateSubmitPrice, validatePhone } from "@/lib/validation/submit-price";
 import { useProduct, useAreas, useSubmitReport } from "@/lib/queries/hooks";
 import { ReceiptUpload } from "@/components/reports/ReceiptUpload";
+import { event as gtagEvent } from "@/lib/gtag";
 import { normalizeDigits } from "@/lib/normalize-digits";
 import { uploadReceiptPhoto } from "@/lib/api/upload";
 import { enqueueReport } from "@/lib/offline/queue";
@@ -127,6 +128,7 @@ function SubmitForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
       playSound("submitted");
+      gtagEvent({ action: "submit_price", category: "engagement", label: id ?? undefined });
       setShowAuthPopup(false);
       router.push(`/product/${id}?submitted=1`);
     } catch (err: unknown) {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
+import { event as gtagEvent } from "@/lib/gtag";
 import { ConversationList } from "../page";
 
 interface Message {
@@ -159,6 +160,7 @@ function useChatDetail(id: string) {
         alert(data.message || "فشل إرسال الرسالة");
         return;
       }
+      gtagEvent({ action: "send_message", category: "chat", label: id });
       await fetchMessages(false);
     } catch {
       setPendingMessages((prev) => prev.filter((m) => m.id !== optimisticId));

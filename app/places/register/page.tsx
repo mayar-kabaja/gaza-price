@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { compressImage } from "@/lib/compress-image";
 import { normalizeDigits } from "@/lib/normalize-digits";
+import { event as gtagEvent } from "@/lib/gtag";
 
 const TYPE_OPTIONS = [
   { key: "workspace", label: "مساحة عمل", sub: "مساحة عمل مشتركة أو مكتب", icon: "💻", section: "workspace", wide: true, smallIcon: false },
@@ -266,6 +267,7 @@ function RegisterPlacePage() {
         setSubmitting(false);
         return;
       }
+      gtagEvent({ action: "register_place", category: "places", label: type });
       setStep(5); // success
     } catch {
       setError("تعذر الاتصال بالخادم");

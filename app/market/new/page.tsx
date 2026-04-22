@@ -12,6 +12,7 @@ import { compressImage } from "@/lib/compress-image";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
+import { event as gtagEvent } from "@/lib/gtag";
 
 const CATEGORIES = [
   { value: "electronics", label: "إلكترونيات" },
@@ -165,7 +166,7 @@ export default function NewListingPage() {
         setSubmitting(false);
         return;
       }
-      // Navigate to the newly created listing
+      gtagEvent({ action: "submit_listing", category: "engagement", label: category });
       router.replace(`/market/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "حدث خطأ، حاول مجددًا");

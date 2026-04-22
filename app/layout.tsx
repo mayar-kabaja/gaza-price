@@ -10,7 +10,9 @@ import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 import { RegisterSW } from "@/components/sw/RegisterSW";
 import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import { GlobalDesktopShell } from "@/components/layout/GlobalDesktopShell";
+import { GA_ID } from "@/lib/gtag";
 
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
@@ -107,6 +109,18 @@ export default function RootLayout({
         </QueryProvider>
         <RegisterSW />
         <Analytics />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}');
+          `}
+        </Script>
       </body>
     </html>
   );

@@ -8,6 +8,7 @@ import { setStoredToken } from "@/lib/auth/token";
 import { handleApiError } from "@/lib/api/errors";
 import type { ApiErrorResponse } from "@/lib/api/errors";
 import { playSound } from "@/lib/sounds";
+import { event as gtagEvent } from "@/lib/gtag";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -34,6 +35,15 @@ export function useFlag(
     onSuccessRef.current = options?.onSuccess;
   }, [options?.onSuccess]);
 
+  // Always sync with server data when props change
+  useEffect(() => {
+    setCount(toNumber(initialCount));
+  }, [initialCount]);
+
+  useEffect(() => {
+    setFlagged(!!options?.initialFlagged);
+  }, [options?.initialFlagged]);
+
   async function toggle(reason?: string) {
     if (loading) return;
     if (!priceId) return;
@@ -58,10 +68,14 @@ export function useFlag(
       if (typeof (data as { access_token?: string }).access_token === "string") {
         setStoredToken((data as { access_token: string }).access_token);
       }
+      gtagEvent({ action: "flag_price", category: "engagement", label: priceId });
       const newFlagged = !!(data as { flagged?: boolean }).flagged;
       const newCount = toNumber((data as { flag_count?: number }).flag_count ?? count);
       setFlagged(newFlagged);
       setCount(newCount);
+      // Invalidate cached queries so next render/reload shows fresh data
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["prices"] });
       const extra =
         typeof (data as { confirmation_count?: number }).confirmation_count === "number" ||
         typeof (data as { confirmed?: boolean }).confirmed === "boolean"
