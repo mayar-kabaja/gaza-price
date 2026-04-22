@@ -267,7 +267,7 @@ function RegisterPlacePage() {
         setSubmitting(false);
         return;
       }
-      gtagEvent({ action: "register_place", category: "places", label: type });
+      gtagEvent({ action: "register_place", category: "places", label: type ?? undefined });
       setStep(5); // success
     } catch {
       setError("تعذر الاتصال بالخادم");
