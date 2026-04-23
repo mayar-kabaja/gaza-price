@@ -3,13 +3,9 @@
 import { useState } from "react";
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
-import { ConfirmButton } from "@/components/actions/ConfirmButton";
-import { FlagButton } from "@/components/actions/FlagButton";
+import { VoteButtons } from "@/components/actions/VoteButtons";
 import { LoaderDots } from "@/components/ui/LoaderDots";
-import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
-import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
 import { normalizeDigits } from "@/lib/normalize-digits";
-import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
 import { cn } from "@/lib/utils";
@@ -17,21 +13,13 @@ import { cn } from "@/lib/utils";
 interface PriceCardProps {
   price: Price;
   isRefetching?: boolean;
-  confirmationCountOverride?: number;
-  onConfirmationUpdate?: (priceId: string, newCount: number) => void;
 }
 
-export function PriceCard({ price, isRefetching = false, confirmationCountOverride, onConfirmationUpdate }: PriceCardProps) {
-  const { overrides } = useConfirmationOverrides();
-  const { overrides: flagOverrides } = useFlagOverrides();
-  const { confirmedByMe: confirmedOverrides, flaggedByMe: flaggedOverrides } = useConfirmFlagExclusivity();
-  const isConfirmedByMe = confirmedOverrides[price.id] ?? price.confirmed_by_me;
-  const isFlaggedByMe = flaggedOverrides[price.id] ?? price.flagged_by_me;
-  const showExclusivityHint = (isConfirmedByMe || isFlaggedByMe) && !price.is_mine;
+export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
-  const displayCount = overrides[price.id] ?? confirmationCountOverride ?? price.confirmation_count;
-  const displayFlagCount = flagOverrides[price.id] ?? price.flag_count;
+  const displayCount = price.confirmation_count;
+  const displayFlagCount = price.flag_count;
 
   const isDemo = !!price.is_demo;
   const store_address = price.store_address;
@@ -179,24 +167,14 @@ export function PriceCard({ price, isRefetching = false, confirmationCountOverri
             سعرك
           </span>
         ) : (
-          <>
-            <div className="flex items-center gap-2 mr-auto">
-              <ConfirmButton
-                priceId={price.id}
-                productId={price.product_id}
-                initialCount={price.confirmation_count}
-                confirmedByMe={price.confirmed_by_me}
-                flaggedByMe={price.flagged_by_me}
-                onConfirmed={onConfirmationUpdate ? (newCount) => onConfirmationUpdate(price.id, newCount) : undefined}
-              />
-              <FlagButton
-                priceId={price.id}
-                initialCount={price.flag_count}
-                flaggedByMe={price.flagged_by_me}
-                confirmedByMe={price.confirmed_by_me}
-              />
-            </div>
-          </>
+          <div className="flex items-center gap-2 mr-auto">
+            <VoteButtons
+              priceId={price.id}
+              initialVote={price.my_vote}
+              initialConfirmCount={price.confirmation_count}
+              initialFlagCount={price.flag_count}
+            />
+          </div>
         )}
       </div>
     </div>

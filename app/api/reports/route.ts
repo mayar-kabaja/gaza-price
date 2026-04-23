@@ -7,7 +7,7 @@ const MAX_PAGE_SIZE = 50;
 
 export type ReportFilter = "all" | "my_area" | "today" | "trusted";
 
-/** GET — Proxy to backend reports feed. Optional Bearer for is_confirmed_by_me. */
+/** GET — Proxy to backend reports feed. Optional Bearer for my_vote. */
 export async function GET(req: NextRequest) {
   const base = getApiBaseUrl();
   if (!base) {

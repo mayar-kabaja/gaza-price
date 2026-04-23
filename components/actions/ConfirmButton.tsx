@@ -1,10 +1,6 @@
 "use client";
 
 import { useConfirm } from "@/hooks/useConfirm";
-import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
-import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
-import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
-
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
@@ -13,25 +9,15 @@ interface ConfirmButtonProps {
   priceId: string;
   productId: string;
   initialCount: number;
-  /** When true, show as already confirmed by current user (e.g. in feed). */
   confirmedByMe?: boolean;
-  /** When true, disable (user can't confirm if they've flagged). */
   flaggedByMe?: boolean;
-  /** Optional extra callback when confirm succeeds (e.g. for local state). */
   onConfirmed?: (newCount: number) => void;
 }
 
 export function ConfirmButton({ priceId, productId, initialCount, confirmedByMe = false, flaggedByMe = false, onConfirmed }: ConfirmButtonProps) {
-  const { setOverride } = useConfirmationOverrides();
-  const { setOverride: setFlagOverride } = useFlagOverrides();
-  const { flaggedByMe: flaggedOverrides, setConfirmedByMe, setFlaggedByMe } = useConfirmFlagExclusivity();
   const { count, confirmed, loading, error, setError, confirm } = useConfirm(initialCount, priceId, {
     initialConfirmed: confirmedByMe,
-    onSuccess: (newCount, extra) => {
-      setOverride(priceId, newCount);
-      if (extra?.flag_count !== undefined) setFlagOverride(priceId, extra.flag_count);
-      setConfirmedByMe(priceId, extra?.confirmed ?? true);
-      setFlaggedByMe(priceId, extra?.flagged ?? false);
+    onSuccess: (newCount) => {
       onConfirmed?.(newCount);
     },
   });

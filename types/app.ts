@@ -50,14 +50,15 @@ export interface Product {
   price_preview?: PricePreviewItem[];
 }
 
+export type VoteState = "confirm" | "flag" | null;
+
 /** One price in product.price_preview (subset of Price for home card). */
 export interface PricePreviewItem {
   id: string;
   price: number;
   confirmation_count: number;
-  confirmed_by_me: boolean;
+  my_vote?: VoteState;
   flag_count?: number;
-  flagged_by_me?: boolean;
   is_mine?: boolean;
   is_demo?: boolean;
   reported_at: string;
@@ -119,9 +120,7 @@ export interface Price {
   reported_at: string;
   expires_at: string;
   /** Set when GET /prices is called with optional auth. */
-  confirmed_by_me?: boolean;
-  /** Set when GET /prices is called with optional auth. */
-  flagged_by_me?: boolean;
+  my_vote?: VoteState;
   /** Set when GET /prices is called with optional auth. */
   is_mine?: boolean;
   /** True when price is older than 24h (from GET /prices). */
@@ -177,8 +176,7 @@ export interface ReportFeedItem {
   status: PriceStatus;
   reported_at: string;
   has_receipt: boolean;
-  is_confirmed_by_me: boolean;
-  is_flagged_by_me: boolean;
+  my_vote?: VoteState;
   /** True when this report was submitted by the current user. */
   is_mine?: boolean;
   product?: {

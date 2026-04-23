@@ -3,12 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { TrustDots } from "@/components/trust/TrustDots";
-import { ConfirmButton } from "@/components/actions/ConfirmButton";
-import { FlagButton } from "@/components/actions/FlagButton";
-import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
-import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
+import { VoteButtons } from "@/components/actions/VoteButtons";
 import { normalizeDigits } from "@/lib/normalize-digits";
-import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
 import type { ReportFeedItem } from "@/types/app";
@@ -19,13 +15,6 @@ interface ReportCardProps {
 }
 
 export function ReportCard({ report }: ReportCardProps) {
-  const { overrides } = useConfirmationOverrides();
-  const { overrides: flagOverrides } = useFlagOverrides();
-  const { confirmedByMe: confirmedOverrides, flaggedByMe: flaggedOverrides } = useConfirmFlagExclusivity();
-  const isConfirmedByMe = confirmedOverrides[report.id] ?? report.is_confirmed_by_me;
-  const isFlaggedByMe = flaggedOverrides[report.id] ?? report.is_flagged_by_me;
-  const showExclusivityHint = (isConfirmedByMe || isFlaggedByMe) && !report.is_mine;
-
   const storeName = report.store?.name_ar ?? report.store_name_raw ?? "متجر غير محدد";
   const product = report.product;
   const categoryIcon = product?.category?.icon ?? "📦";
@@ -33,8 +22,8 @@ export function ReportCard({ report }: ReportCardProps) {
     ? `${product.name_ar} · ${toArabicNumerals(product.unit_size)} ${product.unit}`
     : "—";
   const stale = isStale(report.reported_at);
-  const displayCount = overrides[report.id] ?? report.confirmation_count;
-  const displayFlagCount = flagOverrides[report.id] ?? report.flag_count;
+  const displayCount = report.confirmation_count;
+  const displayFlagCount = report.flag_count;
 
   const isDemo = !!report.is_demo;
   const store_address = report.store_address;
@@ -179,18 +168,11 @@ export function ReportCard({ report }: ReportCardProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mr-auto">
-              <ConfirmButton
+              <VoteButtons
                 priceId={report.id}
-                productId={report.product_id}
-                initialCount={report.confirmation_count}
-                confirmedByMe={report.is_confirmed_by_me}
-                flaggedByMe={report.is_flagged_by_me}
-              />
-              <FlagButton
-                priceId={report.id}
-                initialCount={report.flag_count}
-                flaggedByMe={report.is_flagged_by_me}
-                confirmedByMe={report.is_confirmed_by_me}
+                initialVote={report.my_vote}
+                initialConfirmCount={report.confirmation_count}
+                initialFlagCount={report.flag_count}
               />
             </div>
           </>

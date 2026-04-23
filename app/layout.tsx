@@ -4,9 +4,6 @@ import "./globals.css";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AreaProvider } from "@/contexts/AreaContext";
 import { SessionProvider } from "@/contexts/SessionContext";
-import { ConfirmationOverridesProvider } from "@/contexts/ConfirmationOverridesContext";
-import { ConfirmFlagExclusivityProvider } from "@/contexts/ConfirmFlagExclusivityContext";
-import { FlagOverridesProvider } from "@/contexts/FlagOverridesContext";
 import { RegisterSW } from "@/components/sw/RegisterSW";
 import { OfflineQueueSync } from "@/components/sw/OfflineQueueSync";
 import { Analytics } from "@vercel/analytics/next";
@@ -92,18 +89,12 @@ export default function RootLayout({
         <QueryProvider>
           <SessionProvider>
           <AreaProvider>
-          <ConfirmationOverridesProvider>
-            <FlagOverridesProvider>
-              <ConfirmFlagExclusivityProvider>
               <div className="app-shell">
                 <GlobalDesktopShell>
                   {children}
                 </GlobalDesktopShell>
               </div>
               <OfflineQueueSync />
-              </ConfirmFlagExclusivityProvider>
-            </FlagOverridesProvider>
-          </ConfirmationOverridesProvider>
           </AreaProvider>
           </SessionProvider>
         </QueryProvider>

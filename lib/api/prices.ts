@@ -17,8 +17,7 @@ type BackendPrice = {
   is_lowest?: boolean;
   reported_at: string;
   expires_at: string;
-  confirmed_by_me?: boolean;
-  flagged_by_me?: boolean;
+  my_vote?: "confirm" | "flag" | null;
   is_mine?: boolean;
   is_stale?: boolean;
 };
@@ -46,8 +45,7 @@ function mapPrice(p: BackendPrice, productId: string): Price {
     is_lowest: p.is_lowest,
     reported_at: p.reported_at,
     expires_at: p.expires_at,
-    confirmed_by_me: p.confirmed_by_me,
-    flagged_by_me: p.flagged_by_me,
+    my_vote: p.my_vote,
     is_mine: p.is_mine,
     is_stale: p.is_stale,
   };

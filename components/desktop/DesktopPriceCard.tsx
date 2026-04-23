@@ -5,9 +5,7 @@ import Link from "next/link";
 import type { Product, Price } from "@/types/app";
 import { previewToPrice, isStale, calcStats, getAverage } from "@/lib/price";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
-import { ConfirmButton } from "@/components/actions/ConfirmButton";
-import { FlagButton } from "@/components/actions/FlagButton";
-import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
+import { VoteButtons } from "@/components/actions/VoteButtons";
 import { cn } from "@/lib/utils";
 
 interface DesktopPriceCardProps {
@@ -48,7 +46,6 @@ const TREND_TEXT_COLORS: Record<Trend, string> = {
 };
 
 export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index = 0 }: DesktopPriceCardProps) {
-  const { overrides } = useConfirmationOverrides();
   const previews = product.price_preview ?? [];
   if (previews.length === 0) return null;
 
@@ -62,7 +59,7 @@ export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index 
   const latest = prices.reduce((a, b) =>
     new Date(b.reported_at) > new Date(a.reported_at) ? b : a
   );
-  const displayCount = overrides[latest.id] ?? latest.confirmation_count;
+  const displayCount = latest.confirmation_count;
   const stale = isStale(latest.reported_at);
   const maxPrice = Math.max(...prices.map((p) => p.price));
   const range = maxPrice - stats.min_price;
@@ -131,21 +128,12 @@ export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index 
             </span>
           </div>
           {!latest.is_mine && (
-            <div className="flex items-center gap-2">
-              <ConfirmButton
-                priceId={latest.id}
-                productId={product.id}
-                initialCount={latest.confirmation_count}
-                confirmedByMe={latest.confirmed_by_me}
-                flaggedByMe={latest.flagged_by_me}
-              />
-              <FlagButton
-                priceId={latest.id}
-                initialCount={latest.flag_count}
-                flaggedByMe={latest.flagged_by_me}
-                confirmedByMe={latest.confirmed_by_me}
-              />
-            </div>
+            <VoteButtons
+              priceId={latest.id}
+              initialVote={latest.my_vote}
+              initialConfirmCount={latest.confirmation_count}
+              initialFlagCount={latest.flag_count}
+            />
           )}
         </div>
       </div>

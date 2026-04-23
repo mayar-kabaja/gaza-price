@@ -202,7 +202,7 @@ export function usePrices(params: {
   areaId?: string | null;
   sort?: string;
   limit?: number;
-  /** Pass from useSession(); wait for session loading to avoid confirmed_by_me flicker. */
+  /** Pass from useSession(); wait for session loading to avoid my_vote flicker. */
   sessionLoading?: boolean;
   accessToken?: string | null;
 }) {

@@ -1,9 +1,6 @@
 "use client";
 
 import { useFlag } from "@/hooks/useFlag";
-import { useFlagOverrides } from "@/contexts/FlagOverridesContext";
-import { useConfirmationOverrides } from "@/contexts/ConfirmationOverridesContext";
-import { useConfirmFlagExclusivity } from "@/contexts/ConfirmFlagExclusivityContext";
 import { toArabicNumerals } from "@/lib/arabic";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
@@ -13,22 +10,14 @@ interface FlagButtonProps {
   priceId: string;
   initialCount: number;
   flaggedByMe?: boolean;
-  /** When true, disable (user can't flag if they've confirmed). */
   confirmedByMe?: boolean;
   onFlagged?: (flagged: boolean, newCount: number) => void;
 }
 
 export function FlagButton({ priceId, initialCount, flaggedByMe = false, confirmedByMe = false, onFlagged }: FlagButtonProps) {
-  const { setOverride } = useFlagOverrides();
-  const { setOverride: setConfirmOverride } = useConfirmationOverrides();
-  const { confirmedByMe: confirmedOverrides, setConfirmedByMe, setFlaggedByMe } = useConfirmFlagExclusivity();
   const { count, flagged, loading, error, setError, toggle } = useFlag(initialCount, priceId, {
     initialFlagged: flaggedByMe,
-    onSuccess: (newFlagged, newCount, extra) => {
-      setOverride(priceId, newCount);
-      if (extra?.confirmation_count !== undefined) setConfirmOverride(priceId, extra.confirmation_count);
-      setFlaggedByMe(priceId, newFlagged);
-      setConfirmedByMe(priceId, false);
+    onSuccess: (newFlagged, newCount) => {
       onFlagged?.(newFlagged, newCount);
     },
   });

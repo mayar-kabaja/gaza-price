@@ -38,7 +38,7 @@ async function fetchPricePreview(
   token: string | null,
   limit = 5,
   areaId?: string
-): Promise<{ id: string; price: number; confirmation_count: number; confirmed_by_me: boolean; flag_count?: number; flagged_by_me?: boolean; is_mine?: boolean; reported_at: string; store?: { name_ar?: string }; area?: { name_ar?: string } }[]> {
+): Promise<{ id: string; price: number; confirmation_count: number; my_vote?: "confirm" | "flag" | null; flag_count?: number; is_mine?: boolean; reported_at: string; store?: { name_ar?: string }; area?: { name_ar?: string } }[]> {
   const params = new URLSearchParams({ product_id: productId, sort: "price_asc", limit: String(limit), offset: "0" });
   if (areaId) params.set("area_id", areaId);
   const headers: HeadersInit = { Accept: "application/json" };
@@ -46,7 +46,7 @@ async function fetchPricePreview(
   const res = await fetch(`${base}/prices?${params.toString()}`, { headers, signal: AbortSignal.timeout(15000) });
   if (!res.ok) return [];
   const data = (await res.json()) as { prices?: unknown[] };
-  return (data.prices ?? []) as { id: string; price: number; confirmation_count: number; confirmed_by_me: boolean; flag_count?: number; flagged_by_me?: boolean; is_mine?: boolean; reported_at: string; store?: { name_ar?: string }; area?: { name_ar?: string } }[];
+  return (data.prices ?? []) as { id: string; price: number; confirmation_count: number; my_vote?: "confirm" | "flag" | null; flag_count?: number; is_mine?: boolean; reported_at: string; store?: { name_ar?: string }; area?: { name_ar?: string } }[];
 }
 
 export async function GET(req: NextRequest) {
