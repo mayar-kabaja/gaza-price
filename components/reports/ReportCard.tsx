@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { VoteButtons } from "@/components/actions/VoteButtons";
+import { useVote } from "@/hooks/useVote";
+import { LoaderDots } from "@/components/ui/LoaderDots";
 import { normalizeDigits } from "@/lib/normalize-digits";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { isStale } from "@/lib/price";
@@ -22,8 +24,12 @@ export function ReportCard({ report }: ReportCardProps) {
     ? `${product.name_ar} · ${toArabicNumerals(product.unit_size)} ${product.unit}`
     : "—";
   const stale = isStale(report.reported_at);
-  const displayCount = report.confirmation_count;
-  const displayFlagCount = report.flag_count;
+
+  const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(report.id, {
+    initialVote: report.my_vote,
+    initialConfirmCount: report.confirmation_count,
+    initialFlagCount: report.flag_count,
+  });
 
   const isDemo = !!report.is_demo;
   const store_address = report.store_address;
@@ -147,13 +153,13 @@ export function ReportCard({ report }: ReportCardProps) {
           {formatRelativeTime(report.reported_at)}
         </div>
         <div className="flex items-center gap-1.5">
-          <TrustDots confirmations={displayCount} />
+          <TrustDots confirmations={confirmCount} />
           <span className="text-[10px] text-mist">
-            {toArabicNumerals(displayCount)} تأكيد
+            {toArabicNumerals(confirmCount)} تأكيد
           </span>
-          {displayFlagCount > 0 && (
+          {flagCount > 0 && (
             <span className="text-[10px] text-sand/80">
-              · {toArabicNumerals(displayFlagCount)} إبلاغ
+              · {toArabicNumerals(flagCount)} إبلاغ
             </span>
           )}
         </div>
@@ -168,12 +174,7 @@ export function ReportCard({ report }: ReportCardProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mr-auto">
-              <VoteButtons
-                priceId={report.id}
-                initialVote={report.my_vote}
-                initialConfirmCount={report.confirmation_count}
-                initialFlagCount={report.flag_count}
-              />
+              <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
             </div>
           </>
         )}

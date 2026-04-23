@@ -1,32 +1,19 @@
 "use client";
 
-import { useVote, type VoteState } from "@/hooks/useVote";
+import type { VoteState } from "@/hooks/useVote";
 import { ApiErrorBox } from "@/components/ui/ApiErrorBox";
 import { cn } from "@/lib/utils";
 import { playSound } from "@/lib/sounds";
 
 interface VoteButtonsProps {
-  priceId: string;
-  initialVote?: VoteState;
-  initialConfirmCount?: number;
-  initialFlagCount?: number;
-  onVoted?: (vote: VoteState, counts: { confirmation_count: number; flag_count: number }) => void;
+  myVote: VoteState;
+  loading: boolean;
+  error: string | null;
+  setError: (e: string | null) => void;
+  vote: (type: "confirm" | "flag") => void;
 }
 
-export function VoteButtons({
-  priceId,
-  initialVote = null,
-  initialConfirmCount = 0,
-  initialFlagCount = 0,
-  onVoted,
-}: VoteButtonsProps) {
-  const { myVote, loading, error, setError, vote } = useVote(priceId, {
-    initialVote,
-    initialConfirmCount,
-    initialFlagCount,
-    onSuccess: onVoted,
-  });
-
+export function VoteButtons({ myVote, loading, error, setError, vote }: VoteButtonsProps) {
   return (
     <div className="flex flex-col items-start gap-1">
       <div className="flex items-center gap-2">

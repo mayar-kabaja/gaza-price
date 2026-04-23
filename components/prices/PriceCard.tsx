@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { VoteButtons } from "@/components/actions/VoteButtons";
+import { useVote } from "@/hooks/useVote";
 import { LoaderDots } from "@/components/ui/LoaderDots";
 import { normalizeDigits } from "@/lib/normalize-digits";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
@@ -18,14 +19,18 @@ interface PriceCardProps {
 export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   const storeName = price.store?.name_ar ?? price.store_name_raw ?? "متجر غير محدد";
   const stale = isStale(price.reported_at);
-  const displayCount = price.confirmation_count;
-  const displayFlagCount = price.flag_count;
 
   const isDemo = !!price.is_demo;
   const store_address = price.store_address;
   const store_phone = price.store_phone ? normalizeDigits(price.store_phone) : price.store_phone;
   const hasDetails = !!(store_address || store_phone);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(price.id, {
+    initialVote: price.my_vote,
+    initialConfirmCount: price.confirmation_count,
+    initialFlagCount: price.flag_count,
+  });
 
   return (
     <div
@@ -146,13 +151,13 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
             <LoaderDots size="sm" className="inline-flex" />
           ) : (
             <>
-              <TrustDots confirmations={displayCount} />
+              <TrustDots confirmations={confirmCount} />
               <span className="text-[11px] text-mist">
-                {toArabicNumerals(displayCount)} تأكيد
+                {toArabicNumerals(confirmCount)} تأكيد
               </span>
-              {displayFlagCount > 0 && (
+              {flagCount > 0 && (
                 <span className="text-[11px] text-sand/80">
-                  · {toArabicNumerals(displayFlagCount)} إبلاغ
+                  · {toArabicNumerals(flagCount)} إبلاغ
                 </span>
               )}
             </>
@@ -168,12 +173,7 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
           </span>
         ) : (
           <div className="flex items-center gap-2 mr-auto">
-            <VoteButtons
-              priceId={price.id}
-              initialVote={price.my_vote}
-              initialConfirmCount={price.confirmation_count}
-              initialFlagCount={price.flag_count}
-            />
+            <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
           </div>
         )}
       </div>

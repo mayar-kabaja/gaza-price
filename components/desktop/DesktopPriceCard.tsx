@@ -6,6 +6,7 @@ import type { Product, Price } from "@/types/app";
 import { previewToPrice, isStale, calcStats, getAverage } from "@/lib/price";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { VoteButtons } from "@/components/actions/VoteButtons";
+import { useVote } from "@/hooks/useVote";
 import { cn } from "@/lib/utils";
 
 interface DesktopPriceCardProps {
@@ -59,7 +60,11 @@ export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index 
   const latest = prices.reduce((a, b) =>
     new Date(b.reported_at) > new Date(a.reported_at) ? b : a
   );
-  const displayCount = latest.confirmation_count;
+  const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(latest.id, {
+    initialVote: latest.my_vote,
+    initialConfirmCount: latest.confirmation_count,
+    initialFlagCount: latest.flag_count,
+  });
   const stale = isStale(latest.reported_at);
   const maxPrice = Math.max(...prices.map((p) => p.price));
   const range = maxPrice - stats.min_price;
@@ -128,12 +133,7 @@ export const DesktopPriceCard = memo(function DesktopPriceCard({ product, index 
             </span>
           </div>
           {!latest.is_mine && (
-            <VoteButtons
-              priceId={latest.id}
-              initialVote={latest.my_vote}
-              initialConfirmCount={latest.confirmation_count}
-              initialFlagCount={latest.flag_count}
-            />
+            <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
           )}
         </div>
       </div>
