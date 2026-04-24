@@ -82,6 +82,35 @@ export default function AdminReportsPage() {
   const [editProductSearching, setEditProductSearching] = useState(false);
   const [showEditProductDropdown, setShowEditProductDropdown] = useState(false);
   const [editSelectedProductName, setEditSelectedProductName] = useState("");
+  const editProductSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function searchEditProducts(q: string) {
+    setEditProductQuery(q);
+    setEditSelectedProductName("");
+    setEditForm((f) => ({ ...f, product_id: "" }));
+    if (editProductSearchTimer.current) clearTimeout(editProductSearchTimer.current);
+    if (!q.trim() || q.trim().length < 2) {
+      setEditProductResults([]);
+      setShowEditProductDropdown(false);
+      return;
+    }
+    setShowEditProductDropdown(true);
+    editProductSearchTimer.current = setTimeout(() => {
+      setEditProductSearching(true);
+      fetch(`/api/products?search=${encodeURIComponent(q.trim())}&limit=10`)
+        .then((r) => r.json())
+        .then((d) => setEditProductResults(d?.products ?? []))
+        .catch(() => setEditProductResults([]))
+        .finally(() => setEditProductSearching(false));
+    }, 250);
+  }
+
+  function selectEditProduct(p: Product) {
+    setEditForm((f) => ({ ...f, product_id: p.id }));
+    setEditSelectedProductName(p.name_ar);
+    setEditProductQuery(p.name_ar);
+    setShowEditProductDropdown(false);
+  }
 
   // Status dropdown
   const [statusDropdownId, setStatusDropdownId] = useState<string | null>(null);
@@ -237,12 +266,20 @@ export default function AdminReportsPage() {
   async function openEditModal(r: Report) {
     setEditTarget(r);
     setEditFetching(true);
+    // Pre-fill product name from the report row so it shows immediately
+    const rowProductId = r.product_id ?? r.product?.id ?? "";
+    const rowProductName = r.product?.name_ar ?? "";
+    setEditSelectedProductName(rowProductName);
+    setEditProductQuery(rowProductName);
+    setShowEditProductDropdown(false);
     try {
       const res = await fetch(`/api/prices/${r.id}`);
       const data = await res.json();
       if (res.ok && data) {
+        const pid = data?.product_id ?? data?.product?.id ?? rowProductId;
+        const pname = data?.product?.name_ar ?? rowProductName;
         setEditForm({
-          product_id: data?.product_id ?? data?.product?.id ?? "",
+          product_id: pid,
           area_id: data?.area_id ?? data?.area?.id ?? "",
           price: data?.price != null ? String(data.price) : "",
           store_name_raw: data?.store_name_raw ?? "",
@@ -250,6 +287,12 @@ export default function AdminReportsPage() {
           store_address: data?.store_address ?? "",
           receipt_photo_url: data?.receipt_photo_url ?? "",
         });
+        setEditSelectedProductName(pname);
+        setEditProductQuery(pname);
+        // Ensure the current product is in the products list
+        if (pid && pname && !products.some((p) => p.id === pid)) {
+          setProducts((prev) => [{ id: pid, name_ar: pname }, ...prev]);
+        }
       } else {
         toast("Could not load report details", "error");
         setEditTarget(null);
@@ -726,19 +769,47 @@ export default function AdminReportsPage() {
             ) : (
               <>
                 <div className="space-y-3">
-                  <div>
+                  <div className="relative">
                     <label className="block text-xs text-[#4E6070] mb-1">Product</label>
-                    <select
-                      value={editForm.product_id}
-                      onChange={(e) => setEditForm((f) => ({ ...f, product_id: e.target.value }))}
-                      disabled={addOptionsLoading}
-                      className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59] disabled:opacity-70"
-                    >
-                      <option value="">{addOptionsLoading ? "Loading..." : "Select product..."}</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name_ar}</option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={editSelectedProductName || editProductQuery}
+                      onChange={(e) => searchEditProducts(e.target.value)}
+                      onFocus={() => { if (editProductQuery.trim().length >= 2) setShowEditProductDropdown(true); }}
+                      placeholder="Search product by name..."
+                      dir="rtl"
+                      className="w-full rounded-lg border border-[#243040] bg-[#18212C] px-3 py-2 text-sm text-[#D8E4F0] placeholder-[#4E6070] outline-none focus:border-[#4A7C59]"
+                    />
+                    {editSelectedProductName && (
+                      <button
+                        type="button"
+                        onClick={() => { setEditSelectedProductName(""); setEditProductQuery(""); setEditForm((f) => ({ ...f, product_id: "" })); }}
+                        className="absolute left-2 top-[26px] text-[#8FA3B8] hover:text-white text-xs"
+                      >✕</button>
+                    )}
+                    {showEditProductDropdown && (
+                      <>
+                      <div className="fixed inset-0 z-[9]" onClick={() => setShowEditProductDropdown(false)} />
+                      <div className="absolute z-10 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-lg border border-[#243040] bg-[#18212C] shadow-xl">
+                        {editProductSearching && (
+                          <div className="px-3 py-2 text-xs text-[#4E6070]">Searching...</div>
+                        )}
+                        {!editProductSearching && editProductResults.length === 0 && editProductQuery.trim().length >= 2 && (
+                          <div className="px-3 py-2 text-xs text-[#4E6070]">No products found</div>
+                        )}
+                        {editProductResults.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => selectEditProduct(p)}
+                            className={`w-full text-right px-3 py-2 text-sm hover:bg-[#243040] transition-colors ${editForm.product_id === p.id ? "text-[#6BA880] font-semibold bg-[#243040]" : "text-[#D8E4F0]"}`}
+                          >
+                            {p.name_ar}
+                          </button>
+                        ))}
+                      </div>
+                      </>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs text-[#4E6070] mb-1">Area</label>
