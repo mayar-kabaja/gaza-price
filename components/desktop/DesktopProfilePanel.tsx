@@ -617,7 +617,8 @@ export function DesktopProfilePanel() {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setShowDeleteConfirm(false)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-5 shadow-xl" style={{ width: "min(24rem, calc(100vw - 2rem))" }}>
-            <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف حسابك</p>
+            <p className="font-body font-semibold text-ink mb-1.5 text-center">هل أنت متأكد من حذف حسابك؟</p>
+            <p className="font-body text-sm text-mist mb-4 text-center leading-relaxed">يمكنك استعادة حسابك خلال ٧٢ ساعة بتسجيل الدخول مرة أخرى. بعدها سيتم حذف بياناتك نهائياً.</p>
             {deleteError && <ApiErrorBox message={deleteError} onDismiss={() => setDeleteError(null)} />}
             <div className="flex gap-2 mt-2">
               <button

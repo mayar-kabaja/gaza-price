@@ -629,7 +629,8 @@ function MobileAccountPage() {
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setShowDeleteConfirm(false)} />
             <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-4 shadow-xl">
-              <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف حسابك</p>
+              <p className="font-body font-semibold text-ink mb-1.5 text-center">هل أنت متأكد من حذف حسابك؟</p>
+              <p className="font-body text-sm text-mist mb-4 text-center leading-relaxed">يمكنك استعادة حسابك خلال ٧٢ ساعة بتسجيل الدخول مرة أخرى. بعدها سيتم حذف بياناتك نهائياً.</p>
               {deleteError && <ApiErrorBox message={deleteError} onDismiss={() => setDeleteError(null)} />}
               <div className="flex gap-2">
                 <button
