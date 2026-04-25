@@ -131,7 +131,7 @@ export async function DELETE(req: NextRequest) {
     await apiDelete("/contributors/me", { Authorization: `Bearer ${token}` });
     return NextResponse.json({
       deleted: true,
-      message: "تم حذف جميع بياناتك نهائياً",
+      message: "تم حذف حسابك بنجاح",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "خطأ في الخادم";

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useSession } from "@/hooks/useSession";
+import { useQueryClient } from "@tanstack/react-query";
 import { useContributorMe, useUpdateContributorMe, useAreas } from "@/lib/queries/hooks";
+import { queryKeys } from "@/lib/queries/fetchers";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -104,6 +106,7 @@ export default function AccountPage() {
 function MobileAccountPage() {
   const { contributor, loading, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
   const { accessToken, logout, refreshContributor } = useSession();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -484,7 +487,7 @@ function MobileAccountPage() {
               onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}
               className="w-full flex items-center justify-between px-4 py-3.5"
             >
-              <span className="text-sm text-[#C0622A]">حذف بياناتي</span>
+              <span className="text-sm text-[#C0622A]">حذف حسابي</span>
               <span className="text-[#C0622A] text-sm">›</span>
             </button>
           </div>
@@ -617,6 +620,7 @@ function MobileAccountPage() {
           onVerified={async () => {
             setShowChangePhone(false);
             await refreshContributor();
+            queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
           }}
         />
 
@@ -625,7 +629,7 @@ function MobileAccountPage() {
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setShowDeleteConfirm(false)} />
             <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-4 shadow-xl">
-              <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف جميع بياناتك نهائياً</p>
+              <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف حسابك</p>
               {deleteError && <ApiErrorBox message={deleteError} onDismiss={() => setDeleteError(null)} />}
               <div className="flex gap-2">
                 <button

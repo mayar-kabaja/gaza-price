@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "@/hooks/useSession";
+import { useQueryClient } from "@tanstack/react-query";
 import { useContributorMe, useUpdateContributorMe, useAreas } from "@/lib/queries/hooks";
+import { queryKeys } from "@/lib/queries/fetchers";
 import { useRouter } from "next/navigation";
 import { TrustLevelBar } from "@/components/trust/TrustLevelBar";
 import { TRUST_LEVEL_LABELS } from "@/lib/constants";
@@ -44,6 +46,7 @@ function normalizeContributor(raw: unknown): Contributor | null {
     report_count: typeof r.report_count === "number" ? r.report_count : 0,
     confirmation_count: typeof r.confirmation_count === "number" ? r.confirmation_count : 0,
     flag_count: typeof r.flag_count === "number" ? r.flag_count : 0,
+    phone_verified: Boolean(r.phone_verified),
     is_banned: Boolean(r.is_banned),
     joined_at: typeof r.joined_at === "string" ? r.joined_at : new Date().toISOString(),
     last_active_at:
@@ -81,6 +84,7 @@ function useProfile() {
 export function DesktopProfilePanel() {
   const { contributor, trustScoreTotal, contributionsLoading, statsLoading } = useProfile();
   const { accessToken, logout, refreshContributor } = useSession();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const updateMe = useUpdateContributorMe();
   const { data: areasData } = useAreas();
@@ -520,7 +524,7 @@ export function DesktopProfilePanel() {
             onClick={() => { setShowDeleteConfirm(true); setDeleteError(null); }}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-red-50/50 transition-colors cursor-pointer"
           >
-            <span className="text-sm text-[#C0622A]">حذف بياناتي</span>
+            <span className="text-sm text-[#C0622A]">حذف حسابي</span>
             <span className="text-[#C0622A] text-sm">›</span>
           </button>
         </div>
@@ -604,6 +608,7 @@ export function DesktopProfilePanel() {
         onVerified={async () => {
           setShowChangePhone(false);
           await refreshContributor();
+          queryClient.invalidateQueries({ queryKey: queryKeys.contributorMe });
         }}
       />
 
@@ -612,7 +617,7 @@ export function DesktopProfilePanel() {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setShowDeleteConfirm(false)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-5 shadow-xl" style={{ width: "min(24rem, calc(100vw - 2rem))" }}>
-            <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف جميع بياناتك نهائياً</p>
+            <p className="font-body text-ink mb-4 text-center">هل أنت متأكد؟ سيتم حذف حسابك</p>
             {deleteError && <ApiErrorBox message={deleteError} onDismiss={() => setDeleteError(null)} />}
             <div className="flex gap-2 mt-2">
               <button
