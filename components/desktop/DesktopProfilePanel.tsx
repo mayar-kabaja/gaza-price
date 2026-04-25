@@ -459,7 +459,7 @@ export function DesktopProfilePanel() {
               disabled={statsLoading || isUpdatingHandle}
               className="w-full flex items-center justify-between px-5 py-4 text-right disabled:opacity-90 hover:bg-fog/50 transition-colors cursor-pointer"
             >
-              <span className="text-sm text-ink">اسم العرض</span>
+              <span className="text-sm text-ink">اسم المستخدم</span>
               {(statsLoading || isUpdatingHandle) ? (
                 <LoaderDots size="sm" className="flex-shrink-0" />
               ) : (
@@ -535,7 +535,7 @@ export function DesktopProfilePanel() {
         <>
           <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setOpenEditHandle(false)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-5 shadow-xl" style={{ width: "min(28rem, calc(100vw - 2rem))" }}>
-            <h3 className="font-display font-bold text-ink mb-3">تغيير اسم العرض</h3>
+            <h3 className="font-display font-bold text-ink mb-3">تغيير اسم المستخدم</h3>
             <input
               type="text"
               value={handleInput}

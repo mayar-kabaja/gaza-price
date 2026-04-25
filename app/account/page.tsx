@@ -406,7 +406,7 @@ function MobileAccountPage() {
                 disabled={statsLoading || isUpdatingHandle}
                 className="w-full flex items-center justify-between px-4 py-3.5 text-right disabled:opacity-90"
               >
-                <span className="text-sm text-ink">اسم العرض</span>
+                <span className="text-sm text-ink">اسم المستخدم</span>
                 {(statsLoading || isUpdatingHandle) ? (
                   <LoaderDots size="sm" className="flex-shrink-0" />
                 ) : (
@@ -498,7 +498,7 @@ function MobileAccountPage() {
           <>
             <div className="fixed inset-0 bg-black/50 z-40" aria-hidden onClick={() => setOpenEditHandle(false)} />
             <div className="fixed left-4 right-4 top-1/2 -translate-y-1/2 z-50 bg-surface rounded-2xl p-4 shadow-xl">
-              <h3 className="font-display font-bold text-ink mb-3">تغيير اسم العرض</h3>
+              <h3 className="font-display font-bold text-ink mb-3">تغيير اسم المستخدم</h3>
               <input
                 type="text"
                 value={handleInput}

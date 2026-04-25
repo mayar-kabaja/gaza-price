@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { setStoredToken } from "@/lib/auth/token";
-import { apiFetch } from "@/lib/api/fetch";
+
 
 type Step = "phone" | "otp" | "success";
 
@@ -32,6 +32,7 @@ export function PhoneAuthPopup({
   const [step, setStep] = useState<Step>("phone");
   const [countryCode, setCountryCode] = useState<"970" | "972">("970");
   const [phone, setPhone] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -50,6 +51,7 @@ export function PhoneAuthPopup({
       setStep("phone");
       setCountryCode("970");
       setPhone("");
+      setDisplayName("");
       setOtp(["", "", "", "", "", ""]);
       setSending(false);
       setVerifying(false);
@@ -92,6 +94,12 @@ export function PhoneAuthPopup({
 
   // ── Step 1: Send OTP ──
   async function handleSendOtp() {
+    if (!displayName.trim()) {
+      setError("الاسم مطلوب");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
     const cleaned = phone.replace(/\D/g, "");
     const local = cleaned.startsWith("0") ? cleaned : `0${cleaned}`;
     if (!/^(059|056)\d{7}$/.test(local)) {
@@ -105,8 +113,9 @@ export function PhoneAuthPopup({
     setError("");
 
     try {
-      const res = await apiFetch("/api/auth/phone/send-otp", {
+      const res = await fetch("/api/auth/phone/send-otp", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: fullPhone }),
       });
       const data = await res.json();
@@ -181,9 +190,14 @@ export function PhoneAuthPopup({
     setError("");
 
     try {
-      const res = await apiFetch("/api/auth/phone/verify-otp", {
+      const res = await fetch("/api/auth/phone/verify-otp", {
         method: "POST",
-        body: JSON.stringify({ phone: fullPhone, code }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: fullPhone,
+          code,
+          display_name: displayName.trim(),
+        }),
       });
       const data = await res.json();
 
@@ -221,8 +235,9 @@ export function PhoneAuthPopup({
     setCanResend(false);
     setError("");
     try {
-      const res = await apiFetch("/api/auth/phone/send-otp", {
+      const res = await fetch("/api/auth/phone/send-otp", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: fullPhone }),
       });
       if (res.ok) {
@@ -358,6 +373,18 @@ export function PhoneAuthPopup({
                 <strong className="text-[#1DAA58] font-semibold">WhatsApp</strong>
                 {" "}— بدون تكلفة، بدون كلمة مرور
               </p>
+
+              {/* Name input */}
+              <input
+                type="text"
+                dir="rtl"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
+                onKeyDown={(e) => { if (e.key === "Enter") phoneInputRef.current?.focus(); }}
+                placeholder="اسمك"
+                maxLength={30}
+                className="w-full border-[1.5px] border-border rounded-[14px] px-4 py-3.5 font-body text-base text-ink bg-surface outline-none mb-3 placeholder:text-mist focus:border-olive focus:shadow-[0_0_0_3px_rgba(74,124,89,0.12)] transition-all duration-150"
+              />
 
               {/* Phone input */}
               <div
