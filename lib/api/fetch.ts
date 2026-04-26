@@ -7,6 +7,18 @@
 
 import { getStoredToken, setStoredToken, clearStoredToken, getAdminToken } from "@/lib/auth/token";
 
+/** Decode JWT payload without verification (just base64). Returns null on failure. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
+
 function getBackendUrl(): string {
   // Server-side: use the full backend URL
   if (typeof window === "undefined") {
@@ -68,7 +80,19 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 
   if (firstRes.status !== 401) return firstRes;
 
+  // If the expired token was phone-verified (isAnon: false), don't create a new
+  // anonymous session — just clear the token so the UI shows the login banner.
+  const payload = token ? decodeJwtPayload(token) : null;
+  const wasPhoneVerified = payload?.isAnon === false;
+
   clearStoredToken();
+
+  if (wasPhoneVerified) {
+    // Phone JWT expired — user must re-verify via OTP to get a new token.
+    return firstRes;
+  }
+
+  // Anonymous Supabase token expired (~1h) — refresh silently.
   const newToken = await refreshToken();
   if (!newToken) return firstRes;
 

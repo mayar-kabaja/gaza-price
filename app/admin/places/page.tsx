@@ -245,16 +245,23 @@ export default function AdminPlacesPage() {
   }
 
   const filteredPlaces = places.filter((p) => {
-    if (statusFilter && p.status !== statusFilter) return false;
     if (typeFilter) {
-      const typeGroups: Record<string, string[]> = {
-        restaurant: ["restaurant", "مطعم"],
-        cafe: ["cafe", "كافيه", "مقهى"],
-        both: ["both", "مطعم وكافيه"],
-        workspace: ["workspace", "مساحة عمل"],
-      };
-      const allowed = typeGroups[typeFilter] ?? [typeFilter];
-      if (!allowed.includes(p.type)) return false;
+      if (typeFilter === "__store__") {
+        if (p.section !== "store") return false;
+      } else if (typeFilter === "__food__") {
+        if (p.section !== "food") return false;
+      } else if (STORE_TYPE_VALUES.includes(typeFilter)) {
+        if (p.section !== "store" || p.type !== typeFilter) return false;
+      } else {
+        const typeGroups: Record<string, string[]> = {
+          restaurant: ["restaurant", "مطعم"],
+          cafe: ["cafe", "كافيه", "مقهى"],
+          both: ["both", "مطعم وكافيه"],
+          workspace: ["workspace", "مساحة عمل"],
+        };
+        const allowed = typeGroups[typeFilter] ?? [typeFilter];
+        if (!allowed.includes(p.type)) return false;
+      }
     }
     if (filterArea.trim()) {
       const q = filterArea.trim().toLowerCase();
@@ -291,7 +298,7 @@ export default function AdminPlacesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-auto flex-1">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[1000px]">
               <thead>
                 <tr className="border-b border-[#243040] sticky top-0 bg-[#111820] z-10">
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070] w-8">#</th>
@@ -330,16 +337,58 @@ export default function AdminPlacesPage() {
                       {openFilter === "type" && (
                         <>
                           <div className="fixed inset-0 z-20" onClick={() => setOpenFilter(null)} />
-                          <div className="absolute left-0 top-full mt-1 z-30 w-40 rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
-                            {[{ v: "", l: "All" }, { v: "restaurant", l: "🍽️ Restaurant" }, { v: "cafe", l: "☕ Cafe" }, { v: "both", l: "🍽️☕ Both" }, { v: "workspace", l: "💻 Workspace" }].map((o) => (
+                          <div className="absolute left-0 top-full mt-1 z-30 w-52 max-h-[60vh] overflow-y-auto rounded-lg border border-[#243040] bg-[#18212C] shadow-xl py-1">
+                            {/* All */}
+                            <button
+                              onClick={() => { setTypeFilter(""); setOffset(0); setOpenFilter(null); }}
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] font-normal normal-case tracking-normal ${!typeFilter ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                            >
+                              All
+                            </button>
+                            {/* Food section */}
+                            <div className="h-px bg-[#243040] my-1" />
+                            <button
+                              onClick={() => { setTypeFilter("__food__"); setOffset(0); setOpenFilter(null); }}
+                              className={`w-full px-3 py-1 text-left text-[10px] font-semibold hover:bg-[#243040] tracking-wide ${typeFilter === "__food__" ? "text-[#4A7C59]" : "text-[#4E6070]"}`}
+                            >
+                              🍽 All Food
+                            </button>
+                            {[{ v: "restaurant", l: "Restaurant" }, { v: "cafe", l: "Cafe" }, { v: "both", l: "Both" }].map((o) => (
                               <button
                                 key={o.v}
                                 onClick={() => { setTypeFilter(o.v); setOffset(0); setOpenFilter(null); }}
-                                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] flex items-center gap-2 font-normal normal-case tracking-normal ${typeFilter === o.v ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                                className={`w-full px-3 py-1.5 pl-5 text-left text-xs hover:bg-[#243040] font-normal normal-case tracking-normal ${typeFilter === o.v ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
                               >
                                 {o.l}
                               </button>
                             ))}
+                            {/* Store section */}
+                            <div className="h-px bg-[#243040] my-1" />
+                            <button
+                              onClick={() => { setTypeFilter("__store__"); setOffset(0); setOpenFilter(null); }}
+                              className={`w-full px-3 py-1 text-left text-[10px] font-semibold hover:bg-[#243040] tracking-wide ${typeFilter === "__store__" ? "text-[#4A7C59]" : "text-[#4E6070]"}`}
+                            >
+                              🏪 All Stores
+                            </button>
+                            {STORE_CATEGORIES.flatMap((cat) =>
+                              cat.types.map((t) => (
+                                <button
+                                  key={`${cat.label}-${t}`}
+                                  onClick={() => { setTypeFilter(t); setOffset(0); setOpenFilter(null); }}
+                                  className={`w-full px-3 py-1.5 pl-5 text-left text-xs hover:bg-[#243040] font-normal normal-case tracking-normal ${typeFilter === t ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                                >
+                                  {cat.icon} {t}
+                                </button>
+                              ))
+                            )}
+                            {/* Workspace */}
+                            <div className="h-px bg-[#243040] my-1" />
+                            <button
+                              onClick={() => { setTypeFilter("workspace"); setOffset(0); setOpenFilter(null); }}
+                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#243040] font-normal normal-case tracking-normal ${typeFilter === "workspace" ? "text-[#4A7C59]" : "text-[#D8E4F0]"}`}
+                            >
+                              💻 Workspace
+                            </button>
                           </div>
                         </>
                       )}
@@ -395,6 +444,7 @@ export default function AdminPlacesPage() {
                       )}
                     </div>
                   </th>
+                  <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Phone</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Open</th>
                   <th className="px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-widest text-[#4E6070]">Instagram</th>
                   <th className="px-3 py-2.5 text-center">
@@ -409,18 +459,17 @@ export default function AdminPlacesPage() {
               </thead>
               <tbody>
                 {filteredPlaces.length === 0 && (
-                  <tr><td colSpan={8} className="py-12 text-center text-sm text-[#4E6070]">{places.length > 0 ? "No places match filters" : "No places"}</td></tr>
+                  <tr><td colSpan={9} className="py-12 text-center text-sm text-[#4E6070]">{places.length > 0 ? "No places match filters" : "No places"}</td></tr>
                 )}
                 {filteredPlaces.map((p, i) => (
                   <tr key={p.id} className="border-b border-[#243040] hover:bg-[#18212C]">
                     <td className="px-3 py-3 text-[10px] font-mono text-[#4E6070]">{offset + i + 1}</td>
                     <td className="px-3 py-3">
                       <div className="text-sm font-medium text-[#D8E4F0]">{p.name}</div>
-                      {p.phone && <div className="text-[10px] text-[#4E6070] mt-0.5 font-mono">{p.phone}</div>}
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center rounded-full border border-[#243040] bg-[#18212C] px-2 py-0.5 text-[10px] font-medium text-[#8FA3B8]">
-                        {p.section === "food" ? "🍽" : p.section === "workspace" ? "💻" : "🏪"} {({ restaurant: "Restaurant", مطعم: "Restaurant", cafe: "Cafe", كافيه: "Cafe", مقهى: "Cafe", both: "Both", "مطعم وكافيه": "Both", workspace: "Workspace", "مساحة عمل": "Workspace" } as Record<string, string>)[p.type] ?? p.type}
+                        {p.section === "food" ? "🍽" : p.section === "workspace" ? "💻" : "🏪"} {p.section === "store" ? p.type : ({ restaurant: "Restaurant", مطعم: "Restaurant", cafe: "Cafe", كافيه: "Cafe", مقهى: "Cafe", both: "Both", "مطعم وكافيه": "Both", workspace: "Workspace", "مساحة عمل": "Workspace" } as Record<string, string>)[p.type] ?? p.type}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>
@@ -470,6 +519,13 @@ export default function AdminPlacesPage() {
                           </>
                         )}
                       </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      {p.phone ? (
+                        <span className="text-xs font-mono text-[#8FA3B8]" dir="ltr">{p.phone}</span>
+                      ) : (
+                        <span className="text-[10px] text-[#4E6070]">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       {loadingOpenId === p.id ? (
