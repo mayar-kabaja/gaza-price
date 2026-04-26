@@ -24,7 +24,7 @@ const PAGE_SIZE = 20;
 
 const FOOD_CHIPS = ['الكل', 'مطعم وكافيه', 'مطاعم', 'كافيه', 'مفتوح'];
 const STORE_CHIPS = ['الكل', 'غذائية', 'صحة', 'ملابس', 'منزل', 'إلكترونيات', 'بناء', 'تعليم', 'خدمات', 'سيارات', 'زراعة', 'مفتوح'];
-const WORKSPACE_CHIPS = ['الكل', 'مفتوح'];
+const WORKSPACE_CHIPS = ['الكل', 'مفتوح', 'الأقل سعراً', 'واي فاي', 'كهرباء', 'غرف خاصة', 'طباعة', 'مشروبات'];
 
 // Map chip labels to DB type values for filtering
 const CHIP_TO_TYPE: Record<string, string | string[]> = {
@@ -185,7 +185,20 @@ export default function PlacesPage() {
     const chipLabel = chips[chip];
     if (chipLabel && chipLabel !== 'الكل') {
       if (chipLabel === 'مفتوح') filtered = filtered.filter((p) => p.is_open);
-      else {
+      else if (section === 'workspace') {
+        const serviceMap: Record<string, string> = {
+          'واي فاي': 'wifi', 'كهرباء': 'electricity', 'غرف خاصة': 'private_rooms',
+          'طباعة': 'printing', 'مشروبات': 'drinks',
+        };
+        const serviceKey = serviceMap[chipLabel];
+        if (serviceKey) {
+          filtered = filtered.filter((p) => {
+            const services = (p as any).workspace_services;
+            return Array.isArray(services) && services.some((s: any) => s.service === serviceKey && s.available);
+          });
+        }
+        // 'الأقل سعراً' is handled in the sort section below
+      } else {
         const typeFilter = CHIP_TO_TYPE[chipLabel];
         if (typeFilter) {
           const types = Array.isArray(typeFilter) ? typeFilter : [typeFilter];
@@ -217,18 +230,29 @@ export default function PlacesPage() {
         return score;
       }
 
-      filtered = [...filtered].sort((a, b) => {
-        const aScore = wsScore(a);
-        const bScore = wsScore(b);
-        // Score 0 (no avatar / empty) always goes last
-        if (aScore === 0 && bScore > 0) return 1;
-        if (bScore === 0 && aScore > 0) return -1;
-        // Both have content → respect featured_order, break ties by score
-        const aOrder = a.featured_order ?? 9999;
-        const bOrder = b.featured_order ?? 9999;
-        if (aOrder !== bOrder) return aOrder - bOrder;
-        return bScore - aScore;
-      });
+      if (chipLabel === 'الأقل سعراً') {
+        // Sort by cheapest: price_hour first, fallback to price_day
+        filtered = [...filtered].sort((a, b) => {
+          const aWd = (a as any).workspace_details;
+          const bWd = (b as any).workspace_details;
+          const aPrice = aWd?.price_hour ?? aWd?.price_day ?? Infinity;
+          const bPrice = bWd?.price_hour ?? bWd?.price_day ?? Infinity;
+          return aPrice - bPrice;
+        });
+      } else {
+        filtered = [...filtered].sort((a, b) => {
+          const aScore = wsScore(a);
+          const bScore = wsScore(b);
+          // Score 0 (no avatar / empty) always goes last
+          if (aScore === 0 && bScore > 0) return 1;
+          if (bScore === 0 && aScore > 0) return -1;
+          // Both have content → respect featured_order, break ties by score
+          const aOrder = a.featured_order ?? 9999;
+          const bOrder = b.featured_order ?? 9999;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return bScore - aScore;
+        });
+      }
     }
     return filtered;
   }, [isSearching, searchData, allPlaces, chip, chips, section]);
@@ -376,21 +400,28 @@ export default function PlacesPage() {
 
       {section === 'workspace' && (
         <div className="px-4 pb-3 pt-3">
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">تصفية</div>
           <div className="flex flex-wrap gap-1.5">
-            {chips.map((label, i) => (
-              <button
-                key={label}
-                onClick={() => { setChip(i); setPage(0); }}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
-                  chip === i
-                    ? 'bg-olive-pale border-olive text-olive font-semibold'
-                    : 'bg-surface border-border text-slate hover:border-olive/50'
-                }`}
-              >
-                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
-              </button>
-            ))}
+            {chips.map((label, i) => {
+              const iconMap: Record<string, string> = {
+                'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
+                'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
+              };
+              const icon = iconMap[label];
+              return (
+                <button
+                  key={label}
+                  onClick={() => { setChip(i); setPage(0); }}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                    chip === i
+                      ? 'bg-olive-pale border-olive text-olive font-semibold'
+                      : 'bg-surface border-border text-slate hover:border-olive/50'
+                  }`}
+                >
+                  {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -626,7 +657,29 @@ export default function PlacesPage() {
               )
             ) : section === 'workspace' ? (
               /* Workspace listing */
-              loading ? (
+              <>
+              {/* Workspace filter chips */}
+              <div className="flex gap-2 px-6 py-3 overflow-x-auto no-scrollbar">
+                {chips.map((label, i) => {
+                  const iconMap: Record<string, string> = {
+                    'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
+                    'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
+                  };
+                  const icon = iconMap[label];
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => { setChip(i); setPage(0); }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                        chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
+                      }`}
+                    >
+                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
+                    </button>
+                  );
+                })}
+              </div>
+              {loading ? (
                 <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 p-6">
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="bg-surface rounded-2xl border border-border p-4 animate-pulse">
@@ -670,7 +723,8 @@ export default function PlacesPage() {
                     </div>
                   )}
                 </div>
-              )
+              )}
+              </>
             ) : isSearching ? (
               /* Search results */
               (searchLoading) ? (
@@ -1142,17 +1196,24 @@ export default function PlacesPage() {
 
           {/* Chips */}
           <div className="flex gap-2 px-4 py-2.5 bg-surface border-b border-border overflow-x-auto no-scrollbar">
-            {chips.map((label, i) => (
-              <button
-                key={label}
-                onClick={() => { setChip(i); setPage(0); }}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
-                  chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
-                }`}
-              >
-                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
-              </button>
-            ))}
+            {chips.map((label, i) => {
+              const iconMap: Record<string, string> = {
+                'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
+                'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
+              };
+              const icon = iconMap[label];
+              return (
+                <button
+                  key={label}
+                  onClick={() => { setChip(i); setPage(0); }}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                    chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
+                  }`}
+                >
+                  {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
+                </button>
+              );
+            })}
           </div>
 
           {/* Section header */}
