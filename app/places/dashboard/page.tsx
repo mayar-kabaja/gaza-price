@@ -532,44 +532,45 @@ function OwnerDashboardPage() {
   return (
     <div className="min-h-screen bg-[#F9FAFB] relative" dir="rtl">
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[#4A7C59] px-4 pt-4 pb-5 relative overflow-hidden">
+      <div className="bg-[#4A7C59] px-4 pt-4 pb-5 relative overflow-hidden lg:pt-3 lg:pb-4 lg:px-8">
         <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px]" />
         <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5" />
 
-        {/* Top bar — same as app header */}
-        <div className="flex items-center justify-between mb-4 relative z-[1]">
-          <a href="/" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
-            <span className="font-bold text-xl text-white leading-none">
-              غزة <span className="text-[#C9A96E]">بريس</span>
-            </span>
-          </a>
-          <span className="text-[10px] font-bold text-white/50 bg-white/10 rounded-full px-2.5 py-1">لوحة التحكم</span>
-        </div>
-
-        {/* Place identity */}
-        <div className="flex items-center gap-3 mb-4 relative z-[1]">
-          <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
-            {place.avatar_url ? (
-              <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
-          </div>
-          <div>
-            <div className="font-bold text-[17px] text-white">{place.name}</div>
-            <div className="flex items-center gap-2 mt-0.5">
-              {place.area && <span className="text-[11px] text-white/55">📍 {place.area.name_ar}</span>}
-              <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-white/[0.14] text-white/85">
-                {place.type}
+        {/* Top bar */}
+        <div className="max-w-[1100px] mx-auto lg:px-8">
+          <div className="flex items-center justify-between mb-4 lg:mb-0 relative z-[1]">
+            <a href="/" className="flex items-center gap-2">
+              <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
+              <span className="font-bold text-xl text-white leading-none">
+                غزة <span className="text-[#C9A96E]">بريس</span>
               </span>
+            </a>
+            <span className="text-[10px] font-bold text-white/50 bg-white/10 rounded-full px-2.5 py-1 lg:text-xs lg:px-4 lg:py-1.5">لوحة التحكم</span>
+          </div>
+
+          {/* Place identity — mobile only in header */}
+          <div className="flex items-center gap-3 mb-4 relative z-[1] lg:hidden">
+            <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+              {place.avatar_url ? (
+                <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
+            </div>
+            <div>
+              <div className="font-bold text-[17px] text-white">{place.name}</div>
+              <div className="flex items-center gap-2 mt-0.5">
+                {place.area && <span className="text-[11px] text-white/55">📍 {place.area.name_ar}</span>}
+                <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-white/[0.14] text-white/85">
+                  {place.type}
+                </span>
+              </div>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ══ WHITE CONTENT ══ */}
-      <div className="px-4 py-4 pb-24">
-        {/* Open toggle — outside header */}
+      {/* ══ MOBILE LAYOUT ══ */}
+      <div className="lg:hidden px-4 py-4 pb-24">
+        {/* Open toggle */}
         <div className="flex items-center justify-between bg-white border border-[#E5E7EB] rounded-2xl p-3 -mt-6 mb-3 relative z-[2] shadow-sm">
           <div>
             <div className={`font-bold text-[13px] ${place.is_open ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
@@ -579,141 +580,66 @@ function OwnerDashboardPage() {
               {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
             </div>
           </div>
-          <button
-            onClick={handleToggleOpen}
-            disabled={toggling}
-            className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}
-          >
+          <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}>
             {actionLoading === "toggle-open" ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-              </div>
+              <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
             ) : (
               <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
             )}
           </button>
         </div>
-
-        {/* Stats cards */}
-        {!isWorkspace ? (
-        <div className="grid grid-cols-3 gap-2.5 mb-4 relative z-[2]">
-          {[
-            { num: place.menu.length, label: "أقسام" },
-            { num: totalItems, label: "صنف" },
-            { num: availableItems, label: "متوفر" },
-          ].map((s) => (
-            <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-2xl py-3 px-2 text-center shadow-sm">
-              <div className="font-bold text-[22px] text-[#111827] leading-none mb-1">{s.num}</div>
-              <div className="text-[9px] text-[#9CA3AF] font-semibold">{s.label}</div>
-            </div>
-          ))}
-        </div>
-        ) : null}
-        {/* Plan badge */}
+        {/* Stats */}
+        {!isWorkspace && (
+          <div className="grid grid-cols-3 gap-2.5 mb-4 relative z-[2]">
+            {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
+              <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-2xl py-3 px-2 text-center shadow-sm">
+                <div className="font-bold text-[22px] text-[#111827] leading-none mb-1">{s.num}</div>
+                <div className="text-[9px] text-[#9CA3AF] font-semibold">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Plan */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-[#9CA3AF] font-semibold">الباقة:</span>
-            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[#EBF3EE] text-[#4A7C59]">
-              {planLabels[place.plan] ?? place.plan}
-            </span>
+            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{planLabels[place.plan] ?? place.plan}</span>
           </div>
-          <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[#3A6347]">
-            ترقية ←
-          </button>
+          <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[#3A6347]">ترقية ←</button>
         </div>
-
         {/* Actions */}
         <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">الإجراءات</div>
         <div className="bg-white rounded-[18px] border border-[#E5E7EB] overflow-hidden shadow-sm mb-4">
           {isWorkspace ? (
             <>
-              {/* Workspace details */}
-              <ActionItem
-                icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
-                iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]"
-                title="الأسعار والأوقات"
-                sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد"
-                onClick={openWsDetails}
-              />
-              {/* Workspace services */}
-              <ActionItem
-                icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>}
-                iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]"
-                title="الخدمات المتاحة"
-                sub="WiFi، كهرباء، طباعة، شاشات، مشروبات"
-                onClick={openWsServices}
-              />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد" onClick={openWsDetails} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، شاشات، مشروبات" onClick={openWsServices} />
             </>
           ) : (
-            <>
-              {/* Menu management */}
-              <ActionItem
-                icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>}
-                iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]"
-                title="إدارة القائمة"
-                sub={`${totalItems} صنف — تعديل الأسعار والتوفر`}
-                badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>}
-                onClick={() => setSheet("menu")}
-              />
-            </>
+            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
           )}
-          {/* Edit info */}
-          <ActionItem
-            icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>}
-            iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]"
-            title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"}
-            sub="اسم، منطقة، هاتف، واتساب"
-            onClick={openEdit}
-          />
-          {/* Share */}
-          <ActionItem
-            icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>}
-            iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]"
-            title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"}
-            sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"}
-            onClick={() => {
-              const url = `${window.location.origin}/places/${place.id}`;
-              navigator.clipboard.writeText(url);
-              showToast("تم نسخ الرابط ✓");
-            }}
-            last
-          />
+          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
+          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
         </div>
-
-        {/* Quick menu preview */}
+        {/* Menu preview */}
         {!isWorkspace && place.menu.length > 0 && (
           <>
             <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">القائمة</div>
             <div className="bg-white rounded-[14px] border border-[#E5E7EB] overflow-hidden shadow-sm">
-              {place.menu.slice(0, 2).flatMap((sec) =>
-                sec.items.slice(0, 3).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between px-3.5 py-3 border-b border-[#E5E7EB] last:border-b-0">
-                    <div>
-                      <div className="text-xs font-semibold text-[#111827]">{item.name}</div>
-                      <div className="text-[10px] text-[#9CA3AF]">{sec.name}</div>
-                    </div>
-                    <div className="font-bold text-[13px] text-[#111827]">
-                      {Number(item.price) > 0 ? `${item.price} ₪` : "—"}
-                    </div>
-                  </div>
-                ))
-              )}
+              {place.menu.slice(0, 2).flatMap((sec) => sec.items.slice(0, 3).map((item) => (
+                <div key={item.id} className="flex items-center justify-between px-3.5 py-3 border-b border-[#E5E7EB] last:border-b-0">
+                  <div><div className="text-xs font-semibold text-[#111827]">{item.name}</div><div className="text-[10px] text-[#9CA3AF]">{sec.name}</div></div>
+                  <div className="font-bold text-[13px] text-[#111827]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
+                </div>
+              )))}
             </div>
           </>
         )}
-
-        {/* Orders section — food places only */}
         {place.section === "food" && token && (
           <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
-            <DashboardOrders
-              token={token}
-              ordersEnabled={place.orders_enabled ?? false}
-              onToggleOrders={handleToggleOrders}
-            />
+            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
           </div>
         )}
-
-        {/* Discount codes — food places only */}
         {place.section === "food" && token && (
           <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
             <DashboardDiscountCodes token={token} />
@@ -721,8 +647,121 @@ function OwnerDashboardPage() {
         )}
       </div>
 
-      {/* ══ Bottom Nav ══ */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E5E7EB] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.05)]">
+      {/* ══ DESKTOP LAYOUT — sidebar right + content left, centered ══ */}
+      <div className="hidden lg:flex max-w-[1100px] mx-auto px-8 pt-8 pb-6 gap-6 items-start relative z-[2]">
+
+        {/* ── RIGHT SIDEBAR ── */}
+        <div className="w-[320px] flex-shrink-0 sticky top-6 space-y-4">
+          {/* Place identity card */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5">
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-[56px] h-[56px] rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+                {place.avatar_url ? (
+                  <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-[15px] text-[#111827] truncate">{place.name}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {place.area && <span className="text-[11px] text-[#6B7280]">📍 {place.area.name_ar}</span>}
+                  <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-[#F3F4F6] text-[#6B7280]">{place.type}</span>
+                </div>
+              </div>
+            </div>
+            {/* Toggle */}
+            <div className="flex items-center justify-between bg-[#F9FAFB] rounded-xl p-3">
+              <div>
+                <div className={`font-bold text-[13px] ${place.is_open ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
+                  {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'}` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'}`}
+                </div>
+                <div className="text-[10px] text-[#9CA3AF]">
+                  {place.is_open ? 'يظهر كـ "مفتوح"' : 'يظهر كـ "مغلق"'}
+                </div>
+              </div>
+              <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}>
+                {actionLoading === "toggle-open" ? (
+                  <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
+                ) : (
+                  <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          {!isWorkspace && (
+            <div className="grid grid-cols-3 gap-3">
+              {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
+                <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-2xl py-4 px-2 text-center shadow-sm">
+                  <div className="font-bold text-[24px] text-[#111827] leading-none mb-1">{s.num}</div>
+                  <div className="text-[10px] text-[#9CA3AF] font-semibold">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Plan */}
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm px-5 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#9CA3AF] font-semibold">الباقة:</span>
+              <span className="text-xs font-bold py-1 px-2.5 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{planLabels[place.plan] ?? place.plan}</span>
+            </div>
+            <button onClick={() => setSheet("plans")} className="text-xs font-bold text-[#3A6347] hover:underline">ترقية ←</button>
+          </div>
+
+          {/* Actions */}
+          <div>
+            <div className="text-sm font-bold text-[#374151] mb-2 pr-0.5">الإجراءات</div>
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
+              {isWorkspace ? (
+                <>
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
+                </>
+              ) : (
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
+              )}
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك" : "شارك رابط محلك"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
+            </div>
+          </div>
+
+          {/* Discount codes — sidebar on desktop */}
+          {place.section === "food" && token && (
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-sm">
+              <DashboardDiscountCodes token={token} />
+            </div>
+          )}
+        </div>
+
+        {/* ── LEFT MAIN CONTENT ── */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Menu preview */}
+          {!isWorkspace && place.menu.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                <span className="font-bold text-sm text-[#374151]">القائمة</span>
+                <button onClick={() => setSheet("menu")} className="text-xs font-bold text-[#4A7C59] bg-[#EBF3EE] rounded-full px-3 py-1 hover:bg-[#DCE9E0] transition-colors">إدارة القائمة</button>
+              </div>
+              {place.menu.slice(0, 2).flatMap((sec) => sec.items.slice(0, 3).map((item) => (
+                <div key={item.id} className="flex items-center justify-between px-5 py-3.5 border-t border-[#E5E7EB]">
+                  <div><div className="text-sm font-semibold text-[#111827]">{item.name}</div><div className="text-xs text-[#9CA3AF]">{sec.name}</div></div>
+                  <div className="font-bold text-sm text-[#111827]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
+                </div>
+              )))}
+            </div>
+          )}
+          {/* Orders */}
+          {place.section === "food" && token && (
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-sm">
+              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ══ Bottom Nav (mobile) / Sidebar (desktop) ══ */}
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E5E7EB] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] lg:hidden">
         <NavItem icon="home" label="الرئيسية" active onClick={() => setSheet(null)} />
         {isWorkspace ? (
           <>
@@ -1217,8 +1256,8 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Footer */}
-      <div className="text-center pb-20 px-4">
-        <p className="text-[10px] text-[#9CA3AF]">غزة بريس 🌿 لوحة تحكم المالك</p>
+      <div className="text-center pb-20 lg:pb-8 px-4 max-w-[1100px] mx-auto">
+        <p className="text-[10px] lg:text-xs text-[#9CA3AF]">غزة بريس 🌿 لوحة تحكم المالك</p>
       </div>
 
       {/* Toast */}
@@ -1268,15 +1307,15 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last 
   onClick?: () => void; last?: boolean;
 }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3.5 text-right transition-colors hover:bg-[#F2FAF5] active:bg-[#EBF3EE] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
-      <div className={`w-[42px] h-[42px] rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-        <svg viewBox="0 0 24 24" className={`w-5 h-5 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <button onClick={onClick} className={`w-full flex items-center gap-3 lg:gap-4 px-4 py-3.5 lg:py-4 text-right transition-colors hover:bg-[#F2FAF5] active:bg-[#EBF3EE] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
+      <div className={`w-[42px] h-[42px] lg:w-[48px] lg:h-[48px] rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+        <svg viewBox="0 0 24 24" className={`w-5 h-5 lg:w-6 lg:h-6 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13px] text-[#111827]">{title}</div>
-        <div className="text-[11px] text-[#9CA3AF]">{sub}</div>
+        <div className="font-bold text-[13px] lg:text-sm text-[#111827]">{title}</div>
+        <div className="text-[11px] lg:text-xs text-[#9CA3AF]">{sub}</div>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {badge}
@@ -1308,23 +1347,28 @@ function SheetWrap({ open, onClose, title, sub, children }: {
   open: boolean; onClose: () => void; title: string; sub: string; children: React.ReactNode;
 }) {
   return (
-    <div className={`fixed inset-0 bg-[#F9FAFB] z-20 flex flex-col transition-transform duration-300 ${open ? "translate-y-0" : "translate-y-full pointer-events-none"}`} dir="rtl">
-      <div className="bg-[#4A7C59] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden">
-        <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
-        <div className="flex items-center gap-2 mb-1 relative z-[1]">
-          <button onClick={onClose} className="w-[30px] h-[30px] bg-white/10 rounded-lg flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <span className="font-bold text-sm text-white">{title}</span>
+    <>
+      {/* Backdrop for desktop */}
+      {open && <div className="hidden lg:block fixed inset-0 bg-black/20 z-[19]" onClick={onClose} />}
+      <div className={`fixed inset-0 bg-[#F9FAFB] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:shadow-2xl lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none"}`} dir="rtl">
+        <div className="bg-[#4A7C59] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
+          <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
+          <div className="flex items-center gap-2 mb-1 relative z-[1]">
+            <button onClick={onClose} className="w-[30px] h-[30px] lg:w-[36px] lg:h-[36px] bg-white/10 rounded-lg flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <span className="font-bold text-sm lg:text-base text-white">{title}</span>
+          </div>
+          <div className="text-[11px] lg:text-xs text-white/50 pr-[38px] lg:pr-[44px]">{sub}</div>
         </div>
-        <div className="text-[11px] text-white/50 pr-[38px]">{sub}</div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 lg:px-6 lg:pb-8">
+          {children}
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
-        {children}
-      </div>
-    </div>
+    </>
+
   );
 }
 
@@ -1332,7 +1376,7 @@ function FormField({ label, value, onChange, type = "text", placeholder, textare
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; textarea?: boolean;
 }) {
-  const cls = "w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[#3A6347]";
+  const cls = "w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm lg:text-base text-[#111827] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[#3A6347]";
   return (
     <div>
       <label className="text-xs font-bold text-[#374151] mb-1.5 block">{label}</label>
