@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { setStoredToken } from "@/lib/auth/token";
 
 
-type Step = "phone" | "otp" | "success";
+type Step = "phone" | "otp" | "name" | "success";
 
 interface PriceDetails {
   productName?: string;
@@ -36,6 +36,8 @@ export function PhoneAuthPopup({
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [verifiedToken, setVerifiedToken] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [countdown, setCountdown] = useState(90);
@@ -55,6 +57,8 @@ export function PhoneAuthPopup({
       setOtp(["", "", "", "", "", ""]);
       setSending(false);
       setVerifying(false);
+      setSavingName(false);
+      setVerifiedToken("");
       setError("");
       setShake(false);
       setCountdown(90);
@@ -94,12 +98,6 @@ export function PhoneAuthPopup({
 
   // ── Step 1: Send OTP ──
   async function handleSendOtp() {
-    if (!displayName.trim()) {
-      setError("الاسم مطلوب");
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
     const cleaned = phone.replace(/\D/g, "");
     const local = cleaned.startsWith("0") ? cleaned : `0${cleaned}`;
     if (!/^(059|056)\d{7}$/.test(local)) {
@@ -196,7 +194,6 @@ export function PhoneAuthPopup({
         body: JSON.stringify({
           phone: fullPhone,
           code,
-          display_name: displayName.trim(),
         }),
       });
       const data = await res.json();
@@ -216,17 +213,61 @@ export function PhoneAuthPopup({
       // Store new token
       const token = data.access_token;
       setStoredToken(token);
+      setVerifiedToken(token);
 
-      // Move to success step
+      // If user has no name yet → ask for it
+      if (data.is_new_user) {
+        setStep("name");
+        setVerifying(false);
+        return;
+      }
+
+      // Existing user with name → go straight to success
       setStep("success");
-
-      // Auto-submit after short delay
       setTimeout(() => {
         onVerified(token);
       }, 2000);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
       setVerifying(false);
+    }
+  }
+
+  // ── Step 2b: Save display name for new users ──
+  async function handleSaveName() {
+    if (!displayName.trim()) {
+      setError("الاسم مطلوب");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+    setSavingName(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/phone/complete-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${verifiedToken}`,
+        },
+        body: JSON.stringify({ display_handle: displayName.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "فشل حفظ الاسم");
+        setSavingName(false);
+        return;
+      }
+
+      setStep("success");
+      setTimeout(() => {
+        onVerified(verifiedToken);
+      }, 2000);
+    } catch {
+      setError("تعذر الاتصال — تحقق من الإنترنت");
+      setSavingName(false);
     }
   }
 
@@ -326,15 +367,17 @@ export function PhoneAuthPopup({
               className={`h-[7px] rounded-full transition-all duration-300 ${
                 step === "otp"
                   ? "w-[22px] bg-olive"
-                  : step === "success"
+                  : step === "name" || step === "success"
                   ? "w-[7px] bg-confirm"
                   : "w-[7px] bg-border"
               }`}
             />
             <div
               className={`h-[7px] rounded-full transition-all duration-300 ${
-                step === "success"
+                step === "name"
                   ? "w-[22px] bg-olive"
+                  : step === "success"
+                  ? "w-[7px] bg-confirm"
                   : "w-[7px] bg-border"
               }`}
             />
@@ -373,18 +416,6 @@ export function PhoneAuthPopup({
                 <strong className="text-[#1DAA58] font-semibold">WhatsApp</strong>
                 {" "}— بدون تكلفة، بدون كلمة مرور
               </p>
-
-              {/* Name input */}
-              <input
-                type="text"
-                dir="rtl"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
-                onKeyDown={(e) => { if (e.key === "Enter") phoneInputRef.current?.focus(); }}
-                placeholder="اسمك"
-                maxLength={30}
-                className="w-full border-[1.5px] border-border rounded-[14px] px-4 py-3.5 font-body text-base text-ink bg-surface outline-none mb-3 placeholder:text-mist focus:border-olive focus:shadow-[0_0_0_3px_rgba(74,124,89,0.12)] transition-all duration-150"
-              />
 
               {/* Phone input */}
               <div
@@ -635,6 +666,72 @@ export function PhoneAuthPopup({
                 className="w-full py-2.5 text-[13px] text-slate hover:text-ink hover:bg-fog rounded-lg transition-colors mt-2"
               >
                 ‹ تغيير الرقم
+              </button>
+            </div>
+          )}
+
+          {/* ═══ STEP 2b: Name (new users only) ═══ */}
+          {step === "name" && (
+            <div>
+              <div className="flex justify-center mb-5">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-lg"
+                  style={{
+                    background: "linear-gradient(135deg, #4A7C59, #3A6347)",
+                    boxShadow: "0 8px 24px rgba(74,124,89,0.3)",
+                  }}
+                >
+                  ✏️
+                </div>
+              </div>
+
+              <h2 className="font-display font-extrabold text-xl text-ink text-center mb-1.5">
+                ما اسمك؟
+              </h2>
+              <p className="text-[13px] text-mist text-center leading-relaxed mb-5">
+                سيظهر اسمك بجانب الأسعار التي تشاركها
+              </p>
+
+              <input
+                type="text"
+                dir="rtl"
+                autoFocus
+                value={displayName}
+                onChange={(e) => { setDisplayName(e.target.value.slice(0, 30)); setError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !savingName) handleSaveName(); }}
+                placeholder="اسمك"
+                maxLength={30}
+                className={`w-full border-[1.5px] rounded-[14px] px-4 py-3.5 font-body text-base text-ink bg-surface outline-none mb-3 placeholder:text-mist focus:border-olive focus:shadow-[0_0_0_3px_rgba(74,124,89,0.12)] transition-all duration-150 ${
+                  error && shake ? "border-[#C0622A]" : "border-border"
+                } ${shake ? "animate-[shake_0.4s_ease]" : ""}`}
+              />
+
+              {error && (
+                <p className="text-center text-xs text-[#C0622A] font-semibold mb-3">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSaveName}
+                disabled={savingName}
+                className={`
+                  w-full py-[15px] rounded-[14px] bg-olive font-display font-bold text-[15px] text-white
+                  flex items-center justify-center gap-2
+                  shadow-[0_4px_16px_rgba(74,124,89,0.25)]
+                  transition-all duration-150
+                  ${savingName ? "opacity-70 pointer-events-none" : "hover:bg-olive-deep active:scale-[0.98]"}
+                `}
+              >
+                {savingName ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/35 border-t-white rounded-full animate-spin" />
+                    <span className="opacity-70">جاري الحفظ...</span>
+                  </>
+                ) : (
+                  <span>متابعة</span>
+                )}
               </button>
             </div>
           )}
