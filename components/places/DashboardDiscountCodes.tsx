@@ -123,10 +123,10 @@ export function DashboardDiscountCodes({ token }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-display font-bold text-[14px] text-ink">أكواد الخصم</h3>
+        <h3 className="font-display font-bold text-[14px] text-[var(--d-text)]">أكواد الخصم</h3>
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="text-[11px] font-bold text-olive bg-olive-pale rounded-full px-3 py-1.5"
+          className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-3 py-1.5"
         >
           + إضافة كود
         </button>
@@ -134,12 +134,12 @@ export function DashboardDiscountCodes({ token }: Props) {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-surface border border-border rounded-xl p-3 space-y-2.5">
+        <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl p-3 space-y-2.5">
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="الكود (مثال: WELCOME10)"
-            className="w-full border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+            className="w-full border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
             dir="ltr"
           />
           <div className="flex gap-2">
@@ -147,8 +147,8 @@ export function DashboardDiscountCodes({ token }: Props) {
               onClick={() => setDiscountType("percentage")}
               className={`flex-1 py-2 rounded-lg text-[11px] font-bold border ${
                 discountType === "percentage"
-                  ? "bg-olive text-white border-olive"
-                  : "bg-fog text-mist border-border"
+                  ? "bg-[var(--d-green)] text-white border-[var(--d-green)]"
+                  : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border-[var(--d-border)]"
               }`}
             >
               نسبة %
@@ -157,8 +157,8 @@ export function DashboardDiscountCodes({ token }: Props) {
               onClick={() => setDiscountType("fixed")}
               className={`flex-1 py-2 rounded-lg text-[11px] font-bold border ${
                 discountType === "fixed"
-                  ? "bg-olive text-white border-olive"
-                  : "bg-fog text-mist border-border"
+                  ? "bg-[var(--d-green)] text-white border-[var(--d-green)]"
+                  : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border-[var(--d-border)]"
               }`}
             >
               مبلغ ثابت ₪
@@ -170,7 +170,7 @@ export function DashboardDiscountCodes({ token }: Props) {
               onChange={(e) => setDiscountValue(e.target.value)}
               placeholder={discountType === "percentage" ? "القيمة %" : "المبلغ ₪"}
               type="number"
-              className="border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+              className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
               dir="ltr"
             />
             <input
@@ -178,7 +178,7 @@ export function DashboardDiscountCodes({ token }: Props) {
               onChange={(e) => setMinOrderTotal(e.target.value)}
               placeholder="حد أدنى للطلب ₪"
               type="number"
-              className="border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+              className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
               dir="ltr"
             />
           </div>
@@ -188,7 +188,7 @@ export function DashboardDiscountCodes({ token }: Props) {
               onChange={(e) => setMaxUses(e.target.value)}
               placeholder="عدد الاستخدامات"
               type="number"
-              className="border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+              className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
               dir="ltr"
             />
             <input
@@ -196,7 +196,7 @@ export function DashboardDiscountCodes({ token }: Props) {
               onChange={(e) => setExpiresAt(e.target.value)}
               placeholder="تاريخ الانتهاء"
               type="date"
-              className="border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+              className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
               dir="ltr"
             />
           </div>
@@ -204,13 +204,13 @@ export function DashboardDiscountCodes({ token }: Props) {
             <button
               onClick={handleSave}
               disabled={saving || !code.trim() || !discountValue.trim()}
-              className="flex-1 py-2 rounded-lg bg-olive text-white text-[12px] font-bold disabled:opacity-50"
+              className="flex-1 py-2 rounded-lg bg-[var(--d-green)] text-white text-[12px] font-bold disabled:opacity-50"
             >
               {saving ? "..." : editingId ? "تحديث" : "إضافة"}
             </button>
             <button
               onClick={resetForm}
-              className="flex-1 py-2 rounded-lg bg-fog border border-border text-ink text-[12px] font-bold"
+              className="flex-1 py-2 rounded-lg bg-[var(--d-subtle-bg)] border border-[var(--d-border)] text-[var(--d-text)] text-[12px] font-bold"
             >
               إلغاء
             </button>
@@ -222,14 +222,14 @@ export function DashboardDiscountCodes({ token }: Props) {
       {loading && (
         <div className="space-y-2">
           {[1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-border/40 animate-pulse" />
+            <div key={i} className="h-16 rounded-xl bg-[var(--d-border)]/40 animate-pulse" />
           ))}
         </div>
       )}
 
       {/* Empty */}
       {!loading && codes.length === 0 && !showForm && (
-        <div className="text-center py-6 text-mist text-[12px]">
+        <div className="text-center py-6 text-[var(--d-text-muted)] text-[12px]">
           لا توجد أكواد خصم — أضف كود لجذب الزبائن
         </div>
       )}
@@ -238,11 +238,11 @@ export function DashboardDiscountCodes({ token }: Props) {
       {!loading && codes.map((dc) => (
         <div
           key={dc.id}
-          className={`bg-surface border border-border rounded-xl p-3 space-y-1.5 ${!dc.is_active ? "opacity-60" : ""}`}
+          className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl p-3 space-y-1.5 ${!dc.is_active ? "opacity-60" : ""}`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold text-[14px] text-ink" dir="ltr">{dc.code}</span>
+              <span className="font-mono font-bold text-[14px] text-[var(--d-text)]" dir="ltr">{dc.code}</span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 dc.is_active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
               }`}>
@@ -252,13 +252,13 @@ export function DashboardDiscountCodes({ token }: Props) {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => handleToggle(dc)}
-                className="text-[10px] font-bold text-mist hover:text-ink px-1.5 py-1"
+                className="text-[10px] font-bold text-[var(--d-text-muted)] hover:text-[var(--d-text)] px-1.5 py-1"
               >
                 {dc.is_active ? "تعطيل" : "تفعيل"}
               </button>
               <button
                 onClick={() => openEdit(dc)}
-                className="text-[10px] font-bold text-olive px-1.5 py-1"
+                className="text-[10px] font-bold text-[var(--d-green)] px-1.5 py-1"
               >
                 تعديل
               </button>
@@ -271,7 +271,7 @@ export function DashboardDiscountCodes({ token }: Props) {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-mist">
+          <div className="flex items-center gap-3 text-[11px] text-[var(--d-text-muted)]">
             <span>
               {dc.discount_type === "percentage" ? `${dc.discount_value}%` : `₪${dc.discount_value}`} خصم
             </span>

@@ -109,21 +109,21 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
       {/* Toggle + header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display font-bold text-[14px] text-ink">الطلبات</h3>
+          <h3 className="font-display font-bold text-[14px] text-[var(--d-text)]">الطلبات</h3>
           {pendingCount > 0 && (
             <span className="text-[11px] text-amber-600 font-bold">{pendingCount} طلب بانتظار</span>
           )}
         </div>
         <button
           onClick={onToggleOrders}
-          className={`relative w-11 h-6 rounded-full transition-colors ${ordersEnabled ? "bg-olive" : "bg-border"}`}
+          className={`relative w-11 h-6 rounded-full transition-colors ${ordersEnabled ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}
         >
           <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${ordersEnabled ? "right-0.5" : "right-[22px]"}`} />
         </button>
       </div>
 
       {!ordersEnabled && (
-        <div className="text-center py-6 text-mist text-[12px]">
+        <div className="text-center py-6 text-[var(--d-text-muted)] text-[12px]">
           فعّل استقبال الطلبات ليتمكن الزبائن من الطلب
         </div>
       )}
@@ -137,7 +137,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
                 key={tab.value}
                 onClick={() => setFilter(tab.value)}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                  filter === tab.value ? "bg-olive text-white" : "bg-fog text-mist border border-border"
+                  filter === tab.value ? "bg-[var(--d-green)] text-white" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border border-[var(--d-border)]"
                 }`}
               >
                 {tab.label}
@@ -148,55 +148,55 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
           {loading && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded-xl bg-border/40 animate-pulse" />
+                <div key={i} className="h-24 rounded-xl bg-[var(--d-border)]/40 animate-pulse" />
               ))}
             </div>
           )}
 
           {!loading && orders.length === 0 && (
-            <div className="text-center py-8 text-mist text-[13px]">لا توجد طلبات</div>
+            <div className="text-center py-8 text-[var(--d-text-muted)] text-[13px]">لا توجد طلبات</div>
           )}
 
           {!loading && orders.map((order) => {
             const badge = STATUS_BADGE[order.status] || STATUS_BADGE.pending;
             return (
-              <div key={order.id} className="bg-surface border border-border rounded-xl p-3 space-y-2">
+              <div key={order.id} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl p-3 space-y-2">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-display font-black text-[15px] text-ink">#{order.order_number}</span>
+                    <span className="font-display font-black text-[15px] text-[var(--d-text)]">#{order.order_number}</span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
                   </div>
-                  <span className="text-[10px] text-mist">{timeAgo(order.created_at)}</span>
+                  <span className="text-[10px] text-[var(--d-text-muted)]">{timeAgo(order.created_at)}</span>
                 </div>
 
                 {/* Customer */}
-                <div className="flex items-center gap-2 text-[12px] text-ink">
+                <div className="flex items-center gap-2 text-[12px] text-[var(--d-text)]">
                   <span className="font-semibold">{order.customer_name}</span>
-                  <a href={`tel:${order.customer_phone}`} className="text-olive font-bold" dir="ltr">{order.customer_phone}</a>
+                  <a href={`tel:${order.customer_phone}`} className="text-[var(--d-green)] font-bold" dir="ltr">{order.customer_phone}</a>
                 </div>
 
                 {/* Items */}
-                <div className="bg-fog rounded-lg p-2 space-y-1">
+                <div className="bg-[var(--d-subtle-bg)] rounded-lg p-2 space-y-1">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between text-[12px]">
-                      <span className="text-ink">{item.item_name} × {item.quantity}</span>
-                      <span className="text-mist font-bold">₪{(item.item_price * item.quantity).toFixed(2)}</span>
+                      <span className="text-[var(--d-text)]">{item.item_name} × {item.quantity}</span>
+                      <span className="text-[var(--d-text-muted)] font-bold">₪{(item.item_price * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Total */}
                 <div className="flex items-center justify-between text-[13px] font-bold">
-                  <span className="text-ink">المجموع</span>
-                  <span className="text-olive">₪{Number(order.total).toFixed(2)}</span>
+                  <span className="text-[var(--d-text)]">المجموع</span>
+                  <span className="text-[var(--d-green)]">₪{Number(order.total).toFixed(2)}</span>
                 </div>
                 {Number(order.discount_amount) > 0 && (
-                  <div className="text-[11px] text-olive">خصم: -₪{Number(order.discount_amount).toFixed(2)}</div>
+                  <div className="text-[11px] text-[var(--d-green)]">خصم: -₪{Number(order.discount_amount).toFixed(2)}</div>
                 )}
 
                 {order.note && (
-                  <div className="text-[11px] text-mist bg-fog rounded-lg p-2">📝 {order.note}</div>
+                  <div className="text-[11px] text-[var(--d-text-muted)] bg-[var(--d-subtle-bg)] rounded-lg p-2">📝 {order.note}</div>
                 )}
 
                 {order.reject_reason && (
@@ -209,7 +209,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
                     <button
                       onClick={() => updateStatus(order.id, "accepted")}
                       disabled={updating === order.id}
-                      className="flex-1 py-2 rounded-lg bg-olive text-white text-[12px] font-bold disabled:opacity-50"
+                      className="flex-1 py-2 rounded-lg bg-[var(--d-green)] text-white text-[12px] font-bold disabled:opacity-50"
                     >
                       قبول ✓
                     </button>
@@ -243,12 +243,12 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
 
                 {/* Reject reason modal */}
                 {rejectId === order.id && (
-                  <div className="space-y-2 pt-1 border-t border-border">
+                  <div className="space-y-2 pt-1 border-t border-[var(--d-border)]">
                     <input
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
                       placeholder="سبب الرفض (اختياري)"
-                      className="w-full border border-border rounded-lg px-3 py-2 text-[12px] bg-fog text-ink"
+                      className="w-full border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]"
                       dir="rtl"
                     />
                     <div className="flex gap-2">
@@ -261,7 +261,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
                       </button>
                       <button
                         onClick={() => { setRejectId(null); setRejectReason(""); }}
-                        className="flex-1 py-2 rounded-lg bg-fog border border-border text-ink text-[12px] font-bold"
+                        className="flex-1 py-2 rounded-lg bg-[var(--d-subtle-bg)] border border-[var(--d-border)] text-[var(--d-text)] text-[12px] font-bold"
                       >
                         إلغاء
                       </button>

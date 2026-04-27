@@ -43,9 +43,9 @@ const STORE_TYPE_VALUES = Array.from(new Set(STORE_CATEGORIES.flatMap((c) => c.t
 
 /* ── Plan data ── */
 const PLANS = [
-  { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[#F1EFE8] text-[#444441]", featured: false },
-  { key: "basic", badge: "أساسي", name: "Basic", price: "100", badgeClass: "bg-[#E1F5EE] text-[#085041]", featured: false },
-  { key: "premium", badge: "الأفضل", name: "Premium", price: "200", badgeClass: "bg-[#3A6347] text-white", featured: true },
+  { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)]", featured: false },
+  { key: "basic", badge: "أساسي", name: "Basic", price: "100", badgeClass: "bg-[var(--d-green-bg)] text-[var(--d-green)]", featured: false },
+  { key: "premium", badge: "الأفضل", name: "Premium", price: "200", badgeClass: "bg-[var(--d-green)] text-white", featured: true },
 ] as const;
 
 const FEATURES = [
@@ -65,8 +65,8 @@ export default function OwnerDashboardPageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center" dir="rtl">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+        <div className="min-h-screen bg-[#0F1117] flex items-center justify-center" dir="rtl">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--d-green)] border-t-transparent" />
         </div>
       }
     >
@@ -86,6 +86,7 @@ function OwnerDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [isDark, setIsDark] = useState(true);
 
   // Edit form
   const [editName, setEditName] = useState("");
@@ -511,16 +512,16 @@ function OwnerDashboardPage() {
 
   /* ── Loading / Error ── */
   if (loading) return (
-    <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center" dir="rtl">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
+    <div className="min-h-screen bg-[var(--d-subtle-bg)] flex items-center justify-center" dir="rtl">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--d-green)] border-t-transparent" />
     </div>
   );
   if (error || !place) return (
-    <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-[#0F1117] flex items-center justify-center p-4" dir="rtl">
       <div className="text-center">
         <div className="text-4xl mb-4">🔒</div>
-        <h1 className="text-lg font-bold text-[#111827] mb-2">{error ?? "رمز غير صحيح"}</h1>
-        <p className="text-sm text-[#6B7280]">تأكد من الرابط الذي حصلت عليه من فريق غزة بريس.</p>
+        <h1 className="text-lg font-bold text-[#E5E7EB] mb-2">{error ?? "رمز غير صحيح"}</h1>
+        <p className="text-sm text-[var(--d-text-muted)]">تأكد من الرابط الذي حصلت عليه من فريق غزة بريس.</p>
       </div>
     </div>
   );
@@ -529,10 +530,37 @@ function OwnerDashboardPage() {
   const availableItems = place.menu.reduce((a, s) => a + s.items.filter((i) => i.available).length, 0);
   const planLabels: Record<string, string> = { free: "مجانية", basic: "أساسية", premium: "مميزة" };
 
+  // Theme colors
+  const t = isDark ? {
+    pageBg: "#0F1117", card: "#1A1D27", border: "#2A2D37", cardHover: "#252830",
+    text: "#E5E7EB", textSec: "#9CA3AF", textMuted: "#6B7280",
+    green: "#5B9A6A", greenBg: "#1A2E22", greenBgHover: "#243A2C",
+    indigoBg: "#1E2340", grayBg: "#1E2128", subtleBg: "#252830",
+    redBg: "#2D1B1B", toggleOff: "#374151", navShadow: "rgba(0,0,0,0.3)",
+    sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2A2D37",
+    cancelBg: "#252830", overlayBg: "#1A1D27",
+  } : {
+    pageBg: "#F9FAFB", card: "#ffffff", border: "#E5E7EB", cardHover: "#F2FAF5",
+    text: "#111827", textSec: "#374151", textMuted: "#9CA3AF",
+    green: "#4A7C59", greenBg: "#EBF3EE", greenBgHover: "#DCE9E0",
+    indigoBg: "#EEF2FF", grayBg: "#F1F5F9", subtleBg: "#F3F4F6",
+    redBg: "#FEF2F2", toggleOff: "#E5E7EB", navShadow: "rgba(0,0,0,0.05)",
+    sheetBg: "#F9FAFB", inputBg: "#ffffff", inputBorder: "#E5E7EB",
+    cancelBg: "#ffffff", overlayBg: "#ffffff",
+  };
+
   return (
-    <div className="min-h-screen bg-[#F9FAFB] relative" dir="rtl">
+    <div className="min-h-screen relative" dir="rtl" style={{
+      "--d-page": t.pageBg, "--d-card": t.card, "--d-border": t.border, "--d-card-hover": t.cardHover,
+      "--d-text": t.text, "--d-text-sec": t.textSec, "--d-text-muted": t.textMuted,
+      "--d-green": t.green, "--d-green-bg": t.greenBg, "--d-green-bg-hover": t.greenBgHover,
+      "--d-indigo-bg": t.indigoBg, "--d-gray-bg": t.grayBg, "--d-subtle-bg": t.subtleBg,
+      "--d-red-bg": t.redBg, "--d-toggle-off": t.toggleOff, "--d-input-bg": t.inputBg,
+      "--d-input-border": t.inputBorder, "--d-cancel-bg": t.cancelBg, "--d-overlay": t.overlayBg,
+      backgroundColor: t.pageBg, color: t.text,
+    } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[#4A7C59] px-4 pt-4 pb-5 relative overflow-hidden lg:pt-3 lg:pb-4 lg:px-8">
+      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative overflow-hidden lg:pt-3 lg:pb-4 lg:px-8">
         <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px]" />
         <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5" />
 
@@ -545,7 +573,20 @@ function OwnerDashboardPage() {
                 غزة <span className="text-[#C9A96E]">بريس</span>
               </span>
             </a>
-            <span className="text-[10px] font-bold text-white/50 bg-white/10 rounded-full px-2.5 py-1 lg:text-xs lg:px-4 lg:py-1.5">لوحة التحكم</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsDark(!isDark)}
+                className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors"
+                title={isDark ? "الوضع الفاتح" : "الوضع الداكن"}
+              >
+                {isDark ? (
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx={12} cy={12} r={5}/><line x1={12} y1={1} x2={12} y2={3}/><line x1={12} y1={21} x2={12} y2={23}/><line x1={4.22} y1={4.22} x2={5.64} y2={5.64}/><line x1={18.36} y1={18.36} x2={19.78} y2={19.78}/><line x1={1} y1={12} x2={3} y2={12}/><line x1={21} y1={12} x2={23} y2={12}/><line x1={4.22} y1={19.78} x2={5.64} y2={18.36}/><line x1={18.36} y1={5.64} x2={19.78} y2={4.22}/></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                )}
+              </button>
+              <span className="text-[10px] font-bold text-white/50 bg-white/10 rounded-full px-2.5 py-1 lg:text-xs lg:px-4 lg:py-1.5">لوحة التحكم</span>
+            </div>
           </div>
 
           {/* Place identity — mobile only in header */}
@@ -571,16 +612,16 @@ function OwnerDashboardPage() {
       {/* ══ MOBILE LAYOUT ══ */}
       <div className="lg:hidden px-4 py-4 pb-24">
         {/* Open toggle */}
-        <div className="flex items-center justify-between bg-white border border-[#E5E7EB] rounded-2xl p-3 -mt-6 mb-3 relative z-[2] shadow-sm">
+        <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 -mt-6 mb-3 relative z-[2] shadow-sm">
           <div>
-            <div className={`font-bold text-[13px] ${place.is_open ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
+            <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
               {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'} الآن` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'} الآن`}
             </div>
-            <div className="text-[10px] text-[#9CA3AF]">
+            <div className="text-[10px] text-[var(--d-text-muted)]">
               {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
             </div>
           </div>
-          <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}>
+          <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
             {actionLoading === "toggle-open" ? (
               <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
             ) : (
@@ -592,9 +633,9 @@ function OwnerDashboardPage() {
         {!isWorkspace && (
           <div className="grid grid-cols-3 gap-2.5 mb-4 relative z-[2]">
             {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
-              <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-2xl py-3 px-2 text-center shadow-sm">
-                <div className="font-bold text-[22px] text-[#111827] leading-none mb-1">{s.num}</div>
-                <div className="text-[9px] text-[#9CA3AF] font-semibold">{s.label}</div>
+              <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-3 px-2 text-center shadow-sm">
+                <div className="font-bold text-[22px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
+                <div className="text-[9px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
               </div>
             ))}
           </div>
@@ -602,46 +643,46 @@ function OwnerDashboardPage() {
         {/* Plan */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-[#9CA3AF] font-semibold">الباقة:</span>
-            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{planLabels[place.plan] ?? place.plan}</span>
+            <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
+            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
           </div>
-          <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[#3A6347]">ترقية ←</button>
+          <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
         </div>
         {/* Actions */}
-        <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">الإجراءات</div>
-        <div className="bg-white rounded-[18px] border border-[#E5E7EB] overflow-hidden shadow-sm mb-4">
+        <div className="text-[13px] font-bold text-[var(--d-text-muted)] mb-2.5 pr-0.5">الإجراءات</div>
+        <div className="bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] overflow-hidden shadow-sm mb-4">
           {isWorkspace ? (
             <>
-              <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد" onClick={openWsDetails} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، شاشات، مشروبات" onClick={openWsServices} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد" onClick={openWsDetails} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، شاشات، مشروبات" onClick={openWsServices} />
             </>
           ) : (
-            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
+            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
           )}
-          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
-          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
+          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
+          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[var(--d-gray-bg)]" iconColor="stroke-[var(--d-text-sec)]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
         </div>
         {/* Menu preview */}
         {!isWorkspace && place.menu.length > 0 && (
           <>
-            <div className="text-[13px] font-bold text-[#374151] mb-2.5 pr-0.5">القائمة</div>
-            <div className="bg-white rounded-[14px] border border-[#E5E7EB] overflow-hidden shadow-sm">
+            <div className="text-[13px] font-bold text-[var(--d-text-muted)] mb-2.5 pr-0.5">القائمة</div>
+            <div className="bg-[var(--d-card)] rounded-[14px] border border-[var(--d-border)] overflow-hidden shadow-sm">
               {place.menu.slice(0, 2).flatMap((sec) => sec.items.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex items-center justify-between px-3.5 py-3 border-b border-[#E5E7EB] last:border-b-0">
-                  <div><div className="text-xs font-semibold text-[#111827]">{item.name}</div><div className="text-[10px] text-[#9CA3AF]">{sec.name}</div></div>
-                  <div className="font-bold text-[13px] text-[#111827]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
+                <div key={item.id} className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--d-border)] last:border-b-0">
+                  <div><div className="text-xs font-semibold text-[var(--d-text)]">{item.name}</div><div className="text-[10px] text-[var(--d-text-muted)]">{sec.name}</div></div>
+                  <div className="font-bold text-[13px] text-[var(--d-text)]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
                 </div>
               )))}
             </div>
           </>
         )}
         {place.section === "food" && token && (
-          <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
+          <div className="mt-4 bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] p-4 shadow-sm">
             <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
           </div>
         )}
         {place.section === "food" && token && (
-          <div className="mt-4 bg-white rounded-[18px] border border-[#E5E7EB] p-4 shadow-sm">
+          <div className="mt-4 bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] p-4 shadow-sm">
             <DashboardDiscountCodes token={token} />
           </div>
         )}
@@ -653,32 +694,32 @@ function OwnerDashboardPage() {
         {/* ── RIGHT SIDEBAR ── */}
         <div className="w-[320px] flex-shrink-0 sticky top-6 space-y-4">
           {/* Place identity card */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-5">
+          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm p-5">
             <div className="flex items-center gap-3.5 mb-4">
-              <div className="w-[56px] h-[56px] rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+              <div className="w-[56px] h-[56px] rounded-2xl bg-[var(--d-subtle-bg)] border border-[var(--d-border)] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
               </div>
               <div className="min-w-0">
-                <div className="font-bold text-[15px] text-[#111827] truncate">{place.name}</div>
+                <div className="font-bold text-[15px] text-[var(--d-text)] truncate">{place.name}</div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {place.area && <span className="text-[11px] text-[#6B7280]">📍 {place.area.name_ar}</span>}
-                  <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-[#F3F4F6] text-[#6B7280]">{place.type}</span>
+                  {place.area && <span className="text-[11px] text-[var(--d-text-muted)]">📍 {place.area.name_ar}</span>}
+                  <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{place.type}</span>
                 </div>
               </div>
             </div>
             {/* Toggle */}
-            <div className="flex items-center justify-between bg-[#F9FAFB] rounded-xl p-3">
+            <div className="flex items-center justify-between bg-[var(--d-subtle-bg)] rounded-xl p-3">
               <div>
-                <div className={`font-bold text-[13px] ${place.is_open ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
+                <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
                   {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'}` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'}`}
                 </div>
-                <div className="text-[10px] text-[#9CA3AF]">
+                <div className="text-[10px] text-[var(--d-text-muted)]">
                   {place.is_open ? 'يظهر كـ "مفتوح"' : 'يظهر كـ "مغلق"'}
                 </div>
               </div>
-              <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}>
+              <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
                 {actionLoading === "toggle-open" ? (
                   <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
                 ) : (
@@ -692,43 +733,43 @@ function OwnerDashboardPage() {
           {!isWorkspace && (
             <div className="grid grid-cols-3 gap-3">
               {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
-                <div key={s.label} className="bg-white border border-[#E5E7EB] rounded-2xl py-4 px-2 text-center shadow-sm">
-                  <div className="font-bold text-[24px] text-[#111827] leading-none mb-1">{s.num}</div>
-                  <div className="text-[10px] text-[#9CA3AF] font-semibold">{s.label}</div>
+                <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-4 px-2 text-center shadow-sm">
+                  <div className="font-bold text-[24px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
+                  <div className="text-[10px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
                 </div>
               ))}
             </div>
           )}
 
           {/* Plan */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm px-5 py-3.5 flex items-center justify-between">
+          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm px-5 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#9CA3AF] font-semibold">الباقة:</span>
-              <span className="text-xs font-bold py-1 px-2.5 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{planLabels[place.plan] ?? place.plan}</span>
+              <span className="text-xs text-[var(--d-text-muted)] font-semibold">الباقة:</span>
+              <span className="text-xs font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
             </div>
-            <button onClick={() => setSheet("plans")} className="text-xs font-bold text-[#3A6347] hover:underline">ترقية ←</button>
+            <button onClick={() => setSheet("plans")} className="text-xs font-bold text-[var(--d-green)] hover:underline">ترقية ←</button>
           </div>
 
           {/* Actions */}
           <div>
-            <div className="text-sm font-bold text-[#374151] mb-2 pr-0.5">الإجراءات</div>
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
+            <div className="text-sm font-bold text-[var(--d-text-muted)] mb-2 pr-0.5">الإجراءات</div>
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] overflow-hidden shadow-sm">
               {isWorkspace ? (
                 <>
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
                 </>
               ) : (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[#EBF3EE]" iconColor="stroke-[#4A7C59]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[#EBF3EE] text-[#4A7C59]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
               )}
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#EEF2FF]" iconColor="stroke-[#4F46E5]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[#F1F5F9]" iconColor="stroke-[#475569]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك" : "شارك رابط محلك"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[var(--d-gray-bg)]" iconColor="stroke-[var(--d-text-sec)]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك" : "شارك رابط محلك"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
             </div>
           </div>
 
           {/* Discount codes — sidebar on desktop */}
           {place.section === "food" && token && (
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-sm">
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
               <DashboardDiscountCodes token={token} />
             </div>
           )}
@@ -738,22 +779,22 @@ function OwnerDashboardPage() {
         <div className="flex-1 min-w-0 space-y-5">
           {/* Menu preview */}
           {!isWorkspace && place.menu.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm">
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] overflow-hidden shadow-sm">
               <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                <span className="font-bold text-sm text-[#374151]">القائمة</span>
-                <button onClick={() => setSheet("menu")} className="text-xs font-bold text-[#4A7C59] bg-[#EBF3EE] rounded-full px-3 py-1 hover:bg-[#DCE9E0] transition-colors">إدارة القائمة</button>
+                <span className="font-bold text-sm text-[var(--d-text-muted)]">القائمة</span>
+                <button onClick={() => setSheet("menu")} className="text-xs font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-3 py-1 hover:bg-[var(--d-green-bg-hover)] transition-colors">إدارة القائمة</button>
               </div>
               {place.menu.slice(0, 2).flatMap((sec) => sec.items.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex items-center justify-between px-5 py-3.5 border-t border-[#E5E7EB]">
-                  <div><div className="text-sm font-semibold text-[#111827]">{item.name}</div><div className="text-xs text-[#9CA3AF]">{sec.name}</div></div>
-                  <div className="font-bold text-sm text-[#111827]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
+                <div key={item.id} className="flex items-center justify-between px-5 py-3.5 border-t border-[var(--d-border)]">
+                  <div><div className="text-sm font-semibold text-[var(--d-text)]">{item.name}</div><div className="text-xs text-[var(--d-text-muted)]">{sec.name}</div></div>
+                  <div className="font-bold text-sm text-[var(--d-text)]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
                 </div>
               )))}
             </div>
           )}
           {/* Orders */}
           {place.section === "food" && token && (
-            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-sm">
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
               <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
             </div>
           )}
@@ -761,7 +802,7 @@ function OwnerDashboardPage() {
       </div>
 
       {/* ══ Bottom Nav (mobile) / Sidebar (desktop) ══ */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E5E7EB] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[var(--d-card)] border-t border-[var(--d-border)] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.3)] lg:hidden">
         <NavItem icon="home" label="الرئيسية" active onClick={() => setSheet(null)} />
         {isWorkspace ? (
           <>
@@ -791,19 +832,19 @@ function OwnerDashboardPage() {
                   <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
                 </div>
               )}
-              <div className="flex items-center justify-between pb-2 border-b-2 border-[#EBF3EE] mb-2">
-                <span className="font-bold text-[13px] text-[#111827]">{sec.name}</span>
+              <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
+                <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }}
-                    className="text-[11px] font-bold text-[#4A7C59] bg-[#EBF3EE] rounded-full px-2.5 py-1"
+                    className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1"
                   >
                     + صنف
                   </button>
                   <button
                     onClick={() => handleDeleteSection(sec.id)}
                     disabled={!!actionLoading}
-                    className="text-[11px] font-bold text-[#E05C35] bg-[#FEF2F2] rounded-full px-2 py-1"
+                    className="text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-full px-2 py-1"
                   >
                     <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                       <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" />
@@ -814,36 +855,36 @@ function OwnerDashboardPage() {
               {sec.items.map((item) => {
                 const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
                 return (
-                <div key={item.id} className={`bg-white border border-[#E5E7EB] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
+                <div key={item.id} className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
                   {isItemLoading && (
-                    <div className="absolute inset-0 bg-white/70 rounded-2xl flex items-center justify-center z-10">
-                      <div className="w-5 h-5 border-2 border-[#4A7C59]/30 border-t-[#4A7C59] rounded-full animate-spin" />
+                    <div className="absolute inset-0 bg-[var(--d-card)]/70 rounded-2xl flex items-center justify-center z-10">
+                      <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
                     </div>
                   )}
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-[#111827]">{item.name}</div>
-                      {item.description && <div className="text-[10px] text-[#9CA3AF] mt-0.5">{item.description}</div>}
+                      <div className="text-[13px] font-semibold text-[var(--d-text)]">{item.name}</div>
+                      {item.description && <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">{item.description}</div>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`font-bold text-sm ${Number(item.price) > 0 ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>
+                      <span className={`font-bold text-sm ${Number(item.price) > 0 ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
                         {Number(item.price) > 0 ? `${item.price} ₪` : "—"}
                       </span>
                       <button
                         onClick={() => handleToggleItem(item.id)}
                         disabled={!!actionLoading}
-                        className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[#3A6347]" : "bg-[#E5E7EB]"}`}
+                        className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
                       >
                         <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
                       </button>
                     </div>
                   </div>
                   {/* Edit / Delete row */}
-                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[#F3F4F6]">
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--d-border)]">
                     <button
                       onClick={() => openEditItem(item)}
                       disabled={!!actionLoading}
-                      className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-[#4A7C59] bg-[#EBF3EE] rounded-lg py-1.5"
+                      className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-lg py-1.5"
                     >
                       <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                         <path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" />
@@ -853,7 +894,7 @@ function OwnerDashboardPage() {
                     <button
                       onClick={() => handleDeleteItem(item.id)}
                       disabled={!!actionLoading}
-                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#E05C35] bg-[#FEF2F2] rounded-lg py-1.5 px-3"
+                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-lg py-1.5 px-3"
                     >
                       <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                         <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" />
@@ -865,7 +906,7 @@ function OwnerDashboardPage() {
                 );
               })}
               {sec.items.length === 0 && (
-                <div className="text-center text-[11px] text-[#9CA3AF] py-4">لا توجد أصناف في هذا القسم</div>
+                <div className="text-center text-[11px] text-[var(--d-text-muted)] py-4">لا توجد أصناف في هذا القسم</div>
               )}
             </div>
           ); })}
@@ -873,14 +914,14 @@ function OwnerDashboardPage() {
         <div className="flex gap-2 mt-6">
           <button
             onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }}
-            className="flex-1 bg-[#4A7C59] text-white font-bold text-[13px] rounded-full py-3 flex items-center justify-center gap-1.5 shadow-lg shadow-[#4A7C59]/20"
+            className="flex-1 bg-[var(--d-green)] text-white font-bold text-[13px] rounded-full py-3 flex items-center justify-center gap-1.5 shadow-lg shadow-[var(--d-green)]/20"
           >
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round"><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></svg>
             إضافة صنف
           </button>
           <button
             onClick={() => setSheet("addSection")}
-            className="bg-[#EBF3EE] text-[#4A7C59] font-bold text-[13px] rounded-full py-3 px-5"
+            className="bg-[var(--d-green-bg)] text-[var(--d-green)] font-bold text-[13px] rounded-full py-3 px-5"
           >
             + قسم
           </button>
@@ -892,9 +933,9 @@ function OwnerDashboardPage() {
         <div className="space-y-3.5">
           {/* Avatar upload */}
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
             <div className="flex items-center gap-3">
-              <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F3F4F6] border-2 border-dashed border-[#D1D5DB] flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-[56px] h-[56px] rounded-[14px] bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -902,7 +943,7 @@ function OwnerDashboardPage() {
                 )}
               </div>
               <label className="flex-1 cursor-pointer">
-                <div className="text-center py-2.5 rounded-xl border-[1.5px] border-[#E5E7EB] text-[12px] font-bold text-[#4A7C59] bg-[#EBF3EE] hover:bg-[#d9ede0] transition-colors">
+                <div className="text-center py-2.5 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
                   {saving ? "جاري الرفع..." : "رفع صورة"}
                 </div>
                 <input
@@ -938,13 +979,13 @@ function OwnerDashboardPage() {
           <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
           {place.section === "store" && (
             <div>
-              <label className="text-xs font-bold text-[#374151] mb-1.5 block">
+              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
                 نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
               </label>
               <select
                 value={editStoreType}
                 onChange={(e) => setEditStoreType(e.target.value)}
-                className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]"
+                className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
               >
                 <option value="">اختر نوع المتجر...</option>
                 {STORE_CATEGORIES.map((cat) => (
@@ -960,8 +1001,8 @@ function OwnerDashboardPage() {
             </div>
           )}
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">المنطقة</label>
-            <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]">
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
+            <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
               <option value="">اختر المنطقة...</option>
               {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
             </select>
@@ -972,7 +1013,7 @@ function OwnerDashboardPage() {
           <button
             onClick={handleSaveEdit}
             disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
-            className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
           </button>
@@ -983,8 +1024,8 @@ function OwnerDashboardPage() {
       <SheetWrap open={sheet === "addItem"} onClose={() => setSheet("menu")} title="إضافة صنف جديد" sub="أضف صنف لقائمتك">
         <div className="space-y-3.5">
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">القسم</label>
-            <select value={addItemSection} onChange={(e) => setAddItemSection(e.target.value)} className="w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm text-[#111827] outline-none appearance-none focus:border-[#3A6347]">
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">القسم</label>
+            <select value={addItemSection} onChange={(e) => setAddItemSection(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
               {place.menu.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
@@ -993,9 +1034,9 @@ function OwnerDashboardPage() {
           <FormField label="وصف (اختياري)" value={addItemDesc} onChange={setAddItemDesc} placeholder="وصف قصير..." />
           {/* Photo upload */}
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج (اختياري)</label>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">صورة المنتج (اختياري)</label>
             {addItemPhoto ? (
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[var(--d-border)]">
                 <img
                   src={addItemPhotoPreview || normalizeImageUrl(addItemPhoto)}
                   alt=""
@@ -1005,7 +1046,7 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setAddItemPhoto(""); setAddItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
-              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[var(--d-border)] rounded-xl py-4 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -1016,9 +1057,9 @@ function OwnerDashboardPage() {
                   e.target.value = "";
                 }} />
                 {uploadingPhoto ? (
-                  <span className="text-xs text-[#9CA3AF]">جاري الرفع...</span>
+                  <span className="text-xs text-[var(--d-text-muted)]">جاري الرفع...</span>
                 ) : (
-                  <span className="text-xs text-[#9CA3AF]">اضغط لرفع صورة</span>
+                  <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
                 )}
               </label>
             )}
@@ -1026,7 +1067,7 @@ function OwnerDashboardPage() {
           <button
             onClick={handleAddItem}
             disabled={saving || !addItemName.trim() || uploadingPhoto}
-            className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الإضافة..." : "إضافة الصنف"}
           </button>
@@ -1040,7 +1081,7 @@ function OwnerDashboardPage() {
           <button
             onClick={handleAddSection}
             disabled={saving || !addSectionName.trim()}
-            className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الإضافة..." : "إضافة القسم"}
           </button>
@@ -1055,9 +1096,9 @@ function OwnerDashboardPage() {
           <FormField label="وصف (اختياري)" value={editItemDesc} onChange={setEditItemDesc} placeholder="وصف قصير..." />
           {/* Photo upload */}
           <div>
-            <label className="text-xs font-bold text-[#374151] mb-1.5 block">صورة المنتج</label>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">صورة المنتج</label>
             {editItemPhoto ? (
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#E5E7EB]">
+              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[var(--d-border)]">
                 <img
                   src={editItemPhotoPreview || normalizeImageUrl(editItemPhoto)}
                   alt=""
@@ -1067,7 +1108,7 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setEditItemPhoto(""); setEditItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
-              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[#D1D5DB] rounded-xl py-4 cursor-pointer hover:border-[#4A7C59] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[var(--d-border)] rounded-xl py-4 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -1078,9 +1119,9 @@ function OwnerDashboardPage() {
                   e.target.value = "";
                 }} />
                 {uploadingPhoto ? (
-                  <span className="text-xs text-[#9CA3AF]">جاري الرفع...</span>
+                  <span className="text-xs text-[var(--d-text-muted)]">جاري الرفع...</span>
                 ) : (
-                  <span className="text-xs text-[#9CA3AF]">اضغط لرفع صورة</span>
+                  <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
                 )}
               </label>
             )}
@@ -1088,7 +1129,7 @@ function OwnerDashboardPage() {
           <button
             onClick={handleUpdateItem}
             disabled={saving || !editItemName.trim() || uploadingPhoto}
-            className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2"
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
           </button>
@@ -1103,26 +1144,26 @@ function OwnerDashboardPage() {
             const isSelected = selectedPlan === p.key;
             const isPaid = p.key !== "free";
             return (
-              <div key={p.key} className={`bg-white rounded-2xl border-2 p-4 transition-all relative ${
-                isSelected ? "border-[#4A7C59] shadow-lg shadow-[#4A7C59]/10" : p.featured ? "border-[#4A7C59] shadow-md shadow-[#4A7C59]/10" : "border-[#E5E7EB]"
+              <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl border-2 p-4 transition-all relative ${
+                isSelected ? "border-[var(--d-green)] shadow-lg shadow-[var(--d-green)]/10" : p.featured ? "border-[var(--d-green)] shadow-md shadow-[var(--d-green)]/10" : "border-[var(--d-border)]"
               }`}>
                 {p.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4A7C59] text-white text-[9px] font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">الأكثر اختياراً</div>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[9px] font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">الأكثر اختياراً</div>
                 )}
-                <div className="text-[11px] font-bold text-[#4A5E52] uppercase tracking-wide mb-1">{p.badge}</div>
+                <div className="text-[11px] font-bold text-[var(--d-text-sec)] uppercase tracking-wide mb-1">{p.badge}</div>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-[32px] font-black text-[#111827] leading-none">{p.price}</span>
-                  <span className="text-[14px] font-bold text-[#4A5E52]">₪</span>
-                  {p.price !== "0" && <span className="text-[11px] text-[#9CA3AF]">/ شهر</span>}
+                  <span className="text-[32px] font-black text-[var(--d-text)] leading-none">{p.price}</span>
+                  <span className="text-[14px] font-bold text-[var(--d-text-sec)]">₪</span>
+                  {p.price !== "0" && <span className="text-[11px] text-[var(--d-text-muted)]">/ شهر</span>}
                 </div>
-                <div className="h-px bg-[#E5E7EB] my-3" />
+                <div className="h-px bg-[var(--d-toggle-off)] my-3" />
                 <div className="space-y-2 mb-3">
                   {FEATURES.map((f) => {
                     const has = f[p.key as keyof typeof f] as boolean;
                     return (
-                      <div key={f.name} className={`flex items-start gap-2 text-[11px] ${has ? "text-[#374151]" : "text-[#9CA3AF]"}`}>
+                      <div key={f.name} className={`flex items-start gap-2 text-[11px] ${has ? "text-[var(--d-text-sec)]" : "text-[var(--d-text-muted)]"}`}>
                         {has ? (
-                          <span className="text-[#2D9E5F] font-bold text-xs mt-px flex-shrink-0">✓</span>
+                          <span className="text-[var(--d-green)] font-bold text-xs mt-px flex-shrink-0">✓</span>
                         ) : (
                           <span className="text-[10px] mt-px flex-shrink-0">✕</span>
                         )}
@@ -1135,12 +1176,12 @@ function OwnerDashboardPage() {
                   onClick={() => setSelectedPlan(isSelected ? null : p.key)}
                   className={`w-full py-2.5 rounded-xl text-[12px] font-bold transition-all ${
                     isCurrent
-                      ? "border-2 border-[#C2DBC9] text-[#4A7C59] bg-[#EBF3EE]"
+                      ? "border-2 border-[var(--d-green)]/40 text-[var(--d-green)] bg-[var(--d-green-bg)]"
                       : isSelected
-                        ? "bg-[#4A7C59] text-white"
+                        ? "bg-[var(--d-green)] text-white"
                         : p.featured
-                          ? "bg-[#4A7C59] text-white shadow-md shadow-[#4A7C59]/25"
-                          : "bg-[#F9FAFB] text-[#374151] border border-[#E5E7EB]"
+                          ? "bg-[var(--d-green)] text-white shadow-md shadow-[var(--d-green)]/25"
+                          : "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)] border border-[var(--d-border)]"
                   }`}
                 >
                   {isCurrent ? "باقتك الحالية ✓" : isSelected ? "تم الاختيار ✓" : `اشترك في ${p.badge}`}
@@ -1148,21 +1189,21 @@ function OwnerDashboardPage() {
 
                 {/* Payment inside card */}
                 {isPaid && isSelected && !isCurrent && (
-                  <div className="mt-3 pt-3 border-t border-[#C2DBC9] text-right">
-                    <div className="bg-[#F9FAFB] rounded-xl p-3 mb-2">
-                      <div className="text-[10px] text-[#9CA3AF] font-semibold mb-1.5">١. حوّل المبلغ عبر بنك فلسطين</div>
-                      <div className="bg-white border border-[#E5E7EB] rounded-xl px-3 py-2.5 flex items-center justify-between">
-                        <span className="text-[15px] font-bold text-[#111827] tracking-wider" dir="ltr">0567359920</span>
+                  <div className="mt-3 pt-3 border-t border-[var(--d-green)]/40 text-right">
+                    <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3 mb-2">
+                      <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">١. حوّل المبلغ عبر بنك فلسطين</div>
+                      <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                        <span className="text-[15px] font-bold text-[var(--d-text)] tracking-wider" dir="ltr">0567359920</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText("0567359920"); }}
-                          className="text-[10px] text-[#4A7C59] font-bold bg-[#EBF3EE] rounded-lg px-2.5 py-1"
+                          className="text-[10px] text-[var(--d-green)] font-bold bg-[var(--d-green-bg)] rounded-lg px-2.5 py-1"
                         >
                           نسخ
                         </button>
                       </div>
                     </div>
-                    <div className="bg-[#F9FAFB] rounded-xl p-3">
-                      <div className="text-[10px] text-[#9CA3AF] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
+                    <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
+                      <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
                       <a
                         href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
                         target="_blank"
@@ -1188,10 +1229,10 @@ function OwnerDashboardPage() {
       {/* Workspace Details Sheet */}
       <SheetWrap open={sheet === "wsDetails"} onClose={() => setSheet(null)} title="الأسعار والأوقات" sub="عدّل أسعار المساحة ومواعيد العمل">
         {wsLoading ? (
-          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#4A7C59] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[var(--d-green)] border-t-transparent rounded-full animate-spin" /></div>
         ) : (
         <div className="space-y-3.5">
-          <div className="text-[11px] font-bold text-[#374151] mb-1">الأسعار (بالشيكل)</div>
+          <div className="text-[11px] font-bold text-[var(--d-text-sec)] mb-1">الأسعار (بالشيكل)</div>
           <div className="grid grid-cols-2 gap-2.5">
             <FormField label="سعر الساعة" value={wsDetails.price_hour} onChange={(v) => setWsDetails(d => ({...d, price_hour: v}))} type="number" placeholder="0" />
             <FormField label="نصف يوم" value={wsDetails.price_half_day} onChange={(v) => setWsDetails(d => ({...d, price_half_day: v}))} type="number" placeholder="0" />
@@ -1200,21 +1241,21 @@ function OwnerDashboardPage() {
           </div>
           <FormField label="سعر الشهر" value={wsDetails.price_month} onChange={(v) => setWsDetails(d => ({...d, price_month: v}))} type="number" placeholder="0" />
 
-          <div className="h-px bg-[#E5E7EB] my-1" />
-          <div className="text-[11px] font-bold text-[#374151] mb-1">أوقات العمل</div>
+          <div className="h-px bg-[var(--d-toggle-off)] my-1" />
+          <div className="text-[11px] font-bold text-[var(--d-text-sec)] mb-1">أوقات العمل</div>
           <div className="grid grid-cols-2 gap-2.5">
             <FormField label="يفتح الساعة" value={wsDetails.opens_at} onChange={(v) => setWsDetails(d => ({...d, opens_at: v}))} type="time" />
             <FormField label="يغلق الساعة" value={wsDetails.closes_at} onChange={(v) => setWsDetails(d => ({...d, closes_at: v}))} type="time" />
           </div>
 
-          <div className="h-px bg-[#E5E7EB] my-1" />
-          <div className="text-[11px] font-bold text-[#374151] mb-1">المقاعد</div>
+          <div className="h-px bg-[var(--d-toggle-off)] my-1" />
+          <div className="text-[11px] font-bold text-[var(--d-text-sec)] mb-1">المقاعد</div>
           <div className="grid grid-cols-2 gap-2.5">
             <FormField label="إجمالي المقاعد" value={wsDetails.total_seats} onChange={(v) => setWsDetails(d => ({...d, total_seats: v}))} type="number" placeholder="0" />
             <FormField label="المقاعد المتاحة" value={wsDetails.available_seats} onChange={(v) => setWsDetails(d => ({...d, available_seats: v}))} type="number" placeholder="0" />
           </div>
 
-          <button onClick={handleSaveWsDetails} disabled={saving} className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2">
+          <button onClick={handleSaveWsDetails} disabled={saving} className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2">
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
           </button>
         </div>
@@ -1224,16 +1265,16 @@ function OwnerDashboardPage() {
       {/* Workspace Services Sheet */}
       <SheetWrap open={sheet === "wsServices"} onClose={() => setSheet(null)} title="الخدمات المتاحة" sub="فعّل الخدمات المتوفرة في مساحتك">
         {wsLoading ? (
-          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#4A7C59] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[var(--d-green)] border-t-transparent rounded-full animate-spin" /></div>
         ) : (
         <div className="space-y-3">
           {wsServices.map((s, i) => (
-            <div key={s.service} className={`bg-white border rounded-2xl p-4 transition-all ${s.available ? 'border-[#4A7C59]/30 bg-[#F2FAF5]' : 'border-[#E5E7EB]'}`}>
+            <div key={s.service} className={`bg-[var(--d-card)] border rounded-2xl p-4 transition-all ${s.available ? 'border-[var(--d-green)]/30 bg-[var(--d-card-hover)]' : 'border-[var(--d-border)]'}`}>
               <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-[13px] text-[#111827]">{WS_SERVICE_LABELS[s.service] || s.service}</span>
+                <span className="font-bold text-[13px] text-[var(--d-text)]">{WS_SERVICE_LABELS[s.service] || s.service}</span>
                 <button
                   onClick={() => setWsServices(prev => prev.map((ss, j) => j === i ? {...ss, available: !ss.available} : ss))}
-                  className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${s.available ? "bg-[#4A7C59]" : "bg-[#E5E7EB]"}`}
+                  className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${s.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
                 >
                   <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${s.available ? "right-[25px]" : "right-[3px]"}`} />
                 </button>
@@ -1243,12 +1284,12 @@ function OwnerDashboardPage() {
                   value={s.detail}
                   onChange={(e) => setWsServices(prev => prev.map((ss, j) => j === i ? {...ss, detail: e.target.value} : ss))}
                   placeholder="تفاصيل إضافية (اختياري)..."
-                  className="w-full border border-[#E5E7EB] rounded-xl px-3 py-2 text-[12px] text-[#111827] bg-white outline-none focus:border-[#4A7C59] placeholder:text-[#9CA3AF]"
+                  className="w-full border border-[var(--d-border)] rounded-xl px-3 py-2 text-[12px] text-[var(--d-text)] bg-[var(--d-input-bg)] outline-none focus:border-[var(--d-green)] placeholder:text-[var(--d-text-muted)]"
                 />
               )}
             </div>
           ))}
-          <button onClick={handleSaveWsServices} disabled={saving} className="w-full bg-[#4A7C59] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[#4A7C59]/25 disabled:opacity-50 mt-2">
+          <button onClick={handleSaveWsServices} disabled={saving} className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2">
             {saving ? "جاري الحفظ..." : "حفظ الخدمات"}
           </button>
         </div>
@@ -1257,7 +1298,7 @@ function OwnerDashboardPage() {
 
       {/* Footer */}
       <div className="text-center pb-20 lg:pb-8 px-4 max-w-[1100px] mx-auto">
-        <p className="text-[10px] lg:text-xs text-[#9CA3AF]">غزة بريس 🌿 لوحة تحكم المالك</p>
+        <p className="text-[10px] lg:text-xs text-[var(--d-text-muted)]">غزة بريس 🌿 لوحة تحكم المالك</p>
       </div>
 
       {/* Toast */}
@@ -1271,17 +1312,17 @@ function OwnerDashboardPage() {
       {confirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmDialog(null)} />
-          <div className="relative bg-white rounded-2xl p-5 w-full max-w-[280px] shadow-xl text-center">
-            <div className="w-10 h-10 rounded-full bg-[#FEF2F2] flex items-center justify-center mx-auto mb-3">
+          <div className="relative bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-5 w-full max-w-[280px] shadow-xl text-center">
+            <div className="w-10 h-10 rounded-full bg-[var(--d-red-bg)] flex items-center justify-center mx-auto mb-3">
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#E05C35" strokeWidth={2} strokeLinecap="round">
                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
               </svg>
             </div>
-            <p className="text-[13px] font-bold text-[#111827] mb-4">{confirmDialog.message}</p>
+            <p className="text-[13px] font-bold text-[var(--d-text)] mb-4">{confirmDialog.message}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmDialog(null)}
-                className="flex-1 py-2.5 rounded-xl text-[12px] font-bold border border-[#E5E7EB] text-[#374151] bg-white"
+                className="flex-1 py-2.5 rounded-xl text-[12px] font-bold border border-[var(--d-border)] text-[var(--d-text-muted)] bg-[var(--d-subtle-bg)]"
               >
                 إلغاء
               </button>
@@ -1307,19 +1348,19 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last 
   onClick?: () => void; last?: boolean;
 }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 lg:gap-4 px-4 py-3.5 lg:py-4 text-right transition-colors hover:bg-[#F2FAF5] active:bg-[#EBF3EE] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
+    <button onClick={onClick} className={`w-full flex items-center gap-3 lg:gap-4 px-4 py-3.5 lg:py-4 text-right transition-colors hover:bg-[var(--d-card-hover)] active:bg-[var(--d-card-hover)] ${last ? "" : "border-b border-[var(--d-border)]"}`}>
       <div className={`w-[42px] h-[42px] lg:w-[48px] lg:h-[48px] rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
         <svg viewBox="0 0 24 24" className={`w-5 h-5 lg:w-6 lg:h-6 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
         </svg>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13px] lg:text-sm text-[#111827]">{title}</div>
-        <div className="text-[11px] lg:text-xs text-[#9CA3AF]">{sub}</div>
+        <div className="font-bold text-[13px] lg:text-sm text-[var(--d-text)]">{title}</div>
+        <div className="text-[11px] lg:text-xs text-[var(--d-text-muted)]">{sub}</div>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {badge}
-        <span className="text-[#9CA3AF] text-sm">‹</span>
+        <span className="text-[var(--d-text-muted)] text-sm">‹</span>
       </div>
     </button>
   );
@@ -1334,11 +1375,11 @@ function NavItem({ icon, label, active, onClick }: { icon: string; label: string
   };
   return (
     <button onClick={onClick} className="flex-1 flex flex-col items-center gap-1 py-1.5 px-0.5 rounded-xl transition-colors relative">
-      {active && <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-10 h-7 bg-[#EBF3EE] rounded-[9px] z-0" />}
-      <svg viewBox="0 0 24 24" className={`w-[18px] h-[18px] relative z-[1] ${active ? "stroke-[#4A7C59]" : "stroke-[#9CA3AF]"}`} fill="none" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      {active && <div className="absolute top-0.5 left-1/2 -translate-x-1/2 w-10 h-7 bg-[var(--d-green-bg)] rounded-[9px] z-0" />}
+      <svg viewBox="0 0 24 24" className={`w-[18px] h-[18px] relative z-[1] ${active ? "stroke-[var(--d-green)]" : "stroke-[var(--d-text-muted)]"}`} fill="none" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         {icons[icon]}
       </svg>
-      <span className={`text-[9px] font-bold relative z-[1] ${active ? "text-[#4A7C59]" : "text-[#9CA3AF]"}`}>{label}</span>
+      <span className={`text-[9px] font-bold relative z-[1] ${active ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>{label}</span>
     </button>
   );
 }
@@ -1350,8 +1391,8 @@ function SheetWrap({ open, onClose, title, sub, children }: {
     <>
       {/* Backdrop for desktop */}
       {open && <div className="hidden lg:block fixed inset-0 bg-black/20 z-[19]" onClick={onClose} />}
-      <div className={`fixed inset-0 bg-[#F9FAFB] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:shadow-2xl lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none"}`} dir="rtl">
-        <div className="bg-[#4A7C59] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
+      <div className={`fixed inset-0 bg-[var(--d-page)] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:shadow-2xl lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none"}`} dir="rtl">
+        <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
           <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
           <div className="flex items-center gap-2 mb-1 relative z-[1]">
             <button onClick={onClose} className="w-[30px] h-[30px] lg:w-[36px] lg:h-[36px] bg-white/10 rounded-lg flex items-center justify-center">
@@ -1376,10 +1417,10 @@ function FormField({ label, value, onChange, type = "text", placeholder, textare
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; textarea?: boolean;
 }) {
-  const cls = "w-full border-[1.5px] border-[#E5E7EB] bg-white rounded-xl px-3.5 py-3 text-sm lg:text-base text-[#111827] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-[#3A6347]";
+  const cls = "w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm lg:text-base text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-text-muted)] focus:border-[var(--d-green)]";
   return (
     <div>
-      <label className="text-xs font-bold text-[#374151] mb-1.5 block">{label}</label>
+      <label className="text-xs font-bold text-[var(--d-text-muted)] mb-1.5 block">{label}</label>
       {textarea ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${cls} resize-none h-[72px]`} />
       ) : (
