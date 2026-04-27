@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("limit")) params.set("limit", searchParams.get("limit")!);
   if (searchParams.get("offset")) params.set("offset", searchParams.get("offset")!);
   if (searchParams.get("search")) params.set("search", searchParams.get("search")!);
+  if (searchParams.get("section")) params.set("section", searchParams.get("section")!);
+  if (searchParams.get("type")) params.set("type", searchParams.get("type")!);
   try {
     const res = await fetch(`${base}/admin/places?${params}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },

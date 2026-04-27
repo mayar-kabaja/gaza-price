@@ -133,9 +133,9 @@ function OwnerDashboardPage() {
   const isWorkspace = place?.section === 'workspace';
   const itemNamePlaceholder = place?.section === "store"
     ? "مثال: اسم المنتج"
-    : place?.type === "cafe" || place?.type === "كافيه" || place?.type === "مقهى"
+    : place?.type === "cafe"
       ? "مثال: قهوة تركية"
-      : place?.type === "restaurant" || place?.type === "مطعم" || place?.type === "both" || place?.type === "مطعم وكافيه"
+      : place?.type === "restaurant" || place?.type === "both"
         ? "مثال: شاورما لحمة"
         : isWorkspace
           ? "مثال: ساعة عمل مشتركة"

@@ -16,7 +16,7 @@ const EMOJI_MAP: Record<string, string> = {
   restaurant: '🍽️', cafe: '☕', bakery: '🫓', juice: '🧃',
   'ملابس': '👗', 'إلكترونيات': '📱', 'حلاقة': '✂️', 'أدوات منزلية': '🏗️',
   'صيدلية': '💊', 'كتب ودفاتر': '📚', 'ألعاب أطفال': '🧸', 'أزهار': '🌸',
-  'workspace': '💻', 'مساحة عمل': '💻',
+  'workspace': '💻',
 };
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -162,9 +162,10 @@ function cleanWhatsapp(raw: string): string {
 }
 
 function typeLabel(type: string): string {
-  if (type === 'both' || type === 'مطعم وكافيه') return 'مطعم وكافيه';
-  if (type === 'restaurant' || type === 'مطعم') return 'مطعم';
-  if (type === 'cafe' || type === 'كافيه' || type === 'مقهى') return 'كافيه';
+  if (type === 'both') return 'مطعم وكافيه';
+  if (type === 'restaurant') return 'مطعم';
+  if (type === 'cafe') return 'كافيه';
+  if (type === 'workspace') return 'مساحة عمل';
   return type;
 }
 

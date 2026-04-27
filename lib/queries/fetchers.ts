@@ -35,8 +35,8 @@ export const queryKeys = {
     ["admin", "pending-products", limit, offset] as const,
   adminFlags: (limit: number, offset: number) =>
     ["admin", "flags", limit, offset] as const,
-  adminPlaces: (status: string, limit: number, offset: number, search: string) =>
-    ["admin", "places", status, limit, offset, search] as const,
+  adminPlaces: (status: string, limit: number, offset: number, search: string, section: string, type: string) =>
+    ["admin", "places", status, limit, offset, search, section, type] as const,
 };
 
 // ── Fetchers (return parsed JSON, throw on !res.ok for mutations) ──
@@ -312,13 +312,15 @@ export interface AdminPlace {
   created_at?: string;
 }
 
-export async function fetchAdminPlaces(status: string, limit: number, offset: number, search = ""): Promise<{
+export async function fetchAdminPlaces(status: string, limit: number, offset: number, search = "", section = "", type = ""): Promise<{
   data: AdminPlace[];
   total: number;
 }> {
   const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (status) sp.set("status", status);
   if (search) sp.set("search", search);
+  if (section) sp.set("section", section);
+  if (type) sp.set("type", type);
   const res = await apiFetchAdmin(`/api/admin/places?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };

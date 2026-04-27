@@ -53,7 +53,20 @@ export default function AdminPlacesPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [filterName]);
 
-  const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset, debouncedSearch);
+  // Convert typeFilter into server-side section + type params
+  const apiSection = typeFilter === "__food__" ? "food"
+    : typeFilter === "__store__" ? "store"
+    : typeFilter === "workspace" ? "workspace"
+    : FOOD_TYPE_OPTIONS.some((t) => t.value === typeFilter) ? "food"
+    : STORE_TYPE_VALUES.includes(typeFilter) ? "store"
+    : "";
+  const apiType = typeFilter === "__food__" || typeFilter === "__store__" ? ""
+    : typeFilter === "workspace" ? "workspace"
+    : FOOD_TYPE_OPTIONS.some((t) => t.value === typeFilter) ? typeFilter
+    : STORE_TYPE_VALUES.includes(typeFilter) ? typeFilter
+    : "";
+
+  const { data, isLoading } = useAdminPlaces(statusFilter, PAGE_SIZE, offset, debouncedSearch, apiSection, apiType);
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
   const places = data?.data ?? [];
@@ -244,31 +257,12 @@ export default function AdminPlacesPage() {
     setDeleting(false);
   }
 
-  const filteredPlaces = places.filter((p) => {
-    if (typeFilter) {
-      if (typeFilter === "__store__") {
-        if (p.section !== "store") return false;
-      } else if (typeFilter === "__food__") {
-        if (p.section !== "food") return false;
-      } else if (STORE_TYPE_VALUES.includes(typeFilter)) {
-        if (p.section !== "store" || p.type !== typeFilter) return false;
-      } else {
-        const typeGroups: Record<string, string[]> = {
-          restaurant: ["restaurant", "مطعم"],
-          cafe: ["cafe", "كافيه", "مقهى"],
-          both: ["both", "مطعم وكافيه"],
-          workspace: ["workspace", "مساحة عمل"],
-        };
-        const allowed = typeGroups[typeFilter] ?? [typeFilter];
-        if (!allowed.includes(p.type)) return false;
-      }
-    }
-    if (filterArea.trim()) {
-      const q = filterArea.trim().toLowerCase();
-      if (!(p.area?.name_ar ?? "").toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
+  const filteredPlaces = filterArea.trim()
+    ? places.filter((p) => {
+        const q = filterArea.trim().toLowerCase();
+        return (p.area?.name_ar ?? "").toLowerCase().includes(q);
+      })
+    : places;
 
   const statusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string; dot: string }> = {
@@ -469,7 +463,7 @@ export default function AdminPlacesPage() {
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center rounded-full border border-[#243040] bg-[#18212C] px-2 py-0.5 text-[10px] font-medium text-[#8FA3B8]">
-                        {p.section === "food" ? "🍽" : p.section === "workspace" ? "💻" : "🏪"} {p.section === "store" ? p.type : ({ restaurant: "Restaurant", مطعم: "Restaurant", cafe: "Cafe", كافيه: "Cafe", مقهى: "Cafe", both: "Both", "مطعم وكافيه": "Both", workspace: "Workspace", "مساحة عمل": "Workspace" } as Record<string, string>)[p.type] ?? p.type}
+                        {p.section === "food" ? "🍽" : p.section === "workspace" ? "💻" : "🏪"} {p.section === "store" ? p.type : ({ restaurant: "Restaurant", cafe: "Cafe", both: "Both", workspace: "Workspace" } as Record<string, string>)[p.type] ?? p.type}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-xs text-[#8FA3B8]">{p.area?.name_ar ?? "—"}</td>

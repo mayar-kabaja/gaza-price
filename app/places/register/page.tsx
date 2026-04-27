@@ -264,7 +264,7 @@ function RegisterPlacePage() {
       const body = {
         name: name.trim(),
         section: selectedTypeOption?.section ?? "food",
-        type: type === "store" && storeSubType ? storeSubType : (selectedTypeOption?.label ?? type),
+        type: type === "store" && storeSubType ? storeSubType : (selectedTypeOption?.key ?? type),
         area_id: areaId,
         address: address.trim() || undefined,
         phone: normalizedPhone,
