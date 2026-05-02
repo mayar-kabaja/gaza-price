@@ -9,6 +9,8 @@ import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
+import { useSessionContext } from '@/contexts/SessionContext';
+import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
 
 /* ─── Constants ─── */
 
@@ -603,6 +605,8 @@ export default function PlaceDetailPage() {
   const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const { contributor, refreshContributor } = useSessionContext();
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [showCart, setShowCart] = useState(false);
 
@@ -808,6 +812,10 @@ export default function PlaceDetailPage() {
                       onUpdateQty={updateCartQty}
                       onClear={clearCart}
                       onOrderPlaced={() => {}}
+                      phoneVerified={contributor?.phone_verified}
+                      userPhone={contributor?.phone_number}
+                      userHandle={contributor?.display_handle}
+                      onRequireLogin={() => setShowAuthPopup(true)}
                     />
                   </div>
                 </>
@@ -901,12 +909,26 @@ export default function PlaceDetailPage() {
                   onUpdateQty={updateCartQty}
                   onClear={clearCart}
                   onOrderPlaced={() => {}}
+                  phoneVerified={contributor?.phone_verified}
+                  userPhone={contributor?.phone_number}
+                  userHandle={contributor?.display_handle}
+                  onRequireLogin={() => setShowAuthPopup(true)}
                 />
               </div>
             </>
           )}
         </>
       )}
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={() => {
+          setShowAuthPopup(false);
+          refreshContributor().catch(() => {});
+        }}
+        mode="login"
+        reason="سجّل دخولك لتتمكن من إرسال طلبك"
+      />
     </div>
   );
 }

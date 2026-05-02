@@ -2,19 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const url = `${API}/places/${id}/orders`;
+export async function GET(req: NextRequest) {
+  const url = `${API}/places/my-orders`;
   try {
-    const body = await req.json();
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     const auth = req.headers.get("authorization");
     if (auth) headers["Authorization"] = auth;
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
+    const res = await fetch(url, { headers });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {

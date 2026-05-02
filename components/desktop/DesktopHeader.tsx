@@ -9,6 +9,7 @@ import { useArea } from "@/hooks/useArea";
 import { useTheme } from "@/hooks/useTheme";
 import { useSession } from "@/hooks/useSession";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
+import { MyOrdersSheet } from "@/components/places/MyOrdersSheet";
 import { cn } from "@/lib/utils";
 
 const GOV_LABELS: Record<Governorate, string> = {
@@ -41,6 +42,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
   const [showLogin, setShowLogin] = useState(false);
   const [showChangePhone, setShowChangePhone] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showMyOrders, setShowMyOrders] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -177,6 +179,20 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
           </svg>
           إضافة
         </button>
+
+        {/* My Orders */}
+        {contributor?.phone_verified && (
+          <button
+            type="button"
+            onClick={() => setShowMyOrders(true)}
+            className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-white/70 bg-white/7 border border-white/12 hover:bg-white/15 transition-colors cursor-pointer flex-shrink-0"
+            title="طلباتي"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+          </button>
+        )}
 
         <div className="w-px h-5 bg-white/12 mx-1" />
 
@@ -326,6 +342,10 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
           await refreshContributor();
         }}
       />
+
+      {showMyOrders && (
+        <MyOrdersSheet onClose={() => setShowMyOrders(false)} />
+      )}
     </header>
   );
 }

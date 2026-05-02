@@ -6,6 +6,7 @@ import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 import { DashboardOrders } from "@/components/places/DashboardOrders";
 import { DashboardDiscountCodes } from "@/components/places/DashboardDiscountCodes";
+import { DashboardNotifications } from "@/components/places/DashboardNotifications";
 
 /* ── Types ── */
 type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null };
@@ -86,6 +87,11 @@ function OwnerDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const [lastOrderEvent, setLastOrderEvent] = useState<{ type: "order_created" | "order_updated"; order: any } | null>(null);
+
+  const handleOrderEvent = useCallback((type: "order_created" | "order_updated", order: any) => {
+    setLastOrderEvent({ type, order });
+  }, []);
   const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit">("orders");
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== "undefined") {
@@ -566,7 +572,7 @@ function OwnerDashboardPage() {
       backgroundColor: t.pageBg, color: t.text,
     } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative overflow-hidden lg:pt-3 lg:pb-4 lg:px-8">
+      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-8">
         <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px]" />
         <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5" />
 
@@ -580,6 +586,7 @@ function OwnerDashboardPage() {
               </span>
             </a>
             <div className="flex items-center gap-2">
+              <DashboardNotifications token={token} ordersEnabled={place.orders_enabled ?? false} onOrderEvent={handleOrderEvent} />
               <button
                 onClick={() => { const next = !isDark; setIsDark(next); localStorage.setItem("dashboardTheme", next ? "dark" : "light"); }}
                 className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors"
@@ -690,7 +697,7 @@ function OwnerDashboardPage() {
         )}
         {place.section === "food" && token && (
           <div id="mobile-orders" className="mt-4 bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] p-4 shadow-sm">
-            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
+            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} />
           </div>
         )}
         {place.section === "food" && token && (
@@ -870,7 +877,7 @@ function OwnerDashboardPage() {
 
           {activeView === "orders" && place.section === "food" && token && (
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} />
+              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} />
             </div>
           )}
 

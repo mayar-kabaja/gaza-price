@@ -11,7 +11,7 @@ interface DiscountCode {
   min_order_total: number;
   max_uses: number | null;
   used_count: number;
-  is_active: boolean;
+  active: boolean;
   expires_at: string | null;
   created_at: string;
 }
@@ -114,7 +114,7 @@ export function DashboardDiscountCodes({ token }: Props) {
     try {
       await apiFetch(`/api/places/dashboard/discount-codes/${dc.id}?token=${token}`, {
         method: "PATCH",
-        body: JSON.stringify({ is_active: !dc.is_active }),
+        body: JSON.stringify({ active: !dc.active }),
       });
       await load();
     } catch {}
@@ -238,15 +238,15 @@ export function DashboardDiscountCodes({ token }: Props) {
       {!loading && codes.map((dc) => (
         <div
           key={dc.id}
-          className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl p-3 space-y-1.5 ${!dc.is_active ? "opacity-60" : ""}`}
+          className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl p-3 space-y-1.5 ${!dc.active ? "opacity-60" : ""}`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="font-mono font-bold text-[14px] text-[var(--d-text)]" dir="ltr">{dc.code}</span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                dc.is_active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                dc.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
               }`}>
-                {dc.is_active ? "فعّال" : "معطّل"}
+                {dc.active ? "فعّال" : "معطّل"}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -254,7 +254,7 @@ export function DashboardDiscountCodes({ token }: Props) {
                 onClick={() => handleToggle(dc)}
                 className="text-[10px] font-bold text-[var(--d-text-muted)] hover:text-[var(--d-text)] px-1.5 py-1"
               >
-                {dc.is_active ? "تعطيل" : "تفعيل"}
+                {dc.active ? "تعطيل" : "تفعيل"}
               </button>
               <button
                 onClick={() => openEdit(dc)}

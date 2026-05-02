@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api/fetch";
 import { normalizeDigits } from "@/lib/normalize-digits";
 
@@ -41,11 +41,23 @@ interface OrderCartProps {
   onUpdateQty: (id: string, delta: number) => void;
   onClear: () => void;
   onOrderPlaced: (order: any) => void;
+  phoneVerified?: boolean;
+  userPhone?: string | null;
+  userHandle?: string | null;
+  onRequireLogin?: () => void;
 }
 
-export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear, onOrderPlaced }: OrderCartProps) {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear, onOrderPlaced, phoneVerified, userPhone, userHandle, onRequireLogin }: OrderCartProps) {
+  const [name, setName] = useState(userHandle || "");
+  const [phone, setPhone] = useState(userPhone || "");
+
+  // Sync after login — useState only sets initial value
+  useEffect(() => {
+    if (userPhone && !phone) setPhone(userPhone);
+  }, [userPhone]);
+  useEffect(() => {
+    if (userHandle && !name) setName(userHandle);
+  }, [userHandle]);
   const [note, setNote] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [discountResult, setDiscountResult] = useState<{
@@ -95,8 +107,9 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
   }
 
   async function submitOrder() {
+    if (!phoneVerified) { onRequireLogin?.(); return; }
     if (!name.trim()) { setError("الاسم مطلوب"); return; }
-    if (!phone.trim()) { setError("رقم الهاتف مطلوب"); return; }
+    if (!phone.trim()) { setError("رقم الواتساب مطلوب"); return; }
     setSubmitting(true);
     setError("");
     try {
@@ -104,7 +117,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
         method: "POST",
         body: JSON.stringify({
           customer_name: name.trim(),
-          customer_phone: phone.trim(),
+          customer_whatsapp: phone.trim(),
           note: note.trim() || undefined,
           discount_code: discountResult?.valid ? discountCode.trim() : undefined,
           items: items.map((i) => ({ menu_item_id: i.menu_item_id, quantity: i.quantity })),
@@ -124,9 +137,66 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
     setSubmitting(false);
   }
 
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  // Poll order status so cancel button disappears when owner accepts
+  useEffect(() => {
+    if (!placedOrder || placedOrder.status !== "pending" || cancelled) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch("/api/places/my-orders");
+        if (res.ok) {
+          const data = await res.json();
+          const updated = (data.data || []).find((o: any) => o.id === placedOrder.id);
+          if (updated && updated.status !== "pending") {
+            setPlacedOrder((prev: any) => ({ ...prev, status: updated.status }));
+          }
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [placedOrder, cancelled]);
+
+  async function cancelOrder() {
+    if (!placedOrder) return;
+    setCancelling(true);
+    try {
+      const res = await apiFetch(`/api/places/orders/${placedOrder.id}`, { method: "PATCH" });
+      if (res.ok) {
+        setCancelled(true);
+      } else {
+        const data = await res.json();
+        setError(data.message || "تعذر إلغاء الطلب");
+      }
+    } catch {
+      setError("تعذر الاتصال");
+    }
+    setCancelling(false);
+  }
+
   // ── Success view ──
   if (placedOrder) {
     const waNum = placeWhatsapp?.replace(/[^0-9]/g, "") || "";
+
+    if (cancelled) {
+      return (
+        <div className="px-5 py-7 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-50 border-[3px] border-red-300 flex items-center justify-center mx-auto mb-4">
+            <svg viewBox="0 0 24 24" className="w-7 h-7 stroke-red-500" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <h3 className="font-display font-black text-xl text-ink mb-1.5">تم إلغاء الطلب</h3>
+          <p className="text-[13px] text-mist leading-relaxed mb-5">تم إلغاء طلبك رقم #{placedOrder.order_number}</p>
+          <button
+            onClick={onClear}
+            className="w-full py-3 rounded-[14px] bg-fog border border-border text-mist font-display font-bold text-[13px]"
+          >
+            العودة للرئيسية
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="px-5 py-7 text-center">
         {/* Check icon */}
@@ -158,6 +228,19 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
             فتح واتساب المطعم
           </a>
         )}
+
+        {/* Cancel order — only while pending */}
+        {placedOrder.status === "pending" && (
+          <button
+            onClick={cancelOrder}
+            disabled={cancelling}
+            className="w-full py-3 rounded-[14px] border border-red-200 text-red-500 font-display font-bold text-[13px] mb-2.5 disabled:opacity-50"
+          >
+            {cancelling ? "جاري الإلغاء..." : "إلغاء الطلب"}
+          </button>
+        )}
+
+        {error && <p className="text-[12px] text-red-500 mb-2">{error}</p>}
 
         <button
           onClick={onClear}
@@ -278,47 +361,76 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
       </div>
 
       {/* Customer info */}
-      <div className="bg-surface border border-border rounded-[14px] p-3.5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="text-[11px] font-bold text-ink mb-1.5 flex items-center gap-1.5">
-          <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-olive" fill="none" strokeWidth="2" strokeLinecap="round">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          بيانات التواصل
+      {!phoneVerified ? (
+        <div className="bg-surface border border-border rounded-[14px] p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-center">
+          <div className="text-3xl mb-2">🔐</div>
+          <p className="text-[13px] font-bold text-ink mb-1">يجب تسجيل الدخول للطلب</p>
+          <p className="text-[11px] text-mist mb-3">سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك</p>
+          <button
+            onClick={() => onRequireLogin?.()}
+            className="w-full py-3 rounded-[12px] bg-[#25D366] text-white font-display font-bold text-[13px] flex items-center justify-center gap-2"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-white" fill="none" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+            </svg>
+            تسجيل الدخول
+          </button>
         </div>
-        <div className="text-[10px] text-mist mb-2.5">سيتواصل معك المطعم على هذا الرقم</div>
-        <div className="space-y-2">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="الاسم الكامل *"
-            className="w-full bg-fog border-[1.5px] border-border rounded-[10px] px-3 py-2.5 text-[13px] text-ink outline-none focus:border-olive transition-colors"
-            dir="rtl"
-          />
-          <input
-            value={phone}
-            onChange={(e) => setPhone(normalizeDigits(e.target.value))}
-            placeholder="رقم الهاتف *"
-            type="tel"
-            inputMode="tel"
-            className="w-full bg-fog border-[1.5px] border-border rounded-[10px] px-3 py-2.5 text-[13px] text-ink outline-none focus:border-olive transition-colors"
-            dir="ltr"
-          />
+      ) : (
+        <div className="bg-surface border border-border rounded-[14px] p-3.5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="text-[11px] font-bold text-ink mb-1.5 flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-olive" fill="none" strokeWidth="2" strokeLinecap="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            بيانات التواصل
+          </div>
+          <div className="text-[10px] text-mist mb-2.5">سيتواصل معك المطعم عبر واتساب على هذا الرقم</div>
+          <div className="space-y-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="الاسم الكامل *"
+              className="w-full bg-fog border-[1.5px] border-border rounded-[10px] px-3 py-2.5 text-[13px] text-ink outline-none focus:border-olive transition-colors"
+              dir="rtl"
+            />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(normalizeDigits(e.target.value))}
+              placeholder="رقم الواتساب *"
+              type="tel"
+              inputMode="tel"
+              className="w-full bg-fog border-[1.5px] border-border rounded-[10px] px-3 py-2.5 text-[13px] text-ink outline-none focus:border-olive transition-colors"
+              dir="ltr"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <p className="text-[12px] text-red-500 text-center">{error}</p>}
 
       {/* Submit */}
-      <button
-        onClick={submitOrder}
-        disabled={submitting}
-        className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] bg-olive text-white font-display font-extrabold text-[15px] shadow-[0_4px_16px_rgba(74,124,89,0.3)] disabled:opacity-50 transition-all"
-      >
-        <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] stroke-white" fill="none" strokeWidth="2" strokeLinecap="round">
-          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        {submitting ? "جاري الإرسال..." : `إرسال الطلب — ${total.toFixed(2)} ₪`}
-      </button>
+      {phoneVerified ? (
+        <button
+          onClick={submitOrder}
+          disabled={submitting}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] bg-olive text-white font-display font-extrabold text-[15px] shadow-[0_4px_16px_rgba(74,124,89,0.3)] disabled:opacity-50 transition-all"
+        >
+          <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] stroke-white" fill="none" strokeWidth="2" strokeLinecap="round">
+            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          {submitting ? "جاري الإرسال..." : `إرسال الطلب — ${total.toFixed(2)} ₪`}
+        </button>
+      ) : (
+        <button
+          onClick={() => onRequireLogin?.()}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] bg-[#25D366] text-white font-display font-extrabold text-[15px] shadow-[0_4px_16px_rgba(37,211,102,0.3)] transition-all"
+        >
+          <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] stroke-white" fill="none" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+          </svg>
+          سجّل دخولك للطلب
+        </button>
+      )}
     </div>
   );
 }

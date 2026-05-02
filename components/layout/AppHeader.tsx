@@ -9,6 +9,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { SearchBar } from "@/components/search/SearchBar";
 import { TickerStrip } from "@/components/layout/TickerStrip";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
+import { MyOrdersSheet } from "@/components/places/MyOrdersSheet";
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { handleApiError } from "@/lib/api/errors";
@@ -36,6 +37,7 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
   const { theme, toggle: toggleTheme } = useTheme();
   const { contributor, refreshContributor } = useSession();
   const [showLogin, setShowLogin] = useState(false);
+  const [showMyOrders, setShowMyOrders] = useState(false);
   const { data: areasData, isError: areasError } = useAreas();
   const areas = areasData?.areas ?? [];
   const updateMe = useUpdateContributorMe();
@@ -121,6 +123,20 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
         )} */}
 
        
+
+        {/* My Orders */}
+        {contributor?.phone_verified && (
+          <button
+            type="button"
+            onClick={() => setShowMyOrders(true)}
+            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors flex-shrink-0"
+            aria-label="طلباتي"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+          </button>
+        )}
 
         {/* Login / profile */}
         {contributor?.phone_verified ? (
@@ -261,6 +277,10 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
         setShowLogin(false);
       }}
     />
+
+    {showMyOrders && (
+      <MyOrdersSheet onClose={() => setShowMyOrders(false)} />
+    )}
   </>
   );
 }

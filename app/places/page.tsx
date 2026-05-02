@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { getItemIcon, getItemBgColor } from '@/components/places/FoodIcons';
+import { useSessionContext } from '@/contexts/SessionContext';
+import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -2134,6 +2136,8 @@ function WorkspaceSheetContent({ place }: { place: Place }) {
 }
 
 function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () => void; isDesktop?: boolean }) {
+  const { contributor, refreshContributor } = useSessionContext();
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
   const isBoth = place.type === 'both';
   const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
   const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
@@ -2495,6 +2499,10 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
                   onUpdateQty={updateCartQty}
                   onClear={clearCart}
                   onOrderPlaced={() => {}}
+                  phoneVerified={contributor?.phone_verified}
+                  userPhone={contributor?.phone_number}
+                  userHandle={contributor?.display_handle}
+                  onRequireLogin={() => setShowAuthPopup(true)}
                 />
               </div>
             </div>
@@ -2684,6 +2692,17 @@ function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () =
           </>
         )}
       </div>
+
+      <PhoneAuthPopup
+        open={showAuthPopup}
+        onClose={() => setShowAuthPopup(false)}
+        onVerified={() => {
+          setShowAuthPopup(false);
+          refreshContributor().catch(() => {});
+        }}
+        mode="login"
+        reason="سجّل دخولك لتتمكن من إرسال طلبك"
+      />
     </>
   );
 }

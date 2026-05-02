@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 
@@ -32,6 +33,7 @@ const STATUS_TABS = [
   { value: "accepted", label: "مقبول" },
   { value: "preparing", label: "تحضير" },
   { value: "ready", label: "جاهز" },
+  { value: "cancelled", label: "ملغي" },
 ];
 
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
@@ -57,15 +59,18 @@ interface Props {
   token: string;
   ordersEnabled: boolean;
   onToggleOrders: () => void;
+  lastEvent?: { type: "order_created" | "order_updated"; order: any } | null;
 }
 
-export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props) {
+export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEvent }: Props) {
   const [filter, setFilter] = useState("");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const queryClient = useQueryClient();
 
-  const queryKey = ["dashboard-orders", token];
+  const queryKey = useMemo(() => ["dashboard-orders", token], [token]);
+
+  const [newOrderFlash, setNewOrderFlash] = useState<string | null>(null);
 
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey,
@@ -75,9 +80,34 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
       const data = await res.json();
       return data.data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 30000,
     enabled: ordersEnabled,
   });
+
+  // Handle SSE events from parent (DashboardNotifications owns the SSE connection)
+  const lastProcessedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!lastEvent) return;
+    const eventKey = `${lastEvent.order.id}-${lastEvent.order.status}`;
+    if (lastProcessedRef.current === eventKey) return;
+    lastProcessedRef.current = eventKey;
+
+    if (lastEvent.type === "order_created") {
+      const order = lastEvent.order as Order;
+      queryClient.setQueryData<Order[]>(queryKey, (old = []) => {
+        if (old.some((o) => o.id === order.id)) return old;
+        return [order, ...old];
+      });
+      setNewOrderFlash(order.id);
+      setTimeout(() => setNewOrderFlash(null), 3000);
+      try { new Audio("/sounds/order-notify.wav").play().catch(() => {}); } catch {}
+    } else {
+      const order = lastEvent.order as Order;
+      queryClient.setQueryData<Order[]>(queryKey, (old = []) =>
+        old.map((o) => (o.id === order.id ? order : o)),
+      );
+    }
+  }, [lastEvent, queryClient, queryKey]);
 
   const updateMutation = useMutation({
     mutationFn: async ({ orderId, status, reason }: { orderId: string; status: string; reason?: string }) => {
@@ -160,7 +190,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
                 const badge = STATUS_BADGE[order.status] || STATUS_BADGE.pending;
                 const isUpdating = updateMutation.isPending && updateMutation.variables?.orderId === order.id;
                 return (
-                  <div key={order.id} className={`border border-[var(--d-border)] rounded-xl overflow-hidden ${isUpdating ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div key={order.id} className={`border rounded-xl overflow-hidden transition-all duration-500 ${isUpdating ? "opacity-50 pointer-events-none" : ""} ${newOrderFlash === order.id ? "border-amber-400 ring-2 ring-amber-300/50 animate-pulse" : "border-[var(--d-border)]"}`}>
                     {/* Header row */}
                     <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--d-subtle-bg)]">
                       <div className="flex items-center gap-1.5">
@@ -174,7 +204,10 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders }: Props)
                       {/* Customer */}
                       <div className="flex items-center justify-between text-[10px]">
                         <span className="font-semibold text-[var(--d-text)]">{order.customer_name}</span>
-                        <a href={`tel:${order.customer_phone}`} className="text-[var(--d-green)] font-bold" dir="ltr">{order.customer_phone}</a>
+                        <a href={`https://wa.me/${order.customer_phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="text-[#25D366] font-bold flex items-center gap-0.5" dir="ltr">
+                          <svg viewBox="0 0 24 24" className="w-3 h-3 stroke-[#25D366] inline" fill="none" strokeWidth="2.5" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                          {order.customer_phone}
+                        </a>
                       </div>
 
                       {/* Items */}
