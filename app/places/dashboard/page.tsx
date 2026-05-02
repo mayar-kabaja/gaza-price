@@ -586,7 +586,7 @@ function OwnerDashboardPage() {
               </span>
             </a>
             <div className="flex items-center gap-2">
-              <DashboardNotifications token={token} ordersEnabled={place.orders_enabled ?? false} onOrderEvent={handleOrderEvent} />
+              <DashboardNotifications token={token!} ordersEnabled={place.orders_enabled ?? false} onOrderEvent={handleOrderEvent} />
               <button
                 onClick={() => { const next = !isDark; setIsDark(next); localStorage.setItem("dashboardTheme", next ? "dark" : "light"); }}
                 className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors"
