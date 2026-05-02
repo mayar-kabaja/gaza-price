@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { setStoredToken } from "@/lib/auth/token";
 
 
@@ -306,9 +307,9 @@ export function PhoneAuthPopup({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center"
       onClick={(e) => {
         if (e.target === e.currentTarget && step === "phone") onClose();
       }}
@@ -811,6 +812,7 @@ export function PhoneAuthPopup({
           to { transform: scale(1); opacity: 1; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

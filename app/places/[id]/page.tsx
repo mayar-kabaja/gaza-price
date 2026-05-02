@@ -800,9 +800,9 @@ export default function PlaceDetailPage() {
               {showCart && (
                 <>
                   <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowCart(false)} />
-                  <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-w-lg mx-auto" dir="rtl">
+                  <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[480px] lg:max-w-[90vw]" dir="rtl">
                     <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-                      <h3 className="font-display font-bold text-[14px] text-ink">🛒 سلة الطلب</h3>
+                      <h3 className="font-display font-bold text-[14px] text-ink flex items-center gap-1.5"><svg viewBox="0 0 24 24" className="w-4 h-4 stroke-ink" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>سلة الطلب</h3>
                       <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
                     </div>
                     <OrderSheet
@@ -898,9 +898,9 @@ export default function PlaceDetailPage() {
           {showCart && (
             <>
               <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowCart(false)} />
-              <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)]" dir="rtl">
+              <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[480px] lg:max-w-[90vw]" dir="rtl">
                 <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-                  <h3 className="font-display font-bold text-[14px] text-ink">🛒 سلة الطلب</h3>
+                  <h3 className="font-display font-bold text-[14px] text-ink flex items-center gap-1.5"><svg viewBox="0 0 24 24" className="w-4 h-4 stroke-ink" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>سلة الطلب</h3>
                   <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
                 </div>
                 <OrderSheet

@@ -3,29 +3,7 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api/fetch";
 import { normalizeDigits } from "@/lib/normalize-digits";
-
-function getItemEmoji(name: string): string {
-  const m: [RegExp, string][] = [
-    [/قهوة|كابتشينو|لاتيه|اسبرسو|موكا|أمريكان|تركي/, '☕'],
-    [/شاي|شاى/, '🍵'], [/عصير|سموذي|كوكتيل|ليمون/, '🥤'],
-    [/كيك|كعك|تورت/, '🎂'], [/تشيز/, '🍰'], [/شوكولا|نوتيلا/, '🍫'],
-    [/بوظة|آيس كريم|ايس كريم|جيلاتو/, '🍦'], [/كنافة|كنافه/, '🍮'],
-    [/وافل/, '🧇'], [/كريب|بان كيك/, '🥞'], [/دونات/, '🍩'],
-    [/شاورما|شاورمة/, '🥙'], [/برجر|بيرغر|همبرجر/, '🍔'],
-    [/بيتزا/, '🍕'], [/فلافل|طعمية/, '🧆'], [/حمص|مسبحة/, '🧆'],
-    [/مشوي|مشاوي|كباب|كفت|شيش/, '🥩'], [/ستيك|لحم/, '🥩'],
-    [/دجاج|فراخ|تشكن/, '🍗'], [/سمك|جمبري/, '🐟'],
-    [/معكرونة|باستا|مكرونة|سباغيت/, '🍝'], [/أرز|رز/, '🍚'],
-    [/ساندويش|سندويش|توست|خبز/, '🥪'], [/سلطة|فتوش|تبولة/, '🥗'],
-    [/بطاطا|بطاطس|فرايز/, '🍟'], [/شوربة|حساء/, '🍲'],
-    [/فطور|إفطار|بيض|شكشوك/, '🍳'], [/مناقيش|زعتر|فطيرة/, '🫓'],
-    [/بيبسي|كولا|غازي|سفن|سبرايت/, '🥤'], [/فول/, '🫘'],
-    [/حلو|بقلاو|معمول|بسبوس/, '🍬'], [/بسكوت|كوكيز/, '🍪'],
-  ];
-  const l = name.toLowerCase();
-  for (const [p, e] of m) { if (p.test(l)) return e; }
-  return '🍽️';
-}
+import { getItemIcon, getItemBgColor } from "@/components/places/FoodIcons";
 
 export interface CartItem {
   menu_item_id: string;
@@ -256,7 +234,9 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
   if (items.length === 0) {
     return (
       <div className="px-4 py-10 text-center">
-        <div className="text-3xl mb-2">🛒</div>
+        <svg viewBox="0 0 24 24" className="w-10 h-10 stroke-mist mx-auto mb-2" fill="none" strokeWidth="1.5" strokeLinecap="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
         <p className="text-sm text-mist">السلة فارغة</p>
       </div>
     );
@@ -267,7 +247,9 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
       {/* Cart items */}
       {items.map((item) => (
         <div key={item.menu_item_id} className="flex items-center gap-2.5 bg-surface border border-border rounded-[14px] p-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-          <div className="w-10 h-10 rounded-[11px] bg-olive-pale flex items-center justify-center text-xl flex-shrink-0">{getItemEmoji(item.name)}</div>
+          <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 text-olive/60" style={{ background: getItemBgColor(item.name) }}>
+            {getItemIcon(item.name)('w-5 h-5')}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-bold text-ink truncate">{item.name}</div>
             <div className="text-[11px] text-mist">{item.price.toFixed(2)} ₪ / وحدة</div>
@@ -363,7 +345,9 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
       {/* Customer info */}
       {!phoneVerified ? (
         <div className="bg-surface border border-border rounded-[14px] p-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-center">
-          <div className="text-3xl mb-2">🔐</div>
+          <svg viewBox="0 0 24 24" className="w-8 h-8 stroke-olive mx-auto mb-2" fill="none" strokeWidth="1.5" strokeLinecap="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
           <p className="text-[13px] font-bold text-ink mb-1">يجب تسجيل الدخول للطلب</p>
           <p className="text-[11px] text-mist mb-3">سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك</p>
           <button
@@ -409,7 +393,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
       {error && <p className="text-[12px] text-red-500 text-center">{error}</p>}
 
       {/* Submit */}
-      {phoneVerified ? (
+      {phoneVerified && (
         <button
           onClick={submitOrder}
           disabled={submitting}
@@ -419,16 +403,6 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
             <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
           {submitting ? "جاري الإرسال..." : `إرسال الطلب — ${total.toFixed(2)} ₪`}
-        </button>
-      ) : (
-        <button
-          onClick={() => onRequireLogin?.()}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-[14px] bg-[#25D366] text-white font-display font-extrabold text-[15px] shadow-[0_4px_16px_rgba(37,211,102,0.3)] transition-all"
-        >
-          <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] stroke-white" fill="none" strokeWidth="2" strokeLinecap="round">
-            <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
-          </svg>
-          سجّل دخولك للطلب
         </button>
       )}
     </div>
