@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: false,
   devIndicators: false,
   experimental: {
     serverActions: {
@@ -58,4 +59,5 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: true,
   disableLogger: true,
+  hideSourceMaps: true,
 });
