@@ -15,9 +15,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
     const res = await fetch(`${base}/auth/phone/send-otp`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Forwarded-For": clientIp,
+      },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15000),
     });
