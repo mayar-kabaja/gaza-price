@@ -30,6 +30,7 @@ export interface DiscountCodeData {
 interface Props {
   token: string;
   mobile?: boolean;
+  search?: string;
   onAddCode?: () => void;
   onEditCode?: (dc: DiscountCodeData) => void;
 }
@@ -51,7 +52,7 @@ const STATUS_BADGE: Record<string, { label: string; cls: string; dot: string }> 
   maxed:    { label: "مكتمل",  cls: "bg-[var(--d-subtle-bg)] text-amber-500 border border-amber-500/20", dot: "bg-amber-500" },
 };
 
-export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(function DashboardDiscountCodes({ token, mobile, onAddCode, onEditCode }, ref) {
+export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(function DashboardDiscountCodes({ token, mobile, search = "", onAddCode, onEditCode }, ref) {
   const queryClient = useQueryClient();
   const queryKey = ["dashboard-discount-codes", token];
 
@@ -320,6 +321,10 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
   /* ── MOBILE LAYOUT ── */
   if (mobile) {
+    const filteredCodes = search.trim()
+      ? codes.filter((dc) => dc.code.toLowerCase().includes(search.trim().toLowerCase()))
+      : codes;
+
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -340,13 +345,13 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
           </div>
         )}
 
-        {!loading && codes.length === 0 && !showForm && (
+        {!loading && filteredCodes.length === 0 && !showForm && (
           <div className="text-center py-6 text-[var(--d-text-muted)] text-[12px]">
-            لا توجد أكواد خصم — أضف كود لجذب الزبائن
+            {search.trim() ? "لا توجد نتائج" : "لا توجد أكواد خصم — أضف كود لجذب الزبائن"}
           </div>
         )}
 
-        {!loading && codes.length > 0 && (
+        {!loading && filteredCodes.length > 0 && (
           <>
             <div
               ref={sliderRef}
@@ -356,21 +361,21 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
                 if (!el) return;
                 const cardW = el.firstElementChild?.clientWidth ?? 1;
                 const idx = Math.round(el.scrollLeft / (cardW + 12));
-                setActiveSlide(Math.min(idx, codes.length - 1));
+                setActiveSlide(Math.min(idx, filteredCodes.length - 1));
               }}
             >
-              {codes.map((dc) => (
+              {filteredCodes.map((dc) => (
                 <div key={dc.id} className="w-[85vw] max-w-[320px] shrink-0 snap-center">
                   {renderCard(dc)}
                 </div>
               ))}
             </div>
-            {codes.length > 1 && (
+            {filteredCodes.length > 1 && (
               <div className="flex items-center justify-center gap-1.5 mt-1">
-                {codes.slice(0, 8).map((dc, i) => (
+                {filteredCodes.slice(0, 8).map((dc, i) => (
                   <div key={dc.id} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === activeSlide ? "bg-[var(--d-green)]" : "bg-[var(--d-text-muted)]/40"}`} />
                 ))}
-                {codes.length > 8 && <span className="text-[9px] text-[var(--d-text-muted)] mr-0.5">+{codes.length - 8}</span>}
+                {filteredCodes.length > 8 && <span className="text-[9px] text-[var(--d-text-muted)] mr-0.5">+{filteredCodes.length - 8}</span>}
               </div>
             )}
           </>
@@ -380,6 +385,10 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
   }
 
   /* ── DESKTOP LAYOUT ── */
+  const desktopFiltered = search.trim()
+    ? codes.filter((dc) => dc.code.toLowerCase().includes(search.trim().toLowerCase()))
+    : codes;
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between shrink-0 pb-4">
@@ -401,16 +410,16 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         </div>
       )}
 
-      {!loading && codes.length === 0 && !showForm && (
+      {!loading && desktopFiltered.length === 0 && !showForm && (
         <div className="flex-1 flex items-center justify-center text-[var(--d-text-muted)] text-[13px]">
-          لا توجد أكواد خصم — أضف كود لجذب الزبائن
+          {search.trim() ? "لا توجد نتائج" : "لا توجد أكواد خصم — أضف كود لجذب الزبائن"}
         </div>
       )}
 
-      {!loading && codes.length > 0 && (
+      {!loading && desktopFiltered.length > 0 && (
         <div className="flex-1 min-h-0 overflow-y-auto pb-2">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {codes.map((dc) => <div key={dc.id}>{renderCard(dc)}</div>)}
+            {desktopFiltered.map((dc) => <div key={dc.id}>{renderCard(dc)}</div>)}
           </div>
         </div>
       )}

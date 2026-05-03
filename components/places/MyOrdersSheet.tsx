@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
+
+function isToday(dateStr: string): boolean {
+  const d = new Date(dateStr);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("ar-EG", { weekday: "short", month: "short", day: "numeric" });
+}
 
 interface OrderItem {
   id: string;
@@ -48,6 +58,7 @@ function timeAgo(dateStr: string): string {
 
 export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
+  const [showHistory, setShowHistory] = useState(false);
 
   const { data: orders = [], isLoading } = useQuery<MyOrder[]>({
     queryKey: ["my-orders"],
@@ -57,7 +68,7 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
       const data = await res.json();
       return data.data || [];
     },
-    refetchInterval: 5000, // Auto-refresh to reflect owner status changes
+    refetchInterval: 5000,
   });
 
   const cancelMutation = useMutation({
@@ -73,6 +84,68 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
     },
   });
 
+  const todayOrders = useMemo(() => orders.filter((o) => isToday(o.created_at)), [orders]);
+  const historyOrders = useMemo(() => orders.filter((o) => !isToday(o.created_at)), [orders]);
+  const displayOrders = showHistory ? historyOrders : todayOrders;
+
+  function renderOrder(order: MyOrder) {
+    const badge = STATUS_BADGE[order.status] || STATUS_BADGE.pending;
+    const isCancelling = cancelMutation.isPending && cancelMutation.variables === order.id;
+    return (
+      <div key={order.id} className="border border-border rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 bg-fog">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-[12px] text-ink">#{order.order_number}</span>
+            <span className={`text-[9px] font-bold px-1.5 py-[2px] rounded-full ${badge.cls}`}>{badge.label}</span>
+          </div>
+          <span className="text-[10px] text-mist">
+            {showHistory ? formatDate(order.created_at) : timeAgo(order.created_at)}
+          </span>
+        </div>
+
+        <div className="px-3 py-2.5 space-y-1.5">
+          {order.place_name && (
+            <div className="text-[11px] font-semibold text-ink">{order.place_name}</div>
+          )}
+
+          <div className="space-y-0.5">
+            {order.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between text-[10px]">
+                <span className="text-mist">{item.item_name} <span className="text-ink">×{item.quantity}</span></span>
+                <span className="text-mist tabular-nums">{(item.item_price * item.quantity).toFixed(2)} ₪</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1.5 border-t border-border">
+            <span className="text-[11px] font-bold text-ink">المجموع</span>
+            <span className="text-[12px] font-bold text-olive tabular-nums">{Number(order.total).toFixed(2)} ₪</span>
+          </div>
+
+          {order.reject_reason && (
+            <div className="text-[10px] text-red-500">سبب الرفض: {order.reject_reason}</div>
+          )}
+
+          {order.status === "pending" && (
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => cancelMutation.mutate(order.id)}
+                disabled={isCancelling}
+                className="px-3 py-1 rounded-md border border-red-200 text-red-500 text-[10px] font-bold disabled:opacity-50"
+              >
+                {isCancelling ? "جاري الإلغاء..." : "إلغاء الطلب"}
+              </button>
+            </div>
+          )}
+
+          {cancelMutation.isError && cancelMutation.variables === order.id && (
+            <p className="text-[10px] text-red-500">{(cancelMutation.error as Error).message}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-[80]" onClick={onClose} />
@@ -83,10 +156,36 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
             </svg>
-            طلباتي
+            {showHistory ? "سجل الطلبات" : "طلباتي"}
           </h3>
           <button onClick={onClose} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
         </div>
+
+        {/* Today / History toggle */}
+        {!isLoading && orders.length > 0 && (
+          <div className="px-4 pt-3 pb-1 flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowHistory(false)}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
+                !showHistory
+                  ? "bg-olive/10 text-olive border border-olive/20"
+                  : "bg-fog text-mist border border-border"
+              }`}
+            >
+              اليوم {todayOrders.length > 0 && `(${todayOrders.length})`}
+            </button>
+            <button
+              onClick={() => setShowHistory(true)}
+              className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
+                showHistory
+                  ? "bg-olive/10 text-olive border border-olive/20"
+                  : "bg-fog text-mist border border-border"
+              }`}
+            >
+              السجل {historyOrders.length > 0 && `(${historyOrders.length})`}
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 px-4 py-3 space-y-3">
@@ -105,66 +204,15 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {!isLoading && orders.map((order) => {
-            const badge = STATUS_BADGE[order.status] || STATUS_BADGE.pending;
-            const isCancelling = cancelMutation.isPending && cancelMutation.variables === order.id;
-            return (
-              <div key={order.id} className="border border-border rounded-xl overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 bg-fog">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[12px] text-ink">#{order.order_number}</span>
-                    <span className={`text-[9px] font-bold px-1.5 py-[2px] rounded-full ${badge.cls}`}>{badge.label}</span>
-                  </div>
-                  <span className="text-[10px] text-mist">{timeAgo(order.created_at)}</span>
-                </div>
+          {!isLoading && orders.length > 0 && displayOrders.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-[12px] text-mist">
+                {showHistory ? "لا توجد طلبات سابقة" : "لا توجد طلبات اليوم"}
+              </p>
+            </div>
+          )}
 
-                <div className="px-3 py-2.5 space-y-1.5">
-                  {/* Place name */}
-                  {order.place_name && (
-                    <div className="text-[11px] font-semibold text-ink">{order.place_name}</div>
-                  )}
-
-                  {/* Items */}
-                  <div className="space-y-0.5">
-                    {order.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between text-[10px]">
-                        <span className="text-mist">{item.item_name} <span className="text-ink">×{item.quantity}</span></span>
-                        <span className="text-mist tabular-nums">{(item.item_price * item.quantity).toFixed(2)} ₪</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between pt-1.5 border-t border-border">
-                    <span className="text-[11px] font-bold text-ink">المجموع</span>
-                    <span className="text-[12px] font-bold text-olive tabular-nums">{Number(order.total).toFixed(2)} ₪</span>
-                  </div>
-
-                  {order.reject_reason && (
-                    <div className="text-[10px] text-red-500">سبب الرفض: {order.reject_reason}</div>
-                  )}
-
-                  {/* Cancel button — only for pending */}
-                  {order.status === "pending" && (
-                    <div className="flex justify-end pt-1">
-                      <button
-                        onClick={() => cancelMutation.mutate(order.id)}
-                        disabled={isCancelling}
-                        className="px-3 py-1 rounded-md border border-red-200 text-red-500 text-[10px] font-bold disabled:opacity-50"
-                      >
-                        {isCancelling ? "جاري الإلغاء..." : "إلغاء الطلب"}
-                      </button>
-                    </div>
-                  )}
-
-                  {cancelMutation.isError && cancelMutation.variables === order.id && (
-                    <p className="text-[10px] text-red-500">{(cancelMutation.error as Error).message}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {!isLoading && displayOrders.map(renderOrder)}
         </div>
       </div>
     </>

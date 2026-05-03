@@ -103,6 +103,7 @@ function OwnerDashboardPage() {
   }, []);
   const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit">("orders");
   const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings">("home");
+  const [dashSearch, setDashSearch] = useState("");
   const [menuDropdown, setMenuDropdown] = useState<string | null>(null);
   const [menuPage, setMenuPage] = useState(1);
   const [mMenuPage, setMMenuPage] = useState(1);
@@ -668,7 +669,24 @@ function OwnerDashboardPage() {
                 غزة <span className="text-[#C9A96E]">بريس</span>
               </span>
             </a>
+
+            {/* Desktop: search + icons inline */}
             <div className="flex items-center gap-2">
+              {/* Search bar — desktop inline */}
+              <div className="relative hidden lg:block">
+                <svg viewBox="0 0 24 24" className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx={11} cy={11} r={8}/><path d="m21 21-4.35-4.35"/></svg>
+                <input
+                  value={dashSearch}
+                  onChange={(e) => setDashSearch(e.target.value)}
+                  placeholder={activeView === "orders" ? "ابحث باسم الزبون أو رقم الطلب..." : activeView === "menu" ? "ابحث عن صنف..." : activeView === "discounts" ? "ابحث عن كود..." : "بحث..."}
+                  className="w-[260px] bg-white/[0.12] border border-white/[0.15] rounded-full pr-9 pl-8 py-1.5 text-[11px] text-white placeholder:text-white/40 outline-none focus:bg-white/[0.18] focus:border-white/30 focus:w-[320px] transition-all"
+                />
+                {dashSearch && (
+                  <button onClick={() => setDashSearch("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                )}
+              </div>
               <DashboardNotifications token={token!} ordersEnabled={place.orders_enabled ?? false} onOrderEvent={handleOrderEvent} />
               <button
                 onClick={() => { const next = !isDark; setIsDark(next); localStorage.setItem("dashboardTheme", next ? "dark" : "light"); }}
@@ -686,7 +704,7 @@ function OwnerDashboardPage() {
           </div>
 
           {/* Place identity — mobile only in header */}
-          <div className="flex items-center gap-3 mb-4 relative z-[1] lg:hidden">
+          <div className="flex items-center gap-3 mb-3 relative z-[1] lg:hidden">
             <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
               {place.avatar_url ? (
                 <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -702,6 +720,22 @@ function OwnerDashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Search bar — mobile (hide on home & settings) */}
+          {mobileTab !== "home" && mobileTab !== "settings" && <div className="relative z-[1] lg:hidden">
+            <svg viewBox="0 0 24 24" className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx={11} cy={11} r={8}/><path d="m21 21-4.35-4.35"/></svg>
+            <input
+              value={dashSearch}
+              onChange={(e) => setDashSearch(e.target.value)}
+              placeholder={mobileTab === "orders" ? "ابحث باسم الزبون أو رقم الطلب..." : mobileTab === "menu" ? "ابحث عن صنف..." : mobileTab === "codes" ? "ابحث عن كود..." : "بحث..."}
+              className="w-full bg-white/[0.12] border border-white/[0.15] rounded-full pr-10 pl-9 py-2.5 text-[12px] text-white placeholder:text-white/40 outline-none focus:bg-white/[0.18] focus:border-white/30 transition-colors"
+            />
+            {dashSearch && (
+              <button onClick={() => setDashSearch("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            )}
+          </div>}
         </div>
       </div>
 
@@ -817,7 +851,7 @@ function OwnerDashboardPage() {
         {/* ── ORDERS TAB ── */}
         {mobileTab === "orders" && place.section === "food" && token && (
           <div>
-            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} mobile />
+            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} mobile search={dashSearch} />
           </div>
         )}
 
@@ -831,7 +865,14 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5">+ صنف</button>
               </div>
             </div>
-            {place.menu.map((sec) => {
+            {place.menu.filter((sec) => {
+              if (!dashSearch.trim()) return true;
+              const q = dashSearch.trim().toLowerCase();
+              return sec.name.toLowerCase().includes(q) || sec.items.some((item) => item.name.toLowerCase().includes(q));
+            }).map((sec) => {
+              const filteredItems = dashSearch.trim()
+                ? sec.items.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || sec.name.toLowerCase().includes(dashSearch.trim().toLowerCase()))
+                : sec.items;
               const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
               return (
                 <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
@@ -849,7 +890,7 @@ function OwnerDashboardPage() {
                       </button>
                     </div>
                   </div>
-                  {sec.items.map((item) => {
+                  {filteredItems.map((item) => {
                     const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
                     return (
                       <div key={item.id} className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
@@ -905,7 +946,7 @@ function OwnerDashboardPage() {
         {/* ── CODES TAB ── */}
         {mobileTab === "codes" && place.section === "food" && token && (
           <div>
-            <DashboardDiscountCodes token={token} mobile />
+            <DashboardDiscountCodes token={token} mobile search={dashSearch} />
           </div>
         )}
 
@@ -1118,7 +1159,10 @@ function OwnerDashboardPage() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const allItems = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
+                      const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
+                      const allItems = dashSearch.trim()
+                        ? allItemsRaw.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || item.sectionName.toLowerCase().includes(dashSearch.trim().toLowerCase()))
+                        : allItemsRaw;
                       const menuTotalPages = Math.ceil(allItems.length / MENU_PER_PAGE);
                       const paginatedItems = allItems.slice((menuPage - 1) * MENU_PER_PAGE, menuPage * MENU_PER_PAGE);
                       const emptySecIds = place.menu.filter(s => s.items.length === 0).map(s => s.id);
@@ -1276,7 +1320,7 @@ function OwnerDashboardPage() {
 
           {activeView === "orders" && place.section === "food" && token && (
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} />
+              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} search={dashSearch} />
             </div>
           )}
 
@@ -1285,6 +1329,7 @@ function OwnerDashboardPage() {
               <DashboardDiscountCodes
                 token={token}
                 ref={dcCodesRef}
+                search={dashSearch}
                 onAddCode={() => { resetDcForm(); setSheet("addDiscount"); }}
                 onEditCode={(dc) => {
                   setDcCode(dc.code); setDcType(dc.discount_type);
@@ -1306,7 +1351,7 @@ function OwnerDashboardPage() {
 
       {/* ══ Bottom Nav (mobile) / Sidebar (desktop) ══ */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-[var(--d-card)] border-t border-[var(--d-border)] flex items-center px-1 pb-2 z-10 lg:hidden">
-        <NavItem icon="home" label="الرئيسية" active={mobileTab === "home"} onClick={() => setMobileTab("home")} />
+        <NavItem icon="home" label="الرئيسية" active={mobileTab === "home"} onClick={() => { setMobileTab("home"); setDashSearch(""); }} />
         {isWorkspace ? (
           <>
             <NavItem icon="menu" label="الأسعار" active={false} onClick={openWsDetails} />
@@ -1314,12 +1359,12 @@ function OwnerDashboardPage() {
           </>
         ) : (
           <>
-            <NavItem icon="orders" label="الطلبات" active={mobileTab === "orders"} onClick={() => setMobileTab("orders")} />
-            <NavItem icon="menu" label="القائمة" active={mobileTab === "menu"} onClick={() => setMobileTab("menu")} />
-            <NavItem icon="tag" label="الأكواد" active={mobileTab === "codes"} onClick={() => setMobileTab("codes")} />
+            <NavItem icon="orders" label="الطلبات" active={mobileTab === "orders"} onClick={() => { setMobileTab("orders"); setDashSearch(""); }} />
+            <NavItem icon="menu" label="القائمة" active={mobileTab === "menu"} onClick={() => { setMobileTab("menu"); setDashSearch(""); }} />
+            <NavItem icon="tag" label="الأكواد" active={mobileTab === "codes"} onClick={() => { setMobileTab("codes"); setDashSearch(""); }} />
           </>
         )}
-        <NavItem icon="edit" label="البيانات" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); populateEditForm(); }} />
+        <NavItem icon="edit" label="البيانات" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); setDashSearch(""); populateEditForm(); }} />
       </div>
 
       {/* ══ SHEETS ══ */}

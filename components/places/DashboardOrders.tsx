@@ -68,13 +68,13 @@ interface Props {
   onToggleOrders: () => void | Promise<void>;
   lastEvent?: { type: "order_created" | "order_updated"; order: any } | null;
   mobile?: boolean;
+  search?: string;
 }
 
 const ORDERS_PER_PAGE = 12;
 
-export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEvent, mobile }: Props) {
+export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEvent, mobile, search = "" }: Props) {
   const [filter, setFilter] = useState("");
-  const [mobileMode, setMobileMode] = useState<"today" | "history">("today");
   const [page, setPage] = useState(1);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -137,20 +137,22 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
   const filtered = useMemo(() => {
     let base = orders;
-    // On mobile, apply mobileMode first
-    if (mobile && mobileMode === "today") {
-      base = orders.filter((o) => isToday(o.created_at));
+    if (filter === "today") base = base.filter((o) => isToday(o.created_at));
+    else if (filter) base = base.filter((o) => o.status === filter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      base = base.filter((o) =>
+        o.customer_name.toLowerCase().includes(q) ||
+        o.customer_phone.includes(q) ||
+        String(o.order_number).includes(q)
+      );
     }
-    if (filter === "today") return base.filter((o) => isToday(o.created_at));
-    if (filter) return base.filter((o) => o.status === filter);
     return base;
-  }, [orders, filter, mobile, mobileMode]);
-
-  const todayCount = useMemo(() => orders.filter((o) => isToday(o.created_at)).length, [orders]);
+  }, [orders, filter, search]);
 
   const [mobileVisible, setMobileVisible] = useState(ORDERS_PER_PAGE);
 
-  useEffect(() => { setPage(1); setMobileVisible(ORDERS_PER_PAGE); }, [filter, mobileMode]);
+  useEffect(() => { setPage(1); setMobileVisible(ORDERS_PER_PAGE); }, [filter]);
 
   const totalPages = Math.ceil(filtered.length / ORDERS_PER_PAGE);
   const paginated = useMemo(
@@ -179,40 +181,24 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="font-bold text-[16px] text-[var(--d-text)]">
-            {mobile && mobileMode === "today" ? "طلبات اليوم" : "الطلبات"}
-          </h3>
+          <h3 className="font-bold text-[16px] text-[var(--d-text)]">الطلبات</h3>
           {pendingCount > 0 && (
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600">
               {pendingCount} بانتظار
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {mobile && (
-            <button
-              onClick={() => { setMobileMode(mobileMode === "today" ? "history" : "today"); setFilter(""); }}
-              className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors ${
-                mobileMode === "history"
-                  ? "bg-[var(--d-green-bg)] text-[var(--d-green)] border border-[var(--d-green)]/30"
-                  : "bg-[var(--d-card)] text-[var(--d-text-muted)] border border-[var(--d-border)]"
-              }`}
-            >
-              {mobileMode === "today" ? "السجل ←" : "اليوم ←"}
-            </button>
+        <button
+          onClick={async () => { setTogglingOrders(true); try { await onToggleOrders(); } finally { setTogglingOrders(false); } }}
+          disabled={togglingOrders}
+          className={`relative w-10 h-[22px] rounded-full transition-colors ${ordersEnabled ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}
+        >
+          {togglingOrders ? (
+            <div className="absolute inset-0 flex items-center justify-center"><div className="w-3.5 h-3.5 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
+          ) : (
+            <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all ${ordersEnabled ? "right-[3px]" : "right-[21px]"}`} />
           )}
-          <button
-            onClick={async () => { setTogglingOrders(true); try { await onToggleOrders(); } finally { setTogglingOrders(false); } }}
-            disabled={togglingOrders}
-            className={`relative w-10 h-[22px] rounded-full transition-colors ${ordersEnabled ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}
-          >
-            {togglingOrders ? (
-              <div className="absolute inset-0 flex items-center justify-center"><div className="w-3.5 h-3.5 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
-            ) : (
-              <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all ${ordersEnabled ? "right-[3px]" : "right-[21px]"}`} />
-            )}
-          </button>
-        </div>
+        </button>
       </div>
 
       {!ordersEnabled && (
@@ -225,10 +211,8 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
         <>
           {/* Filter tabs */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {STATUS_TABS
-              .filter((tab) => !(mobile && mobileMode === "today" && tab.value === "today"))
-              .map((tab) => {
-              const count = tab.value ? (counts[tab.value] || 0) : (mobile && mobileMode === "today" ? todayCount : orders.length);
+            {STATUS_TABS.map((tab) => {
+              const count = tab.value ? (counts[tab.value] || 0) : orders.length;
               const isActive = filter === tab.value;
               return (
                 <button
@@ -264,7 +248,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
           {!isLoading && filtered.length === 0 && (
             <div className="text-center py-8 text-[var(--d-text-muted)] text-[12px]">
-              {mobile && mobileMode === "today" ? "لا توجد طلبات اليوم" : "لا توجد طلبات"}
+              {search.trim() ? "لا توجد نتائج" : "لا توجد طلبات"}
             </div>
           )}
 
