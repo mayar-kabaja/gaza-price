@@ -237,6 +237,17 @@ body {
   animation: fadeIn 0.3s ease both;
 }
 
+@keyframes orderFlash {
+  0%, 100% { box-shadow: 0 0 8px rgba(251,191,36,0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 28px rgba(251,191,36,0.5); transform: scale(1.02); }
+}
+
+/* My Orders desktop sidebar slide-in from left */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

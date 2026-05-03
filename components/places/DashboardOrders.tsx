@@ -85,6 +85,9 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
   const [newOrderFlash, setNewOrderFlash] = useState<string | null>(null);
   const [togglingOrders, setTogglingOrders] = useState(false);
 
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadDoneRef = useRef(false);
+
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey,
     queryFn: async () => {
@@ -93,10 +96,33 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
       const data = await res.json();
       return data.data || [];
     },
-    refetchInterval: 30000,
+    refetchInterval: 10000,
     enabled: ordersEnabled,
   });
 
+  // Detect new orders from polling and trigger sound + flash
+  useEffect(() => {
+    if (isLoading || orders.length === 0) return;
+    const currentIds = new Set(orders.map((o) => o.id));
+    if (!initialLoadDoneRef.current) {
+      // First load — just record known IDs, don't notify
+      knownIdsRef.current = currentIds;
+      initialLoadDoneRef.current = true;
+      return;
+    }
+    // Find new orders that weren't in the previous known set
+    const newOrders = orders.filter((o) => !knownIdsRef.current.has(o.id));
+    if (newOrders.length > 0) {
+      // Flash the newest one
+      setNewOrderFlash(newOrders[0].id);
+      setTimeout(() => setNewOrderFlash(null), 3000);
+      // Play sound
+      try { new Audio("/sounds/order-notify.wav").play().catch(() => {}); } catch {}
+    }
+    knownIdsRef.current = currentIds;
+  }, [orders, isLoading]);
+
+  // SSE events (if SSE is connected)
   const lastProcessedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!lastEvent) return;
@@ -106,6 +132,8 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
     if (lastEvent.type === "order_created") {
       const order = lastEvent.order as Order;
+      // Add to known IDs so polling doesn't double-notify
+      knownIdsRef.current.add(order.id);
       queryClient.setQueryData<Order[]>(queryKey, (old = []) => {
         if (old.some((o) => o.id === order.id)) return old;
         return [order, ...old];
@@ -128,10 +156,21 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
         body: JSON.stringify({ status, reject_reason: reason }),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
+    onMutate: async ({ orderId, status, reason }) => {
+      // Optimistic: update status locally
+      const prev = queryClient.getQueryData<Order[]>(queryKey);
+      queryClient.setQueryData<Order[]>(queryKey, (old = []) =>
+        old.map((o) => o.id === orderId ? { ...o, status, reject_reason: reason || o.reject_reason } : o)
+      );
       setRejectId(null);
       setRejectReason("");
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -653,7 +692,7 @@ function OrderCard({ order, rejectId, setRejectId, rejectReason, setRejectReason
         isUpdating ? "opacity-50 pointer-events-none" : ""
       } ${
         newOrderFlash === order.id
-          ? "border-amber-400 ring-2 ring-amber-200/30 shadow-lg"
+          ? "border-amber-400 ring-2 ring-amber-400/40 animate-[orderFlash_1.5s_ease-in-out_infinite] shadow-[0_0_20px_rgba(251,191,36,0.4)]"
           : isDead
             ? "border-[var(--d-border)] opacity-70"
             : "border-[var(--d-border)] shadow-sm hover:shadow-md"

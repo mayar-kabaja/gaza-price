@@ -108,6 +108,15 @@ const NAV_LINKS = [
     ),
   },
   {
+    href: "/orders",
+    label: "طلباتي",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+    ),
+  },
+  {
     href: "/market/chat",
     label: "رسائل",
     icon: (
@@ -120,6 +129,7 @@ const NAV_LINKS = [
 
 function isLinkActive(href: string, pathname: string): boolean {
   if (href === "/") return pathname === "/";
+  if (href === "/orders") return pathname === "/orders";
   if (href === "/market/chat") return pathname.startsWith("/market/chat");
   if (href === "/market") return pathname === "/market" || (pathname.startsWith("/market/") && !pathname.startsWith("/market/chat"));
   return pathname.startsWith(href);

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api/fetch";
 
 export interface OrderEvent {
   type: "order_created" | "order_updated";
@@ -81,7 +83,52 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
     setUnreadCount((c) => c + 1);
   }
 
-  // Own SSE connection for notifications
+  // Poll orders as fallback — detect new/updated orders even without SSE
+  const knownOrdersRef = useRef<Map<string, string>>(new Map()); // id -> status
+  const initialPollDoneRef = useRef(false);
+
+  const { data: polledOrders } = useQuery<any[]>({
+    queryKey: ["dashboard-orders", token],
+    queryFn: async () => {
+      const res = await apiFetch(`/api/places/dashboard/orders?token=${token}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.data || [];
+    },
+    refetchInterval: 10000,
+    enabled: ordersEnabled,
+  });
+
+  useEffect(() => {
+    if (!polledOrders || polledOrders.length === 0) return;
+    if (!initialPollDoneRef.current) {
+      // First load — record known orders
+      for (const o of polledOrders) knownOrdersRef.current.set(o.id, o.status);
+      initialPollDoneRef.current = true;
+      return;
+    }
+    for (const order of polledOrders) {
+      const prevStatus = knownOrdersRef.current.get(order.id);
+      if (!prevStatus) {
+        // New order detected via polling
+        addNotification("order_created", order);
+        onOrderEventRef.current?.("order_created", order);
+        try { new Audio("/sounds/order-notify.wav").play().catch(() => {}); } catch {}
+      } else if (prevStatus !== order.status) {
+        // Status changed
+        addNotification("order_updated", order);
+        onOrderEventRef.current?.("order_updated", order);
+      }
+    }
+    // Update known orders
+    const newMap = new Map<string, string>();
+    for (const o of polledOrders) newMap.set(o.id, o.status);
+    knownOrdersRef.current = newMap;
+  }, [polledOrders]);
+
+  // SSE connection for real-time order notifications (instant when SSE works)
+  const sseConnectedRef = useRef(false);
+
   useEffect(() => {
     if (!ordersEnabled || !token) return;
 
@@ -93,21 +140,30 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
     function connect() {
       es = new EventSource(url);
 
+      es.addEventListener("connected", () => {
+        sseConnectedRef.current = true;
+      });
+
       es.addEventListener("order_created", (e) => {
         const order = JSON.parse(e.data);
+        // Mark as known so polling doesn't double-notify
+        knownOrdersRef.current.set(order.id, order.status);
         addNotification("order_created", order);
         onOrderEventRef.current?.("order_created", order);
+        try { new Audio("/sounds/order-notify.wav").play().catch(() => {}); } catch {}
       });
 
       es.addEventListener("order_updated", (e) => {
         const order = JSON.parse(e.data);
+        knownOrdersRef.current.set(order.id, order.status);
         addNotification("order_updated", order);
         onOrderEventRef.current?.("order_updated", order);
       });
 
       es.onerror = () => {
+        sseConnectedRef.current = false;
         es?.close();
-        retryTimer = setTimeout(connect, 5000);
+        retryTimer = setTimeout(connect, 3000);
       };
     }
 
@@ -115,6 +171,7 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
 
     return () => {
       es?.close();
+      sseConnectedRef.current = false;
       clearTimeout(retryTimer);
     };
   }, [ordersEnabled, token]);

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 import { DashboardOrders } from "@/components/places/DashboardOrders";
@@ -97,10 +98,23 @@ function OwnerDashboardPage() {
   const [toggling, setToggling] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [lastOrderEvent, setLastOrderEvent] = useState<{ type: "order_created" | "order_updated"; order: any } | null>(null);
+  const queryClient = useQueryClient();
 
   const handleOrderEvent = useCallback((type: "order_created" | "order_updated", order: any) => {
     setLastOrderEvent({ type, order });
-  }, []);
+    // Inject directly into React Query cache so orders appear instantly even if DashboardOrders isn't mounted
+    const qk = ["dashboard-orders", token];
+    if (type === "order_created") {
+      queryClient.setQueryData<any[]>(qk, (old = []) => {
+        if (old.some((o: any) => o.id === order.id)) return old;
+        return [order, ...old];
+      });
+    } else {
+      queryClient.setQueryData<any[]>(qk, (old = []) =>
+        old.map((o: any) => (o.id === order.id ? order : o)),
+      );
+    }
+  }, [token, queryClient]);
   const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit">("orders");
   const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings">("home");
   const [dashSearch, setDashSearch] = useState("");
@@ -656,9 +670,9 @@ function OwnerDashboardPage() {
       backgroundColor: t.pageBg, color: t.text,
     } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-6 overflow-hidden">
-        <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px]" />
-        <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5" />
+      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-6">
+        <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px] pointer-events-none" />
+        <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5 pointer-events-none" />
 
         {/* Top bar */}
         <div>

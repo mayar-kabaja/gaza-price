@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type IconType = "home" | "market" | "add" | "places" | "account";
+type IconType = "home" | "market" | "add" | "places" | "orders" | "account";
 
 const NAV_ITEMS: { href: string; icon: IconType; label: string }[] = [
   { href: "/", icon: "home", label: "الرئيسية" },
   { href: "/market", icon: "market", label: "السوق" },
   { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
+  { href: "/orders", icon: "orders", label: "طلباتي" },
   { href: "/account", icon: "account", label: "حسابي" },
 ];
 
@@ -89,6 +90,23 @@ function NavIcon({
         >
           <path d="M3 21h18M5 21V7l8-4v18M13 21V3l6 4v14" />
           <path d="M9 9h1M9 13h1M15 9h1M15 13h1" />
+        </svg>
+      );
+
+    case "orders":
+      return (
+        <svg
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          viewBox="0 0 24 24"
+          className={cls}
+        >
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
         </svg>
       );
 
