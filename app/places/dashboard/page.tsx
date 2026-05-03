@@ -1,15 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
 import { DashboardOrders } from "@/components/places/DashboardOrders";
 import { DashboardDiscountCodes } from "@/components/places/DashboardDiscountCodes";
 import { DashboardNotifications } from "@/components/places/DashboardNotifications";
+import { getItemIcon, getItemBgColor } from "@/components/places/FoodIcons";
 
 /* ── Types ── */
-type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null };
+type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null; icon?: string | null };
 type MenuSection = { id: string; name: string; items: MenuItem[] };
 type PlaceData = {
   id: string; name: string; section: string; type: string;
@@ -25,7 +26,7 @@ type WorkspaceDetailsForm = {
   total_seats: string; available_seats: string; opens_at: string; closes_at: string;
 };
 type WorkspaceServiceForm = { service: string; available: boolean; detail: string };
-type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem" | "wsDetails" | "wsServices";
+type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem" | "wsDetails" | "wsServices" | "addDiscount";
 
 const STORE_CATEGORIES = [
   { label: "مواد غذائية وبقالة", icon: "🛒", types: ["بقالية عامة", "سوبرماركت", "خضار وفواكه", "لحوم", "سمك", "مخبز", "حلويات ومعجنات", "بهارات وتوابل"] },
@@ -41,6 +42,14 @@ const STORE_CATEGORIES = [
   { label: "أخرى", icon: "📦", types: ["أخرى"] },
 ];
 const STORE_TYPE_VALUES = Array.from(new Set(STORE_CATEGORIES.flatMap((c) => c.types)));
+
+function resolvePublicImageUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+  if (!base) return url;
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
 
 /* ── Plan data ── */
 const PLANS = [
@@ -93,6 +102,11 @@ function OwnerDashboardPage() {
     setLastOrderEvent({ type, order });
   }, []);
   const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit">("orders");
+  const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings">("home");
+  const [menuDropdown, setMenuDropdown] = useState<string | null>(null);
+  const [menuPage, setMenuPage] = useState(1);
+  const [mMenuPage, setMMenuPage] = useState(1);
+  const MENU_PER_PAGE = 10;
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("dashboardTheme") !== "light";
@@ -120,6 +134,21 @@ function OwnerDashboardPage() {
   // Add section form
   const [addSectionName, setAddSectionName] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  // Discount code form
+  const [dcCode, setDcCode] = useState("");
+  const [dcType, setDcType] = useState<"percentage" | "fixed">("percentage");
+  const [dcValue, setDcValue] = useState("");
+  const [dcMinOrder, setDcMinOrder] = useState("");
+  const [dcMaxUses, setDcMaxUses] = useState("");
+  const [dcExpires, setDcExpires] = useState("");
+  const [dcEditId, setDcEditId] = useState<string | null>(null);
+  const dcCodesRef = useRef<{ reload: () => void } | null>(null);
+
+  function resetDcForm() {
+    setDcCode(""); setDcType("percentage"); setDcValue("");
+    setDcMinOrder(""); setDcMaxUses(""); setDcExpires(""); setDcEditId(null);
+  }
 
   // Edit item form
   const [editItemId, setEditItemId] = useState("");
@@ -298,7 +327,7 @@ function OwnerDashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  function openEdit() {
+  function populateEditForm() {
     if (!place) return;
     setEditName(place.name);
     setEditAddress(place.address ?? "");
@@ -306,6 +335,10 @@ function OwnerDashboardPage() {
     setEditWhatsapp(place.whatsapp ?? "");
     setEditAreaId(place.area_id ?? place.area?.id ?? "");
     setEditStoreType(place.type ?? "");
+  }
+
+  function openEdit() {
+    populateEditForm();
     setSheet("edit");
   }
 
@@ -351,16 +384,31 @@ function OwnerDashboardPage() {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (data.success) { await load(); setSheet(null); showToast("تم الحفظ ✓"); }
+      if (data.success) {
+        if (place) setPlace({ ...place, ...body, ...(body.area_id ? { area_id: body.area_id } : {}) });
+        setSheet(null); showToast("تم الحفظ ✓");
+      }
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
 
   async function handleToggleItem(itemId: string) {
+    if (!place) return;
+    // Optimistic update — flip immediately in UI
+    setPlace({
+      ...place,
+      menu: place.menu.map((sec: any) => ({
+        ...sec,
+        items: sec.items.map((item: any) => item.id === itemId ? { ...item, available: !item.available } : item),
+      })),
+    });
     setActionLoading(`toggle-item-${itemId}`);
     try {
       await apiFetch(`/api/places/dashboard/menu/items/${itemId}/toggle?${qs}`, { method: "PATCH" });
+    } catch {
+      // Revert on error
       await load();
-    } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
+      showToast("حدث خطأ");
+    } finally { setActionLoading(null); }
   }
 
   function handleDeleteItem(itemId: string) {
@@ -368,12 +416,21 @@ function OwnerDashboardPage() {
       message: "هل أنت متأكد من حذف هذا الصنف؟",
       onConfirm: async () => {
         setConfirmDialog(null);
+        if (place) {
+          // Optimistic update — remove from UI immediately
+          setPlace({
+            ...place,
+            menu: place.menu.map((sec: any) => ({
+              ...sec,
+              items: sec.items.filter((item: any) => item.id !== itemId),
+            })),
+          });
+        }
         setActionLoading(`delete-item-${itemId}`);
         try {
           await apiFetch(`/api/places/dashboard/menu/items/${itemId}/delete?${qs}`, { method: "DELETE" });
-          await load();
           showToast("تم الحذف ✓");
-        } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
+        } catch { await load(); showToast("حدث خطأ"); } finally { setActionLoading(null); }
       },
     });
   }
@@ -383,12 +440,14 @@ function OwnerDashboardPage() {
       message: "هل أنت متأكد من حذف هذا القسم وجميع أصنافه؟",
       onConfirm: async () => {
         setConfirmDialog(null);
+        if (place) {
+          setPlace({ ...place, menu: place.menu.filter((sec: any) => sec.id !== sectionId) });
+        }
         setActionLoading(`delete-section-${sectionId}`);
         try {
           await apiFetch(`/api/places/dashboard/menu/sections/${sectionId}/delete?${qs}`, { method: "DELETE" });
-          await load();
           showToast("تم الحذف ✓");
-        } catch { showToast("حدث خطأ"); } finally { setActionLoading(null); }
+        } catch { await load(); showToast("حدث خطأ"); } finally { setActionLoading(null); }
       },
     });
   }
@@ -413,7 +472,7 @@ function OwnerDashboardPage() {
         body: JSON.stringify({ name: editItemName.trim(), price: editItemPrice || "0", description: editItemDesc.trim() || null, photo_url: editItemPhoto || null }),
       });
       await load();
-      setSheet("menu");
+      setSheet(null);
       showToast("تم التعديل ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
@@ -429,7 +488,7 @@ function OwnerDashboardPage() {
       });
       await load();
       setAddItemName(""); setAddItemPrice(""); setAddItemDesc(""); setAddItemPhoto(""); setAddItemPhotoPreview("");
-      setSheet("menu");
+      setSheet(null);
       showToast("تمت الإضافة ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
   }
@@ -445,9 +504,33 @@ function OwnerDashboardPage() {
       });
       await load();
       setAddSectionName("");
-      setSheet("menu");
+      setSheet(null);
       showToast("تمت الإضافة ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
+  }
+
+  async function handleSaveDiscount() {
+    if (!dcCode.trim() || !dcValue.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        code: dcCode.trim().toUpperCase(),
+        discount_type: dcType,
+        discount_value: Number(dcValue),
+        min_order_total: dcMinOrder ? Number(dcMinOrder) : 0,
+        max_uses: dcMaxUses ? Number(dcMaxUses) : null,
+        expires_at: dcExpires || null,
+      };
+      if (dcEditId) {
+        await apiFetch(`/api/places/dashboard/discount-codes/${dcEditId}?token=${token}`, { method: "PATCH", body: JSON.stringify(body) });
+      } else {
+        await apiFetch(`/api/places/dashboard/discount-codes?token=${token}`, { method: "POST", body: JSON.stringify(body) });
+      }
+      resetDcForm();
+      setSheet(null);
+      dcCodesRef.current?.reload();
+      showToast(dcEditId ? "تم التحديث ✓" : "تمت الإضافة ✓");
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); }
   }
 
   const ALL_WS_SERVICES = ['wifi', 'electricity', 'printing', 'screens', 'private_rooms', 'drinks'];
@@ -544,7 +627,7 @@ function OwnerDashboardPage() {
 
   // Theme colors
   const t = isDark ? {
-    pageBg: "#0F1117", card: "#1A1D27", border: "#2A2D37", cardHover: "#252830",
+    pageBg: "#0B0F14", card: "#1A1D27", border: "#2A2D37", cardHover: "#252830",
     text: "#E5E7EB", textSec: "#9CA3AF", textMuted: "#6B7280",
     green: "#5B9A6A", greenBg: "#1A2E22", greenBgHover: "#243A2C",
     indigoBg: "#1E2340", grayBg: "#1E2128", subtleBg: "#252830",
@@ -552,7 +635,7 @@ function OwnerDashboardPage() {
     sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2A2D37",
     cancelBg: "#252830", overlayBg: "#1A1D27",
   } : {
-    pageBg: "#F9FAFB", card: "#ffffff", border: "#E5E7EB", cardHover: "#F2FAF5",
+    pageBg: "#F4F7F9", card: "#ffffff", border: "#E5E7EB", cardHover: "#F2FAF5",
     text: "#111827", textSec: "#374151", textMuted: "#9CA3AF",
     green: "#4A7C59", greenBg: "#EBF3EE", greenBgHover: "#DCE9E0",
     indigoBg: "#EEF2FF", grayBg: "#F1F5F9", subtleBg: "#F3F4F6",
@@ -572,12 +655,12 @@ function OwnerDashboardPage() {
       backgroundColor: t.pageBg, color: t.text,
     } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-8">
+      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-6 overflow-hidden">
         <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px]" />
         <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5" />
 
         {/* Top bar */}
-        <div className="max-w-[1100px] mx-auto lg:px-8">
+        <div>
           <div className="flex items-center justify-between mb-4 lg:mb-0 relative z-[1]">
             <a href="/" className="flex items-center gap-2">
               <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
@@ -623,95 +706,307 @@ function OwnerDashboardPage() {
       </div>
 
       {/* ══ MOBILE LAYOUT ══ */}
-      <div className="lg:hidden px-4 py-4 pb-24">
-        {/* Open toggle */}
-        <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 -mt-6 mb-3 relative z-[2] shadow-sm">
-          <div>
-            <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
-              {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'} الآن` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'} الآن`}
-            </div>
-            <div className="text-[10px] text-[var(--d-text-muted)]">
-              {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
-            </div>
-          </div>
-          <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
-            {actionLoading === "toggle-open" ? (
-              <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
-            ) : (
-              <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
-            )}
-          </button>
-        </div>
-        {/* Stats */}
-        {!isWorkspace && (
-          <div className="grid grid-cols-3 gap-2.5 mb-4 relative z-[2]">
-            {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
-              <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-3 px-2 text-center shadow-sm">
-                <div className="font-bold text-[22px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
-                <div className="text-[9px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {/* Plan */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
-            <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
-          </div>
-          <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
-        </div>
-        {/* Actions */}
-        <div className="text-[13px] font-bold text-[var(--d-text-muted)] mb-2.5 pr-0.5">الإجراءات</div>
-        <div className="bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] overflow-hidden shadow-sm mb-4">
-          {isWorkspace ? (
-            <>
-              <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل، المقاعد" onClick={openWsDetails} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، شاشات، مشروبات" onClick={openWsServices} />
-            </>
-          ) : (
-            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{totalItems} صنف</span>} onClick={() => setSheet("menu")} />
-          )}
-          {place.section === "food" && token && (
-            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>} iconBg="bg-amber-50" iconColor="stroke-amber-600" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => document.getElementById("mobile-orders")?.scrollIntoView({ behavior: "smooth" })} />
-          )}
-          {place.section === "food" && token && (
-            <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>} iconBg="bg-violet-50" iconColor="stroke-violet-600" title="اكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => document.getElementById("mobile-discounts")?.scrollIntoView({ behavior: "smooth" })} />
-          )}
-          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
-          <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[var(--d-gray-bg)]" iconColor="stroke-[var(--d-text-sec)]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك مع العملاء" : "شارك رابط محلك مع الزبائن"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
-        </div>
-        {/* Menu preview */}
-        {!isWorkspace && place.menu.length > 0 && (
+      <div className="lg:hidden px-4 pt-5 pb-24">
+
+        {/* ── HOME TAB ── */}
+        {mobileTab === "home" && (
           <>
-            <div className="text-[13px] font-bold text-[var(--d-text-muted)] mb-2.5 pr-0.5">القائمة</div>
-            <div className="bg-[var(--d-card)] rounded-[14px] border border-[var(--d-border)] overflow-hidden shadow-sm">
-              {place.menu.slice(0, 2).flatMap((sec) => sec.items.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--d-border)] last:border-b-0">
-                  <div><div className="text-xs font-semibold text-[var(--d-text)]">{item.name}</div><div className="text-[10px] text-[var(--d-text-muted)]">{sec.name}</div></div>
-                  <div className="font-bold text-[13px] text-[var(--d-text)]">{Number(item.price) > 0 ? `${item.price} ₪` : "—"}</div>
+            {/* Open toggle */}
+            <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-3">
+              <div>
+                <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
+                  {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'} الآن` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'} الآن`}
                 </div>
-              )))}
+                <div className="text-[10px] text-[var(--d-text-muted)]">
+                  {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
+                </div>
+              </div>
+              <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
+                {actionLoading === "toggle-open" ? (
+                  <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
+                ) : (
+                  <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
+                )}
+              </button>
+            </div>
+            {/* Stats */}
+            {!isWorkspace && (
+              <div className="grid grid-cols-3 gap-2.5 mb-4">
+                {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
+                  <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-3 px-2 text-center">
+                    <div className="font-bold text-[22px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
+                    <div className="text-[9px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Plan */}
+            <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl px-4 py-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
+                <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
+              </div>
+              <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
+            </div>
+            {/* Quick actions */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {isWorkspace ? (
+                <>
+                  <button onClick={openWsDetails} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center mb-2.5">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">الأسعار والأوقات</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">أسعار، مواعيد</div>
+                  </button>
+                  <button onClick={openWsServices} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-indigo-bg)] flex items-center justify-center mb-2.5">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">الخدمات المتاحة</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">WiFi، كهرباء</div>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setMobileTab("orders")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-amber-600" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${place.orders_enabled ? "bg-[var(--d-green-bg)] text-[var(--d-green)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
+                        {place.orders_enabled ? "مفعّل" : "موقوف"}
+                      </span>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">الطلبات</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">إدارة وتحديث الحالة</div>
+                  </button>
+                  <button onClick={() => setMobileTab("menu")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x={9} y={3} width={6} height={4} rx={2}/></svg>
+                      </div>
+                      <span className="text-[18px] font-bold text-[var(--d-text)]">{totalItems}</span>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">القائمة</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">{place.menu.length} أقسام · {availableItems} متوفر</div>
+                  </button>
+                  <button onClick={() => setMobileTab("codes")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-violet-600" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600">خصومات</span>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">أكواد الخصم</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">إنشاء وإدارة</div>
+                  </button>
+                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-gray-bg)] flex items-center justify-center mb-2.5">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-text-sec)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1={12} y1={2} x2={12} y2={15}/></svg>
+                    </div>
+                    <div className="font-bold text-[12px] text-[var(--d-text)]">مشاركة المحل</div>
+                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">نسخ الرابط</div>
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}
-        {place.section === "food" && token && (
-          <div id="mobile-orders" className="mt-4 bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] p-4 shadow-sm">
-            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} />
+
+        {/* ── ORDERS TAB ── */}
+        {mobileTab === "orders" && place.section === "food" && token && (
+          <div>
+            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} mobile />
           </div>
         )}
-        {place.section === "food" && token && (
-          <div id="mobile-discounts" className="mt-4 bg-[var(--d-card)] rounded-[18px] border border-[var(--d-border)] p-4 shadow-sm">
-            <DashboardDiscountCodes token={token} />
+
+        {/* ── MENU TAB ── */}
+        {mobileTab === "menu" && !isWorkspace && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-[15px] text-[var(--d-text)]">إدارة القائمة</h3>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5">+ قسم</button>
+                <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5">+ صنف</button>
+              </div>
+            </div>
+            {place.menu.map((sec) => {
+              const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
+              return (
+                <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
+                  {isSectionLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
+                    <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1">+ صنف</button>
+                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-full px-2 py-1">
+                        <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  {sec.items.map((item) => {
+                    const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                    return (
+                      <div key={item.id} className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
+                        {isItemLoading && (
+                          <div className="absolute inset-0 bg-[var(--d-card)]/70 rounded-2xl flex items-center justify-center z-10">
+                            <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2.5">
+                          {/* Icon */}
+                          {resolvePublicImageUrl(item.photo_url) ? (
+                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
+                              {getItemIcon(item.name)('w-5 h-5')}
+                            </div>
+                          )}
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold text-[var(--d-text)] truncate">{item.name}</div>
+                            {item.description && <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5 truncate">{item.description}</div>}
+                          </div>
+                          {/* Price */}
+                          <span className={`font-bold text-sm shrink-0 ${Number(item.price) > 0 ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
+                            {Number(item.price) > 0 ? `${item.price} ₪` : "—"}
+                          </span>
+                        </div>
+                        {/* Actions row */}
+                        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[var(--d-border)] justify-end">
+                          <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
+                            {actionLoading === `toggle-item-${item.id}` ? (
+                              <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
+                            ) : (
+                              <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
+                            )}
+                          </button>
+                          <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
+                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                          </button>
+                          <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#E05C35] bg-[var(--d-red-bg)]">
+                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         )}
+
+        {/* ── CODES TAB ── */}
+        {mobileTab === "codes" && place.section === "food" && token && (
+          <div>
+            <DashboardDiscountCodes token={token} mobile />
+          </div>
+        )}
+
+        {/* ── SETTINGS TAB ── */}
+        {mobileTab === "settings" && (
+          <div className="space-y-3.5">
+            <h3 className="font-bold text-[15px] text-[var(--d-text)]">{isWorkspace ? "بيانات المساحة" : "بيانات المحل"}</h3>
+            {/* Avatar upload */}
+            <div>
+              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
+              <div className="flex items-center gap-3">
+                <div className="w-[56px] h-[56px] rounded-[14px] bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {place.avatar_url ? (
+                    <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl">{place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}</span>
+                  )}
+                </div>
+                <label className="flex-1 cursor-pointer">
+                  <div className="text-center py-2.5 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
+                    {saving ? "جاري الرفع..." : "رفع صورة"}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || saving) return;
+                      setSaving(true);
+                      try {
+                        const compressed = await compressImageForUpload(file);
+                        const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+                        const fd = new FormData();
+                        fd.append("file", compressed);
+                        const up = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
+                        const upData = await up.json();
+                        if (upData.url) {
+                          await apiFetch(`/api/places/dashboard/update?${qs}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ avatar_url: upData.url }),
+                          });
+                          await load();
+                          showToast("تم تحديث الصورة ✓");
+                        }
+                      } catch { /* ignore */ } finally { setSaving(false); }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+            <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
+            {place.section === "store" && (
+              <div>
+                <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
+                  نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
+                </label>
+                <select
+                  value={editStoreType}
+                  onChange={(e) => setEditStoreType(e.target.value)}
+                  className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
+                >
+                  <option value="">اختر نوع المتجر...</option>
+                  {STORE_CATEGORIES.map((cat) => (
+                    <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
+                      {cat.types.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
+              <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
+                <option value="">اختر المنطقة...</option>
+                {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
+              </select>
+            </div>
+            <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
+            <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
+            <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
+            <button
+              onClick={handleSaveEdit}
+              disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
+              className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
+            >
+              {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+            </button>
+          </div>
+        )}
+
       </div>
 
-      {/* ══ DESKTOP LAYOUT — sidebar right + content left, centered ══ */}
-      <div className="hidden lg:flex max-w-[1100px] mx-auto px-8 pt-8 pb-6 gap-6 items-start relative z-[2]">
+      {/* ══ DESKTOP LAYOUT — sidebar fixed right + content fills rest ══ */}
+      <div className="hidden lg:flex px-6 pt-8 pb-6 gap-6 items-start relative z-[2]">
 
         {/* ── RIGHT SIDEBAR ── */}
-        <div className="w-[320px] flex-shrink-0 sticky top-6 space-y-4">
+        <div className="w-[280px] flex-shrink-0 sticky top-6 space-y-4">
           {/* Place identity card */}
           <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm p-5">
             <div className="flex items-center gap-3.5 mb-4">
@@ -774,7 +1069,7 @@ function OwnerDashboardPage() {
             <div className="text-sm font-bold text-[var(--d-text-muted)] mb-2 pr-0.5">الإجراءات</div>
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] overflow-hidden shadow-sm">
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>} iconBg="bg-amber-50" iconColor="stroke-amber-600" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>} iconBg="bg-amber-500/10" iconColor="stroke-amber-600" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
               )}
               {isWorkspace ? (
                 <>
@@ -785,9 +1080,9 @@ function OwnerDashboardPage() {
                 <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{totalItems} صنف</span>} onClick={() => setActiveView("menu")} active={activeView === "menu"} />
               )}
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>} iconBg="bg-violet-50" iconColor="stroke-violet-600" title="اكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>} iconBg="bg-violet-500/10" iconColor="stroke-violet-600" title="اكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
               )}
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={() => { setEditName(place.name); setEditAddress(place.address ?? ""); setEditPhone(place.phone ?? ""); setEditWhatsapp(place.whatsapp ?? ""); setEditAreaId(place.area_id ?? place.area?.id ?? ""); setEditStoreType(place.type ?? ""); setActiveView("edit"); }} active={activeView === "edit"} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
               <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[var(--d-gray-bg)]" iconColor="stroke-[var(--d-text-sec)]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك" : "شارك رابط محلك"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
             </div>
           </div>
@@ -799,78 +1094,182 @@ function OwnerDashboardPage() {
 
           {/* Menu management — inline on desktop */}
           {activeView === "menu" && !isWorkspace && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-[15px] text-[var(--d-text)]">إدارة القائمة</h3>
-                  <p className="text-[11px] text-[var(--d-text-muted)]">{totalItems} صنف في {place.menu.length} أقسام</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-full px-3 py-1.5">+ صنف</button>
-                  <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-3 py-1.5">+ قسم</button>
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4">
+                <h3 className="font-bold text-[17px] text-[var(--d-text)]">إدارة القائمة</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--d-text-muted)]">{totalItems} صنف</span>
+                  <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg-hover)] transition-colors">+ قسم</button>
+                  <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-colors">+ إضافة صنف</button>
                 </div>
               </div>
-              <div className="space-y-5">
-                {place.menu.map((sec) => {
-                  const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
-                  return (
-                    <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
-                      {isSectionLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                          <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
-                        <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1">+ صنف</button>
-                          <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-full px-2 py-1">
-                            <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                      {sec.items.map((item) => {
-                        const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
-                        return (
-                          <div key={item.id} className={`bg-[var(--d-subtle-bg)] border border-[var(--d-border)] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
-                            {isItemLoading && (
-                              <div className="absolute inset-0 bg-[var(--d-card)]/70 rounded-2xl flex items-center justify-center z-10">
-                                <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1 min-w-0">
-                                <div className="text-[13px] font-semibold text-[var(--d-text)]">{item.name}</div>
-                                {item.description && <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">{item.description}</div>}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`font-bold text-sm ${Number(item.price) > 0 ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
-                                  {Number(item.price) > 0 ? `${item.price} ₪` : "—"}
-                                </span>
-                                <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
-                                  <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-[var(--d-border)]">
-                              <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-lg py-1.5">
-                                <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
-                                تعديل
-                              </button>
-                              <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-lg py-1.5 px-3">
-                                <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                                حذف
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {sec.items.length === 0 && (
-                        <div className="text-center text-[11px] text-[var(--d-text-muted)] py-4">لا توجد أصناف في هذا القسم</div>
-                      )}
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-t border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
+                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-5 py-2.5 uppercase tracking-wide">الصنف</th>
+                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-3 py-2.5 uppercase tracking-wide">القسم</th>
+                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-3 py-2.5 uppercase tracking-wide">السعر</th>
+                      <th className="text-center font-semibold text-[11px] text-[var(--d-text-muted)] px-5 py-2.5 uppercase tracking-wide">إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const allItems = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
+                      const menuTotalPages = Math.ceil(allItems.length / MENU_PER_PAGE);
+                      const paginatedItems = allItems.slice((menuPage - 1) * MENU_PER_PAGE, menuPage * MENU_PER_PAGE);
+                      const emptySecIds = place.menu.filter(s => s.items.length === 0).map(s => s.id);
+                      return (
+                        <>
+                          {paginatedItems.map((item) => {
+                            const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                            const isSectionLoading = actionLoading === `delete-section-${item.sectionId}`;
+                            return (
+                              <tr key={item.id} className={`border-b border-[var(--d-border)]/60 transition-colors relative ${isItemLoading || isSectionLoading ? "pointer-events-none" : ""} ${item.available ? "hover:bg-[var(--d-card-hover)]" : "opacity-40"}`}>
+                                {(isItemLoading || isSectionLoading) && (
+                                  <td colSpan={4} className="absolute inset-0 flex items-center justify-center bg-[var(--d-card)]/80 z-10">
+                                    <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
+                                  </td>
+                                )}
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-3">
+                                    {resolvePublicImageUrl(item.photo_url) ? (
+                                      <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
+                                    ) : (
+                                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
+                                        {getItemIcon(item.name)('w-5 h-5')}
+                                      </div>
+                                    )}
+                                    <div className="min-w-0">
+                                      <div className="font-semibold text-[13px] text-[var(--d-text)] truncate">{item.name}</div>
+                                      {item.description && <div className="text-[10px] text-[var(--d-text-muted)] truncate max-w-[200px]">{item.description}</div>}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3">
+                                  <span className="text-[11px] text-[var(--d-text-muted)]">{item.sectionName}</span>
+                                </td>
+                                <td className="px-3 py-3">
+                                  <span className={`font-bold text-[13px] tabular-nums ${Number(item.price) > 0 ? "text-[var(--d-text)]" : "text-[var(--d-text-muted)]"}`}>
+                                    {Number(item.price) > 0 ? `₪${item.price}` : "—"}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                  <div className="relative inline-block">
+                                    <button
+                                      onClick={() => setMenuDropdown(menuDropdown === item.id ? null : item.id)}
+                                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors"
+                                    >
+                                      <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
+                                    </button>
+                                    {menuDropdown === item.id && (
+                                      <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setMenuDropdown(null)} />
+                                        <div className="absolute left-0 top-full mt-1 z-20 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg py-1 min-w-[140px]">
+                                          <button
+                                            onClick={() => { openEditItem(item); setMenuDropdown(null); }}
+                                            disabled={!!actionLoading}
+                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors text-right"
+                                          >
+                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                                            تعديل
+                                          </button>
+                                          <button
+                                            onClick={() => { handleToggleItem(item.id); setMenuDropdown(null); }}
+                                            disabled={!!actionLoading}
+                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-blue-600 hover:bg-blue-50 transition-colors text-right"
+                                          >
+                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="8" cy="8" r="5"/>{item.available ? <path d="M5 8l2 2 4-4"/> : <path d="M6 6l4 4M10 6l-4 4"/>}</svg>
+                                            {item.available ? "إيقاف التوفر" : "تفعيل التوفر"}
+                                          </button>
+                                          <div className="border-t border-[var(--d-border)] my-1" />
+                                          <button
+                                            onClick={() => { handleDeleteItem(item.id); setMenuDropdown(null); }}
+                                            disabled={!!actionLoading}
+                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-right"
+                                          >
+                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                                            حذف
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {menuPage === menuTotalPages && emptySecIds.length > 0 && place.menu.filter(s => s.items.length === 0).map((sec) => (
+                            <tr key={`empty-${sec.id}`} className="border-b border-[var(--d-border)]/60">
+                              <td colSpan={4} className="px-5 py-3 text-center text-[11px] text-[var(--d-text-muted)]">
+                                لا توجد أصناف في قسم "{sec.name}" —
+                                <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[var(--d-green)] font-bold mr-1">إضافة صنف</button>
+                                <span className="mx-1">·</span>
+                                <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-red-400 font-bold">حذف القسم</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {(() => {
+                const menuTotalPages = Math.ceil(totalItems / MENU_PER_PAGE);
+                return menuTotalPages > 1 ? (
+                  <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--d-border)]">
+                    <span className="text-[11px] text-[var(--d-text-muted)]">عرض {((menuPage - 1) * MENU_PER_PAGE) + 1}-{Math.min(menuPage * MENU_PER_PAGE, totalItems)} من {totalItems}</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setMenuPage((p) => Math.max(1, p - 1))}
+                        disabled={menuPage === 1}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30"
+                      >
+                        السابق
+                      </button>
+                      {Array.from({ length: menuTotalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setMenuPage(p)}
+                          className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-colors ${
+                            p === menuPage
+                              ? "border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)]"
+                              : "text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)]"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setMenuPage((p) => Math.min(menuTotalPages, p + 1))}
+                        disabled={menuPage === menuTotalPages}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30"
+                      >
+                        التالي
+                      </button>
                     </div>
-                  );
-                })}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Section list at bottom */}
+              <div className="px-5 py-3 border-t border-[var(--d-border)] flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-semibold text-[var(--d-text-muted)]">الأقسام:</span>
+                {place.menu.map((sec) => (
+                  <div key={sec.id} className="flex items-center gap-1 text-[10px] bg-[var(--d-subtle-bg)] border border-[var(--d-border)] rounded-lg px-2 py-1">
+                    <span className="font-semibold text-[var(--d-text)]">{sec.name}</span>
+                    <span className="text-[var(--d-text-muted)]">({sec.items.length})</span>
+                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[var(--d-text-muted)] hover:text-red-500 transition-colors mr-0.5">
+                      <svg viewBox="0 0 12 12" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1={2} y1={2} x2={10} y2={10}/><line x1={10} y1={2} x2={2} y2={10}/></svg>
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -882,124 +1281,45 @@ function OwnerDashboardPage() {
           )}
 
           {activeView === "discounts" && place.section === "food" && token && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <DashboardDiscountCodes token={token} />
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm h-[calc(100vh-140px)] flex flex-col">
+              <DashboardDiscountCodes
+                token={token}
+                ref={dcCodesRef}
+                onAddCode={() => { resetDcForm(); setSheet("addDiscount"); }}
+                onEditCode={(dc) => {
+                  setDcCode(dc.code); setDcType(dc.discount_type);
+                  setDcValue(String(dc.discount_value));
+                  setDcMinOrder(dc.min_order_total > 0 ? String(dc.min_order_total) : "");
+                  setDcMaxUses(dc.max_uses ? String(dc.max_uses) : "");
+                  setDcExpires(dc.expires_at ? dc.expires_at.slice(0, 10) : "");
+                  setDcEditId(dc.id); setSheet("addDiscount");
+                }}
+              />
             </div>
           )}
 
           {/* Edit place info — inline on desktop */}
-          {activeView === "edit" && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <div className="mb-4">
-                <h3 className="font-bold text-[15px] text-[var(--d-text)]">{isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"}</h3>
-                <p className="text-[11px] text-[var(--d-text-muted)]">التغييرات تظهر فوراً للزوار</p>
-              </div>
-              <div className="space-y-3.5">
-                {/* Avatar upload */}
-                <div>
-                  <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-[56px] h-[56px] rounded-[14px] bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {place.avatar_url ? (
-                        <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-2xl">{place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}</span>
-                      )}
-                    </div>
-                    <label className="flex-1 cursor-pointer">
-                      <div className="text-center py-2.5 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
-                        {saving ? "جاري الرفع..." : "رفع صورة"}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file || saving) return;
-                          setSaving(true);
-                          try {
-                            const compressed = await compressImageForUpload(file);
-                            const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
-                            const fd = new FormData();
-                            fd.append("file", compressed);
-                            const up = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
-                            const upData = await up.json();
-                            if (upData.url) {
-                              await apiFetch(`/api/places/dashboard/update?${qs}`, {
-                                method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ avatar_url: upData.url }),
-                              });
-                              await load();
-                              showToast("تم تحديث الصورة ✓");
-                            }
-                          } catch { /* ignore */ } finally { setSaving(false); }
-                        }}
-                      />
-                    </label>
-                  </div>
-                </div>
-                <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
-                {place.section === "store" && (
-                  <div>
-                    <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
-                      نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
-                    </label>
-                    <select
-                      value={editStoreType}
-                      onChange={(e) => setEditStoreType(e.target.value)}
-                      className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
-                    >
-                      <option value="">اختر نوع المتجر...</option>
-                      {STORE_CATEGORIES.map((cat) => (
-                        <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
-                          {cat.types.map((t) => (
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
-                  <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
-                    <option value="">اختر المنطقة...</option>
-                    {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
-                  </select>
-                </div>
-                <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
-                <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
-                <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
-                <button
-                  onClick={handleSaveEdit}
-                  disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
-                  className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
-                >
-                  {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-                </button>
-              </div>
-            </div>
-          )}
+
+
         </div>
       </div>
 
       {/* ══ Bottom Nav (mobile) / Sidebar (desktop) ══ */}
-      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[var(--d-card)] border-t border-[var(--d-border)] flex items-center px-2 pb-2 z-10 shadow-[0_-4px_16px_rgba(0,0,0,0.3)] lg:hidden">
-        <NavItem icon="home" label="الرئيسية" active onClick={() => setSheet(null)} />
+      <div className="fixed bottom-0 left-0 right-0 h-16 bg-[var(--d-card)] border-t border-[var(--d-border)] flex items-center px-1 pb-2 z-10 lg:hidden">
+        <NavItem icon="home" label="الرئيسية" active={mobileTab === "home"} onClick={() => setMobileTab("home")} />
         {isWorkspace ? (
           <>
-            <NavItem icon="menu" label="الأسعار" onClick={openWsDetails} />
-            <NavItem icon="add" label="الخدمات" onClick={openWsServices} />
+            <NavItem icon="menu" label="الأسعار" active={false} onClick={openWsDetails} />
+            <NavItem icon="add" label="الخدمات" active={false} onClick={openWsServices} />
           </>
         ) : (
           <>
-            <NavItem icon="menu" label="القائمة" onClick={() => setSheet("menu")} />
-            <NavItem icon="add" label="إضافة" onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} />
+            <NavItem icon="orders" label="الطلبات" active={mobileTab === "orders"} onClick={() => setMobileTab("orders")} />
+            <NavItem icon="menu" label="القائمة" active={mobileTab === "menu"} onClick={() => setMobileTab("menu")} />
+            <NavItem icon="tag" label="الأكواد" active={mobileTab === "codes"} onClick={() => setMobileTab("codes")} />
           </>
         )}
-        <NavItem icon="edit" label="تعديل" onClick={openEdit} />
+        <NavItem icon="edit" label="البيانات" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); populateEditForm(); }} />
       </div>
 
       {/* ══ SHEETS ══ */}
@@ -1059,7 +1379,11 @@ function OwnerDashboardPage() {
                         disabled={!!actionLoading}
                         className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
                       >
-                        <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
+                        {actionLoading === `toggle-item-${item.id}` ? (
+                          <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
+                        ) : (
+                          <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1205,7 +1529,7 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Add Item Sheet */}
-      <SheetWrap open={sheet === "addItem"} onClose={() => setSheet("menu")} title="إضافة صنف جديد" sub="أضف صنف لقائمتك">
+      <SheetWrap open={sheet === "addItem"} onClose={() => setSheet(null)} title="إضافة صنف جديد" sub="أضف صنف لقائمتك">
         <div className="space-y-3.5">
           <div>
             <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">القسم</label>
@@ -1259,9 +1583,9 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Add Section Sheet */}
-      <SheetWrap open={sheet === "addSection"} onClose={() => setSheet("menu")} title="إضافة قسم جديد" sub="أنشئ قسم جديد لقائمتك">
+      <SheetWrap open={sheet === "addSection"} onClose={() => setSheet(null)} title="إضافة قسم جديد" sub="أنشئ قسم جديد لقائمتك">
         <div className="space-y-3.5">
-          <FormField label="اسم القسم" value={addSectionName} onChange={setAddSectionName} placeholder="مثال: 🌅 فطور" />
+          <FormField label="اسم القسم" value={addSectionName} onChange={setAddSectionName} placeholder="مثال: فطور" />
           <button
             onClick={handleAddSection}
             disabled={saving || !addSectionName.trim()}
@@ -1272,8 +1596,36 @@ function OwnerDashboardPage() {
         </div>
       </SheetWrap>
 
+      {/* Add/Edit Discount Code Sheet */}
+      <SheetWrap open={sheet === "addDiscount"} onClose={() => { setSheet(null); resetDcForm(); }} title={dcEditId ? "تعديل كود الخصم" : "إضافة كود خصم"} sub={dcEditId ? "عدّل تفاصيل الكود" : "أنشئ كود خصم جديد لزبائنك"}>
+        <div className="space-y-3.5">
+          <FormField label="الكود" value={dcCode} onChange={(v) => setDcCode(v.toUpperCase())} placeholder="مثال: WELCOME10" />
+          <div>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">نوع الخصم</label>
+            <div className="flex gap-2">
+              <button onClick={() => setDcType("percentage")} className={`flex-1 py-3 rounded-xl text-[13px] font-bold border ${dcType === "percentage" ? "bg-[var(--d-green)] text-white border-[var(--d-green)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border-[var(--d-border)]"}`}>نسبة %</button>
+              <button onClick={() => setDcType("fixed")} className={`flex-1 py-3 rounded-xl text-[13px] font-bold border ${dcType === "fixed" ? "bg-[var(--d-green)] text-white border-[var(--d-green)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border-[var(--d-border)]"}`}>مبلغ ثابت ₪</button>
+            </div>
+          </div>
+          <FormField label={dcType === "percentage" ? "القيمة (%)" : "المبلغ (₪)"} value={dcValue} onChange={setDcValue} type="number" placeholder="0" />
+          <FormField label="حد أدنى للطلب (₪)" value={dcMinOrder} onChange={setDcMinOrder} type="number" placeholder="اختياري" />
+          <FormField label="عدد الاستخدامات" value={dcMaxUses} onChange={setDcMaxUses} type="number" placeholder="بلا حد" />
+          <div>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">تاريخ الانتهاء</label>
+            <input value={dcExpires} onChange={(e) => setDcExpires(e.target.value)} type="date" className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+          </div>
+          <button
+            onClick={handleSaveDiscount}
+            disabled={saving || !dcCode.trim() || !dcValue.trim()}
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
+          >
+            {saving ? "جاري الحفظ..." : dcEditId ? "تحديث الكود" : "إضافة الكود"}
+          </button>
+        </div>
+      </SheetWrap>
+
       {/* Edit Item Sheet */}
-      <SheetWrap open={sheet === "editItem"} onClose={() => setSheet("menu")} title="تعديل الصنف" sub="عدّل الاسم أو السعر أو الوصف أو الصورة">
+      <SheetWrap open={sheet === "editItem"} onClose={() => setSheet(null)} title="تعديل الصنف" sub="عدّل الاسم أو السعر أو الوصف أو الصورة">
         <div className="space-y-3.5">
           <FormField label="اسم الصنف" value={editItemName} onChange={setEditItemName} />
           <FormField label="السعر (₪)" value={editItemPrice} onChange={setEditItemPrice} type="number" placeholder="0" />
@@ -1553,7 +1905,9 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
 function NavItem({ icon, label, active, onClick }: { icon: string; label: string; active?: boolean; onClick?: () => void }) {
   const icons: Record<string, React.ReactNode> = {
     home: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></>,
+    orders: <><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></>,
     menu: <><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /></>,
+    tag: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></>,
     add: <><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></>,
     edit: <><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></>,
   };
@@ -1575,7 +1929,7 @@ function SheetWrap({ open, onClose, title, sub, children }: {
     <>
       {/* Backdrop for desktop */}
       {open && <div className="hidden lg:block fixed inset-0 bg-black/20 z-[19]" onClick={onClose} />}
-      <div className={`fixed inset-0 bg-[var(--d-page)] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:shadow-2xl lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none"}`} dir="rtl">
+      <div className={`fixed inset-0 bg-[var(--d-page)] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0 lg:shadow-2xl" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none invisible"}`} dir="rtl">
         <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
           <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
           <div className="flex items-center gap-2 mb-1 relative z-[1]">
