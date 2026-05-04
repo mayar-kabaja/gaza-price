@@ -301,9 +301,40 @@ const ITEM_ICON_MAP: [RegExp, keyof typeof FoodIcon][] = [
   [/موز|فراولة|توت|مانجو|مانجا/, 'juice'],
 ];
 
+/** Map Arabic section/category names (plurals) → icon key */
+const SECTION_ICON_MAP: [RegExp, keyof typeof FoodIcon][] = [
+  [/مشروبات|مشاريب|عصائر|عصاير/, 'juice'],
+  [/قهوة|قهاوي|مشروبات ساخنة/, 'coffee'],
+  [/سلطات/, 'salad'],
+  [/شوربات|شوربة/, 'soup'],
+  [/مقبلات|مقبل/, 'falafel'],
+  [/ساندويشات|سندويشات|ساندوتشات/, 'sandwich'],
+  [/بيتزا/, 'pizza'],
+  [/برجر|برغر/, 'burger'],
+  [/شاورما|شاورمة/, 'shawarma'],
+  [/مشاوي|مشويات/, 'grill'],
+  [/دجاج|فراخ/, 'chicken'],
+  [/أسماك|سمك/, 'fish'],
+  [/معكرونات|باستا/, 'pasta'],
+  [/أرز|رز|أطباق رئيسية|وجبات/, 'rice'],
+  [/حلويات|حلا|تحلية/, 'dessert'],
+  [/كيكات|كيك/, 'cake'],
+  [/فطور|إفطار/, 'egg'],
+  [/خبز|مناقيش|معجنات|فطائر/, 'bread'],
+  [/بطاطا|بطاطس/, 'fries'],
+  [/فول|حبوب/, 'beans'],
+  [/مثلجات|بوظة|آيس كريم/, 'icecream'],
+  [/وافل/, 'waffle'],
+  [/كريب/, 'crepe'],
+  [/إضافات|صوصات|صلصات|توابل/, 'plate'],
+];
+
 /** Get the icon render function for an Arabic food name */
 export function getItemIcon(name: string): (className?: string) => React.JSX.Element {
   for (const [pattern, key] of ITEM_ICON_MAP) {
+    if (pattern.test(name)) return FoodIcon[key];
+  }
+  for (const [pattern, key] of SECTION_ICON_MAP) {
     if (pattern.test(name)) return FoodIcon[key];
   }
   return FoodIcon.plate;

@@ -82,6 +82,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
   const [minOrderTotal, setMinOrderTotal] = useState("");
   const [maxUses, setMaxUses] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   function resetForm() {
     setCode(""); setDiscountType("percentage"); setDiscountValue("");
@@ -126,18 +127,36 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     saveMutation.mutate();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("هل أنت متأكد من حذف هذا الكود؟")) return;
-    setActionLoading(`delete-${id}`);
-    try {
-      await apiFetch(`/api/places/dashboard/discount-codes/${id}?token=${token}`, { method: "DELETE" });
-      queryClient.invalidateQueries({ queryKey });
-    } catch {}
-    setActionLoading(null);
+  function handleDelete(id: string) {
+    setConfirmDialog({
+      message: "هل أنت متأكد من حذف هذا الكود؟",
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setActionLoading(`delete-${id}`);
+        try {
+          await apiFetch(`/api/places/dashboard/discount-codes/${id}?token=${token}`, { method: "DELETE" });
+          queryClient.invalidateQueries({ queryKey });
+        } catch {}
+        setActionLoading(null);
+      },
+    });
   }
 
-  async function handleToggle(dc: DiscountCode) {
-    if (dc.active && !confirm("هل تريد إيقاف هذا الكود؟")) return;
+  function handleToggle(dc: DiscountCode) {
+    if (dc.active) {
+      setConfirmDialog({
+        message: "هل تريد إيقاف هذا الكود؟",
+        onConfirm: () => {
+          setConfirmDialog(null);
+          doToggle(dc);
+        },
+      });
+      return;
+    }
+    doToggle(dc);
+  }
+
+  async function doToggle(dc: DiscountCode) {
     // Optimistic: flip active locally
     queryClient.setQueryData<DiscountCode[]>(queryKey, (old) =>
       (old ?? []).map((c) => c.id === dc.id ? { ...c, active: !c.active } : c)
@@ -390,6 +409,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     : codes;
 
   return (
+    <>
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center justify-between shrink-0 pb-4">
         <h3 className="font-display font-bold text-[16px] text-[var(--d-text)]">أكواد الخصم</h3>
@@ -424,5 +444,30 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         </div>
       )}
     </div>
+
+    {/* Confirm dialog */}
+    {confirmDialog && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center" dir="rtl">
+        <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmDialog(null)} />
+        <div className="relative bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl shadow-xl p-5 max-w-[320px] w-full mx-4">
+          <p className="text-[13px] font-bold text-[var(--d-text)] mb-4">{confirmDialog.message}</p>
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => setConfirmDialog(null)}
+              className="px-4 py-2 rounded-xl text-[12px] font-bold text-[var(--d-text-muted)] bg-[var(--d-subtle-bg)] border border-[var(--d-border)]"
+            >
+              إلغاء
+            </button>
+            <button
+              onClick={confirmDialog.onConfirm}
+              className="px-4 py-2 rounded-xl text-[12px] font-bold text-white bg-red-500"
+            >
+              تأكيد
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 });

@@ -297,12 +297,12 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
           image_urls,
         }),
       });
-      if (!res.ok) { alert("تعذر حفظ التعديلات"); return; }
+      if (!res.ok) { setToast("تعذر حفظ التعديلات"); return; }
       setShowEdit(false);
       await queryClient.invalidateQueries({ queryKey: ["listings", id] });
       await queryClient.invalidateQueries({ queryKey: ["listings"] });
     } catch {
-      alert("تعذر الاتصال");
+      setToast("تعذر الاتصال");
     } finally {
       setEditSaving(false);
     }
@@ -315,10 +315,10 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       if (res.ok || res.status === 204) {
         router.replace("/market");
       } else {
-        alert("تعذر حذف الإعلان");
+        setToast("تعذر حذف الإعلان");
       }
     } catch {
-      alert("تعذر الاتصال");
+      setToast("تعذر الاتصال");
     } finally {
       setDeleting(false);
     }

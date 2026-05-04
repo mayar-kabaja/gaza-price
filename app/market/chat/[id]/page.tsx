@@ -94,6 +94,7 @@ function useChatDetail(id: string) {
   const [error, setError] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const myId = useRef<string | null>(null);
@@ -157,7 +158,7 @@ function useChatDetail(id: string) {
         setPendingMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         setInputText(content);
         const data = await res.json();
-        alert(data.message || "فشل إرسال الرسالة");
+        setToast(data.message || "فشل إرسال الرسالة"); setTimeout(() => setToast(null), 3000);
         return;
       }
       gtagEvent({ action: "send_message", category: "chat", label: id });
@@ -165,7 +166,7 @@ function useChatDetail(id: string) {
     } catch {
       setPendingMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       setInputText(content);
-      alert("تعذر الإرسال — تحقق من الإنترنت");
+      setToast("تعذر الإرسال — تحقق من الإنترنت"); setTimeout(() => setToast(null), 3000);
     } finally { setSending(false); }
   }
 
@@ -195,7 +196,7 @@ function useChatDetail(id: string) {
     conversation, loading, error, inputText, setInputText,
     sending, bottomRef, handleSend, handleKeyDown,
     allMessages, hasOlderMessages, groups, currentMyId,
-    visibleCount, setVisibleCount,
+    visibleCount, setVisibleCount, toast,
   };
 }
 
@@ -206,7 +207,7 @@ function MessagesView({ id }: { id: string }) {
     conversation, loading, error, inputText, setInputText,
     sending, bottomRef, handleSend, handleKeyDown,
     allMessages, hasOlderMessages, groups, currentMyId,
-    setVisibleCount,
+    setVisibleCount, toast,
   } = useChatDetail(id);
 
   if (loading) {
@@ -331,6 +332,13 @@ function MessagesView({ id }: { id: string }) {
           </svg>
         </button>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white text-[12px] font-bold px-4 py-2 rounded-full shadow-lg">
+          {toast}
+        </div>
+      )}
     </>
   );
 }
@@ -412,7 +420,7 @@ function MobileChatDetail({ id }: { id: string }) {
     conversation, loading, error, inputText, setInputText,
     sending, bottomRef, handleSend, handleKeyDown,
     allMessages, hasOlderMessages, groups, currentMyId,
-    setVisibleCount,
+    setVisibleCount, toast,
   } = useChatDetail(id);
 
   if (loading) {

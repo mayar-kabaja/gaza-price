@@ -1154,21 +1154,35 @@ function OwnerDashboardPage() {
               <div className="flex items-center justify-between px-5 py-4">
                 <h3 className="font-bold text-[17px] text-[var(--d-text)]">إدارة القائمة</h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[var(--d-text-muted)]">{totalItems} صنف</span>
                   <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg-hover)] transition-colors">+ قسم</button>
                   <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-colors">+ إضافة صنف</button>
                 </div>
               </div>
 
+              {/* Section chips */}
+              <div className="px-5 py-3 flex gap-2 overflow-x-auto no-scrollbar">
+                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-[var(--d-text-muted)] whitespace-nowrap shrink-0">الأقسام:</span>
+                {place.menu.map((sec) => (
+                  <div key={sec.id} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 bg-[var(--d-card)] text-[var(--d-text-muted)] border border-[var(--d-border)] hover:border-[var(--d-green)]/30 transition-all">
+                    <span className="text-[var(--d-green)]">{getItemIcon(sec.name)('w-3.5 h-3.5')}</span>
+                    <span className="text-[var(--d-text)]">{sec.name}</span>
+                    <span>({sec.items.length})</span>
+                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[var(--d-text-muted)] hover:text-red-500 transition-colors">
+                      <svg viewBox="0 0 12 12" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1={2} y1={2} x2={10} y2={10}/><line x1={10} y1={2} x2={2} y2={10}/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
               {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
+              <div className="mx-4 mb-4 rounded-2xl border border-[var(--d-border)] overflow-hidden">
+                <table className="w-full text-[13px] text-right">
                   <thead>
-                    <tr className="border-t border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
-                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-5 py-2.5 uppercase tracking-wide">الصنف</th>
-                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-3 py-2.5 uppercase tracking-wide">القسم</th>
-                      <th className="text-right font-semibold text-[11px] text-[var(--d-text-muted)] px-3 py-2.5 uppercase tracking-wide">السعر</th>
-                      <th className="text-center font-semibold text-[11px] text-[var(--d-text-muted)] px-5 py-2.5 uppercase tracking-wide">إجراء</th>
+                    <tr className="border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">الصنف</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">القسم</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">السعر</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">إجراء</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1186,13 +1200,8 @@ function OwnerDashboardPage() {
                             const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
                             const isSectionLoading = actionLoading === `delete-section-${item.sectionId}`;
                             return (
-                              <tr key={item.id} className={`border-b border-[var(--d-border)]/60 transition-colors relative ${isItemLoading || isSectionLoading ? "pointer-events-none" : ""} ${item.available ? "hover:bg-[var(--d-card-hover)]" : "opacity-40"}`}>
-                                {(isItemLoading || isSectionLoading) && (
-                                  <td colSpan={4} className="absolute inset-0 flex items-center justify-center bg-[var(--d-card)]/80 z-10">
-                                    <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
-                                  </td>
-                                )}
-                                <td className="px-5 py-3">
+                              <tr key={item.id} className={`border-b border-[var(--d-border)]/60 transition-colors ${isItemLoading || isSectionLoading ? "pointer-events-none opacity-50" : ""} hover:bg-[var(--d-subtle-bg)]`}>
+                                <td className={`px-5 py-3 ${!item.available ? "opacity-40" : ""}`}>
                                   <div className="flex items-center gap-3">
                                     {resolvePublicImageUrl(item.photo_url) ? (
                                       <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
@@ -1207,10 +1216,10 @@ function OwnerDashboardPage() {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className={`px-3 py-3 ${!item.available ? "opacity-40" : ""}`}>
                                   <span className="text-[11px] text-[var(--d-text-muted)]">{item.sectionName}</span>
                                 </td>
-                                <td className="px-3 py-3">
+                                <td className={`px-3 py-3 ${!item.available ? "opacity-40" : ""}`}>
                                   <span className={`font-bold text-[13px] tabular-nums ${Number(item.price) > 0 ? "text-[var(--d-text)]" : "text-[var(--d-text-muted)]"}`}>
                                     {Number(item.price) > 0 ? `₪${item.price}` : "—"}
                                   </span>
@@ -1260,22 +1269,35 @@ function OwnerDashboardPage() {
                               </tr>
                             );
                           })}
-                          {menuPage === menuTotalPages && emptySecIds.length > 0 && place.menu.filter(s => s.items.length === 0).map((sec) => (
-                            <tr key={`empty-${sec.id}`} className="border-b border-[var(--d-border)]/60">
-                              <td colSpan={4} className="px-5 py-3 text-center text-[11px] text-[var(--d-text-muted)]">
-                                لا توجد أصناف في قسم "{sec.name}" —
-                                <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[var(--d-green)] font-bold mr-1">إضافة صنف</button>
-                                <span className="mx-1">·</span>
-                                <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-red-400 font-bold">حذف القسم</button>
-                              </td>
-                            </tr>
-                          ))}
                         </>
                       );
                     })()}
                   </tbody>
                 </table>
               </div>
+
+              {/* Empty sections — only on last page */}
+              {menuPage >= Math.ceil(totalItems / MENU_PER_PAGE) && place.menu.filter(s => s.items.length === 0).map((sec) => (
+                <div key={`empty-${sec.id}`} className="flex items-center justify-between px-5 py-4 border-t border-[var(--d-border)]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--d-green)] border border-dashed border-[var(--d-border)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
+                      {getItemIcon(sec.name)('w-6 h-6')}
+                    </div>
+                    <span className="font-bold text-[14px] text-[var(--d-text)]">{sec.name}</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5 flex-1 mx-4">
+                    <span className="text-[13px] font-semibold text-[var(--d-text)]">لا توجد أصناف في قسم {sec.name}</span>
+                    <span className="text-[11px] text-[var(--d-text-muted)]">ابدأ بإضافة أول صنف ليظهر في القائمة</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-lg px-4 py-2 hover:opacity-90 transition-colors">+ إضافة صنف</button>
+                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[12px] font-bold text-red-500 border border-red-500/30 rounded-lg px-4 py-2 hover:bg-red-500/5 transition-colors flex items-center gap-1">
+                      <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                      حذف القسم
+                    </button>
+                  </div>
+                </div>
+              ))}
 
               {/* Pagination */}
               {(() => {
@@ -1316,19 +1338,6 @@ function OwnerDashboardPage() {
                 ) : null;
               })()}
 
-              {/* Section list at bottom */}
-              <div className="px-5 py-3 border-t border-[var(--d-border)] flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-semibold text-[var(--d-text-muted)]">الأقسام:</span>
-                {place.menu.map((sec) => (
-                  <div key={sec.id} className="flex items-center gap-1 text-[10px] bg-[var(--d-subtle-bg)] border border-[var(--d-border)] rounded-lg px-2 py-1">
-                    <span className="font-semibold text-[var(--d-text)]">{sec.name}</span>
-                    <span className="text-[var(--d-text-muted)]">({sec.items.length})</span>
-                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[var(--d-text-muted)] hover:text-red-500 transition-colors mr-0.5">
-                      <svg viewBox="0 0 12 12" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1={2} y1={2} x2={10} y2={10}/><line x1={10} y1={2} x2={2} y2={10}/></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -1356,8 +1365,6 @@ function OwnerDashboardPage() {
               />
             </div>
           )}
-
-          {/* Edit place info — inline on desktop */}
 
 
         </div>
@@ -2014,7 +2021,7 @@ function FormField({ label, value, onChange, type = "text", placeholder, textare
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; textarea?: boolean;
 }) {
-  const cls = "w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm lg:text-base text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-text-muted)] focus:border-[var(--d-green)]";
+  const cls = "w-full border border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-2.5 text-[13px] text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-text-muted)] focus:border-[var(--d-green)]";
   return (
     <div>
       <label className="text-xs font-bold text-[var(--d-text-muted)] mb-1.5 block">{label}</label>
