@@ -1179,6 +1179,8 @@ function OwnerDashboardPage() {
                 <table className="w-full text-[13px] text-right">
                   <thead>
                     <tr className="border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">#</th>
+                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">الصورة</th>
                       <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">الصنف</th>
                       <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">القسم</th>
                       <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">السعر</th>
@@ -1196,24 +1198,26 @@ function OwnerDashboardPage() {
                       const emptySecIds = place.menu.filter(s => s.items.length === 0).map(s => s.id);
                       return (
                         <>
-                          {paginatedItems.map((item) => {
+                          {paginatedItems.map((item, idx) => {
                             const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
                             const isSectionLoading = actionLoading === `delete-section-${item.sectionId}`;
+                            const rowNum = (menuPage - 1) * MENU_PER_PAGE + idx + 1;
                             return (
                               <tr key={item.id} className={`border-b border-[var(--d-border)]/60 transition-colors ${isItemLoading || isSectionLoading ? "pointer-events-none opacity-50" : ""} hover:bg-[var(--d-subtle-bg)]`}>
-                                <td className={`px-5 py-3 ${!item.available ? "opacity-40" : ""}`}>
-                                  <div className="flex items-center gap-3">
-                                    {resolvePublicImageUrl(item.photo_url) ? (
-                                      <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
-                                    ) : (
-                                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
-                                        {getItemIcon(item.name)('w-5 h-5')}
-                                      </div>
-                                    )}
-                                    <div className="min-w-0">
-                                      <div className="font-semibold text-[13px] text-[var(--d-text)] truncate">{item.name}</div>
-                                      {item.description && <div className="text-[10px] text-[var(--d-text-muted)] truncate max-w-[200px]">{item.description}</div>}
+                                <td className={`px-4 py-3 text-[12px] text-[var(--d-text-muted)] tabular-nums ${!item.available ? "opacity-40" : ""}`}>{rowNum}</td>
+                                <td className={`px-4 py-3 ${!item.available ? "opacity-40" : ""}`}>
+                                  {resolvePublicImageUrl(item.photo_url) ? (
+                                    <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                                  ) : (
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
+                                      {getItemIcon(item.name)('w-5 h-5')}
                                     </div>
+                                  )}
+                                </td>
+                                <td className={`px-5 py-3 ${!item.available ? "opacity-40" : ""}`}>
+                                  <div className="min-w-0">
+                                    <div className="font-semibold text-[13px] text-[var(--d-text)] truncate">{item.name}</div>
+                                    {item.description && <div className="text-[10px] text-[var(--d-text-muted)] truncate max-w-[200px]">{item.description}</div>}
                                   </div>
                                 </td>
                                 <td className={`px-3 py-3 ${!item.available ? "opacity-40" : ""}`}>
