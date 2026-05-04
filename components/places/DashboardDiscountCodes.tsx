@@ -365,8 +365,26 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         )}
 
         {!loading && filteredCodes.length === 0 && !showForm && (
-          <div className="text-center py-6 text-[var(--d-text-muted)] text-[12px]">
-            {search.trim() ? "لا توجد نتائج" : "لا توجد أكواد خصم — أضف كود لجذب الزبائن"}
+          <div className="flex flex-col items-center justify-center py-10 px-4">
+            <div className="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
+              </svg>
+            </div>
+            {search.trim() ? (
+              <p className="text-[13px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+            ) : (
+              <>
+                <p className="font-bold text-[14px] text-[var(--d-text)] mb-1">لا توجد أكواد خصم</p>
+                <p className="text-[12px] text-[var(--d-text-muted)] mb-4 text-center">أضف كود خصم لجذب الزبائن وزيادة المبيعات</p>
+                <button
+                  onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
+                  className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-xl px-5 py-2.5 hover:opacity-90 transition-colors"
+                >
+                  + إضافة كود
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -431,8 +449,26 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
       )}
 
       {!loading && desktopFiltered.length === 0 && !showForm && (
-        <div className="flex-1 flex items-center justify-center text-[var(--d-text-muted)] text-[13px]">
-          {search.trim() ? "لا توجد نتائج" : "لا توجد أكواد خصم — أضف كود لجذب الزبائن"}
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
+            </svg>
+          </div>
+          {search.trim() ? (
+            <p className="text-[13px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+          ) : (
+            <>
+              <p className="font-bold text-[16px] text-[var(--d-text)] mb-1">لا توجد أكواد خصم</p>
+              <p className="text-[13px] text-[var(--d-text-muted)] mb-5 text-center">أنشئ أكواد خصم لجذب الزبائن وزيادة الطلبات</p>
+              <button
+                onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
+                className="text-[13px] font-bold text-white bg-[var(--d-green)] rounded-xl px-6 py-2.5 hover:opacity-90 transition-colors shadow-lg shadow-[var(--d-green)]/20"
+              >
+                + إضافة كود خصم
+              </button>
+            </>
+          )}
         </div>
       )}
 
