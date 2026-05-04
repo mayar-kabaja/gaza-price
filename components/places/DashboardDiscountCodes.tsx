@@ -45,11 +45,11 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("ar-EG", { month: "short", day: "numeric" });
 }
 
-const STATUS_BADGE: Record<string, { label: string; cls: string; dot: string }> = {
-  active:   { label: "نشط",    cls: "bg-[var(--d-green-bg)] text-[var(--d-green)] border border-[var(--d-green)]/20", dot: "bg-[var(--d-green)]" },
-  inactive: { label: "موقوف",  cls: "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border border-[var(--d-border)]", dot: "bg-[var(--d-text-muted)]" },
-  expired:  { label: "منتهي",  cls: "bg-[var(--d-red-bg,var(--d-subtle-bg))] text-red-500 border border-red-500/20", dot: "bg-red-500" },
-  maxed:    { label: "مكتمل",  cls: "bg-[var(--d-subtle-bg)] text-amber-500 border border-amber-500/20", dot: "bg-amber-500" },
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  active:   { label: "نشط",    cls: "bg-[rgba(26,109,48,0.2)] text-[#1A6D30]" },
+  inactive: { label: "متوقف",  cls: "bg-[rgba(226,166,37,0.2)] text-[#E2A625]" },
+  expired:  { label: "منتهي",  cls: "bg-[rgba(190,50,50,0.2)] text-[#BE3232]" },
+  maxed:    { label: "مكتمل",  cls: "bg-[rgba(226,166,37,0.2)] text-[#E2A625]" },
 };
 
 export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(function DashboardDiscountCodes({ token, mobile, search = "", onAddCode, onEditCode }, ref) {
@@ -218,120 +218,124 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     return (
       <div
         key={dc.id}
-        className={`flex flex-col rounded-2xl border bg-[var(--d-card)] transition-all ${
+        className={`flex flex-col rounded-[16px] bg-white border border-[var(--d-border)] shadow-sm hover:shadow-md transition-all ${
           isLoading ? "opacity-50 pointer-events-none" : ""
-        } ${
-          isDead
-            ? "border-[var(--d-border)]"
-            : "border-[var(--d-border)] shadow-sm hover:shadow-md"
         }`}
+        style={{ padding: "16px 0", gap: 24 }}
       >
         {/* ── Header ── */}
-        <div className={`px-3.5 pt-3.5 pb-2.5 border-b border-[var(--d-border)]/60 ${isDead ? "opacity-50" : ""}`}>
+        <div className="px-3.5">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                dc.discount_type === "percentage"
-                  ? "bg-[var(--d-green-bg)] text-[var(--d-green)]"
-                  : "bg-[var(--d-subtle-bg)] text-amber-500"
-              }`}>
-                <svg viewBox="0 0 24 24" className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-                  <line x1={7} y1={7} x2={7.01} y2={7}/>
-                </svg>
+            <div className="min-w-0">
+              <div className="font-mono font-bold text-[16px] text-[var(--d-text)] truncate tracking-wider text-right">{dc.code}</div>
+              <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                <span className="text-[10px] text-[var(--d-text-muted)]">{dc.discount_type === "percentage" ? "خصم نسبي" : "خصم ثابت"}</span>
+                {dc.min_order_total > 0 && (
+                  <>
+                    <span className="text-[10px] text-[var(--d-text-muted)]">·</span>
+                    <span className="text-[10px] text-[var(--d-text-muted)]">حد أدنى ₪{dc.min_order_total}</span>
+                  </>
+                )}
               </div>
-              <div className="min-w-0">
-                <div className="font-mono font-bold text-[13px] text-[var(--d-text)] truncate tracking-wider" dir="ltr">{dc.code}</div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-[var(--d-text-muted)]">{dc.discount_type === "percentage" ? "خصم نسبي" : "خصم ثابت"}</span>
-                  {dc.min_order_total > 0 && (
-                    <>
-                      <span className="text-[10px] text-[var(--d-text-muted)]">·</span>
-                      <span className="text-[10px] text-[var(--d-text-muted)]">حد أدنى ₪{dc.min_order_total}</span>
-                    </>
-                  )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={`inline-flex justify-center items-center px-3.5 py-1.5 rounded-[12px] text-[12px] font-semibold ${badge.cls}`}>
+                {badge.label}
+              </span>
+              <button
+                onClick={() => { navigator.clipboard.writeText(dc.code); }}
+                className="w-8 h-8 flex items-center justify-center text-[var(--d-text-muted)] hover:opacity-60 transition-opacity"
+                title="نسخ الكود"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 2x2 Info Grid ── */}
+        <div className="px-4">
+          <div className="flex flex-col gap-4">
+            {/* Row 1 */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* قيمة الخصم */}
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-[#98C3A5]/20 flex items-center justify-center shrink-0">
+                  <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M15.725 17.297c1.9-.35 2.886-2.235 1.6-4.228a.312.312 0 00-.237-.167.312.312 0 00-.288.042c-.416.258 0 .583.142 1.2.691 2.712-4.055 2.562-3.387 0 .087-.456.333-.867.691-1.16.295-.21.626-.365.977-.457.766-.134 1.134.566 1.417.1.509-.801-3.1-1.811-4.218 1.191-1.618 3.854.46 5.473 2.495 5.098zm11.493 4.797a.416.416 0 00-.545.06.416.416 0 00.033.597c.237.402.348.868.317 1.334-.2 1.593-2.502 1.727-3.337.543a1.873 1.873 0 01.261-2.785c.332-.043.668.03.952.209a.278.278 0 00.345-.247.278.278 0 00-.148-.312 2.362 2.362 0 00-3.503 1.61c-.834 2.244 1.275 3.845 3.336 3.478 1.876-.342 2.869-2.227 1.576-4.228h.001zm2.21-11.603C18.185 17.49 12.28 28.2 10.237 28.9a.278.278 0 00.2.642c1.025-.292 1.76-1.325 2.443-2.002 5.464-5.438 10.118-11.677 16.966-16.406a.278.278 0 00-.417-.443" fill="#4A7C59"/></svg>
+                </div>
+                <div className="text-center">
+                  <div className="text-[13px] font-medium text-[#4A7C59]">{fmtDiscount(dc)}</div>
+                  <div className="text-[11px] text-black">قيمة الخصم</div>
+                </div>
+              </div>
+              {/* عدد الاستخدام */}
+              <div className="flex items-center gap-2 justify-self-start">
+                <div className="w-9 h-9 rounded-lg bg-[#98C3A5]/20 flex items-center justify-center shrink-0">
+                  <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M12.5 15.625h1.25v8.75m0 0H12.5m1.25 0H15m1.25-8.75h5v4.375h-4.375v4.375h5m1.25-8.75H27.5V20m0 0h-3.75m3.75 0v4.375h-4.375" stroke="#4A7C59"/></svg>
+                </div>
+                <div className="text-center">
+                  <div className="text-[13px] font-medium text-[#4A7C59]">{dc.used_count}/{dc.max_uses ?? "∞"}</div>
+                  <div className="text-[11px] text-black">عدد الاستخدام</div>
                 </div>
               </div>
             </div>
-            <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full shrink-0 ${badge.cls}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-              {badge.label}
-            </span>
-          </div>
-          <div className="flex items-center justify-between mt-2 text-[10px] text-[var(--d-text-muted)]">
-            <span>{formatDate(dc.created_at)}</span>
-            {dc.expires_at && (
-              <span className={isExpired(dc) ? "text-red-500" : ""}>
-                {isExpired(dc) ? "انتهى" : "ينتهي"} {formatDate(dc.expires_at)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* ── Details ── */}
-        <div className={`flex-1 min-h-0 px-3.5 ${isDead ? "opacity-40" : ""}`}>
-          <div className="flex items-center justify-between pt-2.5 pb-1.5 text-[9px] font-semibold text-[var(--d-text-muted)] uppercase tracking-wide">
-            <span>التفاصيل</span>
-            <span>القيمة</span>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-[var(--d-text-muted)]">قيمة الخصم</span>
-              <span className="font-bold text-[var(--d-text)] tabular-nums" dir="ltr">{fmtDiscount(dc)}</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-[var(--d-text-muted)]">الاستخدامات</span>
-              <span className={`font-bold tabular-nums ${pct && pct >= 80 ? "text-amber-500" : "text-[var(--d-text)]"}`}>
-                {dc.used_count} / {dc.max_uses ?? "∞"}
-              </span>
-            </div>
-            {pct !== null && (
-              <div className="h-1 bg-[var(--d-border)]/60 rounded-full overflow-hidden mt-1">
-                <div
-                  className={`h-full rounded-full ${pct >= 100 ? "bg-red-400" : pct >= 80 ? "bg-amber-400" : "bg-[var(--d-green)]"}`}
-                  style={{ width: `${pct}%` }}
-                />
+            {/* Row 2 */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* ينتهي في */}
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-lg bg-[#98C3A5]/20 flex items-center justify-center shrink-0">
+                  <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M27.917 13.334h-1.806v1.11h1.667v12.222H12.223V14.445h1.666v-1.111h-1.805a1.111 1.111 0 00-1.084 1.005v12.434a1.111 1.111 0 001.084 1.005h15.833a1.111 1.111 0 001.084-1.005V14.339a1.111 1.111 0 00-1.084-1.005z" fill="#4A7C59"/><path d="M14.444 17.778h1.112v1.11h-1.112v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11zm3.334 0h1.11v1.11h-1.11v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11zm-10 2.778h1.112v1.11h-1.112v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11zm3.334 0h1.11v1.11h-1.11v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11zm-10 2.778h1.112v1.11h-1.112v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11zm3.334 0h1.11v1.11h-1.11v-1.11zm3.333 0h1.112v1.11h-1.112v-1.11z" fill="#4A7C59"/><path d="M15.556 15.556a.556.556 0 00.555-.556v-3.333a.556.556 0 00-1.111 0V15a.556.556 0 00.556.556zm8.888 0A.556.556 0 0025 15v-3.333a.556.556 0 00-1.111 0V15a.556.556 0 00.555.556z" fill="#4A7C59"/><path d="M17.223 13.334h5.555v1.11h-5.555v-1.11z" fill="#4A7C59"/></svg>
+                </div>
+                <div className="text-center">
+                  <div className="text-[13px] font-medium text-[#4A7C59]">{dc.expires_at ? formatDate(dc.expires_at) : "—"}</div>
+                  <div className="text-[11px] text-black">{dc.expires_at && isExpired(dc) ? "انتهى في" : "ينتهي في"}</div>
+                </div>
               </div>
-            )}
+              {/* عدد مرات الاستخدام */}
+              <div className="flex items-center gap-2 justify-self-start">
+                <div className="w-9 h-9 rounded-lg bg-[#98C3A5]/20 flex items-center justify-center shrink-0">
+                  <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M15.2 27.235a1.767 1.767 0 01-.36-1.888c.1-.351.282-.666.52-.907a1.767 1.767 0 012.618 0c.24.241.42.556.52.907a1.767 1.767 0 01-.36 1.888 1.767 1.767 0 01-2.938 0zm7.82 0a1.767 1.767 0 01-.36-1.888c.1-.351.282-.666.52-.907a1.767 1.767 0 012.618 0c.24.241.42.556.52.907a1.767 1.767 0 01-.36 1.888 1.767 1.767 0 01-2.938 0zM13.173 12.917h-1.09a.417.417 0 010-.834h1.2c.13 0 .25.034.356.1.107.068.19.162.249.282l3.232 6.798h5.529c.096 0 .182-.024.257-.072a.511.511 0 00.191-.3l2.797-5.033a.417.417 0 01.716.415l-2.804 5.075a1.25 1.25 0 01-1.106.651H16.75l-1.012 1.858c-.086.128-.088.268-.008.417.08.15.2.225.36.225h8.653a.417.417 0 010 .834H16.09c-.486 0-.85-.204-1.09-.612-.241-.408-.246-.82-.015-1.238l1.253-2.233-3.064-6.43zm6.465 4.848a.513.513 0 01-.362-.875.513.513 0 01.724 0 .513.513 0 01-.362.875zm.064-2.468a.417.417 0 01-.12-.297v-3.333a.417.417 0 01.834 0V15a.417.417 0 01-.714.297z" fill="#4A7C59"/></svg>
+                </div>
+                <div className="text-center">
+                  <div className="text-[13px] font-medium text-[#4A7C59]">{dc.used_count}</div>
+                  <div className="text-[11px] text-black">عدد مرات الاستخدام</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── Footer ── */}
-        <div className={`px-3.5 py-2.5 border-t border-[var(--d-border)]/60 ${isDead ? "opacity-50" : ""}`}>
-          <div className="flex items-center justify-between">
-            <span className={`text-[14px] font-bold tabular-nums ${
-              dc.discount_type === "percentage"
-                ? "text-[var(--d-green)]"
-                : "text-amber-500"
-            }`} dir="ltr">
-              {fmtDiscount(dc)}
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => onEditCode ? onEditCode(dc) : openEdit(dc)}
-                className="px-2.5 py-1 rounded-lg border border-[var(--d-green)]/25 bg-[var(--d-card)] text-[var(--d-green)] text-[10px] font-bold hover:bg-[var(--d-green-bg)] transition-colors"
-              >
-                تعديل
-              </button>
-              <button
-                onClick={() => handleToggle(dc)}
-                disabled={!!actionLoading}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-50 ${
-                  dc.active
-                    ? "border border-amber-500/25 bg-[var(--d-card)] text-amber-500 hover:bg-[var(--d-subtle-bg)]"
-                    : "border border-[var(--d-green)]/25 bg-[var(--d-card)] text-[var(--d-green)] hover:bg-[var(--d-green-bg)]"
-                }`}
-              >
-                {dc.active ? "إيقاف" : "تفعيل"}
-              </button>
-              <button
-                onClick={() => handleDelete(dc.id)}
-                disabled={!!actionLoading}
-                className="px-2.5 py-1 rounded-lg border border-red-500/25 bg-[var(--d-card)] text-red-500 text-[10px] font-bold hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-              >
-                حذف
-              </button>
-            </div>
+        {/* ── Actions ── */}
+        <div className="px-3.5">
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => onEditCode ? onEditCode(dc) : openEdit(dc)}
+              className="h-7 px-3 flex items-center gap-1 rounded-md hover:opacity-80 transition-opacity"
+              style={{ background: "#A8D3B5" }}
+            >
+              <span className="text-[10px] text-[#4A7C59]">تعديل</span>
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#4A7C59" strokeWidth={1.5} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z"/></svg>
+            </button>
+            <button
+              onClick={() => handleToggle(dc)}
+              disabled={!!actionLoading}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-80 transition-opacity disabled:opacity-50"
+              style={{ background: "#E5E4E5" }}
+            >
+              {dc.active ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#000"><path d="M8 5v14l11-7z"/></svg>
+              )}
+            </button>
+            <button
+              onClick={() => handleDelete(dc.id)}
+              disabled={!!actionLoading}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-80 transition-opacity disabled:opacity-50"
+              style={{ background: "rgba(221, 40, 40, 0.1)" }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#DD2828" strokeWidth={1.5} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+            </button>
           </div>
         </div>
       </div>
