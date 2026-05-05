@@ -227,8 +227,22 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
     }
   }, [lastEvent, queryClient, queryKey]);
 
+  const VALID_TRANSITIONS: Record<string, string[]> = {
+    pending: ["accepted", "rejected"],
+    accepted: ["preparing", "cancelled"],
+    preparing: ["ready", "cancelled"],
+    ready: ["delivered", "cancelled"],
+  };
+
   const updateMutation = useMutation({
     mutationFn: async ({ orderId, status, reason }: { orderId: string; status: string; reason?: string }) => {
+      const currentOrder = queryClient.getQueryData<Order[]>(queryKey)?.find((o) => o.id === orderId);
+      if (currentOrder) {
+        const allowed = VALID_TRANSITIONS[currentOrder.status];
+        if (!allowed || !allowed.includes(status)) {
+          throw new Error(`لا يمكن تغيير حالة الطلب من "${currentOrder.status}" إلى "${status}"`);
+        }
+      }
       await apiFetch(`/api/places/dashboard/orders/${orderId}/status?token=${token}`, {
         method: "PATCH",
         body: JSON.stringify({ status, reject_reason: reason }),
