@@ -89,11 +89,12 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
   const [maxUses, setMaxUses] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [confirmDialog, setConfirmDialog] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   function resetForm() {
     setCode(""); setDiscountType("percentage"); setDiscountValue("");
     setMinOrderTotal(""); setMaxUses(""); setExpiresAt("");
-    setEditingId(null); setShowForm(false);
+    setEditingId(null); setShowForm(false); setFormError(null);
   }
 
   function openEdit(dc: DiscountCode) {
@@ -129,7 +130,17 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
   const saving = saveMutation.isPending;
 
   async function handleSave() {
+    setFormError(null);
     if (!code.trim() || !discountValue.trim()) return;
+    if (expiresAt) {
+      const expDate = new Date(expiresAt);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (expDate < today) {
+        setFormError("لا يمكن إضافة كود بتاريخ انتهاء منتهي الصلاحية");
+        return;
+      }
+    }
     saveMutation.mutate();
   }
 
@@ -206,6 +217,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="عدد الاستخدامات" type="number" className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]" dir="ltr" />
         <input value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} placeholder="تاريخ الانتهاء" type="date" className="border border-[var(--d-border)] rounded-lg px-3 py-2 text-[12px] bg-[var(--d-subtle-bg)] text-[var(--d-text)]" dir="ltr" />
       </div>
+      {formError && <p className="text-[11px] text-red-500 font-medium">{formError}</p>}
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={saving || !code.trim() || !discountValue.trim()} className="flex-1 py-2 rounded-lg bg-[var(--d-green)] text-white text-[12px] font-bold disabled:opacity-50">{saving ? "..." : editingId ? "تحديث" : "إضافة"}</button>
         <button onClick={resetForm} className="flex-1 py-2 rounded-lg bg-[var(--d-subtle-bg)] border border-[var(--d-border)] text-[var(--d-text)] text-[12px] font-bold">إلغاء</button>

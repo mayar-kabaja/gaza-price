@@ -158,11 +158,12 @@ function OwnerDashboardPage() {
   const [dcMaxUses, setDcMaxUses] = useState("");
   const [dcExpires, setDcExpires] = useState("");
   const [dcEditId, setDcEditId] = useState<string | null>(null);
+  const [dcFormError, setDcFormError] = useState<string | null>(null);
   const dcCodesRef = useRef<{ reload: () => void } | null>(null);
 
   function resetDcForm() {
     setDcCode(""); setDcType("percentage"); setDcValue("");
-    setDcMinOrder(""); setDcMaxUses(""); setDcExpires(""); setDcEditId(null);
+    setDcMinOrder(""); setDcMaxUses(""); setDcExpires(""); setDcEditId(null); setDcFormError(null);
   }
 
   // Edit item form
@@ -525,7 +526,17 @@ function OwnerDashboardPage() {
   }
 
   async function handleSaveDiscount() {
+    setDcFormError(null);
     if (!dcCode.trim() || !dcValue.trim()) return;
+    if (dcExpires) {
+      const expDate = new Date(dcExpires);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (expDate < today) {
+        setDcFormError("لا يمكن إضافة كود بتاريخ انتهاء في الماضي");
+        return;
+      }
+    }
     setSaving(true);
     try {
       const body = {
@@ -1684,6 +1695,7 @@ function OwnerDashboardPage() {
             <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">تاريخ الانتهاء</label>
             <input value={dcExpires} onChange={(e) => setDcExpires(e.target.value)} type="date" className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
           </div>
+          {dcFormError && <p className="text-[12px] text-red-500 font-medium text-center">{dcFormError}</p>}
           <button
             onClick={handleSaveDiscount}
             disabled={saving || !dcCode.trim() || !dcValue.trim()}
