@@ -241,14 +241,14 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     return (
       <div
         key={dc.id}
-        className={`flex flex-col rounded-2xl bg-white border border-[var(--d-border)]/50 p-[1.125rem] gap-3.5 transition-all ${
+        className={`flex flex-col rounded-2xl bg-[var(--d-card)] border border-[var(--d-border)]/50 p-[1.125rem] gap-3.5 transition-all ${
           isLoading ? "opacity-50 pointer-events-none" : ""
         }`}
       >
         {/* ── Header: name + copy | status ── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[17px] font-medium tracking-wide truncate">{dc.code}</span>
+            <span className="text-[17px] font-medium tracking-wide truncate text-[var(--d-text)]">{dc.code}</span>
             <button
               onClick={() => { navigator.clipboard.writeText(dc.code); }}
               className="shrink-0 p-1 h-[26px] flex items-center justify-center text-[var(--d-text-muted)] hover:opacity-60 transition-opacity"
@@ -319,9 +319,9 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
             title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
           >
             {dc.active ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--d-text)"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--d-text)"><path d="M8 5v14l11-7z"/></svg>
             )}
           </button>
           <button
