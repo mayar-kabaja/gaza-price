@@ -54,23 +54,69 @@ function resolvePublicImageUrl(url?: string | null): string | null {
 
 /* ── Plan data ── */
 const PLANS = [
-  { key: "free", badge: "مجاني", name: "Free", price: "0", badgeClass: "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)]", featured: false },
-  { key: "basic", badge: "أساسي", name: "Basic", price: "100", badgeClass: "bg-[var(--d-green-bg)] text-[var(--d-green)]", featured: false },
-  { key: "premium", badge: "الأفضل", name: "Premium", price: "200", badgeClass: "bg-[var(--d-green)] text-white", featured: true },
+  { key: "free", badge: "مجاني", tier: "ENTRY", sub: "جرّب الأساسيات بدون تكلفة", name: "Free", price: "0", badgeClass: "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)]", featured: false },
+  { key: "basic", badge: "أساسي", tier: "STANDARD", sub: "إدارة كاملة لمحلك", name: "Basic", price: "100", badgeClass: "bg-[var(--d-green-bg)] text-[var(--d-green)]", featured: false },
+  { key: "premium", badge: "الأفضل", tier: "PREMIUM", sub: "تجربة كاملة + تسويق احترافي", name: "Premium", price: "200", badgeClass: "bg-[var(--d-green)] text-white", featured: true },
 ] as const;
 
-const FEATURES = [
-  { name: "ظهور في القائمة",     free: true,  basic: true,  premium: true },
-  { name: "صفحة المحل",         free: true,  basic: true,  premium: true },
-  { name: "قائمة الأسعار",       free: true,  basic: true,  premium: true },
-  { name: "Toggle مفتوح/مغلق",  free: true,  basic: true,  premium: true },
-  { name: "لوحة تحكم",          free: true,  basic: true,  premium: true },
-  { name: "إحصائيات الزيارات",   free: false, basic: true,  premium: true },
-  { name: "في قسم الأبرز",       free: false, basic: false, premium: true },
-  { name: 'شارة "موثّق"',       free: false, basic: true,  premium: true },
-  { name: "تقارير الأسعار",      free: false, basic: true,  premium: true },
-  { name: "PDF المنيو",          free: false, basic: false, premium: true },
+const FREE_FEATURES = [
+  "ظهور في القائمة",
+  "صفحة المحل",
+  "قائمة الأسعار",
+  "Toggle مفتوح/مغلق",
+  "لوحة محدودة",
 ];
+
+const FREE_MISSING = [
+  "صفحة الطلبات",
+  "أكواد الخصم",
+  "إحصائيات الزيارات",
+  'شارة "موثّق"',
+  "PDF المنيو",
+];
+
+const BASIC_FEATURES = [
+  "كل مزايا المجاني",
+  "لوحة تحكم كاملة",
+  "صفحة الطلبات",
+  "أكواد الخصم",
+  "إحصائيات الزيارات",
+  'شارة "موثّق"',
+  "PDF المنيو",
+];
+
+const BASIC_MISSING = [
+  "قسم الأبرز",
+];
+
+const PREMIUM_FEATURES = [
+  "كل مزايا الأساسي",
+  "الظهور في قسم الأبرز",
+];
+
+const PREMIUM_EXCLUSIVES = [
+  "فيديو إعلان CGI & AI",
+  "نشر على غزة بريس",
+  "ترويج أكواد الخصم",
+];
+
+const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
+  free: { has: FREE_FEATURES, missing: FREE_MISSING },
+  basic: { has: BASIC_FEATURES, missing: BASIC_MISSING },
+  premium: { has: PREMIUM_FEATURES, missing: [] },
+};
+
+/* ── Feature check/x icons ── */
+const CheckIcon = () => (
+  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#E1F5EE] text-[#0F6E56] flex-shrink-0">
+    <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+  </span>
+);
+const XIcon = () => (
+  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] flex-shrink-0">
+    <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+  </span>
+);
 
 export default function OwnerDashboardPageWrapper() {
   return (
@@ -115,8 +161,8 @@ function OwnerDashboardPage() {
       );
     }
   }, [token, queryClient]);
-  const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit">("orders");
-  const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings">("home");
+  const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit" | "plans">("orders");
+  const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings" | "plans">("home");
   const [dashSearch, setDashSearch] = useState("");
   const [menuDropdown, setMenuDropdown] = useState<string | null>(null);
   const [menuPage, setMenuPage] = useState(1);
@@ -648,7 +694,7 @@ function OwnerDashboardPage() {
 
   const totalItems = place.menu.reduce((a, s) => a + s.items.length, 0);
   const availableItems = place.menu.reduce((a, s) => a + s.items.filter((i) => i.available).length, 0);
-  const planLabels: Record<string, string> = { free: "مجانية", basic: "أساسية", premium: "مميزة" };
+  const planLabels: Record<string, string> = { free: "مجانية", basic: "أساسي", premium: "الأفضل" };
 
   // Theme colors
   const t = isDark ? {
@@ -804,7 +850,7 @@ function OwnerDashboardPage() {
                 <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
                 <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
               </div>
-              <button onClick={() => setSheet("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
+              <button onClick={() => setMobileTab("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
             </div>
             {/* Quick actions */}
             <div className="grid grid-cols-2 gap-2.5">
@@ -974,6 +1020,142 @@ function OwnerDashboardPage() {
           </div>
         )}
 
+        {/* ── PLANS TAB (mobile) ── */}
+        {mobileTab === "plans" && (
+          <div className="space-y-3">
+            {/* Current plan */}
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[var(--d-text-muted)]">باقتك الحالية</p>
+                  <p className="text-[14px] font-bold text-[var(--d-text)]">{planLabels[place.plan] ?? place.plan}</p>
+                </div>
+              </div>
+              <span className={`text-[10px] font-bold py-1 px-2.5 rounded-full ${PLANS.find(p => p.key === place.plan)?.badgeClass ?? "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)]"}`}>
+                {place.plan === "free" ? "مجاني" : "مفعّل"}
+              </span>
+            </div>
+
+            {/* Plan cards */}
+            {PLANS.map((p) => {
+              const isCurrent = place.plan === p.key;
+              const isSelected = selectedPlan === p.key;
+              const isPaid = p.key !== "free";
+              const feats = PLAN_FEATURES[p.key];
+              return (
+                <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl p-4 transition-all relative ${
+                  p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"
+                }`}>
+                  {p.featured && (
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[9px] font-medium px-3 py-1 rounded-full whitespace-nowrap">الأكثر اختياراً</div>
+                  )}
+
+                  {/* Header */}
+                  <div className="mb-3">
+                    <p className={`text-[10px] tracking-[0.5px] mb-1 ${p.featured ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>{p.tier}</p>
+                    <h3 className="text-[16px] font-medium text-[var(--d-text)] mb-0.5">{p.badge}</h3>
+                    <p className="text-[11px] text-[var(--d-text-sec)]">{p.sub}</p>
+                  </div>
+
+                  {/* Price */}
+                  <div className="mb-3 pb-3 border-b border-[var(--d-border)]/50">
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-[28px] font-medium leading-none ${p.featured ? "text-[var(--d-green)]" : "text-[var(--d-text)]"}`}>{p.price}</span>
+                      <span className="text-[13px] text-[var(--d-text-sec)]">₪{p.price !== "0" ? " / شهر" : ""}</span>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-0 mb-3">
+                    {feats.has.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 py-[4px] text-[11.5px] text-[var(--d-text-sec)]">
+                        <CheckIcon />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                    {feats.missing.map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 py-[4px] text-[11.5px] text-[var(--d-text-muted)]">
+                        <XIcon />
+                        <span>{feat}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Premium exclusives box */}
+                  {p.key === "premium" && (
+                    <div className="bg-[#E1F5EE] rounded-xl p-3 mb-3">
+                      <p className="text-[10px] font-medium text-[#0F6E56] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
+                      <ul className="space-y-0">
+                        {PREMIUM_EXCLUSIVES.map((feat) => (
+                          <li key={feat} className="flex items-start gap-2 py-1 text-[11px] text-[#04342C]">
+                            <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[#0F6E56]">
+                              <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* CTA button */}
+                  <button
+                    onClick={() => setSelectedPlan(isSelected ? null : p.key)}
+                    className={`w-full py-2.5 rounded-xl text-[12px] font-medium transition-all ${
+                      isCurrent
+                        ? "bg-transparent text-[#0F6E56] border border-[#9FE1CB]"
+                        : isSelected
+                          ? "bg-[var(--d-green)] text-white"
+                          : p.featured
+                            ? "bg-[var(--d-green)] text-white"
+                            : "bg-[var(--d-card)] text-[#0F6E56] border border-[#0F6E56]"
+                    }`}
+                  >
+                    {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : `ترقية إلى ${p.badge}`}
+                  </button>
+
+                  {/* Payment inside card */}
+                  {isPaid && isSelected && !isCurrent && (
+                    <div className="mt-3 pt-3 border-t border-[var(--d-green)]/40 text-right">
+                      <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3 mb-2">
+                        <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">١. حوّل المبلغ عبر بنك فلسطين</div>
+                        <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                          <span className="text-[15px] font-bold text-[var(--d-text)] tracking-wider" dir="ltr">0567359920</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText("0567359920"); }}
+                            className="text-[10px] text-[var(--d-green)] font-bold bg-[var(--d-green-bg)] rounded-lg px-2.5 py-1"
+                          >
+                            نسخ
+                          </button>
+                        </div>
+                      </div>
+                      <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
+                        <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
+                        <a
+                          href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full bg-[#25D366] text-white font-bold text-[13px] rounded-xl py-2.5 flex items-center justify-center gap-2"
+                        >
+                          <svg viewBox="0 0 24 24" className="w-[16px] h-[16px]" fill="white">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.96 11.96 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.39 0-4.598-.788-6.379-2.117l-.446-.338-2.634.883.883-2.634-.338-.446A9.723 9.723 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z" />
+                          </svg>
+                          إرسال عبر واتساب
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* ── SETTINGS TAB ── */}
         {mobileTab === "settings" && (
           <div className="space-y-3.5">
@@ -1129,7 +1311,7 @@ function OwnerDashboardPage() {
               <p className="text-[11px] text-[var(--d-text-muted)] mb-0.5">باقتك الحالية</p>
               <p className="text-[13px] font-medium text-[var(--d-text)]">{planLabels[place.plan] ?? place.plan}</p>
             </div>
-            <button onClick={() => setSheet("plans")} className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">ترقية الباقة</button>
+            <button onClick={() => setActiveView("plans")} className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">ترقية الباقة</button>
           </div>
 
           {/* Actions */}
@@ -1150,6 +1332,7 @@ function OwnerDashboardPage() {
               {place.section === "food" && token && (
                 <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/></svg>} iconBg="bg-[#EEEDFE]" iconColor="stroke-[#3C3489]" title="أكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
               )}
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>} iconBg="bg-[#FFF4E6]" iconColor="stroke-[#C2410C]" title="الباقات" sub="اختر الباقة المناسبة لمحلك" onClick={() => setActiveView("plans")} active={activeView === "plans"} />
               <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#E6F1FB]" iconColor="stroke-[#0C447C]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="الاسم، المنطقة، الهاتف، واتساب" onClick={openEdit} last />
             </div>
           </div>
@@ -1320,6 +1503,154 @@ function OwnerDashboardPage() {
                   setDcEditId(dc.id); setSheet("addDiscount");
                 }}
               />
+            </div>
+          )}
+
+          {/* ══ PLANS PAGE ══ */}
+          {activeView === "plans" && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2.5">
+                <button onClick={() => setActiveView("orders")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div>
+                  <h2 className="text-[18px] font-medium text-[var(--d-text)]">الباقات</h2>
+                  <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">اختر الباقة المناسبة لمحلك</p>
+                </div>
+              </div>
+
+              {/* Current plan badge */}
+              <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-[var(--d-text-muted)]">باقتك الحالية</p>
+                    <p className="text-[15px] font-bold text-[var(--d-text)]">{planLabels[place.plan] ?? place.plan}</p>
+                  </div>
+                </div>
+                <span className={`text-[11px] font-bold py-1.5 px-3 rounded-full ${PLANS.find(p => p.key === place.plan)?.badgeClass ?? "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)]"}`}>
+                  {place.plan === "free" ? "مجاني" : "مفعّل"}
+                </span>
+              </div>
+
+              {/* Plan cards grid */}
+              <div className="grid grid-cols-3 gap-4 items-stretch">
+                {PLANS.map((p) => {
+                  const isCurrent = place.plan === p.key;
+                  const isSelected = selectedPlan === p.key;
+                  const isPaid = p.key !== "free";
+                  const feats = PLAN_FEATURES[p.key];
+                  return (
+                    <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl p-5 flex flex-col relative transition-all ${
+                      p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"
+                    }`}>
+                      {p.featured && (
+                        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[10.5px] font-medium px-3 py-1 rounded-full whitespace-nowrap">الأكثر اختياراً</div>
+                      )}
+
+                      {/* Header */}
+                      <div className="mb-4">
+                        <p className={`text-[11px] tracking-[0.5px] mb-1.5 ${p.featured ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>{p.tier}</p>
+                        <h3 className="text-[17px] font-medium text-[var(--d-text)] mb-1">{p.badge}</h3>
+                        <p className="text-[11.5px] text-[var(--d-text-sec)]">{p.sub}</p>
+                      </div>
+
+                      {/* Price */}
+                      <div className="mb-4 pb-4 border-b border-[var(--d-border)]/50">
+                        <div className="flex items-baseline gap-1">
+                          <span className={`text-[32px] font-medium leading-none ${p.featured ? "text-[var(--d-green)]" : "text-[var(--d-text)]"}`}>{p.price}</span>
+                          <span className="text-[14px] text-[var(--d-text-sec)]">₪{p.price !== "0" ? " / شهر" : ""}</span>
+                        </div>
+                      </div>
+
+                      {/* Features list */}
+                      <ul className="space-y-0 mb-4 flex-1">
+                        {feats.has.map((feat) => (
+                          <li key={feat} className="flex items-center gap-2 py-[5px] text-[12.5px] text-[var(--d-text-sec)]">
+                            <CheckIcon />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                        {feats.missing.map((feat) => (
+                          <li key={feat} className="flex items-center gap-2 py-[5px] text-[12.5px] text-[var(--d-text-muted)]">
+                            <XIcon />
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Premium exclusives box */}
+                      {p.key === "premium" && (
+                        <div className="bg-[#E1F5EE] rounded-xl p-3 mb-4">
+                          <p className="text-[10.5px] font-medium text-[#0F6E56] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
+                          <ul className="space-y-0">
+                            {PREMIUM_EXCLUSIVES.map((feat) => (
+                              <li key={feat} className="flex items-start gap-2 py-1 text-[12px] text-[#04342C]">
+                                <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[#0F6E56]">
+                                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </span>
+                                <span>{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* CTA button */}
+                      <button
+                        onClick={() => setSelectedPlan(isSelected ? null : p.key)}
+                        className={`w-full py-2.5 rounded-xl text-[12.5px] font-medium transition-all ${
+                          isCurrent
+                            ? "bg-transparent text-[#0F6E56] border border-[#9FE1CB]"
+                            : isSelected
+                              ? "bg-[var(--d-green)] text-white"
+                              : p.featured
+                                ? "bg-[var(--d-green)] text-white"
+                                : "bg-[var(--d-card)] text-[#0F6E56] border border-[#0F6E56]"
+                        }`}
+                      >
+                        {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : isCurrent ? "باقتك الحالية" : `ترقية إلى ${p.badge}`}
+                      </button>
+
+                      {/* Payment inside card */}
+                      {isPaid && isSelected && !isCurrent && (
+                        <div className="mt-4 pt-4 border-t border-[var(--d-green)]/40 text-right">
+                          <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3 mb-2">
+                            <div className="text-[11px] text-[var(--d-text-muted)] font-semibold mb-1.5">١. حوّل المبلغ عبر بنك فلسطين</div>
+                            <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                              <span className="text-[15px] font-bold text-[var(--d-text)] tracking-wider" dir="ltr">0567359920</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText("0567359920"); }}
+                                className="text-[10px] text-[var(--d-green)] font-bold bg-[var(--d-green-bg)] rounded-lg px-2.5 py-1"
+                              >
+                                نسخ
+                              </button>
+                            </div>
+                          </div>
+                          <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
+                            <div className="text-[11px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
+                            <a
+                              href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full bg-[#25D366] text-white font-bold text-[13px] rounded-xl py-2.5 flex items-center justify-center gap-2"
+                            >
+                              <svg viewBox="0 0 24 24" className="w-[16px] h-[16px]" fill="white">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.96 11.96 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.39 0-4.598-.788-6.379-2.117l-.446-.338-2.634.883.883-2.634-.338-.446A9.723 9.723 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z" />
+                              </svg>
+                              إرسال عبر واتساب
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -1830,96 +2161,6 @@ function OwnerDashboardPage() {
           >
             {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
           </button>
-        </div>
-      </SheetWrap>
-
-      {/* Plans Sheet */}
-      <SheetWrap open={sheet === "plans"} onClose={() => { setSheet(null); setSelectedPlan(null); }} title="الباقات" sub="اختر الباقة المناسبة لمحلك">
-        <div className="space-y-3">
-          {PLANS.map((p) => {
-            const isCurrent = place.plan === p.key;
-            const isSelected = selectedPlan === p.key;
-            const isPaid = p.key !== "free";
-            return (
-              <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl border-2 p-4 transition-all relative ${
-                isSelected ? "border-[var(--d-green)] shadow-lg shadow-[var(--d-green)]/10" : p.featured ? "border-[var(--d-green)] shadow-md shadow-[var(--d-green)]/10" : "border-[var(--d-border)]"
-              }`}>
-                {p.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[9px] font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap">الأكثر اختياراً</div>
-                )}
-                <div className="text-[11px] font-bold text-[var(--d-text-sec)] uppercase tracking-wide mb-1">{p.badge}</div>
-                <div className="flex items-baseline gap-1 mb-1">
-                  <span className="text-[32px] font-black text-[var(--d-text)] leading-none">{p.price}</span>
-                  <span className="text-[14px] font-bold text-[var(--d-text-sec)]">₪</span>
-                  {p.price !== "0" && <span className="text-[11px] text-[var(--d-text-muted)]">/ شهر</span>}
-                </div>
-                <div className="h-px bg-[var(--d-toggle-off)] my-3" />
-                <div className="space-y-2 mb-3">
-                  {FEATURES.map((f) => {
-                    const has = f[p.key as keyof typeof f] as boolean;
-                    return (
-                      <div key={f.name} className={`flex items-start gap-2 text-[11px] ${has ? "text-[var(--d-text-sec)]" : "text-[var(--d-text-muted)]"}`}>
-                        {has ? (
-                          <span className="text-[var(--d-green)] font-bold text-xs mt-px flex-shrink-0">✓</span>
-                        ) : (
-                          <span className="text-[10px] mt-px flex-shrink-0">✕</span>
-                        )}
-                        {f.name}
-                      </div>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => setSelectedPlan(isSelected ? null : p.key)}
-                  className={`w-full py-2.5 rounded-xl text-[12px] font-bold transition-all ${
-                    isCurrent
-                      ? "border-2 border-[var(--d-green)]/40 text-[var(--d-green)] bg-[var(--d-green-bg)]"
-                      : isSelected
-                        ? "bg-[var(--d-green)] text-white"
-                        : p.featured
-                          ? "bg-[var(--d-green)] text-white shadow-md shadow-[var(--d-green)]/25"
-                          : "bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)] border border-[var(--d-border)]"
-                  }`}
-                >
-                  {isCurrent ? "باقتك الحالية ✓" : isSelected ? "تم الاختيار ✓" : `اشترك في ${p.badge}`}
-                </button>
-
-                {/* Payment inside card */}
-                {isPaid && isSelected && !isCurrent && (
-                  <div className="mt-3 pt-3 border-t border-[var(--d-green)]/40 text-right">
-                    <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3 mb-2">
-                      <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">١. حوّل المبلغ عبر بنك فلسطين</div>
-                      <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl px-3 py-2.5 flex items-center justify-between">
-                        <span className="text-[15px] font-bold text-[var(--d-text)] tracking-wider" dir="ltr">0567359920</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText("0567359920"); }}
-                          className="text-[10px] text-[var(--d-green)] font-bold bg-[var(--d-green-bg)] rounded-lg px-2.5 py-1"
-                        >
-                          نسخ
-                        </button>
-                      </div>
-                    </div>
-                    <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
-                      <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
-                      <a
-                        href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-[#25D366] text-white font-bold text-[13px] rounded-xl py-2.5 flex items-center justify-center gap-2"
-                      >
-                        <svg viewBox="0 0 24 24" className="w-[16px] h-[16px]" fill="white">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.96 11.96 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.39 0-4.598-.788-6.379-2.117l-.446-.338-2.634.883.883-2.634-.338-.446A9.723 9.723 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z" />
-                        </svg>
-                        إرسال عبر واتساب
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
       </SheetWrap>
 
