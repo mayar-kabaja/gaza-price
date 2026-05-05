@@ -51,11 +51,11 @@ function daysUntil(dateStr: string): number | null {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  active:   { label: "نشط",    cls: "bg-[rgba(26,109,48,0.2)] text-[#1A6D30]" },
-  inactive: { label: "متوقف",  cls: "bg-[rgba(226,166,37,0.2)] text-[#E2A625]" },
-  expired:  { label: "منتهي",  cls: "bg-[rgba(190,50,50,0.2)] text-[#BE3232]" },
-  maxed:    { label: "مكتمل",  cls: "bg-[rgba(226,166,37,0.2)] text-[#E2A625]" },
+const STATUS_BADGE: Record<string, { label: string; cls: string; dot: string }> = {
+  active:   { label: "نشط",    cls: "bg-[#E1F5EE] text-[#0F6E56]", dot: "#1D9E75" },
+  inactive: { label: "متوقف",  cls: "bg-[#FAEEDA] text-[#854F0B]", dot: "#EF9F27" },
+  expired:  { label: "منتهي الصلاحية", cls: "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border border-[var(--d-border)]/50", dot: "#888780" },
+  maxed:    { label: "استُنفد بنجاح",  cls: "bg-[#E1F5EE] text-[#04342C]", dot: "" },
 };
 
 export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(function DashboardDiscountCodes({ token, mobile, search = "", onAddCode, onEditCode }, ref) {
@@ -231,107 +231,126 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     const status = getStatus(dc);
     const badge = STATUS_BADGE[status];
 
-
     const v = Number(dc.discount_value);
     const cleanVal = v % 1 === 0 ? v.toString() : v.toFixed(1);
     const unit = dc.discount_type === "percentage" ? "%" : "₪";
     const subtitle = dc.discount_type === "percentage" ? "خصم نسبي" : "خصم ثابت";
     const remaining = dc.expires_at ? daysUntil(dc.expires_at) : null;
+    const usagePct = dc.max_uses ? Math.min(100, Math.round((dc.used_count / dc.max_uses) * 100)) : 0;
+    const barColor = status === "inactive" ? "#EF9F27" : status === "expired" ? "#888780" : "var(--d-green)";
 
     return (
       <div
         key={dc.id}
-        className={`flex flex-col rounded-2xl bg-[var(--d-card)] border border-[var(--d-border)]/50 p-[1.125rem] gap-3.5 transition-all ${
-          isLoading ? "opacity-50 pointer-events-none" : ""
-        }`}
+        className={`flex flex-col rounded-xl p-4 transition-all ${
+          status === "expired" ? "bg-[var(--d-subtle-bg)]" : "bg-[var(--d-card)]"
+        } border border-[var(--d-border)]/50 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
       >
-        {/* ── Header: name + copy | status ── */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[17px] font-medium tracking-wide truncate text-[var(--d-text)]">{dc.code}</span>
+        {/* ── Header: status badge (right) | icons + code name (left) ── */}
+        <div className="flex items-center justify-between mb-2.5">
+          <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full whitespace-nowrap ${badge.cls}`}>
+            {status === "maxed" ? (
+              <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            ) : badge.dot ? (
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: badge.dot }} />
+            ) : null}
+            {badge.label}
+          </span>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => { navigator.clipboard.writeText(dc.code); }}
-              className="shrink-0 p-1 h-[26px] flex items-center justify-center text-[var(--d-text-muted)] hover:opacity-60 transition-opacity"
-              title="نسخ الكود"
+              className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] hover:text-[var(--d-text)] transition-colors"
+              title="نسخ"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             </button>
+            <span className="font-mono text-[13px] font-medium tracking-[0.3px] text-[var(--d-text)]">{dc.code}</span>
           </div>
-          <span className={`shrink-0 text-[12px] font-medium px-2.5 py-[3px] rounded-full whitespace-nowrap ${badge.cls}`}>
-            {badge.label}
-          </span>
         </div>
 
         {/* ── Big discount value ── */}
-        <div className="text-center py-1.5">
-          <div className="text-[40px] font-medium leading-none text-[var(--d-text)]">
-            {cleanVal}<span className="text-[22px] text-[var(--d-text-muted)] mr-0.5">{unit}</span>
-          </div>
-          <div className="text-[13px] text-[var(--d-text-muted)] mt-2">
-            {subtitle}{dc.min_order_total > 0 ? ` · حد أدنى ${Number(dc.min_order_total).toFixed(2)} ₪` : ""}
-          </div>
+        <div className="text-center my-3">
+          <p className="text-[30px] font-medium leading-none text-[var(--d-text)] tabular-nums" dir="ltr">
+            {dc.discount_type === "fixed" ? `‎₪${cleanVal}` : `${cleanVal}%`}
+          </p>
+          <p className="text-[12px] text-[var(--d-text-muted)] mt-1.5">
+            {subtitle}{dc.min_order_total > 0 ? ` · حد أدنى ₪${Number(dc.min_order_total).toFixed(0)}` : ""}
+          </p>
         </div>
 
         {/* ── Usage progress ── */}
         {dc.max_uses && (
-          <div>
-            <div className="flex justify-between text-[13px] mb-1.5">
-              <span className="text-[var(--d-text-muted)]">الاستخدام</span>
-              <span className="font-medium text-[var(--d-text)]">{dc.used_count} من {dc.max_uses}</span>
+          <div className="mb-3">
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-[11px] text-[var(--d-text-muted)]">الاستخدام</span>
+              <span className="text-[11px] tabular-nums">
+                <span className="font-medium text-[var(--d-text)]">{dc.used_count} من {dc.max_uses}</span>
+                <span className="text-[var(--d-text-muted)]"> · {usagePct}%</span>
+              </span>
             </div>
-            <div className="h-1 bg-[var(--d-border)]/30 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full bg-[#1A6D30]"
-                style={{ width: `${Math.min(100, Math.round((dc.used_count / dc.max_uses) * 100))}%` }}
-              />
+            <div className="w-full h-[5px] bg-[var(--d-subtle-bg)] rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${usagePct}%`, background: barColor }} />
             </div>
           </div>
         )}
 
-        {/* ── Expiry date ── */}
+        {/* ── KV info grid ── */}
         {dc.expires_at && (
-          <div className="flex items-center gap-2 text-[13px] flex-wrap">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${isExpired(dc) ? "text-[#BE3232]" : remaining !== null && remaining <= 7 ? "text-[#E2A625]" : "text-[var(--d-text-muted)]"}`}>
-              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            <span className="text-[var(--d-text-muted)]">{formatDate(dc.expires_at)}</span>
-            {isExpired(dc) ? (
-              <span className="text-[#BE3232] font-medium">· منتهي</span>
-            ) : remaining !== null && remaining <= 30 ? (
-              <span className="text-[#E2A625] font-medium">· خلال {remaining} يوم</span>
-            ) : null}
+          <div className={`grid grid-cols-2 gap-2 p-2.5 rounded-md mb-3 ${
+            status === "maxed" ? "bg-[#EAF3DE]" : status === "expired" ? "bg-[var(--d-card)]" : "bg-[var(--d-subtle-bg)]"
+          }`}>
+            <div>
+              <p className={`text-[10px] mb-0.5 ${
+                isExpired(dc) ? "text-[var(--d-text-muted)]" : remaining !== null && remaining <= 30 ? "text-[#A32D2D]" : "text-[var(--d-text-muted)]"
+              }`}>{isExpired(dc) ? "انتهت" : "ينتهي"}</p>
+              <p className={`text-[12px] font-medium ${
+                isExpired(dc) ? "text-[var(--d-text)]" : remaining !== null && remaining <= 30 ? "text-[#A32D2D]" : "text-[var(--d-text)]"
+              }`}>
+                {isExpired(dc)
+                  ? `قبل ${Math.abs(Math.ceil((new Date(dc.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوماً`
+                  : remaining !== null ? `خلال ${remaining} يوم` : formatDate(dc.expires_at)
+                }
+              </p>
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">استخدامات</p>
+              <p className="text-[12px] font-medium text-[var(--d-text)]">{dc.used_count}</p>
+            </div>
           </div>
         )}
 
         {/* ── Actions ── */}
-        <div className="flex gap-1.5 pt-3 border-t border-[var(--d-border)]/50">
+        <div className="flex items-center justify-between pt-2.5 border-t border-[var(--d-border)]/50">
           <button
             onClick={() => onEditCode ? onEditCode(dc) : openEdit(dc)}
-            className="flex-1 h-9 inline-flex items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium text-[var(--d-text)] bg-[var(--d-subtle-bg)] border border-[var(--d-border)]/50 hover:opacity-80 transition-opacity"
+            className="text-[12px] font-medium px-3 py-1.5 rounded-md border border-[var(--d-border)]/50 text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             تعديل
           </button>
-          <button
-            onClick={() => handleToggle(dc)}
-            disabled={!!actionLoading}
-            className="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-[var(--d-subtle-bg)] border border-[var(--d-border)]/50 hover:opacity-80 transition-opacity disabled:opacity-50"
-            title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
-          >
-            {dc.active ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--d-text)"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--d-text)"><path d="M8 5v14l11-7z"/></svg>
-            )}
-          </button>
-          <button
-            onClick={() => handleDelete(dc.id)}
-            disabled={!!actionLoading}
-            className="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-[var(--d-subtle-bg)] border border-[var(--d-border)]/50 text-[#DD2828] hover:opacity-80 transition-opacity disabled:opacity-50"
-            title="حذف"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handleToggle(dc)}
+              disabled={!!actionLoading}
+              className={`w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50 ${
+                dc.active ? "text-[var(--d-text-muted)]" : "text-[#0F6E56]"
+              }`}
+              title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
+            >
+              {dc.active ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              )}
+            </button>
+            <button
+              onClick={() => handleDelete(dc.id)}
+              disabled={!!actionLoading}
+              className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[#A32D2D] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
+              title="حذف"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -346,12 +365,12 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-[14px] text-[var(--d-text)]">أكواد الخصم</h3>
+          <h3 className="font-medium text-[16px] text-[var(--d-text)]">أكواد الخصم</h3>
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-3 py-1.5"
+            className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5"
           >
-            + إضافة كود
+            + كود جديد
           </button>
         </div>
 
@@ -420,30 +439,78 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     );
   }
 
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+
   /* ── DESKTOP LAYOUT ── */
-  const desktopFiltered = search.trim()
+  const desktopAll = search.trim()
     ? codes.filter((dc) => dc.code.toLowerCase().includes(search.trim().toLowerCase()))
     : codes;
+
+  const desktopFiltered = activeFilter === "all" ? desktopAll
+    : desktopAll.filter((dc) => getStatus(dc) === activeFilter);
+
+  const activeCnt = codes.filter(dc => getStatus(dc) === "active").length;
+  const inactiveCnt = codes.filter(dc => getStatus(dc) === "inactive").length;
+  const expiredCnt = codes.filter(dc => getStatus(dc) === "expired" || getStatus(dc) === "maxed").length;
 
   return (
     <>
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between shrink-0 pb-4">
-        <h3 className="font-display font-bold text-[16px] text-[var(--d-text)]">أكواد الخصم</h3>
+      {/* Header */}
+      <div className="flex items-center justify-between shrink-0 mb-3.5">
+        <div>
+          <h2 className="text-[18px] font-medium text-[var(--d-text)] m-0">أكواد الخصم</h2>
+          <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">شجّع زبائنك على الطلب وتتبّع أداء الأكواد</p>
+        </div>
         <button
           onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
-          className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-xl px-4 py-2.5 hover:opacity-90 transition-colors flex items-center gap-1.5"
+          className="text-[13px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3.5 py-[7px] hover:opacity-90 transition-colors"
         >
-          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          إضافة كود
+          + كود جديد
+        </button>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-4 gap-2 mb-3.5">
+        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">إجمالي الأكواد</p>
+          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{codes.length}</p>
+        </div>
+        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">نشطة</p>
+          <p className="text-[20px] font-medium text-[#0F6E56] tabular-nums">{activeCnt}</p>
+        </div>
+        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوقفة</p>
+          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{inactiveCnt}</p>
+        </div>
+        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">منتهية</p>
+          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{expiredCnt}</p>
+        </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-1.5 mb-3.5">
+        <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+          الكل · {desktopAll.length}
+        </button>
+        <button onClick={() => setActiveFilter("active")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "active" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />نشطة · {activeCnt}
+        </button>
+        <button onClick={() => setActiveFilter("inactive")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "inactive" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />متوقفة · {inactiveCnt}
+        </button>
+        <button onClick={() => setActiveFilter("expired")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "expired" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#888780]" />منتهية · {expiredCnt}
         </button>
       </div>
 
       {!onAddCode && formEl}
 
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <div key={i} className="h-[260px] rounded-2xl bg-[var(--d-border)]/20 animate-pulse" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-[240px] rounded-xl bg-[var(--d-border)]/20 animate-pulse" />)}
         </div>
       )}
 
@@ -462,7 +529,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
               <p className="text-[13px] text-[var(--d-text-muted)] mb-5 text-center">أنشئ أكواد خصم لجذب الزبائن وزيادة الطلبات</p>
               <button
                 onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
-                className="text-[13px] font-bold text-white bg-[var(--d-green)] rounded-xl px-6 py-2.5 hover:opacity-90 transition-colors shadow-lg shadow-[var(--d-green)]/20"
+                className="text-[13px] font-medium text-white bg-[var(--d-green)] rounded-lg px-5 py-2.5 hover:opacity-90 transition-colors"
               >
                 + إضافة كود خصم
               </button>
@@ -473,7 +540,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
       {!loading && desktopFiltered.length > 0 && (
         <div className="flex-1 min-h-0 overflow-y-auto pb-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {desktopFiltered.map((dc) => <div key={dc.id}>{renderCard(dc)}</div>)}
           </div>
         </div>

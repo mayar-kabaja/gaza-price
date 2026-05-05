@@ -354,8 +354,7 @@ function OwnerDashboardPage() {
   }
 
   function openEdit() {
-    populateEditForm();
-    setSheet("edit");
+    setActiveView("edit");
   }
 
   async function handleToggleOpen() {
@@ -730,7 +729,7 @@ function OwnerDashboardPage() {
 
           {/* Place identity — mobile only in header */}
           <div className="flex items-center gap-3 mb-3 relative z-[1] lg:hidden">
-            <div className="w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+            <div className="w-[50px] h-[50px] rounded-full bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
               {place.avatar_url ? (
                 <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
@@ -983,7 +982,7 @@ function OwnerDashboardPage() {
             <div>
               <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
               <div className="flex items-center gap-3">
-                <div className="w-[56px] h-[56px] rounded-[14px] bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-[56px] h-[56px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                   {place.avatar_url ? (
                     <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -1072,84 +1071,86 @@ function OwnerDashboardPage() {
       <div className="hidden lg:flex px-6 pt-8 pb-6 gap-6 items-start relative z-[2]">
 
         {/* ── RIGHT SIDEBAR ── */}
-        <div className="w-[280px] flex-shrink-0 sticky top-6 space-y-4">
-          {/* Place identity card */}
-          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm p-5">
-            <div className="flex items-center gap-3.5 mb-4">
-              <div className="w-[56px] h-[56px] rounded-2xl bg-[var(--d-subtle-bg)] border border-[var(--d-border)] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+        <div className="w-[320px] flex-shrink-0 sticky top-6 space-y-3">
+
+          {/* Identity + open status card */}
+          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)]/50 overflow-hidden">
+            <div className="flex items-center gap-3 p-3.5">
+              <div className="w-11 h-11 rounded-full bg-[var(--d-green)] flex items-center justify-center text-white text-lg font-medium flex-shrink-0 overflow-hidden">
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
+                ) : place.name.charAt(0)}
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-[15px] text-[var(--d-text)] truncate">{place.name}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {place.area && <span className="text-[11px] text-[var(--d-text-muted)]">📍 {place.area.name_ar}</span>}
-                  <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{place.type}</span>
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-medium text-[var(--d-text)] truncate">{place.name}</p>
+                <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">{place.type}{place.area ? ` · ${place.area.name_ar}` : ""}</p>
               </div>
             </div>
-            {/* Toggle */}
-            <div className="flex items-center justify-between bg-[var(--d-subtle-bg)] rounded-xl p-3">
-              <div>
-                <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
-                  {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'}` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'}`}
-                </div>
-                <div className="text-[10px] text-[var(--d-text-muted)]">
-                  {place.is_open ? 'يظهر كـ "مفتوح"' : 'يظهر كـ "مغلق"'}
-                </div>
-              </div>
-              <button onClick={handleToggleOpen} disabled={toggling} className={`w-12 h-[26px] rounded-full relative transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
+
+            <div className="h-px bg-[var(--d-border)]/50" />
+
+            <div className="px-3.5 py-3 flex items-center justify-between gap-3">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium ${place.is_open ? "bg-[#E1F5EE] text-[#0F6E56]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
+                <span className={`w-[7px] h-[7px] rounded-full ${place.is_open ? "bg-[var(--d-green)] shadow-[0_0_0_3px_rgba(29,158,117,0.18)]" : "bg-[var(--d-text-muted)]"}`} />
+                {place.is_open ? (isWorkspace ? "مساحة مفتوحة" : "محل مفتوح") : (isWorkspace ? "مساحة مغلقة" : "محل مغلق")}
+              </span>
+              <button onClick={handleToggleOpen} disabled={toggling} className={`relative w-[34px] h-[19px] rounded-full transition-colors flex-shrink-0 ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}>
                 {actionLoading === "toggle-open" ? (
-                  <div className="absolute inset-0 flex items-center justify-center"><div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /></div>
+                  <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
                 ) : (
-                  <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow transition-all ${place.is_open ? "right-[25px]" : "right-[3px]"}`} />
+                  <div className={`absolute top-[2px] w-[15px] h-[15px] rounded-full bg-white shadow transition-all ${place.is_open ? "left-[2px]" : "left-[17px]"}`} />
                 )}
               </button>
             </div>
+            <p className="text-[11px] text-[var(--d-text-muted)] px-3.5 pb-3">
+              {place.is_open ? "الزبائن يستطيعون استقبال الطلبات الآن" : "الزبائن لا يستطيعون الطلب حالياً"}
+            </p>
           </div>
 
           {/* Stats */}
           {!isWorkspace && (
-            <div className="grid grid-cols-3 gap-3">
-              {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
-                <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-4 px-2 text-center shadow-sm">
-                  <div className="font-bold text-[24px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
-                  <div className="text-[10px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { num: place.menu.length, label: "أقسام" },
+                { num: totalItems, label: "صنف" },
+                { num: availableItems, label: "متوفر", color: "#0F6E56" },
+              ].map((s) => (
+                <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3 text-center">
+                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">{s.label}</p>
+                  <p className="text-[22px] font-medium tabular-nums" style={{ color: s.color || "var(--d-text)" }}>{s.num}</p>
                 </div>
               ))}
             </div>
           )}
 
           {/* Plan */}
-          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm px-5 py-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--d-text-muted)] font-semibold">الباقة:</span>
-              <span className="text-xs font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
+          <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)]/50 px-3.5 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-[var(--d-text-muted)] mb-0.5">باقتك الحالية</p>
+              <p className="text-[13px] font-medium text-[var(--d-text)]">{planLabels[place.plan] ?? place.plan}</p>
             </div>
-            <button onClick={() => setSheet("plans")} className="text-xs font-bold text-[var(--d-green)] hover:underline">ترقية ←</button>
+            <button onClick={() => setSheet("plans")} className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">ترقية الباقة</button>
           </div>
 
           {/* Actions */}
           <div>
-            <div className="text-sm font-bold text-[var(--d-text-muted)] mb-2 pr-0.5">الإجراءات</div>
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] overflow-hidden shadow-sm">
+            <p className="text-[11px] text-[var(--d-text-muted)] mb-2 pr-1 tracking-wide">الإجراءات</p>
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)]/50 overflow-hidden">
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>} iconBg="bg-amber-500/10" iconColor="stroke-amber-600" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M3 7h18l-2 13H5L3 7z"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>} iconBg="bg-[#FAEEDA]" iconColor="stroke-[#854F0B]" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
               )}
               {isWorkspace ? (
                 <>
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#E1F5EE]" iconColor="stroke-[#0F6E56]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#E6F1FB]" iconColor="stroke-[#0C447C]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
                 </>
               ) : (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x={9} y={3} width={6} height={4} rx={2} /><line x1={9} y1={12} x2={15} y2={12} /><line x1={9} y1={16} x2={13} y2={16} /></svg>} iconBg="bg-[var(--d-green-bg)]" iconColor="stroke-[var(--d-green)]" title="إدارة القائمة" sub={`${totalItems} صنف — تعديل الأسعار والتوفر`} badge={<span className="text-[9px] font-bold py-1 px-2 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{totalItems} صنف</span>} onClick={() => setActiveView("menu")} active={activeView === "menu"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>} iconBg="bg-[#E1F5EE]" iconColor="stroke-[#0F6E56]" title="إدارة القائمة" sub="تعديل الأسعار والتوفر" badge={<span className="text-[11px] font-medium py-0.5 px-[7px] rounded-full bg-[#E1F5EE] text-[#0F6E56]">{totalItems} صنف</span>} onClick={() => setActiveView("menu")} active={activeView === "menu"} />
               )}
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>} iconBg="bg-violet-500/10" iconColor="stroke-violet-600" title="اكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/></svg>} iconBg="bg-[#EEEDFE]" iconColor="stroke-[#3C3489]" title="أكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
               )}
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-indigo-bg)]" iconColor="stroke-[var(--d-green)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="اسم، منطقة، هاتف، واتساب" onClick={openEdit} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1={12} y1={2} x2={12} y2={15} /></svg>} iconBg="bg-[var(--d-gray-bg)]" iconColor="stroke-[var(--d-text-sec)]" title={isWorkspace ? "مشاركة صفحة المساحة" : "مشاركة صفحة المحل"} sub={isWorkspace ? "شارك رابط مساحتك" : "شارك رابط محلك"} onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} last />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#E6F1FB]" iconColor="stroke-[#0C447C]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="الاسم، المنطقة، الهاتف، واتساب" onClick={openEdit} last />
             </div>
           </div>
 
@@ -1160,199 +1161,140 @@ function OwnerDashboardPage() {
 
           {/* Menu management — inline on desktop */}
           {activeView === "menu" && !isWorkspace && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] shadow-sm">
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4">
-                <h3 className="font-bold text-[17px] text-[var(--d-text)]">إدارة القائمة</h3>
+            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm space-y-3">
+              {/* Page header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-[18px] text-[var(--d-text)]">إدارة القائمة</h3>
+                  <p className="text-[12px] text-[var(--d-text-muted)] tabular-nums mt-0.5">{totalItems} صنف · {availableItems} متوفر · {place.menu.length} أقسام</p>
+                </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg-hover)] transition-colors">+ قسم</button>
-                  <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-colors">+ إضافة صنف</button>
+                  <button onClick={() => setSheet("addSection")} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-card)] text-[var(--d-text)] border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors">+ إضافة قسم</button>
+                  <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">+ إضافة صنف</button>
                 </div>
               </div>
 
-              {/* Section chips */}
-              <div className="px-5 py-3 flex gap-2 overflow-x-auto no-scrollbar">
-                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-semibold text-[var(--d-text-muted)] whitespace-nowrap shrink-0">الأقسام:</span>
-                {place.menu.map((sec) => (
-                  <div key={sec.id} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 bg-[var(--d-card)] text-[var(--d-text-muted)] border border-[var(--d-border)] hover:border-[var(--d-green)]/30 transition-all">
-                    <span className="text-[var(--d-green)]">{getItemIcon(sec.name)('w-3.5 h-3.5')}</span>
-                    <span className="text-[var(--d-text)]">{sec.name}</span>
-                    <span>({sec.items.length})</span>
-                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[var(--d-text-muted)] hover:text-red-500 transition-colors">
-                      <svg viewBox="0 0 12 12" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1={2} y1={2} x2={10} y2={10}/><line x1={10} y1={2} x2={2} y2={10}/></svg>
-                    </button>
-                  </div>
+              {/* Category filter strip */}
+              <div className="flex items-center gap-1.5 flex-wrap pb-3 border-b border-[var(--d-border)]/50">
+                <span className="text-[12px] text-[var(--d-text-muted)] ml-1">الأقسام:</span>
+                {place.menu.filter(s => s.items.length > 0).map((sec) => (
+                  <button key={sec.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] border border-[var(--d-border)]/50 bg-transparent text-[var(--d-text)] hover:border-[var(--d-border)] transition-colors">
+                    <span className="shrink-0 text-[var(--d-green)]">{getItemIcon(sec.name)('w-5 h-5')}</span>
+                    {sec.name} · {sec.items.length}
+                  </button>
                 ))}
+                {place.menu.filter(s => s.items.length === 0).length > 0 && (
+                  <>
+                    <span className="w-px h-4 bg-[var(--d-border)]/50 mx-1" />
+                    {place.menu.filter(s => s.items.length === 0).map((sec) => (
+                      <button key={`empty-chip-${sec.id}`} onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] border border-dashed border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:border-[var(--d-border)] transition-colors">
+                        + {sec.name}
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
 
-              {/* Table */}
-              <div className="mx-4 mb-4 rounded-2xl border border-[var(--d-border)] overflow-hidden">
-                <table className="w-full text-[13px] text-right">
-                  <thead>
-                    <tr className="border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">#</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">الصورة</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">الصنف</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">القسم</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">السعر</th>
-                      <th className="px-4 py-3 text-right text-[11px] font-bold text-[var(--d-text-muted)]">إجراء</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
-                      const allItems = dashSearch.trim()
-                        ? allItemsRaw.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || item.sectionName.toLowerCase().includes(dashSearch.trim().toLowerCase()))
-                        : allItemsRaw;
-                      const menuTotalPages = Math.ceil(allItems.length / MENU_PER_PAGE);
-                      const paginatedItems = allItems.slice((menuPage - 1) * MENU_PER_PAGE, menuPage * MENU_PER_PAGE);
-                      const emptySecIds = place.menu.filter(s => s.items.length === 0).map(s => s.id);
-                      return (
-                        <>
-                          {paginatedItems.map((item, idx) => {
-                            const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
-                            const isSectionLoading = actionLoading === `delete-section-${item.sectionId}`;
-                            const rowNum = (menuPage - 1) * MENU_PER_PAGE + idx + 1;
-                            return (
-                              <tr key={item.id} className={`border-b border-[var(--d-border)]/60 transition-colors ${isItemLoading || isSectionLoading ? "pointer-events-none opacity-50" : ""} hover:bg-[var(--d-subtle-bg)]`}>
-                                <td className={`px-4 py-3 text-[12px] text-[var(--d-text-muted)] tabular-nums ${!item.available ? "opacity-40" : ""}`}>{rowNum}</td>
-                                <td className={`px-4 py-3 ${!item.available ? "opacity-40" : ""}`}>
-                                  {resolvePublicImageUrl(item.photo_url) ? (
-                                    <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-lg object-cover" />
-                                  ) : (
-                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
-                                      {getItemIcon(item.name)('w-5 h-5')}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className={`px-5 py-3 ${!item.available ? "opacity-40" : ""}`}>
-                                  <div className="min-w-0">
-                                    <div className="font-semibold text-[13px] text-[var(--d-text)] truncate">{item.name}</div>
-                                    {item.description && <div className="text-[10px] text-[var(--d-text-muted)] truncate max-w-[200px]">{item.description}</div>}
-                                  </div>
-                                </td>
-                                <td className={`px-3 py-3 ${!item.available ? "opacity-40" : ""}`}>
-                                  <span className="text-[11px] text-[var(--d-text-muted)]">{item.sectionName}</span>
-                                </td>
-                                <td className={`px-3 py-3 ${!item.available ? "opacity-40" : ""}`}>
-                                  <span className={`font-bold text-[13px] tabular-nums ${Number(item.price) > 0 ? "text-[var(--d-text)]" : "text-[var(--d-text-muted)]"}`}>
-                                    {Number(item.price) > 0 ? `₪${item.price}` : "—"}
-                                  </span>
-                                </td>
-                                <td className="px-5 py-3 text-center">
-                                  <div className="relative inline-block">
-                                    <button
-                                      onClick={() => setMenuDropdown(menuDropdown === item.id ? null : item.id)}
-                                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors"
-                                    >
-                                      <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="3" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="13" cy="8" r="1.5"/></svg>
-                                    </button>
-                                    {menuDropdown === item.id && (
-                                      <>
-                                        <div className="fixed inset-0 z-10" onClick={() => setMenuDropdown(null)} />
-                                        <div className="absolute left-0 top-full mt-1 z-20 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg py-1 min-w-[140px]">
-                                          <button
-                                            onClick={() => { openEditItem(item); setMenuDropdown(null); }}
-                                            disabled={!!actionLoading}
-                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors text-right"
-                                          >
-                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
-                                            تعديل
-                                          </button>
-                                          <button
-                                            onClick={() => { handleToggleItem(item.id); setMenuDropdown(null); }}
-                                            disabled={!!actionLoading}
-                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-blue-600 hover:bg-blue-50 transition-colors text-right"
-                                          >
-                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="8" cy="8" r="5"/>{item.available ? <path d="M5 8l2 2 4-4"/> : <path d="M6 6l4 4M10 6l-4 4"/>}</svg>
-                                            {item.available ? "إيقاف التوفر" : "تفعيل التوفر"}
-                                          </button>
-                                          <div className="border-t border-[var(--d-border)] my-1" />
-                                          <button
-                                            onClick={() => { handleDeleteItem(item.id); setMenuDropdown(null); }}
-                                            disabled={!!actionLoading}
-                                            className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-right"
-                                          >
-                                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                                            حذف
-                                          </button>
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </>
-                      );
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Empty sections — only on last page */}
-              {menuPage >= Math.ceil(totalItems / MENU_PER_PAGE) && place.menu.filter(s => s.items.length === 0).map((sec) => (
-                <div key={`empty-${sec.id}`} className="flex items-center justify-between px-5 py-4 border-t border-[var(--d-border)]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--d-green)] border border-dashed border-[var(--d-border)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
-                      {getItemIcon(sec.name)('w-6 h-6')}
-                    </div>
-                    <span className="font-bold text-[14px] text-[var(--d-text)]">{sec.name}</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5 flex-1 mx-4">
-                    <span className="text-[13px] font-semibold text-[var(--d-text)]">لا توجد أصناف في قسم {sec.name}</span>
-                    <span className="text-[11px] text-[var(--d-text-muted)]">ابدأ بإضافة أول صنف ليظهر في القائمة</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-lg px-4 py-2 hover:opacity-90 transition-colors">+ إضافة صنف</button>
-                    <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[12px] font-bold text-red-500 border border-red-500/30 rounded-lg px-4 py-2 hover:bg-red-500/5 transition-colors flex items-center gap-1">
-                      <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                      حذف القسم
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* Pagination */}
+              {/* Section cards */}
               {(() => {
-                const menuTotalPages = Math.ceil(totalItems / MENU_PER_PAGE);
-                return menuTotalPages > 1 ? (
-                  <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--d-border)]">
-                    <span className="text-[11px] text-[var(--d-text-muted)]">عرض {((menuPage - 1) * MENU_PER_PAGE) + 1}-{Math.min(menuPage * MENU_PER_PAGE, totalItems)} من {totalItems}</span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setMenuPage((p) => Math.max(1, p - 1))}
-                        disabled={menuPage === 1}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30"
-                      >
-                        السابق
-                      </button>
-                      {Array.from({ length: menuTotalPages }, (_, i) => i + 1).map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setMenuPage(p)}
-                          className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-colors ${
-                            p === menuPage
-                              ? "border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)]"
-                              : "text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)]"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => setMenuPage((p) => Math.min(menuTotalPages, p + 1))}
-                        disabled={menuPage === menuTotalPages}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30"
-                      >
-                        التالي
-                      </button>
+                const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
+                const filteredItems = dashSearch.trim()
+                  ? allItemsRaw.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || item.sectionName.toLowerCase().includes(dashSearch.trim().toLowerCase()))
+                  : allItemsRaw;
+
+                // Group by section
+                const sectionGroups = place.menu.filter(s => s.items.length > 0).map((sec) => ({
+                  ...sec,
+                  filteredItems: filteredItems.filter(item => item.sectionId === sec.id),
+                })).filter(s => s.filteredItems.length > 0);
+
+                return sectionGroups.map((sec) => (
+                  <div key={sec.id} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
+                    {/* Section header */}
+                    <div className="bg-[var(--d-subtle-bg)] px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-[7px] h-[7px] rounded-full" style={{ background: getItemBgColor(sec.name).replace(/0\.\d+\)/, '1)') || 'var(--d-green)' }} />
+                        <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
+                        <span className="text-[11px] text-[var(--d-text-muted)] tabular-nums">· {sec.items.length} أصناف</span>
+                      </div>
+                      <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-medium text-[var(--d-green)] hover:underline">+ صنف جديد</button>
                     </div>
+
+                    {/* Items */}
+                    {sec.filteredItems.map((item) => {
+                      const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`grid items-center gap-2.5 px-3.5 py-2.5 border-t border-[var(--d-border)]/50 first:border-t-0 hover:bg-[var(--d-subtle-bg)]/50 transition-colors ${isItemLoading ? "pointer-events-none opacity-50" : ""}`}
+                          style={{ gridTemplateColumns: "44px 1fr 70px 30px 28px" }}
+                        >
+                          {/* Thumbnail */}
+                          {resolvePublicImageUrl(item.photo_url) ? (
+                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-11 h-11 rounded-lg object-cover" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
+                              {getItemIcon(item.name)('w-6 h-6')}
+                            </div>
+                          )}
+
+                          {/* Name + description */}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
+                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[#F1EFE8] text-[#5F5E5A] shrink-0">غير متوفر</span>}
+                            </div>
+                            {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
+                          </div>
+
+                          {/* Price */}
+                          <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums text-left" dir="ltr">
+                            {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
+                          </p>
+
+                          {/* Toggle */}
+                          <button
+                            onClick={() => handleToggleItem(item.id)}
+                            disabled={!!actionLoading}
+                            className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[#B4B2A9]"}`}
+                          >
+                            <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
+                          </button>
+
+                          {/* Menu */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setMenuDropdown(menuDropdown === item.id ? null : item.id)}
+                              className="px-1.5 py-0.5 text-[14px] leading-none tracking-widest text-[var(--d-text-muted)] rounded hover:bg-[var(--d-subtle-bg)] border border-transparent hover:border-[var(--d-border)]/50 transition-colors"
+                            >
+                              ⋯
+                            </button>
+                            {menuDropdown === item.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setMenuDropdown(null)} />
+                                <div className="absolute left-0 top-full mt-1 z-20 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg py-1 min-w-[140px]">
+                                  <button onClick={() => { openEditItem(item); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors text-right">
+                                    <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                                    تعديل
+                                  </button>
+                                  <div className="border-t border-[var(--d-border)] my-1" />
+                                  <button onClick={() => { handleDeleteItem(item.id); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-right">
+                                    <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                                    حذف
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : null;
+                ));
               })()}
 
+              {/* Helper note */}
+              <p className="text-[11px] text-[var(--d-text-muted)] text-left">اسحب الأيقونة لإعادة الترتيب</p>
             </div>
           )}
 
@@ -1381,6 +1323,143 @@ function OwnerDashboardPage() {
             </div>
           )}
 
+          {/* ══ PROFILE PAGE ══ */}
+          {activeView === "edit" && (
+            <div className="space-y-3.5">
+              {/* Page header */}
+              <div className="flex items-center gap-2.5">
+                <button onClick={() => setActiveView("orders")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div>
+                  <h2 className="text-[18px] font-medium text-[var(--d-text)]">{isWorkspace ? "بيانات المساحة" : "بيانات المحل"}</h2>
+                  <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">المعلومات التي يراها الزبائن في صفحتك العامة</p>
+                </div>
+              </div>
+
+              {/* Hero card */}
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-xl overflow-hidden">
+                <div className="h-[80px] bg-[var(--d-green)] relative overflow-hidden">
+                  <svg width="100%" height="100%" viewBox="0 0 680 80" className="absolute inset-0 opacity-60" preserveAspectRatio="none">
+                    <circle cx="540" cy="20" r="60" fill="white" opacity="0.08"/>
+                    <circle cx="120" cy="100" r="80" fill="white" opacity="0.06"/>
+                    <circle cx="340" cy="-20" r="40" fill="white" opacity="0.05"/>
+                  </svg>
+                </div>
+                <div className="px-4 pb-3.5 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="-mt-7 w-[60px] h-[60px] rounded-full border-[3px] border-white bg-[var(--d-green)] flex items-center justify-center text-white text-[22px] font-medium shrink-0 overflow-hidden shadow-md relative z-10">
+                      {place.avatar_url ? (
+                        <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : place.name.charAt(0)}
+                    </div>
+                    <div className="pt-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-[17px] font-medium text-[var(--d-text)]">{place.name}</h2>
+                        <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full ${place.is_open ? "bg-[#E1F5EE] text-[#0F6E56]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[#1D9E75]" : "bg-[var(--d-text-muted)]"}`} />
+                          {place.is_open ? "مفتوح" : "مغلق"}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-[var(--d-text-muted)] mt-1">{place.type || (place.section === "food" ? "مطعم" : "متجر")}{place.area ? ` · ${place.area.name_ar}` : ""}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="mt-3 text-[12px] font-medium px-3 py-1.5 rounded-md border border-[var(--d-border)]/50 text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors">تعديل</button>
+                </div>
+
+                {/* Public link bar */}
+                <div className="bg-[var(--d-subtle-bg)] px-3.5 py-2.5 flex items-center gap-2 text-[12px] border-t border-[var(--d-border)]/50">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--d-text-muted)]"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                  <span className="text-[var(--d-text-muted)] shrink-0">الرابط العام:</span>
+                  <code className="font-mono flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[var(--d-text)] text-[12px]" dir="ltr">gazaprice.com/{place.name}</code>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => navigator.clipboard.writeText(`https://gazaprice.com/${place.name}`)} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="نسخ">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+                    <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`https://gazaprice.com/${place.name}`)}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="مشاركة">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    </button>
+                    <button onClick={() => window.open(`https://gazaprice.com/${place.name}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="فتح">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
+                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">أصناف القائمة</p>
+                  <p className="text-[22px] font-medium text-[var(--d-text)] tabular-nums">{totalItems}</p>
+                </div>
+                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
+                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">الأقسام</p>
+                  <p className="text-[22px] font-medium text-[var(--d-text)] tabular-nums">{place.menu.length}</p>
+                </div>
+                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
+                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوفر</p>
+                  <p className="text-[22px] font-medium text-[#0F6E56] tabular-nums">{availableItems}</p>
+                </div>
+              </div>
+
+              {/* Contact info section */}
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--d-border)]/50">
+                  <h3 className="text-[14px] font-medium text-[var(--d-text)]">معلومات التواصل</h3>
+                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="text-[12px] font-medium text-[#0F6E56] hover:bg-[var(--d-subtle-bg)] px-2 py-1 rounded transition-colors">تعديل</button>
+                </div>
+                <div className="px-4 py-1.5">
+                  {/* Phone */}
+                  {place.phone && (
+                    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
+                      <div className="w-8 h-8 rounded-lg bg-[#E6F1FB] flex items-center justify-center shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0C447C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[var(--d-text-muted)]">رقم الهاتف</p>
+                        <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.phone.replace(/(\d{3})(\d{2})(\d{3})(\d{4})/, '+$1 $2 $3 $4')}</p>
+                      </div>
+                      <button onClick={() => navigator.clipboard.writeText(place.phone || '')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] hover:text-[var(--d-text)] transition-colors" title="نسخ">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      </button>
+                    </div>
+                  )}
+                  {/* WhatsApp */}
+                  {place.whatsapp && (
+                    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
+                      <div className="w-8 h-8 rounded-lg bg-[#E1F5EE] flex items-center justify-center shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[var(--d-text-muted)]">واتساب</p>
+                        <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.whatsapp.replace(/(\d{3})(\d{2})(\d{3})(\d{4})/, '+$1 $2 $3 $4')}</p>
+                      </div>
+                      <button onClick={() => window.open(`https://wa.me/${place.whatsapp?.replace(/\D/g, '')}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] hover:text-[var(--d-text)] transition-colors" title="فتح في واتساب">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </button>
+                    </div>
+                  )}
+                  {/* Area & Address */}
+                  <div className="flex items-start gap-3 py-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#FAEEDA] flex items-center justify-center shrink-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-[var(--d-text-muted)]">المنطقة</p>
+                      <p className="text-[13px] font-medium text-[var(--d-text)] mt-0.5">{place.area?.name_ar || "—"}</p>
+                      {place.address && (
+                        <>
+                          <p className="text-[11px] text-[var(--d-text-muted)] mt-1.5">العنوان التفصيلي</p>
+                          <p className="text-[13px] text-[var(--d-text)] mt-0.5 leading-relaxed">{place.address}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
 
         </div>
       </div>
@@ -1524,7 +1603,7 @@ function OwnerDashboardPage() {
           <div>
             <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
             <div className="flex items-center gap-3">
-              <div className="w-[56px] h-[56px] rounded-[14px] bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-[56px] h-[56px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -1966,21 +2045,24 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
   onClick?: () => void; last?: boolean; active?: boolean;
 }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 lg:gap-4 px-4 py-3.5 lg:py-4 text-right transition-colors hover:bg-[var(--d-card-hover)] active:bg-[var(--d-card-hover)] ${active ? "bg-[var(--d-card-hover)]" : ""} ${last ? "" : "border-b border-[var(--d-border)]"}`}>
-      <div className={`w-[42px] h-[42px] lg:w-[48px] lg:h-[48px] rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-        <svg viewBox="0 0 24 24" className={`w-5 h-5 lg:w-6 lg:h-6 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
-        </svg>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13px] lg:text-sm text-[var(--d-text)]">{title}</div>
-        <div className="text-[11px] lg:text-xs text-[var(--d-text-muted)]">{sub}</div>
-      </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {badge}
-        <span className="text-[var(--d-text-muted)] text-sm">‹</span>
-      </div>
-    </button>
+    <>
+      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-subtle-bg)] ${active ? "bg-[var(--d-subtle-bg)]" : ""}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <svg viewBox="0 0 24 24" className={`w-4 h-4 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium text-[var(--d-text)] mb-0.5">{title}</p>
+          <p className="text-[12px] text-[var(--d-text-muted)] leading-snug">{sub}</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {badge}
+          <span className="text-[var(--d-text-muted)] text-sm">‹</span>
+        </div>
+      </button>
+      {!last && <div className="h-px bg-[var(--d-border)]/50" />}
+    </>
   );
 }
 

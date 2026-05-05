@@ -28,13 +28,13 @@ interface Order {
 }
 
 const STATUS_TABS = [
-  { value: "", label: "الكل" },
-  { value: "today", label: "اليوم" },
-  { value: "pending", label: "بانتظار" },
-  { value: "accepted", label: "مقبول" },
-  { value: "preparing", label: "تحضير" },
-  { value: "ready", label: "جاهز" },
-  { value: "cancelled", label: "ملغي" },
+  { value: "", label: "الكل", dot: "" },
+  { value: "pending", label: "بانتظار", dot: "#EF9F27" },
+  { value: "accepted", label: "مقبول", dot: "#378ADD" },
+  { value: "preparing", label: "تحضير", dot: "#7F77DD" },
+  { value: "ready", label: "جاهز", dot: "#97C459" },
+  { value: "rejected", label: "مرفوض", dot: "#E24B4A" },
+  { value: "cancelled", label: "ملغي", dot: "#888780" },
 ];
 
 function isToday(dateStr: string): boolean {
@@ -44,13 +44,13 @@ function isToday(dateStr: string): boolean {
 }
 
 const STATUS_COLORS: Record<string, { label: string; bg: string; text: string; fill: string }> = {
-  pending:   { label: "بالانتظار",    bg: "rgba(255,181,10,0.1)",  text: "#FFB50A", fill: "#FFB50A" },
-  accepted:  { label: "مقبول",       bg: "rgba(74,44,115,0.1)",   text: "#4A2C73", fill: "#4A2C73" },
-  preparing: { label: "قيد التحضير",  bg: "rgba(38,72,158,0.1)",   text: "#26489E", fill: "#26489E" },
-  ready:     { label: "جاهز",        bg: "rgba(90,29,125,0.1)",   text: "#5A1D7D", fill: "#5A1D7D" },
-  delivered: { label: "تم التسليم",   bg: "rgba(29,125,34,0.1)",   text: "#1D7D22", fill: "#1D7D22" },
-  rejected:  { label: "مرفوض",       bg: "rgba(218,43,43,0.1)",   text: "#DA2B2B", fill: "#DA2B2B" },
-  cancelled: { label: "ملغي",        bg: "rgba(150,150,150,0.1)", text: "#969696", fill: "#969696" },
+  pending:   { label: "بانتظار",     bg: "#FEF3CD",  text: "#7A5D0B", fill: "#EF9F27" },
+  accepted:  { label: "مقبول",       bg: "#E6F1FB",  text: "#0C447C", fill: "#378ADD" },
+  preparing: { label: "تحضير",       bg: "#EEEDF9",  text: "#3E3794", fill: "#7F77DD" },
+  ready:     { label: "جاهز",        bg: "#EDF5E0",  text: "#3D6B12", fill: "#97C459" },
+  delivered: { label: "تم التسليم",   bg: "#E1F5EE",  text: "#0F6E56", fill: "#1D9E75" },
+  rejected:  { label: "مرفوض",       bg: "#FCEBEB",  text: "#791F1F", fill: "#E24B4A" },
+  cancelled: { label: "ملغي",        bg: "#F1EFE8",  text: "#444441", fill: "#888780" },
 };
 
 function StatusIcon({ status }: { status: string }) {
@@ -108,12 +108,37 @@ function StatusIcon({ status }: { status: string }) {
 function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "lg" }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.cancelled;
   const isLg = size === "lg";
+  const iconColor = s.text;
+  let icon: React.ReactNode = null;
+  switch (status) {
+    case "pending":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke={iconColor} strokeWidth="1.5" fill="none"/><path d="M8 5v3.5l2.5 1.5" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round"/></svg>;
+      break;
+    case "accepted":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 8-8" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+      break;
+    case "preparing":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke={iconColor} strokeWidth="1.5" fill="none"/><path d="M8 5v3l2 2" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round"/></svg>;
+      break;
+    case "ready":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+      break;
+    case "delivered":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M2 8l3 3 7-7" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 11l3 3 7-7" stroke={iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+      break;
+    case "rejected":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke={iconColor} strokeWidth="2" strokeLinecap="round"/></svg>;
+      break;
+    case "cancelled":
+      icon = <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="10" height="10" rx="1" stroke={iconColor} strokeWidth="1.5" fill="none"/><path d="M5 8h6" stroke={iconColor} strokeWidth="1.5" strokeLinecap="round"/></svg>;
+      break;
+  }
   return (
     <span
-      className={`inline-flex items-center gap-1 font-medium rounded-full shrink-0 ${isLg ? "px-3.5 py-2.5 text-[14px]" : "px-3 py-1.5 text-[11px]"}`}
+      className={`inline-flex items-center gap-1 font-medium rounded-full shrink-0 whitespace-nowrap ${isLg ? "px-2.5 py-1 text-[12px]" : "px-2 py-0.5 text-[11px]"}`}
       style={{ background: s.bg, color: s.text }}
     >
-      <StatusIcon status={status} />
+      {icon}
       {s.label}
     </span>
   );
@@ -312,25 +337,21 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h3 className="font-bold text-[16px] text-[var(--d-text)]">الطلبات</h3>
-          {pendingCount > 0 && (
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600">
-              {pendingCount} بانتظار
-            </span>
-          )}
-        </div>
-        <button
-          onClick={async () => { setTogglingOrders(true); try { await onToggleOrders(); } finally { setTogglingOrders(false); } }}
-          disabled={togglingOrders}
-          className={`relative w-10 h-[22px] rounded-full transition-colors ${ordersEnabled ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}
-        >
-          {togglingOrders ? (
-            <div className="absolute inset-0 flex items-center justify-center"><div className="w-3.5 h-3.5 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
-          ) : (
-            <div className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow transition-all ${ordersEnabled ? "right-[3px]" : "right-[21px]"}`} />
-          )}
-        </button>
+        <h3 className="font-medium text-[18px] text-[var(--d-text)]">الطلبات</h3>
+        <label className="flex items-center gap-2 text-[13px] text-[var(--d-text-muted)] cursor-pointer select-none">
+          <span>تحديث تلقائي</span>
+          <button
+            onClick={async () => { setTogglingOrders(true); try { await onToggleOrders(); } finally { setTogglingOrders(false); } }}
+            disabled={togglingOrders}
+            className={`relative w-[30px] h-[17px] rounded-full transition-colors ${ordersEnabled ? "bg-[var(--d-green)]" : "bg-[var(--d-border)]"}`}
+          >
+            {togglingOrders ? (
+              <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
+            ) : (
+              <div className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${ordersEnabled ? "left-[2px]" : "left-[15px]"}`} />
+            )}
+          </button>
+        </label>
       </div>
 
       {!ordersEnabled && (
@@ -341,8 +362,8 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
       {ordersEnabled && (
         <>
-          {/* Filter tabs */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {/* Filter chips */}
+          <div className="flex flex-wrap gap-1.5">
             {STATUS_TABS.map((tab) => {
               const count = tab.value ? (counts[tab.value] || 0) : orders.length;
               const isActive = filter === tab.value;
@@ -350,13 +371,14 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
                 <button
                   key={tab.value}
                   onClick={() => setFilter(tab.value)}
-                  className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] shrink-0 transition-all border ${
                     isActive
-                      ? "border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)]"
-                      : "bg-[var(--d-card)] text-[var(--d-text-muted)] border border-[var(--d-border)] hover:border-[var(--d-green)]/30"
+                      ? "border-transparent bg-[#E1F5EE] text-[#0F6E56] font-medium"
+                      : "border-[var(--d-border)]/50 bg-transparent text-[var(--d-text)] hover:border-[var(--d-border)]"
                   }`}
                 >
-                  {tab.label}{count > 0 ? ` (${count})` : ""}
+                  {tab.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tab.dot }} />}
+                  {tab.label} · {count}
                 </button>
               );
             })}
@@ -754,150 +776,70 @@ function OrderCards({ orders, mobile, rejectId, setRejectId, rejectReason, setRe
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--d-border)] overflow-hidden bg-[var(--d-card)]">
-      <table className="w-full text-right">
+    <div className="rounded-2xl border border-[var(--d-border)]/50 overflow-hidden bg-[var(--d-card)]">
+      <table className="w-full text-right" style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: 50 }} />
+          <col style={{ width: 120 }} />
+          <col style={{ width: 140 }} />
+          <col style={{ width: 72 }} />
+          <col style={{ width: 78 }} />
+          <col style={{ width: 100 }} />
+          <col style={{ width: 38 }} />
+        </colgroup>
         <thead>
-          <tr className="border-b border-[var(--d-border)] bg-[var(--d-subtle-bg)]">
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">#</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">العميل</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">رقم الواتس</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">الوقت</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">المجموع</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">الحالة</th>
-            <th className="px-4 py-3 text-[11px] font-bold text-[var(--d-text-muted)]">الإجراءات</th>
+          <tr className="bg-[var(--d-subtle-bg)]">
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">#</th>
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">العميل</th>
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الواتس</th>
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الوقت</th>
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">المجموع</th>
+            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الحالة</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {orders.map((order) => {
-          
+
             const isUpdating = updateMutation.isPending && updateMutation.variables?.orderId === order.id;
             const isDead = order.status === "cancelled" || order.status === "rejected";
+            const isActionable = !isDead && (order.status === "pending" || order.status === "accepted" || order.status === "preparing" || order.status === "ready");
             return (
               <tr
                 key={order.id}
-                className={`border-b border-[var(--d-border)] last:border-0 transition-colors hover:bg-[var(--d-subtle-bg)] ${
-                  isDead ? "opacity-60" : ""
+                onClick={() => onSelect?.(order)}
+                className={`border-t border-[var(--d-border)]/50 transition-colors cursor-pointer hover:bg-[var(--d-subtle-bg)] ${
+                  isActionable && !isDead ? "bg-[var(--d-subtle-bg)]/40" : ""
                 } ${
                   newOrderFlash === order.id ? "bg-amber-500/5" : ""
                 } ${isUpdating ? "opacity-50 pointer-events-none" : ""}`}
               >
-                <td className="px-4 py-4 text-[13px] font-bold text-[var(--d-text)]">#{order.order_number}</td>
-                <td className="px-4 py-4 text-[13px] font-semibold text-[var(--d-text)]">{order.customer_name}</td>
-                <td className="px-4 py-4">
+                <td className="px-3 py-3 text-[13px] tabular-nums text-[var(--d-text)]">#{order.order_number}</td>
+                <td className="px-3 py-3 text-[13px] text-[var(--d-text)]">{order.customer_name}</td>
+                <td className="px-3 py-3">
                   <a
                     href={`https://wa.me/${order.customer_phone.replace(/[^0-9]/g, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[12px] text-[var(--d-text-muted)] hover:text-[#25D366] transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[13px] text-[var(--d-text-muted)] hover:text-[#25D366] transition-colors tabular-nums"
                     dir="ltr"
                   >
                     {order.customer_phone}
                   </a>
                 </td>
-                <td className="px-4 py-4 text-[12px] text-[var(--d-text-muted)]">{timeAgo(order.created_at)}</td>
-                <td className="px-4 py-4 text-[13px] font-bold text-[var(--d-text)] tabular-nums">₪{Number(order.total).toFixed(2)}</td>
-                <td className="px-4 py-4">
-                  <StatusBadge status={order.status} size="lg" />
+                <td className="px-3 py-3 text-[13px] text-[var(--d-text-muted)]">{timeAgo(order.created_at)}</td>
+                <td className="px-3 py-3 text-[13px] font-medium text-[var(--d-text)] tabular-nums" dir="ltr">₪{Number(order.total).toFixed(2)}</td>
+                <td className="px-3 py-3">
+                  <StatusBadge status={order.status} />
                 </td>
-                <td className="px-4 py-4">
-                  {isDead ? (
-                    <span className="text-[11px] text-[var(--d-text-muted)]">—</span>
-                  ) : rejectId === order.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="سبب الرفض"
-                        className="w-24 rounded-lg border border-[var(--d-border)] px-2 py-1 text-[10px] bg-transparent text-[var(--d-text)] focus:outline-none"
-                        dir="rtl"
-                      />
-                      <button
-                        onClick={() => { updateMutation.mutate({ orderId: order.id, status: "rejected", reason: rejectReason }); setOpenMenuId(null); }}
-                        className="px-2 py-1 rounded-lg bg-red-500 text-white text-[10px] font-bold"
-                      >
-                        تأكيد
-                      </button>
-                      <button
-                        onClick={() => { setRejectId(null); setRejectReason(""); }}
-                        className="px-2 py-1 text-[var(--d-text-muted)] text-[10px] font-bold"
-                      >
-                        إلغاء
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="relative" ref={openMenuId === order.id ? menuRef : undefined}>
-                      <button
-                        onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-                        </svg>
-                      </button>
-                      {openMenuId === order.id && (
-                        <div className="absolute left-0 top-full mt-1 w-40 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg z-50 overflow-hidden" dir="rtl">
-                          {order.status === "pending" && (
-                            <>
-                              <button
-                                onClick={() => { updateMutation.mutate({ orderId: order.id, status: "accepted" }); setOpenMenuId(null); }}
-                                disabled={isUpdating}
-                                className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A2C73" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                                قبول الطلب
-                              </button>
-                              <button
-                                onClick={() => { setRejectId(order.id); setOpenMenuId(null); }}
-                                disabled={isUpdating}
-                                className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-red-500 hover:bg-red-500/5 transition-colors disabled:opacity-50"
-                              >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                                رفض الطلب
-                              </button>
-                            </>
-                          )}
-                          {order.status === "accepted" && (
-                            <button
-                              onClick={() => { updateMutation.mutate({ orderId: order.id, status: "preparing" }); setOpenMenuId(null); }}
-                              disabled={isUpdating}
-                              className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#26489E" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                              بدء التحضير
-                            </button>
-                          )}
-                          {order.status === "preparing" && (
-                            <button
-                              onClick={() => { updateMutation.mutate({ orderId: order.id, status: "ready" }); setOpenMenuId(null); }}
-                              disabled={isUpdating}
-                              className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A1D7D" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                              جاهز للاستلام
-                            </button>
-                          )}
-                          {order.status === "ready" && (
-                            <button
-                              onClick={() => { updateMutation.mutate({ orderId: order.id, status: "delivered" }); setOpenMenuId(null); }}
-                              disabled={isUpdating}
-                              className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D7D22" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                              تم التسليم
-                            </button>
-                          )}
-                          <div className="border-t border-[var(--d-border)]" />
-                          <button
-                            onClick={() => { onSelect?.(order); setOpenMenuId(null); }}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-[12px] font-semibold text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                            عرض التفاصيل
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => onSelect?.(order)}
+                    className="px-2 py-0.5 text-[18px] leading-none tracking-widest text-[var(--d-text-muted)] rounded hover:bg-[var(--d-subtle-bg)] border border-transparent hover:border-[var(--d-border)]/50 transition-colors"
+                  >
+                    ⋯
+                  </button>
                 </td>
               </tr>
             );
