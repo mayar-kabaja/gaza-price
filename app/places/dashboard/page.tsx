@@ -118,6 +118,88 @@ const XIcon = () => (
   </span>
 );
 
+/* ── Upgrade CTA content per feature ── */
+const UPGRADE_CONTENT: Record<string, { icon: React.ReactNode; title: string; desc: string; benefits: string[] }> = {
+  orders: {
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7h2l1 12h12l1-12h2"/><path d="M8 7V5a4 4 0 018 0v2"/><circle cx="12" cy="13" r="1.5" fill="currentColor"/>
+      </svg>
+    ),
+    title: "نظّم طلبات محلك في مكان واحد",
+    desc: "تابع كل طلب من لحظة الاستلام للتسليم، بدون ما يضيع منك ولا واحد",
+    benefits: [
+      "تصنيف الطلبات حسب الحالة (تحضير، جاهز، مرفوض)",
+      "تواصل مباشر مع الزبون عبر واتساب",
+      "سجل كامل لكل الطلبات الماضية",
+    ],
+  },
+  discounts: {
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+    ),
+    title: "زوّد مبيعاتك بأكواد خصم ذكية",
+    desc: "أنشئ أكواد خصم مخصصة لزبائنك وتابع استخدامها لحظة بلحظة",
+    benefits: [
+      "أكواد خصم بنسبة أو مبلغ ثابت",
+      "تحديد حد أدنى للطلب وعدد استخدامات",
+      "تاريخ انتهاء تلقائي للعروض",
+    ],
+  },
+};
+
+/* ── Upgrade CTA shown when free plan tries to access gated features ── */
+function UpgradeCTA({ feature, onUpgrade, onCompare }: { feature: "orders" | "discounts"; onUpgrade: () => void; onCompare: () => void }) {
+  const content = UPGRADE_CONTENT[feature];
+  return (
+    <div className="flex items-center justify-center py-6 px-4 min-h-[calc(100vh-200px)]">
+      <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-7 max-w-[460px] w-full text-center relative">
+        <div className="absolute top-3.5 left-3.5 text-[10.5px] text-[var(--d-text-muted)] tracking-[0.5px]">UPGRADE</div>
+
+        <div className="inline-flex items-center justify-center w-[52px] h-[52px] rounded-full bg-[#E1F5EE] text-[#0F6E56] mb-4">
+          {content.icon}
+        </div>
+
+        <h3 className="text-[20px] font-medium text-[var(--d-text)] mb-2">{content.title}</h3>
+        <p className="text-[13.5px] text-[var(--d-text-sec)] mb-6 leading-[1.7]">{content.desc}</p>
+
+        <ul className="text-right space-y-2.5 mb-6">
+          {content.benefits.map((b) => (
+            <li key={b} className="flex items-center gap-2.5 text-[13px] text-[var(--d-text)]">
+              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[#E1F5EE] text-[#0F6E56] flex-shrink-0">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center justify-between gap-3 bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 mb-3.5">
+          <div className="text-right">
+            <div className="text-[11px] text-[var(--d-text-sec)] mb-0.5">باقة الأساسي</div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-medium text-[var(--d-text)]">100</span>
+              <span className="text-[12px] text-[var(--d-text-sec)]">₪ / شهر</span>
+            </div>
+          </div>
+          <button
+            onClick={onUpgrade}
+            className="bg-[var(--d-green)] text-white font-medium text-[13px] rounded-xl px-[18px] py-2.5 whitespace-nowrap hover:opacity-90 transition-opacity"
+          >
+            ترقية الآن
+          </button>
+        </div>
+
+        <button onClick={onCompare} className="text-[12.5px] text-[var(--d-text-sec)] border-b border-[var(--d-border)]/50 pb-px hover:text-[var(--d-text)] transition-colors">
+          قارن كل الباقات
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerDashboardPageWrapper() {
   return (
     <Suspense
@@ -810,7 +892,7 @@ function OwnerDashboardPage() {
       </div>
 
       {/* ══ MOBILE LAYOUT ══ */}
-      <div className="lg:hidden px-4 pt-5 pb-24">
+      <div className="lg:hidden px-4 pt-5 pb-24 min-h-[calc(100vh-140px)]">
 
         {/* ── HOME TAB ── */}
         {mobileTab === "home" && (
@@ -921,7 +1003,13 @@ function OwnerDashboardPage() {
         {/* ── ORDERS TAB ── */}
         {mobileTab === "orders" && place.section === "food" && token && (
           <div>
-            <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} mobile search={dashSearch} />
+            {place.plan === "free" ? (
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl">
+                <UpgradeCTA feature="orders" onUpgrade={() => setMobileTab("plans")} onCompare={() => setMobileTab("plans")} />
+              </div>
+            ) : (
+              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} mobile search={dashSearch} />
+            )}
           </div>
         )}
 
@@ -1016,7 +1104,13 @@ function OwnerDashboardPage() {
         {/* ── CODES TAB ── */}
         {mobileTab === "codes" && place.section === "food" && token && (
           <div>
-            <DashboardDiscountCodes token={token} mobile search={dashSearch} />
+            {place.plan === "free" ? (
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl">
+                <UpgradeCTA feature="discounts" onUpgrade={() => setMobileTab("plans")} onCompare={() => setMobileTab("plans")} />
+              </div>
+            ) : (
+              <DashboardDiscountCodes token={token} mobile search={dashSearch} />
+            )}
           </div>
         )}
 
@@ -1250,7 +1344,7 @@ function OwnerDashboardPage() {
       </div>
 
       {/* ══ DESKTOP LAYOUT — sidebar fixed right + content fills rest ══ */}
-      <div className="hidden lg:flex px-6 pt-8 pb-6 gap-6 items-start relative z-[2]">
+      <div className="hidden lg:flex px-6 pt-8 pb-6 gap-6 items-start relative z-[2] min-h-[calc(100vh-100px)]">
 
         {/* ── RIGHT SIDEBAR ── */}
         <div className="w-[320px] flex-shrink-0 sticky top-6 space-y-3">
@@ -1483,26 +1577,34 @@ function OwnerDashboardPage() {
 
           {activeView === "orders" && place.section === "food" && token && (
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
-              <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} search={dashSearch} />
+              {place.plan === "free" ? (
+                <UpgradeCTA feature="orders" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+              ) : (
+                <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} search={dashSearch} />
+              )}
             </div>
           )}
 
           {activeView === "discounts" && place.section === "food" && token && (
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm h-[calc(100vh-140px)] flex flex-col">
-              <DashboardDiscountCodes
-                token={token}
-                ref={dcCodesRef}
-                search={dashSearch}
-                onAddCode={() => { resetDcForm(); setSheet("addDiscount"); }}
-                onEditCode={(dc) => {
-                  setDcCode(dc.code); setDcType(dc.discount_type);
-                  setDcValue(String(dc.discount_value));
-                  setDcMinOrder(dc.min_order_total > 0 ? String(dc.min_order_total) : "");
-                  setDcMaxUses(dc.max_uses ? String(dc.max_uses) : "");
-                  setDcExpires(dc.expires_at ? dc.expires_at.slice(0, 10) : "");
-                  setDcEditId(dc.id); setSheet("addDiscount");
-                }}
-              />
+              {place.plan === "free" ? (
+                <UpgradeCTA feature="discounts" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+              ) : (
+                <DashboardDiscountCodes
+                  token={token}
+                  ref={dcCodesRef}
+                  search={dashSearch}
+                  onAddCode={() => { resetDcForm(); setSheet("addDiscount"); }}
+                  onEditCode={(dc) => {
+                    setDcCode(dc.code); setDcType(dc.discount_type);
+                    setDcValue(String(dc.discount_value));
+                    setDcMinOrder(dc.min_order_total > 0 ? String(dc.min_order_total) : "");
+                    setDcMaxUses(dc.max_uses ? String(dc.max_uses) : "");
+                    setDcExpires(dc.expires_at ? dc.expires_at.slice(0, 10) : "");
+                    setDcEditId(dc.id); setSheet("addDiscount");
+                  }}
+                />
+              )}
             </div>
           )}
 
