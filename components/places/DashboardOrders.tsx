@@ -236,21 +236,22 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
   const updateMutation = useMutation({
     mutationFn: async ({ orderId, status, reason }: { orderId: string; status: string; reason?: string }) => {
-      const currentOrder = queryClient.getQueryData<Order[]>(queryKey)?.find((o) => o.id === orderId);
-      if (currentOrder) {
-        const allowed = VALID_TRANSITIONS[currentOrder.status];
-        if (!allowed || !allowed.includes(status)) {
-          throw new Error(`لا يمكن تغيير حالة الطلب من "${currentOrder.status}" إلى "${status}"`);
-        }
-      }
       await apiFetch(`/api/places/dashboard/orders/${orderId}/status?token=${token}`, {
         method: "PATCH",
         body: JSON.stringify({ status, reject_reason: reason }),
       });
     },
     onMutate: async ({ orderId, status, reason }) => {
-      // Optimistic: update status locally
+      // Guard: check valid transition before optimistic update
       const prev = queryClient.getQueryData<Order[]>(queryKey);
+      const currentOrder = prev?.find((o) => o.id === orderId);
+      if (currentOrder) {
+        const allowed = VALID_TRANSITIONS[currentOrder.status];
+        if (!allowed || !allowed.includes(status)) {
+          throw new Error(`لا يمكن تغيير حالة الطلب من "${currentOrder.status}" إلى "${status}"`);
+        }
+      }
+      // Optimistic: update status locally
       queryClient.setQueryData<Order[]>(queryKey, (old = []) =>
         old.map((o) => o.id === orderId ? { ...o, status, reject_reason: reason || o.reject_reason } : o)
       );
@@ -439,7 +440,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
       {/* Order Detail Modal */}
       {selectedOrder && (
         <OrderDetailModal
-          order={selectedOrder}
+          order={orders.find((o) => o.id === selectedOrder.id) ?? selectedOrder}
           onClose={() => setSelectedOrder(null)}
           rejectId={rejectId}
           setRejectId={setRejectId}
