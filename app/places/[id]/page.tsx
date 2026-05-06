@@ -11,6 +11,7 @@ import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
+import { getItemIcon, getItemBgColor } from '@/components/places/FoodIcons';
 
 /* ─── Constants ─── */
 
@@ -53,6 +54,7 @@ interface MenuItem {
   available: boolean;
   icon?: string | null;
   photo_url?: string | null;
+  description?: string | null;
   updated_at?: string;
 }
 
@@ -441,82 +443,52 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
       )}
       {menuSections.map((sec) => (
         <div key={sec.name} className="mb-5">
-          {/* Section divider */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="flex-1 h-px bg-border" />
-            <div className="flex items-center gap-1.5 font-display font-bold text-[12px] text-mist whitespace-nowrap">
-              <span className="w-[22px] h-[22px] rounded-[6px] bg-olive-pale flex items-center justify-center text-[11px]">🍽️</span>
-              {sec.name}
-            </div>
-            <div className="flex-1 h-px bg-border" />
+          <div className="flex items-center gap-[7px] py-3">
+            <div className="w-1 h-[18px] bg-olive rounded-sm" />
+            <span className="font-display font-extrabold text-[13px] text-ink">{sec.name}</span>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
           {sec.items.map((item, idx) => {
+            const photoUrl = resolvePublicImageUrl(item.photo_url);
             const inCart = cart?.get(item.id!);
             const canOrder = onAddToCart && item.available && Number(item.price) > 0 && item.id;
             return (
             <div
               key={item.id || `${item.name}-${idx}`}
-              className={`flex items-center gap-3 p-3 bg-surface rounded-[14px] border border-border hover:border-olive/20 hover:shadow-[0_3px_10px_rgba(0,0,0,0.08)] transition-all ${!item.available ? 'opacity-40' : ''}`}
+              className={`flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#F2FAF5] ${idx < sec.items.length - 1 ? 'border-b border-border' : ''} ${!item.available ? 'opacity-45' : ''}`}
             >
-              {/* Emoji / Photo */}
-              {resolvePublicImageUrl(item.photo_url) ? (
-                <div className="relative w-[46px] h-[46px] rounded-[12px] flex-shrink-0 overflow-hidden bg-olive-pale">
-                  <img src={resolvePublicImageUrl(item.photo_url)!} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+              {photoUrl ? (
+                <div className="w-10 h-10 rounded-[10px] flex-shrink-0 overflow-hidden">
+                  <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
                 </div>
-              ) : (() => {
-                const ie = getItemEmoji(item.name);
-                return (
-                  <div className="w-[46px] h-[46px] rounded-[12px] flex items-center justify-center text-[22px] flex-shrink-0" style={{ background: ie.bg }}>
-                    {item.icon || ie.emoji}
-                  </div>
-                );
-              })()}
-
-              {/* Name + description */}
+              ) : (
+                <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 text-olive/60" style={{ background: getItemBgColor(item.name) }}>
+                  {getItemIcon(item.name)('w-5 h-5')}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold text-ink">{item.name}</div>
-                {item.id && (
-                  <button onClick={() => openFlag(item)} className="text-[9px] text-mist/60 hover:text-mist mt-1">🚩 إبلاغ</button>
-                )}
+                <div className="font-bold text-[13px] text-ink mb-0.5">{item.name}</div>
+                {item.description && <div className="text-[11px] text-mist truncate">{item.description}</div>}
               </div>
-
-              {/* Price + add/qty */}
-              <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                {item.available ? (
-                  Number(item.price) > 0 ? (
-                    <span className="font-display font-black text-[15px] text-olive">
-                      {item.price} <span className="text-[10px] font-normal text-mist">₪</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-mist font-semibold">—</span>
-                  )
-                ) : (
-                  <span className="text-[10px] text-orange-500 font-semibold">غير متوفر</span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {item.id && (
+                  <button onClick={() => openFlag(item)} className="flex items-center gap-0.5 text-[10px] text-[#E05C35]/60 hover:text-[#E05C35] transition-colors">
+                    <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                  </button>
                 )}
+                {item.available && Number(item.price) > 0 ? (
+                  <span className="font-display font-black text-[15px] text-olive">{item.price} <span className="text-[9px] font-normal text-mist">₪</span></span>
+                ) : item.available ? <span className="text-[11px] text-mist">—</span> : null}
                 {canOrder && !inCart && (
-                  <button
-                    onClick={() => onAddToCart(item)}
-                    className="w-[30px] h-[30px] rounded-full bg-olive flex items-center justify-center shadow-[0_2px_8px_rgba(74,124,89,0.25)] hover:bg-olive-deep transition-all"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <button onClick={() => onAddToCart(item)} className="w-7 h-7 rounded-full bg-olive text-white flex items-center justify-center shadow-[0_2px_8px_rgba(30,77,43,0.3)] active:scale-95 transition-transform">
+                    <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
                 )}
                 {canOrder && inCart && onUpdateQty && (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => onUpdateQty(item.id!, -1)}
-                      className="w-[26px] h-[26px] rounded-full border-[1.5px] border-red-300 bg-white flex items-center justify-center text-red-500 text-[15px] font-bold"
-                    >
-                      −
-                    </button>
+                  <div className="flex items-center gap-[5px]">
+                    <button onClick={() => onUpdateQty(item.id!, -1)} className="w-[26px] h-[26px] rounded-full bg-[#FEF0EB] border-[1.5px] border-[#E05C35]/20 text-[#E05C35] flex items-center justify-center text-[16px] leading-none">−</button>
                     <span className="font-display font-extrabold text-[14px] text-ink min-w-[16px] text-center">{inCart.quantity}</span>
-                    <button
-                      onClick={() => onUpdateQty(item.id!, 1)}
-                      className="w-[26px] h-[26px] rounded-full border-[1.5px] border-olive bg-olive flex items-center justify-center text-white text-[14px] font-bold"
-                    >
-                      +
-                    </button>
+                    <button onClick={() => onUpdateQty(item.id!, 1)} className="w-[26px] h-[26px] rounded-full bg-olive-pale border-[1.5px] border-olive/20 text-olive flex items-center justify-center text-[14px] leading-none">+</button>
                   </div>
                 )}
               </div>
@@ -654,6 +626,12 @@ export default function PlaceDetailPage() {
     };
     if (id) fetchPlace();
   }, [id]);
+
+  // Record visit
+  useEffect(() => {
+    if (!id || error) return;
+    fetch(`/api/places/${id}/visit`, { method: "POST" }).catch(() => {});
+  }, [id, error]);
 
   const isBoth = !loading && !error && place ? place.type === 'both' : false;
   const emoji = place ? (isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'))) : '🏪';

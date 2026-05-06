@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api/fetch";
 import { DashboardOrders } from "@/components/places/DashboardOrders";
 import { DashboardDiscountCodes } from "@/components/places/DashboardDiscountCodes";
 import { DashboardNotifications } from "@/components/places/DashboardNotifications";
+import { QRCodeSVG } from "qrcode.react";
 import { getItemIcon, getItemBgColor } from "@/components/places/FoodIcons";
 
 /* ── Types ── */
@@ -108,7 +109,7 @@ const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
 
 /* ── Feature check/x icons ── */
 const CheckIcon = () => (
-  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#E1F5EE] text-[#0F6E56] flex-shrink-0">
+  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] flex-shrink-0">
     <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
   </span>
 );
@@ -158,7 +159,7 @@ function UpgradeCTA({ feature, onUpgrade, onCompare }: { feature: "orders" | "di
       <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-7 max-w-[460px] w-full text-center relative">
         <div className="absolute top-3.5 left-3.5 text-[10.5px] text-[var(--d-text-muted)] tracking-[0.5px]">UPGRADE</div>
 
-        <div className="inline-flex items-center justify-center w-[52px] h-[52px] rounded-full bg-[#E1F5EE] text-[#0F6E56] mb-4">
+        <div className="inline-flex items-center justify-center w-[52px] h-[52px] rounded-full bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] mb-4">
           {content.icon}
         </div>
 
@@ -168,7 +169,7 @@ function UpgradeCTA({ feature, onUpgrade, onCompare }: { feature: "orders" | "di
         <ul className="text-right space-y-2.5 mb-6">
           {content.benefits.map((b) => (
             <li key={b} className="flex items-center gap-2.5 text-[13px] text-[var(--d-text)]">
-              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[#E1F5EE] text-[#0F6E56] flex-shrink-0">
+              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] flex-shrink-0">
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </span>
               <span>{b}</span>
@@ -243,7 +244,7 @@ function OwnerDashboardPage() {
       );
     }
   }, [token, queryClient]);
-  const [activeView, setActiveView] = useState<"menu" | "orders" | "discounts" | "edit" | "plans">("orders");
+  const [activeView, setActiveView] = useState<"home" | "menu" | "orders" | "discounts" | "edit" | "plans">("home");
   const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings" | "plans">("home");
   const [dashSearch, setDashSearch] = useState("");
   const [menuDropdown, setMenuDropdown] = useState<string | null>(null);
@@ -256,6 +257,74 @@ function OwnerDashboardPage() {
     }
     return true;
   });
+
+  // Prefetch discount codes & orders so tab switching is instant
+  useEffect(() => {
+    if (!token || !place) return;
+    queryClient.prefetchQuery({
+      queryKey: ["dashboard-discount-codes", token],
+      queryFn: async () => {
+        const res = await apiFetch(`/api/places/dashboard/discount-codes?token=${token}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.data || [];
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+    if (place.section === "food" && place.orders_enabled) {
+      queryClient.prefetchQuery({
+        queryKey: ["dashboard-orders", token],
+        queryFn: async () => {
+          const res = await apiFetch(`/api/places/dashboard/orders?token=${token}`);
+          if (!res.ok) return [];
+          const data = await res.json();
+          return data.data || [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [token, place, queryClient]);
+
+  // Visit stats
+  const [visitStats, setVisitStats] = useState<{ today: number; week: number; total: number }>({ today: 0, week: 0, total: 0 });
+
+  // Prayer times
+  const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string; remaining: string } | null>(null);
+  const [hijriDate, setHijriDate] = useState("");
+  useEffect(() => {
+    const PRAYER_NAMES: Record<string, string> = { Fajr: "الفجر", Sunrise: "الشروق", Dhuhr: "الظهر", Asr: "العصر", Maghrib: "المغرب", Isha: "العشاء" };
+    const fetchPrayer = async () => {
+      try {
+        const now = new Date();
+        const d = `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`;
+        const res = await fetch(`https://api.aladhan.com/v1/timingsByCity/${d}?city=Gaza&country=Palestine&method=4`);
+        const json = await res.json();
+        if (json.code !== 200) return;
+        const timings = json.data.timings;
+        const hijri = json.data.date.hijri;
+        setHijriDate(`${hijri.day} ${hijri.month.ar} ${hijri.year}`);
+        const keys = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        for (const k of keys) {
+          const [h, m] = timings[k].split(" ")[0].split(":").map(Number);
+          const pMins = h * 60 + m;
+          if (pMins > nowMins) {
+            const diff = pMins - nowMins;
+            const rh = Math.floor(diff / 60);
+            const rm = diff % 60;
+            const remaining = rh > 0 && rm > 0 ? `${rh} ساعة و ${rm} دقيقة` : rh > 0 ? `${rh} ساعة` : `${rm} دقيقة`;
+            setNextPrayer({ name: PRAYER_NAMES[k] || k, time: timings[k].split(" ")[0], remaining });
+            return;
+          }
+        }
+        // All prayers passed, show Fajr tomorrow
+        setNextPrayer({ name: "الفجر", time: timings.Fajr.split(" ")[0], remaining: "غداً" });
+      } catch { /* ignore */ }
+    };
+    fetchPrayer();
+    const iv = setInterval(fetchPrayer, 60000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Edit form
   const [editName, setEditName] = useState("");
@@ -470,6 +539,23 @@ function OwnerDashboardPage() {
   }, [token, qs]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Fetch visit stats when place is loaded
+  useEffect(() => {
+    if (!place) return;
+    const fetchVisits = async () => {
+      try {
+        const res = await apiFetch(`/api/places/${place.id}/visit-stats`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) setVisitStats(json.data);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchVisits();
+    const iv = setInterval(fetchVisits, 60000);
+    return () => clearInterval(iv);
+  }, [place?.id]);
 
   function populateEditForm() {
     if (!place) return;
@@ -787,6 +873,16 @@ function OwnerDashboardPage() {
     redBg: "#2D1B1B", toggleOff: "#374151", navShadow: "rgba(0,0,0,0.3)",
     sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2A2D37",
     cancelBg: "#252830", overlayBg: "#1A1D27",
+    // Accent color pairs
+    mintBg: "#1A2E22", mintText: "#6ECF97",
+    amberBg: "#2D2516", amberText: "#D4A54A",
+    blueBg: "#1A2538", blueText: "#6BA3D6",
+    purpleBg: "#1E1D30", purpleText: "#9B8FE8", purpleDeep: "#C4BFF0",
+    readyBg: "#1A2E1A", readyText: "#7CB342",
+    redText: "#EF8A8A", redAccent: "#E57373",
+    grayAltBg: "#2A2D37", grayAltText: "#9CA3AF",
+    pendingBg: "#2D2516", pendingText: "#D4A54A",
+    warnText: "#FF8A65",
   } : {
     pageBg: "#F4F7F9", card: "#ffffff", border: "#E5E7EB", cardHover: "#F2FAF5",
     text: "#111827", textSec: "#374151", textMuted: "#9CA3AF",
@@ -795,6 +891,16 @@ function OwnerDashboardPage() {
     redBg: "#FEF2F2", toggleOff: "#E5E7EB", navShadow: "rgba(0,0,0,0.05)",
     sheetBg: "#F9FAFB", inputBg: "#ffffff", inputBorder: "#E5E7EB",
     cancelBg: "#ffffff", overlayBg: "#ffffff",
+    // Accent color pairs
+    mintBg: "#E1F5EE", mintText: "#0F6E56",
+    amberBg: "#FAEEDA", amberText: "#854F0B",
+    blueBg: "#E6F1FB", blueText: "#0C447C",
+    purpleBg: "#EEEDFE", purpleText: "#534AB7", purpleDeep: "#26215C",
+    readyBg: "#EDF5E0", readyText: "#3D6B12",
+    redText: "#A32D2D", redAccent: "#C05749",
+    grayAltBg: "#F1EFE8", grayAltText: "#444441",
+    pendingBg: "#FEF3CD", pendingText: "#7A5D0B",
+    warnText: "#E05C35",
   };
 
   return (
@@ -805,10 +911,19 @@ function OwnerDashboardPage() {
       "--d-indigo-bg": t.indigoBg, "--d-gray-bg": t.grayBg, "--d-subtle-bg": t.subtleBg,
       "--d-red-bg": t.redBg, "--d-toggle-off": t.toggleOff, "--d-input-bg": t.inputBg,
       "--d-input-border": t.inputBorder, "--d-cancel-bg": t.cancelBg, "--d-overlay": t.overlayBg,
+      "--d-mint-bg": t.mintBg, "--d-mint-text": t.mintText,
+      "--d-amber-bg": t.amberBg, "--d-amber-text": t.amberText,
+      "--d-blue-bg": t.blueBg, "--d-blue-text": t.blueText,
+      "--d-purple-bg": t.purpleBg, "--d-purple-text": t.purpleText, "--d-purple-deep": t.purpleDeep,
+      "--d-ready-bg": t.readyBg, "--d-ready-text": t.readyText,
+      "--d-red-text": t.redText, "--d-red-accent": t.redAccent,
+      "--d-gray-alt-bg": t.grayAltBg, "--d-gray-alt-text": t.grayAltText,
+      "--d-pending-bg": t.pendingBg, "--d-pending-text": t.pendingText,
+      "--d-warn-text": t.warnText,
       backgroundColor: t.pageBg, color: t.text,
     } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
-      <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 relative z-[10] lg:pt-3 lg:pb-4 lg:px-6">
+      <div className="bg-[var(--d-green)] px-4 pt-4 pb-3 relative z-[10] lg:pt-3 lg:pb-4 lg:px-6">
         <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -top-[70px] -left-[50px] pointer-events-none" />
         <div className="absolute w-[120px] h-[120px] rounded-full bg-white/[0.04] -bottom-10 -right-5 pointer-events-none" />
 
@@ -856,17 +971,17 @@ function OwnerDashboardPage() {
           </div>
 
           {/* Place identity — mobile only in header */}
-          <div className="flex items-center gap-3 mb-3 relative z-[1] lg:hidden">
-            <div className="w-[50px] h-[50px] rounded-full bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+          <div className={`flex items-center gap-3 relative z-[1] lg:hidden ${mobileTab === "home" || mobileTab === "settings" ? "mb-0" : "mb-3"}`}>
+            <div className="w-[42px] h-[42px] rounded-full bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
               {place.avatar_url ? (
                 <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}
+              ) : <span className="text-white font-medium">{place.name.charAt(0)}</span>}
             </div>
-            <div>
-              <div className="font-bold text-[17px] text-white">{place.name}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-[15px] text-white truncate">{place.name}</div>
               <div className="flex items-center gap-2 mt-0.5">
-                {place.area && <span className="text-[11px] text-white/55">📍 {place.area.name_ar}</span>}
-                <span className="text-[9px] font-bold py-0.5 px-2 rounded-full bg-white/[0.14] text-white/85">
+                {place.area && <span className="text-[10px] text-white/55">{place.area.name_ar}</span>}
+                <span className="text-[9px] font-medium py-0.5 px-2 rounded-full bg-white/[0.14] text-white/85">
                   {place.type}
                 </span>
               </div>
@@ -897,6 +1012,50 @@ function OwnerDashboardPage() {
         {/* ── HOME TAB ── */}
         {mobileTab === "home" && (
           <>
+            {/* Green hero banner — mobile */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-bl from-[#4A7C59] to-[#6BA880] p-4 text-white mb-3">
+              <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-white/[0.08]" />
+              <div className="absolute -bottom-10 left-16 w-24 h-24 rounded-full bg-white/[0.06]" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] bg-white/[0.18] px-2 py-[2px] rounded-full">{planLabels[place.plan] ? `باقة ${planLabels[place.plan]}` : place.plan}</span>
+                  <span className="text-[10px] opacity-75">{new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}{hijriDate ? ` · ${hijriDate}` : ""}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-[20px] font-semibold text-white mb-0.5 leading-tight">أهلاً، {place.name}</h2>
+                    <p className="text-[12px] opacity-85 mb-2.5">محلك جاهز. خطوتك التالية: استقبال أول زبون.</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5 bg-white/[0.12] px-2 py-[4px] rounded-full border border-white/[0.15]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[#6FE090]" : "bg-[#FAC775]"}`} />
+                        <span className="text-[11px]">{place.is_open ? "مفتوح" : "مغلق"}</span>
+                      </div>
+                      {nextPrayer && (
+                        <div className="flex items-center gap-1.5 bg-white/[0.12] px-2 py-[4px] rounded-full border border-white/[0.15]">
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" className="opacity-85 flex-shrink-0">
+                            <circle cx="8" cy="8" r="6.5" stroke="white" strokeWidth="1.3"/>
+                            <path d="M8 4v4l2.5 1.5" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
+                          </svg>
+                          <span className="text-[10px]">{nextPrayer.name} بعد <strong className="font-semibold">{nextPrayer.remaining}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* QR Code — mobile */}
+                  <div className="flex-shrink-0 bg-white p-2 rounded-lg text-center">
+                    <QRCodeSVG
+                      value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
+                      size={64}
+                      fgColor="#4A7C59"
+                      bgColor="white"
+                      level="M"
+                    />
+                    <p className="text-[8px] text-[#4A7C59] mt-1 font-medium">امسح للمحل</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Open toggle */}
             <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-3">
               <div>
@@ -915,88 +1074,225 @@ function OwnerDashboardPage() {
                 )}
               </button>
             </div>
-            {/* Stats */}
-            {!isWorkspace && (
-              <div className="grid grid-cols-3 gap-2.5 mb-4">
-                {[{ num: place.menu.length, label: "أقسام" }, { num: totalItems, label: "صنف" }, { num: availableItems, label: "متوفر" }].map((s) => (
-                  <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl py-3 px-2 text-center">
-                    <div className="font-bold text-[22px] text-[var(--d-text)] leading-none mb-1">{s.num}</div>
-                    <div className="text-[9px] text-[var(--d-text-muted)] font-semibold">{s.label}</div>
+
+            {/* Stats + Plan */}
+            {!isWorkspace && (() => {
+              const pct = totalItems > 0 ? Math.round((availableItems / totalItems) * 100) : 0;
+              const unavailable = totalItems - availableItems;
+              const circumference = 2 * Math.PI * 22;
+              const dashoffset = circumference - (pct / 100) * circumference;
+              return (
+                <div className="mb-4 space-y-2.5">
+                  {/* Section label */}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[11px] text-[var(--d-text-muted)] font-medium tracking-wide">المحل بلمحة</span>
+                    <div className="flex-1 h-px bg-[var(--d-border)]" />
                   </div>
-                ))}
+
+                  {/* Stats card */}
+                  <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5">
+                    {/* Availability header */}
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <p className="text-[11px] text-[var(--d-text-muted)] mb-1">نسبة توفر الأصناف</p>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[22px] font-semibold text-[var(--d-green)] leading-none">{pct}%</span>
+                          <span className="text-[10px] text-[var(--d-text-muted)]">{availableItems} من {totalItems}</span>
+                        </div>
+                      </div>
+                      <svg width="44" height="44" viewBox="0 0 56 56">
+                        <circle cx="28" cy="28" r="22" fill="none" stroke="var(--d-subtle-bg)" strokeWidth="5"/>
+                        <circle cx="28" cy="28" r="22" fill="none" stroke="var(--d-green)" strokeWidth="5" strokeDasharray={circumference} strokeDashoffset={dashoffset} strokeLinecap="round" transform="rotate(-90 28 28)"/>
+                      </svg>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="h-[5px] bg-[var(--d-subtle-bg)] rounded-full overflow-hidden mb-3">
+                      <div className="h-full bg-[var(--d-green)] rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
+
+                    {/* Bottom stats */}
+                    <div className="grid grid-cols-3 border-t border-[var(--d-border)]/50 pt-2.5">
+                      <button onClick={() => setMobileTab("menu")} className="text-center border-l border-[var(--d-border)]/50 py-0.5">
+                        <div className="text-[18px] font-semibold text-[var(--d-text)] leading-none mb-1 tabular-nums">{place.menu.length}</div>
+                        <div className="text-[10px] text-[var(--d-text-muted)]">أقسام</div>
+                      </button>
+                      <button onClick={() => setMobileTab("menu")} className="text-center border-l border-[var(--d-border)]/50 py-0.5">
+                        <div className="text-[18px] font-semibold text-[var(--d-text)] leading-none mb-1 tabular-nums">{totalItems}</div>
+                        <div className="text-[10px] text-[var(--d-text-muted)]">أصناف</div>
+                      </button>
+                      <button onClick={() => setMobileTab("menu")} className="text-center py-0.5">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          {unavailable > 0 && <span className="w-[4px] h-[4px] rounded-full bg-[var(--d-red-accent)]" />}
+                          <span className={`text-[18px] font-semibold leading-none tabular-nums ${unavailable > 0 ? "text-[var(--d-red-accent)]" : "text-[var(--d-text)]"}`}>{unavailable}</span>
+                        </div>
+                        <div className={`text-[10px] ${unavailable > 0 ? "text-[var(--d-red-accent)]" : "text-[var(--d-text-muted)]"}`}>غير متوفر</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Plan bar */}
+                  <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl px-4 py-2.5 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
+                      <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
+                    </div>
+                    {place.plan !== "premium" ? (
+                      <button onClick={() => setMobileTab("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
+                    ) : (
+                      <span className="text-[11px] font-medium text-[var(--d-green)]">الباقة الأفضل</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+            {isWorkspace && (
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl px-4 py-2.5 flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
+                  <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
+                </div>
+                {place.plan !== "premium" ? (
+                  <button onClick={() => setMobileTab("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
+                ) : (
+                  <span className="text-[11px] font-medium text-[var(--d-green)]">الباقة الأفضل</span>
+                )}
               </div>
             )}
-            {/* Plan */}
-            <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl px-4 py-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-[var(--d-text-muted)] font-semibold">الباقة:</span>
-                <span className="text-[11px] font-bold py-1 px-2.5 rounded-full bg-[var(--d-green-bg)] text-[var(--d-green)]">{planLabels[place.plan] ?? place.plan}</span>
+            {/* Quick actions — workspace only */}
+            {isWorkspace && (
+              <div className="grid grid-cols-2 gap-2.5">
+                <button onClick={openWsDetails} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center mb-2.5">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  </div>
+                  <div className="font-bold text-[12px] text-[var(--d-text)]">الأسعار والأوقات</div>
+                  <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">أسعار، مواعيد</div>
+                </button>
+                <button onClick={openWsServices} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--d-indigo-bg)] flex items-center justify-center mb-2.5">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+                  </div>
+                  <div className="font-bold text-[12px] text-[var(--d-text)]">الخدمات المتاحة</div>
+                  <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">WiFi، كهرباء</div>
+                </button>
               </div>
-              <button onClick={() => setMobileTab("plans")} className="text-[11px] font-bold text-[var(--d-green)]">ترقية ←</button>
+            )}
+
+            {/* ── من زار صفحتك؟ — mobile ── */}
+            <div className="mt-4">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-[10px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">من زار صفحتك؟</span>
+                <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+              </div>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4">
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {[
+                    { label: "زيارات اليوم", num: visitStats.today },
+                    { label: "هذا الأسبوع", num: visitStats.week },
+                    { label: "الإجمالي", num: visitStats.total },
+                  ].map((v, i) => (
+                    <div key={v.label} className={`text-center ${i === 1 ? "border-r border-l border-[var(--d-border)]/50" : ""}`}>
+                      <p className="text-[22px] font-medium text-[var(--d-text)] tabular-nums leading-none mb-1">{v.num}</p>
+                      <p className="text-[10px] text-[var(--d-text-sec)]">{v.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-[var(--d-blue-bg)] rounded-xl px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>
+                    <span className="text-[12px] font-medium text-[var(--d-blue-text)]">شارك محلك لتبدأ بجذب الزوار</span>
+                  </div>
+                  <p className="text-[11px] text-[var(--d-blue-text)] leading-relaxed">انسخ الرابط وأرسله للزبائن عبر واتساب أو ضعه في بايو حساباتك.</p>
+                </div>
+              </div>
             </div>
-            {/* Quick actions */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {isWorkspace ? (
-                <>
-                  <button onClick={openWsDetails} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center mb-2.5">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">الأسعار والأوقات</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">أسعار، مواعيد</div>
+
+            {/* ── صفحتك العامة — mobile ── */}
+            <div className="mt-4">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-[10px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">صفحتك العامة</span>
+                <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+              </div>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-sec)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <p className="text-[13px] font-medium text-[var(--d-text)]">شاهد كما يراه الزبائن</p>
+                </div>
+                <p className="text-[11px] text-[var(--d-text-sec)] mb-2.5 leading-relaxed">افتح صفحتك وجرّب تجربة العميل الكاملة.</p>
+                <div className="flex gap-1.5">
+                  <a
+                    href={`/places/${place.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 border border-[var(--d-border)] text-[var(--d-text)] font-medium text-[12px] rounded-xl py-2 hover:bg-[var(--d-subtle-bg)] transition-colors"
+                  >
+                    معاينة محلي
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </a>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }}
+                    className="flex items-center justify-center gap-1.5 border border-[var(--d-border)] text-[var(--d-text)] text-[12px] rounded-xl px-3 py-2 hover:bg-[var(--d-subtle-bg)] transition-colors"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    نسخ الرابط
                   </button>
-                  <button onClick={openWsServices} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--d-indigo-bg)] flex items-center justify-center mb-2.5">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">الخدمات المتاحة</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">WiFi، كهرباء</div>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => setMobileTab("orders")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-amber-600" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${place.orders_enabled ? "bg-[var(--d-green-bg)] text-[var(--d-green)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
-                        {place.orders_enabled ? "مفعّل" : "موقوف"}
-                      </span>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">الطلبات</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">إدارة وتحديث الحالة</div>
-                  </button>
-                  <button onClick={() => setMobileTab("menu")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-green)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x={9} y={3} width={6} height={4} rx={2}/></svg>
-                      </div>
-                      <span className="text-[18px] font-bold text-[var(--d-text)]">{totalItems}</span>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">القائمة</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">{place.menu.length} أقسام · {availableItems} متوفر</div>
-                  </button>
-                  <button onClick={() => setMobileTab("codes")} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-violet-600" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></svg>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600">خصومات</span>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">أكواد الخصم</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">إنشاء وإدارة</div>
-                  </button>
-                  <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }} className="bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3.5 text-right">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--d-gray-bg)] flex items-center justify-center mb-2.5">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5 stroke-[var(--d-text-sec)]" fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1={12} y1={2} x2={12} y2={15}/></svg>
-                    </div>
-                    <div className="font-bold text-[12px] text-[var(--d-text)]">مشاركة المحل</div>
-                    <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">نسخ الرابط</div>
-                  </button>
-                </>
-              )}
+                </div>
+              </div>
             </div>
+
+            {/* ── ميزات بانتظارك — mobile ── */}
+            {(() => {
+              const isPremium = place.plan === "premium";
+              const features = place.plan === "free" ? [
+                { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
+                { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
+                { name: "شارة التوثيق", desc: "زيد الثقة", icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></> },
+                { name: "منيو PDF", desc: "للطباعة", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></> },
+              ] : place.plan === "basic" ? [
+                { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
+                { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
+                { name: "نشر إعلان", desc: "على صفحاتنا", icon: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></> },
+                { name: "ترويج الأكواد", desc: "على الموقع", icon: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></> },
+              ] : [
+                { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
+                { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
+                { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
+                { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
+              ];
+              const title = isPremium ? "ميزات باقتك" : "ميزات بانتظارك";
+              const sub = place.plan === "free" ? "طوّر محلك بميزات احترافية" : isPremium ? "أنت تستمتع بجميع المزايا" : "احصل على ميزات حصرية";
+              const accent = "var(--d-purple-text)";
+              const gradient = isDark ? "from-[#1E1D30] via-[#252040] to-[#2A1D2E]" : "from-[#EEEDFE] via-[#CECBF6] to-[#FBEAF0]";
+              return (
+                <div className={`mt-4 relative overflow-hidden rounded-2xl bg-gradient-to-bl ${gradient} p-4`}>
+                  <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-white/30" />
+                  <div className="relative flex justify-between items-center mb-3">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {isPremium ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        )}
+                        <p className="text-[13px] font-medium" style={{ color: "var(--d-purple-deep)" }}>{title}</p>
+                      </div>
+                      <p className="text-[11px]" style={{ color: "var(--d-purple-text)" }}>{sub}</p>
+                    </div>
+                    {!isPremium && <button onClick={() => setMobileTab("plans")} className="text-[11px] px-3 py-[5px] bg-[var(--d-purple-text)] text-white rounded-lg font-medium hover:bg-[#443DA0] transition-colors">عرض الباقات ←</button>}
+                  </div>
+                  <div className="relative grid grid-cols-2 gap-2">
+                    {features.map((f) => (
+                      <div key={f.name} className="bg-[var(--d-card)]/70 rounded-xl p-2.5 text-center">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1">{f.icon}</svg>
+                        <p className="text-[11px] font-medium mb-0.5" style={{ color: "var(--d-purple-deep)" }}>{f.name}</p>
+                        <p className="text-[9px]" style={{ color: "var(--d-purple-text)" }}>{f.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
 
@@ -1036,14 +1332,14 @@ function OwnerDashboardPage() {
                 <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
                   {isSectionLoading && (
                     <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
                     </div>
                   )}
                   <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
                     <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1">+ صنف</button>
-                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-full px-2 py-1">
+                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[11px] font-bold text-[var(--d-warn-text)] bg-[var(--d-red-bg)] rounded-full px-2 py-1">
                         <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
                       </button>
                     </div>
@@ -1088,7 +1384,7 @@ function OwnerDashboardPage() {
                           <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
                             <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
                           </button>
-                          <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#E05C35] bg-[var(--d-red-bg)]">
+                          <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
                             <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
                           </button>
                         </div>
@@ -1180,12 +1476,12 @@ function OwnerDashboardPage() {
 
                   {/* Premium exclusives box */}
                   {p.key === "premium" && (
-                    <div className="bg-[#E1F5EE] rounded-xl p-3 mb-3">
-                      <p className="text-[10px] font-medium text-[#0F6E56] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
+                    <div className="bg-[var(--d-mint-bg)] rounded-xl p-3 mb-3">
+                      <p className="text-[10px] font-medium text-[var(--d-mint-text)] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
                       <ul className="space-y-0">
                         {PREMIUM_EXCLUSIVES.map((feat) => (
-                          <li key={feat} className="flex items-start gap-2 py-1 text-[11px] text-[#04342C]">
-                            <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[#0F6E56]">
+                          <li key={feat} className="flex items-start gap-2 py-1 text-[11px] text-[var(--d-mint-text)]">
+                            <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[var(--d-mint-text)]">
                               <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </span>
                             <span>{feat}</span>
@@ -1200,12 +1496,12 @@ function OwnerDashboardPage() {
                     onClick={() => setSelectedPlan(isSelected ? null : p.key)}
                     className={`w-full py-2.5 rounded-xl text-[12px] font-medium transition-all ${
                       isCurrent
-                        ? "bg-transparent text-[#0F6E56] border border-[#9FE1CB]"
+                        ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
                         : isSelected
                           ? "bg-[var(--d-green)] text-white"
                           : p.featured
                             ? "bg-[var(--d-green)] text-white"
-                            : "bg-[var(--d-card)] text-[#0F6E56] border border-[#0F6E56]"
+                            : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
                     }`}
                   >
                     {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : `ترقية إلى ${p.badge}`}
@@ -1252,21 +1548,90 @@ function OwnerDashboardPage() {
 
         {/* ── SETTINGS TAB ── */}
         {mobileTab === "settings" && (
-          <div className="space-y-3.5">
-            <h3 className="font-bold text-[15px] text-[var(--d-text)]">{isWorkspace ? "بيانات المساحة" : "بيانات المحل"}</h3>
+          <div className="space-y-3">
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-xl text-center">
+                <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">أصناف القائمة</p>
+                <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{totalItems}</p>
+              </div>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-xl text-center">
+                <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">الأقسام</p>
+                <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{place.menu.length}</p>
+              </div>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-xl text-center">
+                <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">متوفر</p>
+                <p className="text-[18px] font-medium text-[var(--d-mint-text)] tabular-nums">{availableItems}</p>
+              </div>
+            </div>
+
+            {/* Contact info */}
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[var(--d-border)]/50">
+                <h3 className="text-[13px] font-medium text-[var(--d-text)]">معلومات التواصل</h3>
+                <button onClick={() => setSheet("edit")} className="text-[11px] font-medium text-[var(--d-mint-text)] hover:bg-[var(--d-subtle-bg)] px-2 py-1 rounded transition-colors">تعديل</button>
+              </div>
+              <div className="px-3.5 py-1">
+                {place.phone && (
+                  <div className="flex items-center gap-2.5 py-2.5 border-b border-[var(--d-border)]/50">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--d-blue-bg)] flex items-center justify-center shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-[var(--d-text-muted)]">رقم الهاتف</p>
+                      <p className="text-[12px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.phone}</p>
+                    </div>
+                    <button onClick={() => navigator.clipboard.writeText(place.phone || '')} className="w-[24px] h-[24px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors" title="نسخ">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+                  </div>
+                )}
+                {place.whatsapp && (
+                  <div className="flex items-center gap-2.5 py-2.5 border-b border-[var(--d-border)]/50">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--d-mint-bg)] flex items-center justify-center shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--d-mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-[var(--d-text-muted)]">واتساب</p>
+                      <p className="text-[12px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.whatsapp}</p>
+                    </div>
+                    <button onClick={() => window.open(`https://wa.me/${place.whatsapp?.replace(/\D/g, '')}`, '_blank')} className="w-[24px] h-[24px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors" title="فتح">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-start gap-2.5 py-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-[var(--d-amber-bg)] flex items-center justify-center shrink-0">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--d-amber-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-[var(--d-text-muted)]">المنطقة</p>
+                    <p className="text-[12px] font-medium text-[var(--d-text)] mt-0.5">{place.area?.name_ar || "—"}</p>
+                    {place.address && (
+                      <>
+                        <p className="text-[10px] text-[var(--d-text-muted)] mt-1.5">العنوان التفصيلي</p>
+                        <p className="text-[12px] text-[var(--d-text)] mt-0.5 leading-relaxed">{place.address}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Avatar upload */}
-            <div>
-              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
+              <h3 className="text-[13px] font-medium text-[var(--d-text)]">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</h3>
               <div className="flex items-center gap-3">
-                <div className="w-[56px] h-[56px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-[52px] h-[52px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                   {place.avatar_url ? (
                     <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl">{place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                   )}
                 </div>
                 <label className="flex-1 cursor-pointer">
-                  <div className="text-center py-2.5 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
+                  <div className="text-center py-2 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
                     {saving ? "جاري الرفع..." : "رفع صورة"}
                   </div>
                   <input
@@ -1299,45 +1664,50 @@ function OwnerDashboardPage() {
                 </label>
               </div>
             </div>
-            <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
-            {place.section === "store" && (
+
+            {/* Edit form */}
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
+              <h3 className="text-[13px] font-medium text-[var(--d-text)]">تعديل البيانات</h3>
+              <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
+              {place.section === "store" && (
+                <div>
+                  <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
+                    نوع المتجر <span className="text-[var(--d-warn-text)] text-[11px]">*</span>
+                  </label>
+                  <select
+                    value={editStoreType}
+                    onChange={(e) => setEditStoreType(e.target.value)}
+                    className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
+                  >
+                    <option value="">اختر نوع المتجر...</option>
+                    {STORE_CATEGORIES.map((cat) => (
+                      <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
+                        {cat.types.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
-                <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
-                  نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
-                </label>
-                <select
-                  value={editStoreType}
-                  onChange={(e) => setEditStoreType(e.target.value)}
-                  className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
-                >
-                  <option value="">اختر نوع المتجر...</option>
-                  {STORE_CATEGORIES.map((cat) => (
-                    <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
-                      {cat.types.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </optgroup>
-                  ))}
+                <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
+                <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
+                  <option value="">اختر المنطقة...</option>
+                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
                 </select>
               </div>
-            )}
-            <div>
-              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
-              <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
-                <option value="">اختر المنطقة...</option>
-                {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
-              </select>
+              <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
+              <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
+              <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
+                className="w-full bg-[var(--d-green)] text-white font-bold text-[14px] rounded-[14px] py-3 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50"
+              >
+                {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
+              </button>
             </div>
-            <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
-            <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
-            <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
-            <button
-              onClick={handleSaveEdit}
-              disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
-              className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
-            >
-              {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-            </button>
           </div>
         )}
 
@@ -1366,7 +1736,7 @@ function OwnerDashboardPage() {
             <div className="h-px bg-[var(--d-border)]/50" />
 
             <div className="px-3.5 py-3 flex items-center justify-between gap-3">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium ${place.is_open ? "bg-[#E1F5EE] text-[#0F6E56]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium ${place.is_open ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
                 <span className={`w-[7px] h-[7px] rounded-full ${place.is_open ? "bg-[var(--d-green)] shadow-[0_0_0_3px_rgba(29,158,117,0.18)]" : "bg-[var(--d-text-muted)]"}`} />
                 {place.is_open ? (isWorkspace ? "مساحة مفتوحة" : "محل مفتوح") : (isWorkspace ? "مساحة مغلقة" : "محل مغلق")}
               </span>
@@ -1389,7 +1759,7 @@ function OwnerDashboardPage() {
               {[
                 { num: place.menu.length, label: "أقسام" },
                 { num: totalItems, label: "صنف" },
-                { num: availableItems, label: "متوفر", color: "#0F6E56" },
+                { num: availableItems, label: "متوفر", color: "var(--d-mint-text)" },
               ].map((s) => (
                 <div key={s.label} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3 text-center">
                   <p className="text-[11px] text-[var(--d-text-muted)] mb-1">{s.label}</p>
@@ -1405,29 +1775,34 @@ function OwnerDashboardPage() {
               <p className="text-[11px] text-[var(--d-text-muted)] mb-0.5">باقتك الحالية</p>
               <p className="text-[13px] font-medium text-[var(--d-text)]">{planLabels[place.plan] ?? place.plan}</p>
             </div>
-            <button onClick={() => setActiveView("plans")} className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">ترقية الباقة</button>
+            {place.plan !== "premium" ? (
+              <button onClick={() => setActiveView("plans")} className="text-[12px] font-medium text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">ترقية الباقة</button>
+            ) : (
+              <span className="text-[11px] font-medium text-[var(--d-green)]">الباقة الأفضل</span>
+            )}
           </div>
 
           {/* Actions */}
           <div>
             <p className="text-[11px] text-[var(--d-text-muted)] mb-2 pr-1 tracking-wide">الإجراءات</p>
             <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)]/50 overflow-hidden">
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>} iconBg="bg-[var(--d-subtle-bg)]" iconColor="stroke-[var(--d-text-sec)]" title="الرئيسية" sub="نظرة عامة على محلك" onClick={() => setActiveView("home")} active={activeView === "home"} />
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M3 7h18l-2 13H5L3 7z"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>} iconBg="bg-[#FAEEDA]" iconColor="stroke-[#854F0B]" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M3 7h18l-2 13H5L3 7z"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>} iconBg="bg-[var(--d-amber-bg)]" iconColor="stroke-[var(--d-amber-text)]" title="الطلبات" sub="إدارة طلبات الزبائن وتحديث حالتها" onClick={() => setActiveView("orders")} active={activeView === "orders"} />
               )}
               {isWorkspace ? (
                 <>
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[#E1F5EE]" iconColor="stroke-[#0F6E56]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
-                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[#E6F1FB]" iconColor="stroke-[#0C447C]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} iconBg="bg-[var(--d-mint-bg)]" iconColor="stroke-[var(--d-mint-text)]" title="الأسعار والأوقات" sub="أسعار الساعة/اليوم، مواعيد العمل" onClick={openWsDetails} />
+                  <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>} iconBg="bg-[var(--d-blue-bg)]" iconColor="stroke-[var(--d-blue-text)]" title="الخدمات المتاحة" sub="WiFi، كهرباء، طباعة، مشروبات" onClick={openWsServices} />
                 </>
               ) : (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>} iconBg="bg-[#E1F5EE]" iconColor="stroke-[#0F6E56]" title="إدارة القائمة" sub="تعديل الأسعار والتوفر" badge={<span className="text-[11px] font-medium py-0.5 px-[7px] rounded-full bg-[#E1F5EE] text-[#0F6E56]">{totalItems} صنف</span>} onClick={() => setActiveView("menu")} active={activeView === "menu"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>} iconBg="bg-[var(--d-mint-bg)]" iconColor="stroke-[var(--d-mint-text)]" title="إدارة القائمة" sub="تعديل الأسعار والتوفر" badge={<span className="text-[11px] font-medium py-0.5 px-[7px] rounded-full bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]">{totalItems} صنف</span>} onClick={() => setActiveView("menu")} active={activeView === "menu"} />
               )}
               {place.section === "food" && token && (
-                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/></svg>} iconBg="bg-[#EEEDFE]" iconColor="stroke-[#3C3489]" title="أكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
+                <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/></svg>} iconBg="bg-[var(--d-purple-bg)]" iconColor="stroke-[var(--d-purple-text)]" title="أكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
               )}
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>} iconBg="bg-[#FFF4E6]" iconColor="stroke-[#C2410C]" title="الباقات" sub="اختر الباقة المناسبة لمحلك" onClick={() => setActiveView("plans")} active={activeView === "plans"} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[#E6F1FB]" iconColor="stroke-[#0C447C]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="الاسم، المنطقة، الهاتف، واتساب" onClick={openEdit} last />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>} iconBg="bg-[var(--d-amber-bg)]" iconColor="stroke-[var(--d-warn-text)]" title="الباقات" sub="اختر الباقة المناسبة لمحلك" onClick={() => setActiveView("plans")} active={activeView === "plans"} />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-blue-bg)]" iconColor="stroke-[var(--d-blue-text)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="الاسم، المنطقة، الهاتف، واتساب" onClick={openEdit} last />
             </div>
           </div>
 
@@ -1435,6 +1810,196 @@ function OwnerDashboardPage() {
 
         {/* ── LEFT MAIN CONTENT ── */}
         <div className="flex-1 min-w-0 space-y-5">
+
+          {/* ══ HOME PAGE ══ */}
+          {activeView === "home" && (() => {
+            const today = new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" });
+
+            return (
+            <div className="space-y-6">
+
+              {/* ── Green hero banner ── */}
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-bl from-[#4A7C59] to-[#6BA880] p-6 text-white">
+                <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white/[0.08]" />
+                <div className="absolute -bottom-[60px] left-20 w-[120px] h-[120px] rounded-full bg-white/[0.06]" />
+                <div className="relative flex justify-between items-center gap-6">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-[11px] bg-white/[0.18] px-2.5 py-[3px] rounded-full tracking-wide">{planLabels[place.plan] ? `باقة ${planLabels[place.plan]}` : place.plan}</span>
+                      <span className="text-[12px] opacity-75">{today}{hijriDate ? ` · ${hijriDate}` : ""}</span>
+                    </div>
+                    <h2 className="text-[26px] font-semibold text-white mb-1 leading-tight">أهلاً، {place.name}</h2>
+                    <p className="text-[13px] opacity-85 mb-3.5">محلك جاهز. خطوتك التالية: استقبال أول زبون.</p>
+
+                    <div className="flex items-center gap-3">
+                      {/* Shop status */}
+                      <div className="flex items-center gap-1.5 bg-white/[0.12] px-2.5 py-[5px] rounded-full border border-white/[0.15]">
+                        <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[#6FE090]" : "bg-[#FAC775]"}`} />
+                        <span className="text-[12px]">{place.is_open ? "مفتوح" : "مغلق حالياً"}</span>
+                      </div>
+                      {/* Prayer time */}
+                      {nextPrayer && (
+                        <div className="flex items-center gap-2 bg-white/[0.12] px-3 py-[5px] rounded-full border border-white/[0.15]">
+                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="opacity-85 flex-shrink-0">
+                            <circle cx="8" cy="8" r="6.5" stroke="white" strokeWidth="1.3"/>
+                            <path d="M8 4v4l2.5 1.5" stroke="white" strokeWidth="1.3" strokeLinecap="round"/>
+                          </svg>
+                          <span className="text-[12px]">أذان {nextPrayer.name} بعد <strong className="font-semibold">{nextPrayer.remaining}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="flex-shrink-0 bg-white p-3 rounded-xl text-center">
+                    <QRCodeSVG
+                      value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
+                      size={100}
+                      fgColor="#4A7C59"
+                      bgColor="white"
+                      level="M"
+                    />
+                    <p className="text-[10px] text-[#4A7C59] mt-1.5 font-medium">امسح للوصول للمحل</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Visits ── */}
+              <div>
+                <div className="flex items-baseline gap-2 mb-2.5">
+                  <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">من زار صفحتك؟</span>
+                  <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+                </div>
+                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-5">
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    {[
+                      { label: "زيارات اليوم", num: visitStats.today },
+                      { label: "هذا الأسبوع", num: visitStats.week },
+                      { label: "الإجمالي", num: visitStats.total },
+                    ].map((v, i) => (
+                      <div key={v.label} className={`text-center ${i === 1 ? "border-r border-l border-[var(--d-border)]/50" : ""}`}>
+                        <p className="text-[28px] font-medium text-[var(--d-text)] tabular-nums leading-none mb-1.5">{v.num}</p>
+                        <p className="text-[11px] text-[var(--d-text-sec)]">{v.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Blue tip */}
+                  <div className="bg-[var(--d-blue-bg)] rounded-xl px-3.5 py-3 mb-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>
+                      <span className="text-[13px] font-medium text-[var(--d-blue-text)]">شارك محلك لتبدأ بجذب الزوار</span>
+                    </div>
+                    <p className="text-[12px] text-[var(--d-blue-text)] leading-relaxed">انسخ الرابط وأرسله للزبائن عبر واتساب أو ضعه في بايو حساباتك على السوشال ميديا.</p>
+                  </div>
+
+                  {/* Locked analytics */}
+                  
+                </div>
+              </div>
+
+              {/* ── صفحتك العامة ── */}
+              <div>
+                <div className="flex items-baseline gap-2 mb-2.5">
+                  <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">صفحتك العامة</span>
+                  <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Preview */}
+                  <a
+                    href={`/places/${place.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 pr-5 text-right hover:bg-[var(--d-subtle-bg)] transition-colors block"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-purple-bg)] flex items-center justify-center mb-2.5">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">معاينة الصفحة</p>
+                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">شاهد محلك كما يراه الزبائن</p>
+                  </a>
+                  {/* Copy link */}
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/places/${place.id}`); showToast("تم نسخ الرابط ✓"); }}
+                    className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 pr-5 text-right hover:bg-[var(--d-subtle-bg)] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-blue-bg)] flex items-center justify-center mb-2.5">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </div>
+                    <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">نسخ الرابط</p>
+                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">انسخ رابط محلك وأرسله للزبائن</p>
+                  </button>
+                  {/* WhatsApp share */}
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`تفضل رابط محلنا: ${typeof window !== "undefined" ? window.location.origin : ""}/places/${place.id}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 pr-5 text-right hover:bg-[var(--d-subtle-bg)] transition-colors block"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-[var(--d-mint-bg)] flex items-center justify-center mb-2.5">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </div>
+                    <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">شارك عبر واتساب</p>
+                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">أرسل الرابط مباشرة للزبائن</p>
+                  </a>
+                </div>
+              </div>
+
+              {/* ── ميزات بانتظارك — desktop ── */}
+              {(() => {
+                const isPremium = place.plan === "premium";
+                const features = place.plan === "free" ? [
+                  { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
+                  { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
+                  { name: "شارة التوثيق", desc: "زيد الثقة", icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></> },
+                  { name: "منيو PDF", desc: "للطباعة", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></> },
+                ] : place.plan === "basic" ? [
+                  { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
+                  { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
+                  { name: "نشر إعلان", desc: "على صفحاتنا", icon: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></> },
+                  { name: "ترويج الأكواد", desc: "على الموقع", icon: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></> },
+                ] : [
+                  { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
+                  { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
+                  { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
+                  { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
+                ];
+                const title = isPremium ? "ميزات باقتك" : "ميزات بانتظارك";
+                const sub = place.plan === "free" ? "طوّر محلك بميزات احترافية" : isPremium ? "أنت تستمتع بجميع المزايا" : "احصل على ميزات حصرية";
+                const accent = "var(--d-purple-text)";
+                const gradient = isDark ? "from-[#1E1D30] via-[#252040] to-[#2A1D2E]" : "from-[#EEEDFE] via-[#CECBF6] to-[#FBEAF0]";
+                return (
+                  <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-bl ${gradient} p-5`}>
+                    <div className="absolute -top-[30px] -left-[30px] w-[120px] h-[120px] rounded-full bg-white/30" />
+                    <div className="relative flex justify-between items-center mb-3.5">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {isPremium ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                          )}
+                          <p className="text-[14px] font-medium" style={{ color: "var(--d-purple-deep)" }}>{title}</p>
+                        </div>
+                        <p className="text-[12px]" style={{ color: "var(--d-purple-text)" }}>{sub}</p>
+                      </div>
+                      {!isPremium && <button onClick={() => setActiveView("plans")} className="text-[12px] px-3.5 py-[6px] bg-[var(--d-purple-text)] text-white rounded-lg font-medium hover:bg-[#443DA0] transition-colors">عرض الباقات ←</button>}
+                    </div>
+                    <div className="relative grid grid-cols-4 gap-2.5">
+                      {features.map((f) => (
+                        <div key={f.name} className="bg-[var(--d-card)]/70 rounded-xl p-2.5 text-center">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1">{f.icon}</svg>
+                          <p className="text-[12px] font-medium mb-0.5" style={{ color: "var(--d-purple-deep)" }}>{f.name}</p>
+                          <p className="text-[10px]" style={{ color: "var(--d-purple-text)" }}>{f.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+          })()}
 
           {/* Menu management — inline on desktop */}
           {activeView === "menu" && !isWorkspace && (
@@ -1519,7 +2084,7 @@ function OwnerDashboardPage() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
-                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[#F1EFE8] text-[#5F5E5A] shrink-0">غير متوفر</span>}
+                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
                             </div>
                             {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
                           </div>
@@ -1533,7 +2098,7 @@ function OwnerDashboardPage() {
                           <button
                             onClick={() => handleToggleItem(item.id)}
                             disabled={!!actionLoading}
-                            className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[#B4B2A9]"}`}
+                            className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
                           >
                             <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
                           </button>
@@ -1612,7 +2177,7 @@ function OwnerDashboardPage() {
           {activeView === "plans" && (
             <div className="space-y-5">
               <div className="flex items-center gap-2.5">
-                <button onClick={() => setActiveView("orders")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                <button onClick={() => setActiveView("home")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
                 <div>
@@ -1685,12 +2250,12 @@ function OwnerDashboardPage() {
 
                       {/* Premium exclusives box */}
                       {p.key === "premium" && (
-                        <div className="bg-[#E1F5EE] rounded-xl p-3 mb-4">
-                          <p className="text-[10.5px] font-medium text-[#0F6E56] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
+                        <div className="bg-[var(--d-mint-bg)] rounded-xl p-3 mb-4">
+                          <p className="text-[10.5px] font-medium text-[var(--d-mint-text)] mb-2 tracking-[0.3px]">★ مزايا حصرية</p>
                           <ul className="space-y-0">
                             {PREMIUM_EXCLUSIVES.map((feat) => (
-                              <li key={feat} className="flex items-start gap-2 py-1 text-[12px] text-[#04342C]">
-                                <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[#0F6E56]">
+                              <li key={feat} className="flex items-start gap-2 py-1 text-[12px] text-[var(--d-mint-text)]">
+                                <span className="inline-flex items-center justify-center w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-[var(--d-mint-text)]">
                                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                 </span>
                                 <span>{feat}</span>
@@ -1705,12 +2270,12 @@ function OwnerDashboardPage() {
                         onClick={() => setSelectedPlan(isSelected ? null : p.key)}
                         className={`w-full py-2.5 rounded-xl text-[12.5px] font-medium transition-all ${
                           isCurrent
-                            ? "bg-transparent text-[#0F6E56] border border-[#9FE1CB]"
+                            ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
                             : isSelected
                               ? "bg-[var(--d-green)] text-white"
                               : p.featured
                                 ? "bg-[var(--d-green)] text-white"
-                                : "bg-[var(--d-card)] text-[#0F6E56] border border-[#0F6E56]"
+                                : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
                         }`}
                       >
                         {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : isCurrent ? "باقتك الحالية" : `ترقية إلى ${p.badge}`}
@@ -1761,7 +2326,7 @@ function OwnerDashboardPage() {
             <div className="space-y-3.5">
               {/* Page header */}
               <div className="flex items-center gap-2.5">
-                <button onClick={() => setActiveView("orders")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                <button onClick={() => setActiveView("home")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
                 <div>
@@ -1789,8 +2354,8 @@ function OwnerDashboardPage() {
                     <div className="pt-3 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="text-[17px] font-medium text-[var(--d-text)]">{place.name}</h2>
-                        <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full ${place.is_open ? "bg-[#E1F5EE] text-[#0F6E56]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[#1D9E75]" : "bg-[var(--d-text-muted)]"}`} />
+                        <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full ${place.is_open ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-text-muted)]"}`} />
                           {place.is_open ? "مفتوح" : "مغلق"}
                         </span>
                       </div>
@@ -1831,7 +2396,7 @@ function OwnerDashboardPage() {
                 </div>
                 <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
                   <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوفر</p>
-                  <p className="text-[22px] font-medium text-[#0F6E56] tabular-nums">{availableItems}</p>
+                  <p className="text-[22px] font-medium text-[var(--d-mint-text)] tabular-nums">{availableItems}</p>
                 </div>
               </div>
 
@@ -1839,14 +2404,14 @@ function OwnerDashboardPage() {
               <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--d-border)]/50">
                   <h3 className="text-[14px] font-medium text-[var(--d-text)]">معلومات التواصل</h3>
-                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="text-[12px] font-medium text-[#0F6E56] hover:bg-[var(--d-subtle-bg)] px-2 py-1 rounded transition-colors">تعديل</button>
+                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="text-[12px] font-medium text-[var(--d-mint-text)] hover:bg-[var(--d-subtle-bg)] px-2 py-1 rounded transition-colors">تعديل</button>
                 </div>
                 <div className="px-4 py-1.5">
                   {/* Phone */}
                   {place.phone && (
                     <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
-                      <div className="w-8 h-8 rounded-lg bg-[#E6F1FB] flex items-center justify-center shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0C447C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                      <div className="w-8 h-8 rounded-lg bg-[var(--d-blue-bg)] flex items-center justify-center shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-[var(--d-text-muted)]">رقم الهاتف</p>
@@ -1860,8 +2425,8 @@ function OwnerDashboardPage() {
                   {/* WhatsApp */}
                   {place.whatsapp && (
                     <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
-                      <div className="w-8 h-8 rounded-lg bg-[#E1F5EE] flex items-center justify-center shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                      <div className="w-8 h-8 rounded-lg bg-[var(--d-mint-bg)] flex items-center justify-center shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-[var(--d-text-muted)]">واتساب</p>
@@ -1874,8 +2439,8 @@ function OwnerDashboardPage() {
                   )}
                   {/* Area & Address */}
                   <div className="flex items-start gap-3 py-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#FAEEDA] flex items-center justify-center shrink-0">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#854F0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <div className="w-8 h-8 rounded-lg bg-[var(--d-amber-bg)] flex items-center justify-center shrink-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-amber-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] text-[var(--d-text-muted)]">المنطقة</p>
@@ -1912,7 +2477,7 @@ function OwnerDashboardPage() {
             <NavItem icon="tag" label="الأكواد" active={mobileTab === "codes"} onClick={() => { setMobileTab("codes"); setDashSearch(""); }} />
           </>
         )}
-        <NavItem icon="edit" label="البيانات" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); setDashSearch(""); populateEditForm(); }} />
+        <NavItem icon="edit" label="بروفايل" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); setDashSearch(""); populateEditForm(); }} />
       </div>
 
       {/* ══ SHEETS ══ */}
@@ -1926,7 +2491,7 @@ function OwnerDashboardPage() {
             <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
               {isSectionLoading && (
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                  <div className="w-5 h-5 border-2 border-[#E05C35]/30 border-t-[#E05C35] rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
                 </div>
               )}
               <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
@@ -1941,7 +2506,7 @@ function OwnerDashboardPage() {
                   <button
                     onClick={() => handleDeleteSection(sec.id)}
                     disabled={!!actionLoading}
-                    className="text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-full px-2 py-1"
+                    className="text-[11px] font-bold text-[var(--d-warn-text)] bg-[var(--d-red-bg)] rounded-full px-2 py-1"
                   >
                     <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                       <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" />
@@ -1995,7 +2560,7 @@ function OwnerDashboardPage() {
                     <button
                       onClick={() => handleDeleteItem(item.id)}
                       disabled={!!actionLoading}
-                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#E05C35] bg-[var(--d-red-bg)] rounded-lg py-1.5 px-3"
+                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--d-warn-text)] bg-[var(--d-red-bg)] rounded-lg py-1.5 px-3"
                     >
                       <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                         <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" />
@@ -2081,7 +2646,7 @@ function OwnerDashboardPage() {
           {place.section === "store" && (
             <div>
               <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
-                نوع المتجر <span className="text-[#E05C35] text-[11px]">*</span>
+                نوع المتجر <span className="text-[var(--d-warn-text)] text-[11px]">*</span>
               </label>
               <select
                 value={editStoreType}
@@ -2354,7 +2919,7 @@ function OwnerDashboardPage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmDialog(null)} />
           <div className="relative bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-5 w-full max-w-[280px] shadow-xl text-center">
             <div className="w-10 h-10 rounded-full bg-[var(--d-red-bg)] flex items-center justify-center mx-auto mb-3">
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="#E05C35" strokeWidth={2} strokeLinecap="round">
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="var(--d-warn-text)" strokeWidth={2} strokeLinecap="round">
                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
               </svg>
             </div>
@@ -2368,7 +2933,7 @@ function OwnerDashboardPage() {
               </button>
               <button
                 onClick={confirmDialog.onConfirm}
-                className="flex-1 py-2.5 rounded-xl text-[12px] font-bold bg-[#E05C35] text-white"
+                className="flex-1 py-2.5 rounded-xl text-[12px] font-bold bg-[var(--d-warn-text)] text-white"
               >
                 حذف
               </button>

@@ -11,7 +11,6 @@ const NAV_ITEMS: { href: string; icon: IconType; label: string }[] = [
   { href: "/market", icon: "market", label: "السوق" },
   { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
-  { href: "/orders", icon: "orders", label: "طلباتي" },
   { href: "/account", icon: "account", label: "حسابي" },
 ];
 

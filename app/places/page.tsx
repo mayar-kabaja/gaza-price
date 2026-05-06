@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -9,16 +10,10 @@ import { useTheme } from '@/hooks/useTheme';
 import { useArea } from '@/hooks/useArea';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useAreas, usePlaces, usePlacesSearch } from '@/lib/queries/hooks';
-import { apiFetch } from '@/lib/api/fetch';
-import { uploadReceiptPhoto } from '@/lib/api/upload';
 import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
-import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
-import { getItemIcon, getItemBgColor } from '@/components/places/FoodIcons';
-import { useSessionContext } from '@/contexts/SessionContext';
-import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -60,16 +55,6 @@ function typeLabel(type: string): string {
   return type;
 }
 
-/** Clean whatsapp number: fix double prefix, keep 970 or 972 */
-function cleanWhatsapp(raw: string): string {
-  let d = raw.replace(/\D/g, '');
-  if (d.startsWith('970972')) d = d.slice(3);
-  if (d.startsWith('972970')) d = '972' + d.slice(6);
-  if (d.startsWith('00')) d = d.slice(2);
-  if (d.startsWith('0')) d = '970' + d.slice(1);
-  if (!d.startsWith('970') && !d.startsWith('972')) d = '970' + d;
-  return d;
-}
 
 const EMOJI_MAP: Record<string, string> = {
   restaurant: '🍽️', cafe: '☕', bakery: '🫓', juice: '🧃',
@@ -145,9 +130,9 @@ const BG_MAP: Record<string, [string, string]> = {
 
 export default function PlacesPage() {
   const isDesktop = useIsDesktop();
+  const router = useRouter();
   const [section, setSection] = useState<Section>('store');
   const [chip, setChip] = useState(0);
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
@@ -508,7 +493,7 @@ export default function PlacesPage() {
                         </div>
                         <div className="bg-surface border-b border-border">
                           {places.map((place, i) => (
-                            <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                            <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                           ))}
                         </div>
                       </>
@@ -532,7 +517,7 @@ export default function PlacesPage() {
                               <div key={placeId} className="bg-surface border-b border-border">
                                 <div
                                   className="flex items-center gap-2 px-6 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
-                                  onClick={() => setSelectedPlace(place)}
+                                  onClick={() => router.push(`/places/${place.id}`)}
                                 >
                                   <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
                                   <span className="text-[10px] text-mist">{place.area?.name_ar}</span>
@@ -601,7 +586,7 @@ export default function PlacesPage() {
                           return (
                             <div
                               key={place.id}
-                              onClick={() => setSelectedPlace(place)}
+                              onClick={() => router.push(`/places/${place.id}`)}
                               className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
                             >
                               <div
@@ -645,7 +630,7 @@ export default function PlacesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {places.map((place, i) => (
-                      <StoreCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                      <StoreCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                     ))}
                   </div>
                   {totalPages > 1 && (
@@ -714,7 +699,7 @@ export default function PlacesPage() {
                 <div className="p-6">
                   <div className="grid grid-cols-2 gap-4">
                     {places.map((place, i) => (
-                      <WorkspaceCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                      <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                     ))}
                   </div>
                   {totalPages > 1 && (
@@ -754,7 +739,7 @@ export default function PlacesPage() {
                       </div>
                       <div className="bg-surface border-b border-border">
                         {places.map((place, i) => (
-                          <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                          <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                         ))}
                       </div>
                     </>
@@ -778,7 +763,7 @@ export default function PlacesPage() {
                             <div key={placeId} className="bg-surface border-b border-border">
                               <div
                                 className="flex items-center gap-2 px-6 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
-                                onClick={() => setSelectedPlace(place)}
+                                onClick={() => router.push(`/places/${place.id}`)}
                               >
                                 <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
                                 <span className="text-[10px] text-mist">{place.area?.name_ar}</span>
@@ -831,7 +816,7 @@ export default function PlacesPage() {
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                           {places.slice(0, 3).map((place, i) => (
-                            <SpotlightCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                            <SpotlightCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                           ))}
                         </div>
                       </div>
@@ -846,7 +831,7 @@ export default function PlacesPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-3 px-1">
                           {(chip === 0 && page === 0 ? places.slice(3) : places).map((place, i) => (
-                            <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                            <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                           ))}
                         </div>
                       </>
@@ -877,9 +862,6 @@ export default function PlacesPage() {
               </>
             )}
         </div>
-        {selectedPlace && (
-          <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} isDesktop />
-        )}
       </>
     );
   }
@@ -891,20 +873,27 @@ export default function PlacesPage() {
 
       {/* Search bar — inside green area */}
       <div className="bg-olive px-4 pb-3 -mt-px">
-        <div className="bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl flex items-center gap-2 px-3 py-2.5">
-          <span className="text-xs text-mist dark:text-white/50">🔍</span>
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
-            className="flex-1 text-xs text-mist dark:text-white placeholder:text-mist dark:placeholder:text-white/50 bg-transparent outline-none min-w-0 font-semibold"
-            dir="rtl"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-mist dark:text-white/50 text-sm leading-none hover:text-ink dark:hover:text-white">
-              ×
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl flex items-center gap-2 px-3 py-2.5">
+            <span className="text-xs text-mist dark:text-white/50">🔍</span>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
+              className="flex-1 text-xs text-mist dark:text-white placeholder:text-mist dark:placeholder:text-white/50 bg-transparent outline-none min-w-0 font-semibold"
+              dir="rtl"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-mist dark:text-white/50 text-sm leading-none hover:text-ink dark:hover:text-white">
+                ×
+              </button>
+            )}
+          </div>
+          <Link href="/orders" className="w-9 h-9 rounded-full bg-white/12 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+          </Link>
         </div>
       </div>
 
@@ -1029,7 +1018,7 @@ export default function PlacesPage() {
                     </div>
                     <div className="bg-surface border-b border-border">
                       {places.map((place, i) => (
-                        <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                        <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                       ))}
                     </div>
                   </>
@@ -1053,7 +1042,7 @@ export default function PlacesPage() {
                           <div key={placeId} className="bg-surface border-b border-border">
                             <div
                               className="flex items-center gap-2 px-4 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
-                              onClick={() => setSelectedPlace(place)}
+                              onClick={() => router.push(`/places/${place.id}`)}
                             >
                               <span className="text-[14px]">🏪</span>
                               <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
@@ -1064,7 +1053,7 @@ export default function PlacesPage() {
                               <div
                                 key={`${placeId}-${idx}`}
                                 className="flex items-center justify-between px-5 py-2.5 border-b border-border/50 last:border-b-0 cursor-pointer hover:bg-fog/50"
-                                onClick={() => setSelectedPlace(place)}
+                                onClick={() => router.push(`/places/${place.id}`)}
                               >
                                 <span className="text-[13px] font-semibold text-ink">{item.item_name}</span>
                                 {Number(item.price) > 0 ? (
@@ -1132,7 +1121,7 @@ export default function PlacesPage() {
                       return (
                         <div
                           key={place.id}
-                          onClick={() => setSelectedPlace(place)}
+                          onClick={() => router.push(`/places/${place.id}`)}
                           className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
                         >
                           <div
@@ -1177,7 +1166,7 @@ export default function PlacesPage() {
                 </div>
                 <div className="flex flex-col gap-2 pb-4">
                   {places.map((place, i) => (
-                    <StoreCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                    <StoreCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                   ))}
                 </div>
               </div>
@@ -1270,7 +1259,7 @@ export default function PlacesPage() {
               </Link>
 
               {places.map((place, i) => (
-                <WorkspaceCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
               ))}
 
               {totalPages > 1 && (
@@ -1371,7 +1360,7 @@ export default function PlacesPage() {
                     </div>
                     <div className="bg-surface border-b border-border">
                       {places.map((place, i) => (
-                        <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                        <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                       ))}
                     </div>
                   </>
@@ -1402,7 +1391,7 @@ export default function PlacesPage() {
                             {/* Place header — green bar like PDF */}
                             <div
                               className="flex items-center gap-2 px-4 py-2.5 bg-olive-pale border-b-2 border-olive/20 cursor-pointer hover:bg-olive-pale/80"
-                              onClick={() => setSelectedPlace(place)}
+                              onClick={() => router.push(`/places/${place.id}`)}
                             >
                               <span className="text-[14px]">{emoji}</span>
                               <span className="font-display font-extrabold text-[12px] text-olive-deep flex-1">{place.name}</span>
@@ -1414,7 +1403,7 @@ export default function PlacesPage() {
                               <div
                                 key={`${placeId}-${idx}`}
                                 className="flex items-center justify-between px-5 py-2.5 border-b border-border/50 last:border-b-0 cursor-pointer hover:bg-fog/50"
-                                onClick={() => setSelectedPlace(place)}
+                                onClick={() => router.push(`/places/${place.id}`)}
                               >
                                 <span className="text-[13px] font-semibold text-ink">{item.item_name}</span>
                                 {Number(item.price) > 0 ? (
@@ -1477,7 +1466,7 @@ export default function PlacesPage() {
                   </div>
                   <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
                     {places.slice(0, 4).map((place, i) => (
-                      <SpotlightCard key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                      <SpotlightCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                     ))}
                   </div>
                 </div>
@@ -1492,7 +1481,7 @@ export default function PlacesPage() {
                   </div>
                   <div className={`bg-surface border-b border-border mb-2 ${totalPages <= 1 ? 'pb-20' : ''}`}>
                     {(chip === 0 && page === 0 ? places.slice(4) : places).map((place, i) => (
-                      <PlaceRow key={place.id} place={place} index={i} onClick={() => setSelectedPlace(place)} />
+                      <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                     ))}
                   </div>
                 </>
@@ -1528,9 +1517,6 @@ export default function PlacesPage() {
       )}
 
       {/* Detail Sheet */}
-      {selectedPlace && (
-        <PlaceSheet place={selectedPlace} onClose={() => setSelectedPlace(null)} />
-      )}
 
       {/* Area picker sheet */}
       {openAreaPicker && (
@@ -1942,774 +1928,7 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
   );
 }
 
-/* ─── Detail Sheet ─── */
-interface MenuItem {
-  id?: string;
-  name: string;
-  price: number;
-  available: boolean;
-  icon?: string | null;
-  photo_url?: string | null;
-  description?: string | null;
-  updated_at?: string;
-}
-
-function resolvePublicImageUrl(url?: string | null): string | null {
-  if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
-  if (!base) return url;
-  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
-}
-
-function getItemEmoji(name: string): string {
-  const m: [RegExp, string][] = [
-    [/قهوة|كابتشينو|لاتيه|اسبرسو|موكا|أمريكان|تركي|قهوه/, '☕'],
-    [/شاي|شاى/, '🍵'], [/عصير|سموذي|كوكتيل|ليمون/, '🥤'],
-    [/كيك|كعك|تورت|بان كيك/, '🥞'], [/تشيز كيك|تشيز/, '🍰'], [/شوكولا|نوتيلا/, '🍫'],
-    [/بوظة|آيس كريم|ايس كريم|جيلاتو/, '🍦'], [/كنافة|كنافه|قشطوطة|قشطة|نابلسية/, '🍮'],
-    [/وافل/, '🧇'], [/كريب/, '🥞'], [/دونات/, '🍩'],
-    [/شاورما|شاورمة/, '🥙'], [/برجر|بيرغر|همبرجر/, '🍔'],
-    [/بيتزا/, '🍕'], [/فلافل|طعمية/, '🧆'], [/حمص|مسبحة/, '🧆'],
-    [/مشوي|مشاوي|كباب|كفت|شيش/, '🥩'], [/ستيك|لحم/, '🥩'],
-    [/دجاج|فراخ|تشكن/, '🍗'], [/سمك|جمبري/, '🐟'],
-    [/فوتشيني|معكرونة|باستا|مكرونة|سباغيت|بيني|فيتوتشيني/, '🍝'], [/أرز|رز/, '🍚'],
-    [/ساندويش|سندويش|توست|خبز|راب/, '🥪'], [/سلطة|فتوش|تبولة/, '🥗'],
-    [/بطاطا|بطاطس|فرايز/, '🍟'], [/شوربة|حساء/, '🍲'],
-    [/فطور|إفطار|بيض|شكشوك/, '🍳'], [/مناقيش|زعتر|فطيرة/, '🫓'],
-    [/بيبسي|كولا|غازي|سفن|سبرايت|موهيتو/, '🥤'], [/فول/, '🫘'],
-    [/حلو|بقلاو|معمول|بسبوس|هريسة/, '🍬'], [/بسكوت|كوكيز/, '🍪'],
-    [/سان سبيستيان|باسك|تشيز بيرن/, '🍰'], [/ميلك شيك|ميلكشيك|شيك/, '🥛'],
-    [/موز/, '🍌'], [/فراولة|فروالة|توت/, '🍓'], [/مانجو|مانجا/, '🥭'],
-  ];
-  const l = name;
-  for (const [p, e] of m) { if (p.test(l)) return e; }
-  return '🍽️';
-}
-
-const FLAG_REASONS = [
-  { value: 'wrong_price', label: 'السعر غلط' },
-  { value: 'not_available', label: 'غير متوفر' },
-  { value: 'wrong_info', label: 'معلومات خاطئة' },
-  { value: 'other', label: 'أخرى' },
-];
-
-function timeAgo(dateStr?: string): string {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'الآن';
-  if (mins < 60) return `منذ ${mins} د`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `منذ ${hours} س`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `منذ ${days} ي`;
-  return `منذ ${Math.floor(days / 7)} أ`;
-}
-
-const SERVICE_DETAIL_COLORS: Record<string, { bg: string; stroke: string }> = {
-  wifi: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  electricity: { bg: '#FFFBEB', stroke: '#F59E0B' },
-  printing: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  screens: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  private_rooms: { bg: '#FEF0EB', stroke: '#E05C35' },
-  drinks: { bg: '#E8F5EE', stroke: '#1E4D2B' },
-};
-
-function WorkspaceSheetContent({ place }: { place: Place }) {
-  const wd = place.workspace_details;
-  const services = place.workspace_services || [];
-
-  const pricingRows = [
-    { label: 'سعر الساعة', value: wd?.price_hour, unit: '₪ / ساعة', color: 'green' },
-    { label: 'نصف يوم', value: wd?.price_half_day, unit: '₪ / نصف يوم', color: 'green' },
-    { label: 'سعر اليوم', value: wd?.price_day, unit: '₪ / يوم', color: 'blue' },
-    { label: 'سعر الأسبوع', value: wd?.price_week, unit: '₪ / أسبوع', color: 'blue' },
-    { label: 'سعر الشهر', value: wd?.price_month, unit: '₪ / شهر', color: 'amber' },
-  ].filter(r => r.value);
-
-  const iconColors: Record<string, { bg: string; stroke: string }> = {
-    green: { bg: '#E8F5EE', stroke: '#1E4D2B' },
-    blue: { bg: '#EFF6FF', stroke: '#3B82F6' },
-    amber: { bg: '#FFFBEB', stroke: '#F59E0B' },
-  };
-
-  return (
-    <>
-      {/* Pricing card */}
-      <div className="bg-surface border border-border rounded-[14px] overflow-hidden mb-4">
-        {pricingRows.map((row, i) => {
-          const ic = iconColors[row.color];
-          return (
-            <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i < pricingRows.length - 1 ? 'border-b border-border' : ''}`}>
-              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: ic.bg }}>
-                <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke={ic.stroke} strokeWidth={2} strokeLinecap="round">
-                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-                </svg>
-              </div>
-              <div>
-                <div className="text-[11px] text-mist">{row.label}</div>
-                <div className="text-[13px] font-bold text-ink">{row.value} {row.unit}</div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Hours */}
-        {wd?.opens_at && wd?.closes_at && (
-          <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#FFFBEB' }}>
-              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#F59E0B" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <div>
-              <div className="text-[11px] text-mist">أوقات العمل</div>
-              <div className="text-[13px] font-bold text-ink">{formatTime(wd.opens_at)} — {formatTime(wd.closes_at)}</div>
-            </div>
-          </div>
-        )}
-
-        {/* Seats */}
-        {wd?.total_seats ? (
-          <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#EFF6FF' }}>
-              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            </div>
-            <div>
-              <div className="text-[11px] text-mist">الطاقة الاستيعابية</div>
-              <div className="text-[13px] font-bold text-ink">{wd.total_seats} مقعد</div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Services section */}
-      {services.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-4 bg-olive rounded-sm" />
-            <span className="font-display font-extrabold text-[13px] text-ink">الخدمات المتاحة</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {services.map(s => {
-              const info = SERVICE_LABELS[s.service];
-              const colors = SERVICE_DETAIL_COLORS[s.service] || { bg: '#E8F5EE', stroke: '#1E4D2B' };
-              return (
-                <div
-                  key={s.id}
-                  className={`flex items-center gap-2 p-3 rounded-xl border ${
-                    s.available
-                      ? 'bg-olive-pale border-olive/20'
-                      : 'bg-fog border-border opacity-50'
-                  }`}
-                >
-                  <div className="w-[30px] h-[30px] rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: colors.bg }}>
-                    <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke={colors.stroke} strokeWidth={2} strokeLinecap="round">
-                      {s.service === 'wifi' && <><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></>}
-                      {s.service === 'electricity' && <path d="M13 2l-2 6.5H5l5.5 4-2 6.5L14 15l5.5 4-2-6.5L23 8.5H16z"/>}
-                      {s.service === 'printing' && <><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>}
-                      {s.service === 'screens' && <><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></>}
-                      {s.service === 'private_rooms' && <><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></>}
-                      {s.service === 'drinks' && <><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></>}
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-[12px] font-bold text-ink">{info?.label || s.service}</div>
-                    <div className={`text-[10px] ${s.available ? 'text-olive' : 'text-mist'}`}>
-                      {s.available ? (s.detail || 'متاح') : 'غير متاح'}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {!wd && services.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-sm text-mist">لا توجد تفاصيل بعد</p>
-          <p className="text-xs text-mist mt-1">📍 {place.area?.name_ar}</p>
-        </div>
-      )}
-    </>
-  );
-}
-
-function PlaceSheet({ place, onClose, isDesktop }: { place: Place; onClose: () => void; isDesktop?: boolean }) {
-  const { contributor, refreshContributor } = useSessionContext();
-  const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const isBoth = place.type === 'both';
-  const emoji = isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'));
-  const [menuSections, setMenuSections] = useState<{ name: string; items: MenuItem[] }[]>([]);
-  const [menuLoading, setMenuLoading] = useState(true);
-  const [imagePreview, setImagePreview] = useState<{ url: string; name?: string; description?: string | null } | null>(null);
-  const imagePreviewUrl = imagePreview?.url ?? null;
-  const setImagePreviewUrl = (url: string | null) => setImagePreview(url ? { url } : null);
-
-  // Cart state
-  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
-  const [showOrderSheet, setShowOrderSheet] = useState(false);
-  const ordersEnabled = place.section === 'food' && place.orders_enabled;
-
-  function addToCart(item: MenuItem) {
-    if (!item.id || !item.available || Number(item.price) <= 0) return;
-    setCart(prev => {
-      const next = new Map(prev);
-      const existing = next.get(item.id!);
-      if (existing) {
-        next.set(item.id!, { ...existing, quantity: existing.quantity + 1 });
-      } else {
-        next.set(item.id!, { menu_item_id: item.id!, name: item.name, price: Number(item.price), quantity: 1 });
-      }
-      return next;
-    });
-  }
-
-  function updateCartQty(id: string, delta: number) {
-    setCart(prev => {
-      const next = new Map(prev);
-      const existing = next.get(id);
-      if (!existing) return prev;
-      const newQty = existing.quantity + delta;
-      if (newQty <= 0) { next.delete(id); } else { next.set(id, { ...existing, quantity: newQty }); }
-      return next;
-    });
-  }
-
-  function clearCart() {
-    setCart(new Map());
-    setShowOrderSheet(false);
-  }
-
-  const cartItemCount = Array.from(cart.values()).reduce((s, i) => s + i.quantity, 0);
-  const cartTotal = Array.from(cart.values()).reduce((s, i) => s + i.price * i.quantity, 0);
-
-  // Flag state
-  const [flagItem, setFlagItem] = useState<MenuItem | null>(null);
-  const [flagReason, setFlagReason] = useState('wrong_price');
-  const [flagCorrectPrice, setFlagCorrectPrice] = useState('');
-  const [flagNote, setFlagNote] = useState('');
-  const [flagPhoto, setFlagPhoto] = useState<string | null>(null);
-  const [flagUploading, setFlagUploading] = useState(false);
-  const [flagSubmitting, setFlagSubmitting] = useState(false);
-  const [flagDone, setFlagDone] = useState(false);
-  const [flagError, setFlagError] = useState('');
-  function openFlag(item: MenuItem) {
-    setFlagItem(item);
-    setFlagReason('wrong_price');
-    setFlagCorrectPrice('');
-    setFlagNote('');
-    setFlagPhoto(null);
-    setFlagDone(false);
-    setFlagError('');
-  }
-
-  async function handleFlagPhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setFlagError('الحد الأقصى 5 ميجابايت'); return; }
-    setFlagUploading(true);
-    setFlagError('');
-    try {
-      const url = await uploadReceiptPhoto(file);
-      setFlagPhoto(url);
-    } catch { setFlagError('فشل رفع الصورة'); }
-    setFlagUploading(false);
-  }
-
-  async function submitFlag() {
-    if (!flagItem?.id) return;
-    setFlagSubmitting(true);
-    setFlagError('');
-    try {
-      const res = await apiFetch(`/api/places/${place.id}/menu/${flagItem.id}/flag`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: flagReason,
-          correct_price: flagCorrectPrice ? Number(flagCorrectPrice) : undefined,
-          proof_photo_url: flagPhoto || undefined,
-          note: flagNote.trim() || undefined,
-        }),
-      });
-      if (!res.ok) throw new Error('فشل الإبلاغ');
-      setFlagDone(true);
-      setTimeout(() => setFlagItem(null), 1500);
-    } catch {
-      setFlagError('حدث خطأ، حاول مرة أخرى');
-    }
-    setFlagSubmitting(false);
-  }
-
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const res = await apiFetch(`/api/places/${place.id}/menu?no_cache=1&_t=${Date.now()}`);
-        if (res.ok) {
-          const data = await res.json();
-          setMenuSections(data.data || data || []);
-        }
-      } catch {
-        // menu endpoint might not exist yet
-      }
-      setMenuLoading(false);
-    };
-    fetchMenu();
-  }, [place.id]);
-
-  const pos = isDesktop ? 'absolute' : 'fixed';
-
-  return (
-    <>
-      {/* Backdrop — mobile only */}
-      {!isDesktop && <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />}
-
-      {/* Sheet */}
-      <div className={`${pos} inset-0 bg-fog z-50 flex flex-col ${isDesktop ? '' : 'animate-slideIn'}`}>
-        {/* Header */}
-        {isDesktop ? (
-          <div className="px-5 pt-5 pb-3 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={onClose}
-                className="w-7 h-7 rounded-lg bg-fog border border-border flex items-center justify-center text-mist hover:text-ink transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-12"/><path d="M15 18l-6-12" transform="rotate(90 12 12)"/>
-                </svg>
-              </button>
-              <h2 className="font-display font-bold text-base text-ink">
-                {place.name}
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-olive-pale flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-lg' : ''}`}>
-                {place.avatar_url ? (
-                  <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 text-[12px] text-mist">
-                  <span>📍 {place.area?.name_ar}</span>
-                  {place.is_open && (
-                    <span className="flex items-center gap-1 font-bold text-olive">
-                      <span className="w-[5px] h-[5px] rounded-full bg-olive animate-pulse" />
-                      مفتوح
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                {place.phone && (
-                  <a href={`tel:${place.phone}`} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-sm">
-                    📞
-                  </a>
-                )}
-                {place.whatsapp && (
-                  <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-sm">
-                    💬
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-olive p-4 pb-5 flex-shrink-0 relative overflow-hidden">
-            <div className="absolute w-[140px] h-[140px] rounded-full bg-white/[0.06] -bottom-[50px] -left-5 pointer-events-none" />
-
-            {/* Back row */}
-            <div className="flex items-center gap-2 mb-3 relative z-[1]">
-              <button
-                onClick={onClose}
-                className="w-[30px] h-[30px] bg-white/[0.12] rounded-lg flex items-center justify-center text-white font-bold text-[15px]"
-              >
-                {'›'}
-              </button>
-              <span className="font-display font-bold text-[13px] text-white">
-                {place.section === 'food' ? 'القائمة الكاملة' : place.section === 'workspace' ? 'تفاصيل مساحة العمل' : 'تفاصيل المتجر'}
-              </span>
-            </div>
-
-            {/* Place info */}
-            <div className="flex items-center gap-3 relative z-[1]">
-              <div className={`w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-2xl' : ''}`}>
-                {place.avatar_url ? (
-                  <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-display font-black text-[17px] text-white mb-1">{place.name}</div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-white/55">📍 {place.area?.name_ar}</span>
-                  {place.is_open && (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#7DEAAA]">
-                      <span className="w-[5px] h-[5px] rounded-full bg-[#7DEAAA] animate-pulse" />
-                      مفتوح الآن
-                    </span>
-                  )}
-                </div>
-                {place.address && (
-                  <div className="text-[10px] text-white/40 mt-0.5 truncate">{place.address}</div>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 flex-shrink-0">
-                {place.phone && (
-                  <a href={`tel:${place.phone}`} className="w-9 h-9 rounded-full bg-white/10 border border-white/[0.18] flex items-center justify-center text-[16px]">
-                    📞
-                  </a>
-                )}
-                {place.whatsapp && (
-                  <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
-                    💬
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-24">
-          {place.section === 'workspace' ? (
-            <WorkspaceSheetContent place={place} />
-          ) : menuLoading ? (
-            <div className="space-y-5">
-              {[...Array(2)].map((_, i) => (
-                <div key={i}>
-                  <div className="flex items-center gap-[7px] py-3">
-                    <div className="w-1 h-[18px] rounded-sm bg-border/60 animate-pulse" />
-                    <div className="h-3.5 w-20 rounded-md bg-border/60 animate-pulse" />
-                  </div>
-                  <div className="bg-surface border border-border rounded-[14px] overflow-hidden">
-                    {[...Array(4)].map((_, j) => (
-                      <div key={j} className={`flex items-center gap-3 px-3.5 py-3 ${j < 3 ? 'border-b border-border' : ''}`}>
-                        <div className="w-10 h-10 rounded-[10px] bg-border/60 animate-pulse flex-shrink-0" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-3.5 w-24 rounded-md bg-border/60 animate-pulse" />
-                          <div className="h-2.5 w-32 rounded-md bg-border/60 animate-pulse" />
-                        </div>
-                        <div className="h-5 w-12 rounded-md bg-border/60 animate-pulse flex-shrink-0" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : menuSections.length > 0 ? (
-            <>
-              {menuSections.some((sec) => sec.items.some((item) => Number(item.price) === 0)) && (
-                <div className="bg-surface rounded-2xl border border-border p-3 mb-4 text-center">
-                  <p className="text-[12px] font-semibold text-mist">بعض الأسعار لم تُضاف بعد من صاحب المحل</p>
-                  <p className="text-[10px] text-mist/70 mt-1">تواصل مع المحل مباشرة للاستفسار عن الأسعار &nbsp;📞</p>
-                </div>
-              )}
-            {menuSections.map((sec) => (
-              <div key={sec.name} className="mb-5">
-                <div className="flex items-center gap-[7px] py-3">
-                  <div className="w-1 h-[18px] bg-olive rounded-sm" />
-                  <span className="font-display font-extrabold text-[13px] text-ink">{sec.name}</span>
-                </div>
-                {/* Style C — minimal list (both mobile & desktop) */}
-                {(
-                  <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
-                  {sec.items.map((item, idx) => {
-                    const photoUrl = resolvePublicImageUrl(item.photo_url);
-                    const cartItem = item.id ? cart.get(item.id) : undefined;
-                    const qtyInCart = cartItem?.quantity || 0;
-                    return (
-                    <div
-                      key={item.id || `${item.name}-${idx}`}
-                      className={`flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#F2FAF5] ${idx < sec.items.length - 1 ? 'border-b border-border' : ''} ${!item.available ? 'opacity-45' : ''}`}
-                    >
-                      {/* Icon / photo */}
-                      {photoUrl ? (
-                        <button type="button" onClick={() => setImagePreview({ url: photoUrl, name: item.name, description: item.description })} className="w-10 h-10 rounded-[10px] flex-shrink-0 overflow-hidden">
-                          <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
-                        </button>
-                      ) : (
-                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 text-olive/60" style={{ background: getItemBgColor(item.name) }}>
-                          {getItemIcon(item.name)('w-5 h-5')}
-                        </div>
-                      )}
-                      {/* Name + description */}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[13px] text-ink mb-0.5">{item.name}</div>
-                        {item.description && <div className="text-[11px] text-mist truncate">{item.description}</div>}
-                      </div>
-                      {/* Right side: flag, price, add */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {item.id && (
-                          <button onClick={() => openFlag(item)} className="flex items-center gap-0.5 text-[10px] text-[#E05C35]/60 hover:text-[#E05C35] transition-colors">
-                            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                          </button>
-                        )}
-                        {item.available && Number(item.price) > 0 ? (
-                          <span className="font-display font-black text-[15px] text-olive">{item.price} <span className="text-[9px] font-normal text-mist">₪</span></span>
-                        ) : item.available ? <span className="text-[11px] text-mist">—</span> : null}
-                        {ordersEnabled && item.available && item.id && Number(item.price) > 0 ? (
-                          qtyInCart > 0 ? (
-                            <div className="flex items-center gap-[5px]">
-                              <button onClick={() => updateCartQty(item.id!, -1)} className="w-[26px] h-[26px] rounded-full bg-[#FEF0EB] border-[1.5px] border-[#E05C35]/20 text-[#E05C35] flex items-center justify-center text-[16px] leading-none">−</button>
-                              <span className="font-display font-extrabold text-[14px] text-ink min-w-[16px] text-center">{qtyInCart}</span>
-                              <button onClick={() => updateCartQty(item.id!, 1)} className="w-[26px] h-[26px] rounded-full bg-olive-pale border-[1.5px] border-olive/20 text-olive flex items-center justify-center text-[14px] leading-none">+</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => addToCart(item)} className="w-7 h-7 rounded-full bg-olive text-white flex items-center justify-center shadow-[0_2px_8px_rgba(30,77,43,0.3)] active:scale-95 transition-transform">
-                              <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            </button>
-                          )
-                        ) : null}
-                      </div>
-                    </div>
-                    );
-                  })}
-                  </div>
-                )}
-              </div>
-            ))}
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-mist">لا توجد قائمة أسعار بعد</p>
-              <p className="text-xs text-mist mt-1">📍 {place.area?.name_ar} · {typeLabel(place.type)}</p>
-            </div>
-          )}
-        </div>
-
-        {/* ══ CART BAR ══ */}
-        {ordersEnabled && cartItemCount > 0 && !showOrderSheet && (
-          <CartBar itemCount={cartItemCount} total={cartTotal} onClick={() => setShowOrderSheet(true)} />
-        )}
-
-        {/* ══ ORDER SHEET ══ */}
-        {showOrderSheet && (
-          <>
-            <div className="fixed inset-0 bg-black/40 z-[55]" onClick={() => setShowOrderSheet(false)} />
-            <div className="fixed z-[60] bg-surface overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)] bottom-0 left-0 right-0 rounded-t-2xl max-h-[85vh] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[480px] lg:max-w-[90vw]" dir="rtl">
-              <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-                <h3 className="font-display font-bold text-[14px] text-ink flex items-center gap-1.5">
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-ink" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-                  سلة الطلب
-                </h3>
-                <button onClick={() => setShowOrderSheet(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
-              </div>
-              <div className="overflow-y-auto flex-1">
-                <OrderSheet
-                  placeId={place.id}
-                  placeWhatsapp={place.whatsapp}
-                  cart={cart}
-                  onUpdateQty={updateCartQty}
-                  onClear={clearCart}
-                  onOrderPlaced={() => {}}
-                  phoneVerified={contributor?.phone_verified}
-                  userPhone={contributor?.phone_number}
-                  userHandle={contributor?.display_handle}
-                  onRequireLogin={() => { setShowOrderSheet(false); setShowAuthPopup(true); }}
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ══ FLAG SHEET ══ */}
-        {flagItem && (
-          <>
-            <div className={`${pos} inset-0 bg-black/40 z-[60]`} onClick={() => !flagSubmitting && setFlagItem(null)} />
-            <div className={`${pos} bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)]`} dir="rtl">
-              {/* Header */}
-              <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-                <div>
-                  <h3 className="font-display font-bold text-[14px] text-ink">🚩 إبلاغ عن سعر خاطئ</h3>
-                  <p className="text-[11px] text-mist mt-0.5">{flagItem.name}{Number(flagItem.price) > 0 ? ` — ${flagItem.price} ₪` : ''}</p>
-                </div>
-                <button
-                  onClick={() => !flagSubmitting && setFlagItem(null)}
-                  className="text-mist hover:text-ink p-1 text-lg leading-none"
-                >×</button>
-              </div>
-
-              <div className="overflow-y-auto flex-1 px-4 py-3 pb-6">
-                {flagDone ? (
-                  <div className="text-center py-10">
-                    <div className="w-16 h-16 rounded-full bg-olive-pale border-[3px] border-olive flex items-center justify-center mx-auto mb-4">
-                      <span className="text-3xl">✅</span>
-                    </div>
-                    <h4 className="font-display font-black text-lg text-ink mb-1">شكراً لمساعدتك!</h4>
-                    <p className="text-[13px] text-mist">سيتم مراجعة البلاغ وتحديث السعر</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Reason picker */}
-                    <div className="mb-4">
-                      <div className="text-[12px] font-bold text-slate mb-1.5">سبب البلاغ</div>
-                      <div className="flex flex-wrap gap-2">
-                        {FLAG_REASONS.map((r) => (
-                          <button
-                            key={r.value}
-                            type="button"
-                            onClick={() => setFlagReason(r.value)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border-[1.5px] transition-colors ${
-                              flagReason === r.value
-                                ? 'bg-sand/15 border-sand text-sand'
-                                : 'bg-surface border-border text-mist hover:border-sand/50'
-                            }`}
-                          >
-                            {r.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Correct price */}
-                    {flagReason === 'wrong_price' && (
-                      <div className="mb-4">
-                        <div className="text-[12px] font-bold text-slate mb-1.5">السعر الصحيح (اختياري)</div>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            value={flagCorrectPrice}
-                            onChange={(e) => setFlagCorrectPrice(e.target.value)}
-                            placeholder="0"
-                            className="flex-1 bg-surface border-[1.5px] border-border rounded-xl px-3 py-2.5 text-[14px] text-ink font-body outline-none transition-colors placeholder:text-mist focus:border-olive-mid"
-                          />
-                          <div className="bg-olive-pale border-[1.5px] border-olive rounded-xl px-3 py-2.5 text-[14px] font-display font-extrabold text-olive flex-shrink-0">₪</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Note */}
-                    <div className="mb-4">
-                      <div className="text-[12px] font-bold text-slate mb-1.5">ملاحظة (اختياري)</div>
-                      <input
-                        type="text"
-                        value={flagNote}
-                        onChange={(e) => setFlagNote(e.target.value)}
-                        placeholder="مثال: السعر ارتفع من أمس..."
-                        className="w-full bg-surface border-[1.5px] border-border rounded-xl px-3 py-2.5 text-[13px] text-ink font-body outline-none transition-colors placeholder:text-mist focus:border-olive-mid"
-                      />
-                    </div>
-
-                    {/* Proof photo */}
-                    <div className="mb-5">
-                      <div className="text-[12px] font-bold text-slate mb-1.5">صورة إثبات (مطلوب للتحقق الأسرع)</div>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic"
-                        onChange={handleFlagPhoto}
-                        className="hidden"
-                        id="flag-photo-input"
-                      />
-                      <label
-                        htmlFor="flag-photo-input"
-                        className={cn(
-                          'block border-2 border-dashed rounded-2xl p-5 text-center transition-colors cursor-pointer',
-                          flagPhoto ? 'border-olive bg-olive-pale' : 'border-border bg-fog/50 hover:border-olive-mid'
-                        )}
-                      >
-                        {flagUploading ? (
-                          <p className="text-sm text-mist">جاري الرفع...</p>
-                        ) : flagPhoto ? (
-                          <div className="space-y-1.5">
-                            <span className="text-2xl block">✓</span>
-                            <p className="text-sm text-olive font-semibold">تم رفع صورة الإثبات</p>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); setFlagPhoto(null); }}
-                              className="text-xs text-mist hover:text-ink underline"
-                            >إزالة</button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="text-2xl block mb-1">📸</span>
-                            <p className="text-[12px] text-mist font-semibold">صوّر السعر الحقيقي أو الإيصال</p>
-                            <p className="text-[10px] text-mist mt-0.5">JPG, PNG حتى 5 ميجابايت</p>
-                          </>
-                        )}
-                      </label>
-                    </div>
-
-                    {/* Error */}
-                    {flagError && (
-                      <div className="mb-3 rounded-xl bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-[12px]">
-                        {flagError}
-                      </div>
-                    )}
-
-                    {/* Submit */}
-                    <button
-                      onClick={submitFlag}
-                      disabled={flagSubmitting || flagUploading}
-                      className={cn(
-                        'w-full font-display font-extrabold text-[14px] rounded-2xl py-3 flex items-center justify-center gap-2 transition-all',
-                        flagSubmitting || flagUploading
-                          ? 'bg-border text-mist cursor-not-allowed'
-                          : 'bg-sand text-white shadow-[0_4px_12px_rgba(196,142,68,0.3)] hover:bg-[#b8813e]'
-                      )}
-                    >
-                      {flagSubmitting ? 'جاري الإرسال...' : '🚩 إرسال البلاغ'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ══ IMAGE PREVIEW ══ */}
-        {imagePreviewUrl && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/60 z-[200]"
-              onClick={() => setImagePreviewUrl(null)}
-            />
-            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4" dir="rtl">
-              <div className="relative w-full max-w-md">
-                <button
-                  type="button"
-                  onClick={() => setImagePreviewUrl(null)}
-                  className="absolute -top-3 -left-3 w-9 h-9 rounded-full bg-white text-[#111827] shadow-lg flex items-center justify-center text-xl leading-none"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-                <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
-                  <img
-                    src={imagePreviewUrl}
-                    alt=""
-                    className="w-full h-auto max-h-[65vh] object-contain bg-black"
-                  />
-                  {(imagePreview?.name || imagePreview?.description) && (
-                    <div className="px-4 py-3 border-t border-gray-100">
-                      {imagePreview.name && (
-                        <div className="font-bold text-[15px] text-[#111827]">{imagePreview.name}</div>
-                      )}
-                      {imagePreview.description && (
-                        <div className="text-[12px] text-[#6B7280] mt-0.5 leading-relaxed">{imagePreview.description}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      <PhoneAuthPopup
-        open={showAuthPopup}
-        onClose={() => setShowAuthPopup(false)}
-        onVerified={() => {
-          setShowAuthPopup(false);
-          refreshContributor().catch(() => {});
-        }}
-        mode="login"
-        reason="سجّل دخولك لتتمكن من إرسال طلبك"
-      />
-    </>
-  );
-}
-
+/* ─── Desktop Place Card ─── */
 /* ─── Desktop Place Card ─── */
 function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => void }) {
   const { theme } = useTheme();

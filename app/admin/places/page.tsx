@@ -82,6 +82,7 @@ export default function AdminPlacesPage() {
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editInstagram, setEditInstagram] = useState("");
+  const [editPlan, setEditPlan] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Add place modal
@@ -164,6 +165,7 @@ export default function AdminPlacesPage() {
     setEditWhatsapp(p.whatsapp ?? "");
     setEditAddress(p.address ?? "");
     setEditInstagram(p.instagram_url ?? "");
+    setEditPlan(p.plan ?? "free");
     setActionMenuId(null);
   }
 
@@ -192,6 +194,7 @@ export default function AdminPlacesPage() {
       if (editWhatsapp !== (editPlace.whatsapp ?? "")) body.whatsapp = editWhatsapp;
       if (editAddress !== (editPlace.address ?? "")) body.address = editAddress;
       if (editInstagram !== (editPlace.instagram_url ?? "")) body.instagram_url = editInstagram;
+      if (editPlan !== (editPlace.plan ?? "free")) body.plan = editPlan;
 
       if (Object.keys(body).length === 0) { setEditPlace(null); return; }
 
@@ -700,6 +703,14 @@ export default function AdminPlacesPage() {
               </div>
               <Field label="Address" value={editAddress} onChange={setEditAddress} />
               <Field label="Instagram URL" value={editInstagram} onChange={setEditInstagram} />
+              <div>
+                <label className="block text-[10px] font-medium text-[#4E6070] mb-1 uppercase tracking-wider">Plan</label>
+                <select value={editPlan} onChange={(e) => setEditPlan(e.target.value)} className="w-full h-[38px] rounded-lg border border-[#243040] bg-[#18212C] px-3 text-sm text-[#D8E4F0] outline-none focus:border-[#4A7C59]">
+                  <option value="free">Free (مجانية)</option>
+                  <option value="basic">Basic (أساسية)</option>
+                  <option value="premium">Premium (الأفضل)</option>
+                </select>
+              </div>
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setEditPlace(null)} className="flex-1 rounded-lg border border-[#243040] py-2 text-xs font-medium text-[#8FA3B8] hover:bg-[#18212C]">Cancel</button>

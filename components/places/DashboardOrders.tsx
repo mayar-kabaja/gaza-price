@@ -44,13 +44,13 @@ function isToday(dateStr: string): boolean {
 }
 
 const STATUS_COLORS: Record<string, { label: string; bg: string; text: string; fill: string }> = {
-  pending:   { label: "بانتظار",     bg: "#FEF3CD",  text: "#7A5D0B", fill: "#EF9F27" },
-  accepted:  { label: "مقبول",       bg: "#E6F1FB",  text: "#0C447C", fill: "#378ADD" },
-  preparing: { label: "تحضير",       bg: "#EEEDF9",  text: "#3E3794", fill: "#7F77DD" },
-  ready:     { label: "جاهز",        bg: "#EDF5E0",  text: "#3D6B12", fill: "#97C459" },
-  delivered: { label: "تم التسليم",   bg: "#E1F5EE",  text: "#0F6E56", fill: "#1D9E75" },
-  rejected:  { label: "مرفوض",       bg: "#FCEBEB",  text: "#791F1F", fill: "#E24B4A" },
-  cancelled: { label: "ملغي",        bg: "#F1EFE8",  text: "#444441", fill: "#888780" },
+  pending:   { label: "بانتظار",     bg: "var(--d-pending-bg)",  text: "var(--d-pending-text)", fill: "#EF9F27" },
+  accepted:  { label: "مقبول",       bg: "var(--d-blue-bg)",     text: "var(--d-blue-text)",    fill: "#378ADD" },
+  preparing: { label: "تحضير",       bg: "var(--d-purple-bg)",   text: "var(--d-purple-text)",  fill: "#7F77DD" },
+  ready:     { label: "جاهز",        bg: "var(--d-ready-bg)",    text: "var(--d-ready-text)",   fill: "#97C459" },
+  delivered: { label: "تم التسليم",   bg: "var(--d-mint-bg)",     text: "var(--d-mint-text)",    fill: "var(--d-green)" },
+  rejected:  { label: "مرفوض",       bg: "var(--d-red-bg)",      text: "var(--d-red-text)",     fill: "#E24B4A" },
+  cancelled: { label: "ملغي",        bg: "var(--d-gray-alt-bg)", text: "var(--d-gray-alt-text)", fill: "#888780" },
 };
 
 function StatusIcon({ status }: { status: string }) {
@@ -373,7 +373,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
                   onClick={() => setFilter(tab.value)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] shrink-0 transition-all border ${
                     isActive
-                      ? "border-transparent bg-[#E1F5EE] text-[#0F6E56] font-medium"
+                      ? "border-transparent bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium"
                       : "border-[var(--d-border)]/50 bg-transparent text-[var(--d-text)] hover:border-[var(--d-border)]"
                   }`}
                 >
@@ -780,12 +780,12 @@ function OrderCards({ orders, mobile, rejectId, setRejectId, rejectReason, setRe
       <table className="w-full text-right" style={{ tableLayout: "fixed" }}>
         <colgroup>
           <col style={{ width: 50 }} />
-          <col style={{ width: 120 }} />
-          <col style={{ width: 140 }} />
-          <col style={{ width: 72 }} />
+          <col style={{ width: 125 }} />
+          <col style={{ width: 145 }} />
           <col style={{ width: 78 }} />
+          <col style={{ width: 82 }} />
           <col style={{ width: 100 }} />
-          <col style={{ width: 38 }} />
+          <col style={{ width: 20 }} />
         </colgroup>
         <thead>
           <tr className="bg-[var(--d-subtle-bg)]">
@@ -833,13 +833,8 @@ function OrderCards({ orders, mobile, rejectId, setRejectId, rejectReason, setRe
                 <td className="px-3 py-3">
                   <StatusBadge status={order.status} />
                 </td>
-                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => onSelect?.(order)}
-                    className="px-2 py-0.5 text-[18px] leading-none tracking-widest text-[var(--d-text-muted)] rounded hover:bg-[var(--d-subtle-bg)] border border-transparent hover:border-[var(--d-border)]/50 transition-colors"
-                  >
-                    ⋯
-                  </button>
+                <td className="py-3 pr-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><polyline points="15 18 9 12 15 6"/></svg>
                 </td>
               </tr>
             );

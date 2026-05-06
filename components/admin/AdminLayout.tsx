@@ -20,6 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/snapshots": "Price Snapshots",
   "/admin/places": "Places",
   "/admin/listings": "Listings",
+  "/admin/numbers": "Platform Numbers",
 };
 
 const navItems = [
@@ -271,6 +272,7 @@ export function AdminLayout({ children, adminName = "Admin", adminRole = "modera
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">System</div>
         <NavLink href="/admin/logs" label="Logs" icon="file" count={sidebarCounts.logs} pathname={pathname} />
         <NavLink href="/admin/snapshots" label="Price Snapshots" icon="chart" count={sidebarCounts.snapshots} pathname={pathname} />
+        <NavLink href="/admin/numbers" label="Platform Numbers" icon="chart" pathname={pathname} />
       </nav>
 
       <div className="mt-auto p-3 border-t border-[#243040]">

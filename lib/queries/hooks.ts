@@ -15,6 +15,7 @@ import {
   fetchContributorMeReports,
   fetchReports,
   fetchAdminStats,
+  fetchAdminPlatformNumbers,
   fetchAdminPendingProducts,
   fetchAdminFlags,
   fetchPlaces,
@@ -367,6 +368,14 @@ export function useAdminStats() {
     queryKey: queryKeys.adminStats,
     queryFn: () => fetchAdminStats(),
     staleTime: 60 * 1000,
+  });
+}
+
+export function useAdminPlatformNumbers() {
+  return useQuery({
+    queryKey: queryKeys.adminPlatformNumbers,
+    queryFn: () => fetchAdminPlatformNumbers(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

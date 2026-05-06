@@ -52,10 +52,10 @@ function daysUntil(dateStr: string): number | null {
 }
 
 const STATUS_BADGE: Record<string, { label: string; cls: string; dot: string }> = {
-  active:   { label: "نشط",    cls: "bg-[#E1F5EE] text-[#0F6E56]", dot: "#1D9E75" },
-  inactive: { label: "متوقف",  cls: "bg-[#FAEEDA] text-[#854F0B]", dot: "#EF9F27" },
+  active:   { label: "نشط",    cls: "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]", dot: "var(--d-green)" },
+  inactive: { label: "متوقف",  cls: "bg-[var(--d-amber-bg)] text-[var(--d-amber-text)]", dot: "#EF9F27" },
   expired:  { label: "منتهي الصلاحية", cls: "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border border-[var(--d-border)]/50", dot: "#888780" },
-  maxed:    { label: "استُنفد بنجاح",  cls: "bg-[#E1F5EE] text-[#04342C]", dot: "" },
+  maxed:    { label: "استُنفد بنجاح",  cls: "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]", dot: "" },
 };
 
 export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(function DashboardDiscountCodes({ token, mobile, search = "", onAddCode, onEditCode }, ref) {
@@ -70,7 +70,8 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
       const data = await res.json();
       return data.data || [];
     },
-    staleTime: 30000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   useImperativeHandle(ref, () => ({ reload: () => queryClient.invalidateQueries({ queryKey }) }), [queryClient, queryKey]);
@@ -242,9 +243,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     return (
       <div
         key={dc.id}
-        className={`flex flex-col rounded-xl p-4 transition-all ${
-          status === "expired" ? "bg-[var(--d-subtle-bg)]" : "bg-[var(--d-card)]"
-        } border border-[var(--d-border)]/50 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+        className={`flex flex-col rounded-xl p-4 transition-all bg-[var(--d-card)] border border-[var(--d-border)]/50 lg:shadow-sm ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
       >
         {/* ── Header: status badge (right) | icons + code name (left) ── */}
         <div className="flex items-center justify-between mb-2.5">
@@ -296,15 +295,13 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
         {/* ── KV info grid ── */}
         {dc.expires_at && (
-          <div className={`grid grid-cols-2 gap-2 p-2.5 rounded-md mb-3 ${
-            status === "maxed" ? "bg-[#EAF3DE]" : status === "expired" ? "bg-[var(--d-card)]" : "bg-[var(--d-subtle-bg)]"
-          }`}>
+          <div className="grid grid-cols-2 gap-2 p-2.5 rounded-md mb-3 bg-[var(--d-subtle-bg)]">
             <div>
               <p className={`text-[10px] mb-0.5 ${
-                isExpired(dc) ? "text-[var(--d-text-muted)]" : remaining !== null && remaining <= 30 ? "text-[#A32D2D]" : "text-[var(--d-text-muted)]"
+                isExpired(dc) ? "text-[var(--d-text-muted)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text-muted)]"
               }`}>{isExpired(dc) ? "انتهت" : "ينتهي"}</p>
               <p className={`text-[12px] font-medium ${
-                isExpired(dc) ? "text-[var(--d-text)]" : remaining !== null && remaining <= 30 ? "text-[#A32D2D]" : "text-[var(--d-text)]"
+                isExpired(dc) ? "text-[var(--d-text)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text)]"
               }`}>
                 {isExpired(dc)
                   ? `قبل ${Math.abs(Math.ceil((new Date(dc.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوماً`
@@ -320,47 +317,55 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         )}
 
         {/* ── Actions ── */}
-        <div className="flex items-center justify-between pt-2.5 border-t border-[var(--d-border)]/50">
+        <div className="flex items-center justify-end gap-1 pt-2.5 border-t border-[var(--d-border)]/50">
           <button
             onClick={() => onEditCode ? onEditCode(dc) : openEdit(dc)}
-            className="text-[12px] font-medium px-3 py-1.5 rounded-md border border-[var(--d-border)]/50 text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors"
+            className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] hover:opacity-80 transition-colors"
+            title="تعديل"
           >
-            تعديل
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleToggle(dc)}
-              disabled={!!actionLoading}
-              className={`w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50 ${
-                dc.active ? "text-[var(--d-text-muted)]" : "text-[#0F6E56]"
-              }`}
-              title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
-            >
-              {dc.active ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-              ) : (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              )}
-            </button>
-            <button
-              onClick={() => handleDelete(dc.id)}
-              disabled={!!actionLoading}
-              className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[#A32D2D] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-50"
-              title="حذف"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
-            </button>
-          </div>
+          <button
+            onClick={() => handleToggle(dc)}
+            disabled={!!actionLoading}
+            className={`w-[26px] h-[26px] inline-flex items-center justify-center rounded-md hover:opacity-80 transition-colors disabled:opacity-50 ${
+              dc.active ? "bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)]" : "bg-[var(--d-blue-bg)] text-[var(--d-blue-text)]"
+            }`}
+            title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
+          >
+            {dc.active ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            )}
+          </button>
+          <button
+            onClick={() => handleDelete(dc.id)}
+            disabled={!!actionLoading}
+            className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md bg-[var(--d-red-bg)] text-[var(--d-red-text)] hover:opacity-80 transition-colors disabled:opacity-50"
+            title="حذف"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+          </button>
         </div>
       </div>
     );
   }
 
   /* ── MOBILE LAYOUT ── */
+  const [mobileFilter, setMobileFilter] = useState<string>("all");
+
   if (mobile) {
-    const filteredCodes = search.trim()
+    const searchFiltered = search.trim()
       ? codes.filter((dc) => dc.code.toLowerCase().includes(search.trim().toLowerCase()))
       : codes;
+
+    const filteredCodes = mobileFilter === "all" ? searchFiltered
+      : searchFiltered.filter((dc) => getStatus(dc) === mobileFilter);
+
+    const mActiveCnt = codes.filter(dc => getStatus(dc) === "active").length;
+    const mInactiveCnt = codes.filter(dc => getStatus(dc) === "inactive").length;
+    const mExpiredCnt = codes.filter(dc => getStatus(dc) === "expired" || getStatus(dc) === "maxed").length;
 
     return (
       <div className="space-y-3">
@@ -373,6 +378,46 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
             + كود جديد
           </button>
         </div>
+
+        {/* Stats strip */}
+        {codes.length > 0 && (
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
+              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">الإجمالي</p>
+              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{codes.length}</p>
+            </div>
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
+              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">نشطة</p>
+              <p className="text-[18px] font-medium text-[var(--d-mint-text)] tabular-nums">{mActiveCnt}</p>
+            </div>
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
+              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">متوقفة</p>
+              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{mInactiveCnt}</p>
+            </div>
+            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
+              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">منتهية</p>
+              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{mExpiredCnt}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Filter chips */}
+        {codes.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+            <button onClick={() => setMobileFilter("all")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+              الكل · {searchFiltered.length}
+            </button>
+            <button onClick={() => setMobileFilter("active")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />نشطة · {mActiveCnt}
+            </button>
+            <button onClick={() => setMobileFilter("inactive")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />متوقفة · {mInactiveCnt}
+            </button>
+            <button onClick={() => setMobileFilter("expired")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#888780]" />منتهية · {mExpiredCnt}
+            </button>
+          </div>
+        )}
 
         {formEl}
 
@@ -472,19 +517,19 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
       {/* Stats strip */}
       <div className="grid grid-cols-4 gap-2 mb-3.5">
-        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
           <p className="text-[11px] text-[var(--d-text-muted)] mb-1">إجمالي الأكواد</p>
           <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{codes.length}</p>
         </div>
-        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
           <p className="text-[11px] text-[var(--d-text-muted)] mb-1">نشطة</p>
-          <p className="text-[20px] font-medium text-[#0F6E56] tabular-nums">{activeCnt}</p>
+          <p className="text-[20px] font-medium text-[var(--d-mint-text)] tabular-nums">{activeCnt}</p>
         </div>
-        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
           <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوقفة</p>
           <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{inactiveCnt}</p>
         </div>
-        <div className="bg-[var(--d-subtle-bg)] p-3 rounded-lg">
+        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
           <p className="text-[11px] text-[var(--d-text-muted)] mb-1">منتهية</p>
           <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{expiredCnt}</p>
         </div>
@@ -492,16 +537,16 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
       {/* Filter chips */}
       <div className="flex flex-wrap gap-1.5 mb-3.5">
-        <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
           الكل · {desktopAll.length}
         </button>
-        <button onClick={() => setActiveFilter("active")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "active" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("active")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />نشطة · {activeCnt}
         </button>
-        <button onClick={() => setActiveFilter("inactive")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "inactive" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("inactive")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />متوقفة · {inactiveCnt}
         </button>
-        <button onClick={() => setActiveFilter("expired")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "expired" ? "bg-[#E1F5EE] text-[#0F6E56] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("expired")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#888780]" />منتهية · {expiredCnt}
         </button>
       </div>

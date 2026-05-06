@@ -31,6 +31,7 @@ export const queryKeys = {
     ["places", "search", q, section ?? "", areaId ?? ""] as const,
   // Admin dashboard
   adminStats: ["admin", "stats"] as const,
+  adminPlatformNumbers: ["admin", "platform-numbers"] as const,
   adminPendingProducts: (limit: number, offset: number) =>
     ["admin", "pending-products", limit, offset] as const,
   adminFlags: (limit: number, offset: number) =>
@@ -241,6 +242,13 @@ export async function fetchContributorMeReports(params: {
 // ── Admin dashboard ──
 export async function fetchAdminStats(): Promise<Record<string, unknown>> {
   const res = await apiFetchAdmin("/api/admin/stats");
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, data };
+  return data as Record<string, unknown>;
+}
+
+export async function fetchAdminPlatformNumbers(): Promise<Record<string, unknown>> {
+  const res = await apiFetchAdmin("/api/admin/platform-numbers");
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return data as Record<string, unknown>;
