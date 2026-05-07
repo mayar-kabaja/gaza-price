@@ -374,7 +374,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] shrink-0 transition-all border ${
                     isActive
                       ? "border-transparent bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium"
-                      : "border-[var(--d-border)]/50 bg-transparent text-[var(--d-text)] hover:border-[var(--d-border)]"
+                      : "border-[var(--d-border)] bg-transparent text-[var(--d-text)] hover:border-[var(--d-text-muted)]"
                   }`}
                 >
                   {tab.dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tab.dot }} />}
@@ -788,13 +788,13 @@ function OrderCards({ orders, mobile, rejectId, setRejectId, rejectReason, setRe
           <col style={{ width: 20 }} />
         </colgroup>
         <thead>
-          <tr className="bg-[var(--d-subtle-bg)]">
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">#</th>
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">العميل</th>
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الواتس</th>
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الوقت</th>
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">المجموع</th>
-            <th className="px-3 py-2.5 text-[12px] font-medium text-[var(--d-text-muted)] text-right">الحالة</th>
+          <tr className="border-b border-[var(--d-border)]">
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">#</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">العميل</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الواتس</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الوقت</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">المجموع</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الحالة</th>
             <th></th>
           </tr>
         </thead>

@@ -243,7 +243,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
     return (
       <div
         key={dc.id}
-        className={`flex flex-col rounded-xl p-4 transition-all bg-[var(--d-card)] border border-[var(--d-border)]/50 lg:shadow-sm ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+        className={`flex flex-col rounded-xl p-4 transition-all bg-[var(--d-card)] border border-[var(--d-border)]/50 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
       >
         {/* ── Header: status badge (right) | icons + code name (left) ── */}
         <div className="flex items-center justify-between mb-2.5">
@@ -516,25 +516,6 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-4 gap-2 mb-3.5">
-        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
-          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">إجمالي الأكواد</p>
-          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{codes.length}</p>
-        </div>
-        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
-          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">نشطة</p>
-          <p className="text-[20px] font-medium text-[var(--d-mint-text)] tabular-nums">{activeCnt}</p>
-        </div>
-        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
-          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوقفة</p>
-          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{inactiveCnt}</p>
-        </div>
-        <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 shadow-sm p-3 rounded-lg">
-          <p className="text-[11px] text-[var(--d-text-muted)] mb-1">منتهية</p>
-          <p className="text-[20px] font-medium text-[var(--d-text)] tabular-nums">{expiredCnt}</p>
-        </div>
-      </div>
-
       {/* Filter chips */}
       <div className="flex flex-wrap gap-1.5 mb-3.5">
         <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>

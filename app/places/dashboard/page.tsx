@@ -1335,7 +1335,7 @@ function OwnerDashboardPage() {
                       <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
                     </div>
                   )}
-                  <div className="flex items-center justify-between pb-2 border-b-2 border-[var(--d-border)] mb-2">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[var(--d-card)] border border-[var(--d-border)] shadow-sm mb-2">
                     <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1">+ صنف</button>
@@ -2003,7 +2003,7 @@ function OwnerDashboardPage() {
 
           {/* Menu management — inline on desktop */}
           {activeView === "menu" && !isWorkspace && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm space-y-3">
+            <div className="space-y-3">
               {/* Page header */}
               <div className="flex items-center justify-between">
                 <div>
@@ -2020,7 +2020,7 @@ function OwnerDashboardPage() {
               <div className="flex items-center gap-1.5 flex-wrap pb-3 border-b border-[var(--d-border)]/50">
                 <span className="text-[12px] text-[var(--d-text-muted)] ml-1">الأقسام:</span>
                 {place.menu.filter(s => s.items.length > 0).map((sec) => (
-                  <button key={sec.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] border border-[var(--d-border)]/50 bg-transparent text-[var(--d-text)] hover:border-[var(--d-border)] transition-colors">
+                  <button key={sec.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] border border-[var(--d-border)] bg-transparent text-[var(--d-text)] hover:border-[var(--d-text-muted)] transition-colors">
                     <span className="shrink-0 text-[var(--d-green)]">{getItemIcon(sec.name)('w-5 h-5')}</span>
                     {sec.name} · {sec.items.length}
                   </button>
@@ -2053,7 +2053,7 @@ function OwnerDashboardPage() {
                 return sectionGroups.map((sec) => (
                   <div key={sec.id} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
                     {/* Section header */}
-                    <div className="bg-[var(--d-subtle-bg)] px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
+                    <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
                       <div className="flex items-center gap-2">
                         <span className="w-[7px] h-[7px] rounded-full" style={{ background: getItemBgColor(sec.name).replace(/0\.\d+\)/, '1)') || 'var(--d-green)' }} />
                         <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
@@ -2136,14 +2136,15 @@ function OwnerDashboardPage() {
               })()}
 
               {/* Helper note */}
-              <p className="text-[11px] text-[var(--d-text-muted)] text-left">اسحب الأيقونة لإعادة الترتيب</p>
             </div>
           )}
 
           {activeView === "orders" && place.section === "food" && token && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
+            <div>
               {place.plan === "free" ? (
-                <UpgradeCTA feature="orders" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+                <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
+                  <UpgradeCTA feature="orders" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+                </div>
               ) : (
                 <DashboardOrders token={token} ordersEnabled={place.orders_enabled ?? false} onToggleOrders={handleToggleOrders} lastEvent={lastOrderEvent} search={dashSearch} />
               )}
@@ -2151,9 +2152,11 @@ function OwnerDashboardPage() {
           )}
 
           {activeView === "discounts" && place.section === "food" && token && (
-            <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm h-[calc(100vh-140px)] flex flex-col">
+            <div className="h-[calc(100vh-140px)] flex flex-col">
               {place.plan === "free" ? (
-                <UpgradeCTA feature="discounts" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+                <div className="bg-[var(--d-card)] rounded-2xl border border-[var(--d-border)] p-5 shadow-sm">
+                  <UpgradeCTA feature="discounts" onUpgrade={() => setActiveView("plans")} onCompare={() => setActiveView("plans")} />
+                </div>
               ) : (
                 <DashboardDiscountCodes
                   token={token}
