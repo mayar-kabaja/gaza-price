@@ -201,7 +201,7 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-72 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg z-50 overflow-hidden" dir="rtl">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg z-50 overflow-hidden" dir="rtl">
           <div className="px-3 py-2.5 border-b border-[var(--d-border)] flex items-center justify-between">
             <span className="font-bold text-[13px] text-[var(--d-text)]">الإشعارات</span>
             {notifications.length > 0 && (
