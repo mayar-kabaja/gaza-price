@@ -62,7 +62,7 @@ const PLANS = [
 
 const FREE_FEATURES = [
   "ظهور في القائمة",
-  "صفحة المحل",
+  "صفحة خاصة",
   "قائمة الأسعار",
   "Toggle مفتوح/مغلق",
   "لوحة محدودة",
@@ -100,6 +100,14 @@ const PREMIUM_EXCLUSIVES = [
   "نشر على غزة بريس",
   "ترويج أكواد الخصم",
 ];
+
+function placeLabel(type?: string, section?: string): string {
+  if (section === 'workspace') return 'المساحة';
+  if (type === 'restaurant') return 'المطعم';
+  if (type === 'cafe') return 'الكافيه';
+  if (type === 'both') return 'المطعم';
+  return 'المتجر';
+}
 
 const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
   free: { has: FREE_FEATURES, missing: FREE_MISSING },
@@ -580,7 +588,7 @@ function OwnerDashboardPage() {
       const data = await res.json();
       if (data.success && place) {
         setPlace({ ...place, is_open: data.is_open });
-        showToast(data.is_open ? (isWorkspace ? "المساحة مفتوحة الآن ✓" : "المحل مفتوح الآن ✓") : (isWorkspace ? "المساحة مغلقة الآن ✓" : "المحل مغلق الآن ✓"));
+        showToast(data.is_open ? (`${placeLabel(place.type, place.section)} مفتوح الآن ✓`) : (`${placeLabel(place.type, place.section)} مغلق الآن ✓`));
       }
     } catch { showToast("حدث خطأ"); } finally { setToggling(false); setActionLoading(null); }
   }
@@ -1060,7 +1068,7 @@ function OwnerDashboardPage() {
             <div className="flex items-center justify-between bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-3">
               <div>
                 <div className={`font-bold text-[13px] ${place.is_open ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
-                  {place.is_open ? `● ${isWorkspace ? 'المساحة مفتوحة' : 'المحل مفتوح'} الآن` : `○ ${isWorkspace ? 'المساحة مغلقة' : 'المحل مغلق'} الآن`}
+                  {place.is_open ? `● ${`${placeLabel(place.type, place.section)} مفتوح`} الآن` : `○ ${`${placeLabel(place.type, place.section)} مغلق`} الآن`}
                 </div>
                 <div className="text-[10px] text-[var(--d-text-muted)]">
                   {place.is_open ? 'يظهر للزوار كـ "مفتوح"' : 'يظهر للزوار كـ "مغلق"'}
@@ -1085,7 +1093,7 @@ function OwnerDashboardPage() {
                 <div className="mb-4 space-y-2.5">
                   {/* Section label */}
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[11px] text-[var(--d-text-muted)] font-medium tracking-wide">المحل بلمحة</span>
+                    <span className="text-[11px] text-[var(--d-text-muted)] font-medium tracking-wide">{placeLabel(place.type, place.section)} بلمحة</span>
                     <div className="flex-1 h-px bg-[var(--d-border)]" />
                   </div>
 
@@ -1311,7 +1319,7 @@ function OwnerDashboardPage() {
 
         {/* ── MENU TAB ── */}
         {mobileTab === "menu" && !isWorkspace && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[15px] text-[var(--d-text)]">إدارة القائمة</h3>
               <div className="flex items-center gap-2">
@@ -1319,81 +1327,86 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5">+ صنف</button>
               </div>
             </div>
-            {place.menu.filter((sec) => {
-              if (!dashSearch.trim()) return true;
-              const q = dashSearch.trim().toLowerCase();
-              return sec.name.toLowerCase().includes(q) || sec.items.some((item) => item.name.toLowerCase().includes(q));
-            }).map((sec) => {
+            {(() => {
+              const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
               const filteredItems = dashSearch.trim()
-                ? sec.items.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || sec.name.toLowerCase().includes(dashSearch.trim().toLowerCase()))
-                : sec.items;
-              const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
-              return (
-                <div key={sec.id} className={`relative ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
-                  {isSectionLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[var(--d-card)] border border-[var(--d-border)] shadow-sm mb-2">
-                    <span className="font-bold text-[13px] text-[var(--d-text)]">{sec.name}</span>
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] rounded-full px-2.5 py-1">+ صنف</button>
-                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="text-[11px] font-bold text-[var(--d-warn-text)] bg-[var(--d-red-bg)] rounded-full px-2 py-1">
+                ? allItemsRaw.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || item.sectionName.toLowerCase().includes(dashSearch.trim().toLowerCase()))
+                : allItemsRaw;
+
+              const sectionGroups = place.menu.filter(s => s.items.length > 0).map((sec) => ({
+                ...sec,
+                filteredItems: filteredItems.filter(item => item.sectionId === sec.id),
+              })).filter(s => s.filteredItems.length > 0);
+
+              return sectionGroups.map((sec) => {
+                const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
+                return (
+                  <div key={sec.id} className={`bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
+                    {isSectionLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
+                      </div>
+                    )}
+                    {/* Section header */}
+                    <div className="px-3 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-[7px] h-[7px] rounded-full" style={{ background: getItemBgColor(sec.name).replace(/0\.\d+\)/, '1)') || 'var(--d-green)' }} />
+                        <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
+                        <span className="text-[11px] text-[var(--d-text-muted)] tabular-nums">· {sec.items.length} أصناف</span>
+                      </div>
+                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
                         <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
                       </button>
                     </div>
-                  </div>
-                  {filteredItems.map((item) => {
-                    const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
-                    return (
-                      <div key={item.id} className={`bg-[var(--d-card)] border border-[var(--d-border)] rounded-2xl p-3 mb-1.5 relative ${!item.available ? "opacity-55" : ""} ${isItemLoading ? "pointer-events-none" : ""}`}>
-                        {isItemLoading && (
-                          <div className="absolute inset-0 bg-[var(--d-card)]/70 rounded-2xl flex items-center justify-center z-10">
-                            <div className="w-5 h-5 border-2 border-[var(--d-green)]/30 border-t-[var(--d-green)] rounded-full animate-spin" />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2.5">
+
+                    {/* Items */}
+                    {sec.filteredItems.map((item) => {
+                      const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 border-t border-[var(--d-border)]/50 first:border-t-0 ${isItemLoading ? "pointer-events-none opacity-50" : ""} ${!item.available ? "opacity-55" : ""}`}
+                        >
                           {/* Icon */}
                           {resolvePublicImageUrl(item.photo_url) ? (
-                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0" />
+                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                           ) : (
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
                               {getItemIcon(item.name)('w-5 h-5')}
                             </div>
                           )}
                           {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-semibold text-[var(--d-text)] truncate">{item.name}</div>
-                            {item.description && <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5 truncate">{item.description}</div>}
+                            <div className="flex items-center gap-2">
+                              <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
+                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
+                            </div>
+                            {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
                           </div>
                           {/* Price */}
-                          <span className={`font-bold text-sm shrink-0 ${Number(item.price) > 0 ? "text-[var(--d-green)]" : "text-[var(--d-text-muted)]"}`}>
-                            {Number(item.price) > 0 ? `${item.price} ₪` : "—"}
-                          </span>
+                          <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums shrink-0" dir="ltr">
+                            {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
+                          </p>
+                          {/* Toggle */}
+                          <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
+                            <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
+                          </button>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
+                              <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                            </button>
+                            <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
+                              <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                            </button>
+                          </div>
                         </div>
-                        {/* Actions row */}
-                        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[var(--d-border)] justify-end">
-                          <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`w-9 h-5 rounded-full relative transition-colors ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
-                            {actionLoading === `toggle-item-${item.id}` ? (
-                              <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 border-[1.5px] border-white/50 border-t-white rounded-full animate-spin" /></div>
-                            ) : (
-                              <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white shadow transition-all ${item.available ? "right-[19px]" : "right-[3px]"}`} />
-                            )}
-                          </button>
-                          <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
-                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
-                          </button>
-                          <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
-                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
 
@@ -1525,7 +1538,7 @@ function OwnerDashboardPage() {
                       <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
                         <div className="text-[10px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
                         <a
-                          href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
+                          href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — الاسم: ${place.name}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -1621,7 +1634,7 @@ function OwnerDashboardPage() {
 
             {/* Avatar upload */}
             <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
-              <h3 className="text-[13px] font-medium text-[var(--d-text)]">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</h3>
+              <h3 className="text-[13px] font-medium text-[var(--d-text)]">{`صورة ${placeLabel(place.type, place.section)}`}</h3>
               <div className="flex items-center gap-3">
                 <div className="w-[52px] h-[52px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                   {place.avatar_url ? (
@@ -1668,7 +1681,7 @@ function OwnerDashboardPage() {
             {/* Edit form */}
             <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
               <h3 className="text-[13px] font-medium text-[var(--d-text)]">تعديل البيانات</h3>
-              <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
+              <FormField label={`اسم ${placeLabel(place.type, place.section)}`} value={editName} onChange={setEditName} />
               {place.section === "store" && (
                 <div>
                   <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
@@ -1802,7 +1815,7 @@ function OwnerDashboardPage() {
                 <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor"/></svg>} iconBg="bg-[var(--d-purple-bg)]" iconColor="stroke-[var(--d-purple-text)]" title="أكواد الخصم" sub="إنشاء وإدارة أكواد الخصم" onClick={() => setActiveView("discounts")} active={activeView === "discounts"} />
               )}
               <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>} iconBg="bg-[var(--d-amber-bg)]" iconColor="stroke-[var(--d-warn-text)]" title="الباقات" sub="اختر الباقة المناسبة لمحلك" onClick={() => setActiveView("plans")} active={activeView === "plans"} />
-              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>} iconBg="bg-[var(--d-blue-bg)]" iconColor="stroke-[var(--d-blue-text)]" title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="الاسم، المنطقة، الهاتف، واتساب" onClick={openEdit} last />
+              <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} iconBg="bg-[var(--d-blue-bg)]" iconColor="stroke-[var(--d-blue-text)]" title={`بروفايل ${placeLabel(place.type, place.section)}`} sub="الاسم، الصورة، المنطقة، التواصل" onClick={openEdit} last />
             </div>
           </div>
 
@@ -2059,7 +2072,6 @@ function OwnerDashboardPage() {
                         <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
                         <span className="text-[11px] text-[var(--d-text-muted)] tabular-nums">· {sec.items.length} أصناف</span>
                       </div>
-                      <button onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[11px] font-medium text-[var(--d-green)] hover:underline">+ صنف جديد</button>
                     </div>
 
                     {/* Items */}
@@ -2180,7 +2192,7 @@ function OwnerDashboardPage() {
           {activeView === "plans" && (
             <div className="space-y-5">
               <div className="flex items-center gap-2.5">
-                <button onClick={() => setActiveView("home")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                <button onClick={() => setActiveView("home")} className="lg:hidden w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
                 <div>
@@ -2302,7 +2314,7 @@ function OwnerDashboardPage() {
                           <div className="bg-[var(--d-subtle-bg)] rounded-xl p-3">
                             <div className="text-[11px] text-[var(--d-text-muted)] font-semibold mb-1.5">٢. أرسل إشعار التحويل للتأكيد</div>
                             <a
-                              href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — اسم المحل: ${place.name}`)}`}
+                              href={`https://wa.me/972567359920?text=${encodeURIComponent(`مرحباً، حوّلت ${p.price} شيكل لباقة ${p.badge} — الاسم: ${place.name}`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -2329,11 +2341,11 @@ function OwnerDashboardPage() {
             <div className="space-y-3.5">
               {/* Page header */}
               <div className="flex items-center gap-2.5">
-                <button onClick={() => setActiveView("home")} className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                <button onClick={() => setActiveView("home")} className="lg:hidden w-[30px] h-[30px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
                 <div>
-                  <h2 className="text-[18px] font-medium text-[var(--d-text)]">{isWorkspace ? "بيانات المساحة" : "بيانات المحل"}</h2>
+                  <h2 className="text-[18px] font-medium text-[var(--d-text)]">{`بيانات ${placeLabel(place.type, place.section)}`}</h2>
                   <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">المعلومات التي يراها الزبائن في صفحتك العامة</p>
                 </div>
               </div>
@@ -2480,7 +2492,7 @@ function OwnerDashboardPage() {
             <NavItem icon="tag" label="الأكواد" active={mobileTab === "codes"} onClick={() => { setMobileTab("codes"); setDashSearch(""); }} />
           </>
         )}
-        <NavItem icon="edit" label="بروفايل" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); setDashSearch(""); populateEditForm(); }} />
+        <NavItem icon="user" label="بروفايل" active={mobileTab === "settings"} onClick={() => { setMobileTab("settings"); setDashSearch(""); populateEditForm(); }} />
       </div>
 
       {/* ══ SHEETS ══ */}
@@ -2598,11 +2610,11 @@ function OwnerDashboardPage() {
       </SheetWrap>
 
       {/* Edit Sheet */}
-      <SheetWrap open={sheet === "edit"} onClose={() => setSheet(null)} title={isWorkspace ? "تعديل بيانات المساحة" : "تعديل بيانات المحل"} sub="التغييرات تظهر فوراً للزوار">
+      <SheetWrap open={sheet === "edit"} onClose={() => setSheet(null)} title={`بروفايل ${placeLabel(place.type, place.section)}`} sub="التغييرات تظهر فوراً للزوار">
         <div className="space-y-3.5">
           {/* Avatar upload */}
           <div>
-            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{isWorkspace ? "صورة المساحة" : "صورة المحل"}</label>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{`صورة ${placeLabel(place.type, place.section)}`}</label>
             <div className="flex items-center gap-3">
               <div className="w-[56px] h-[56px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
                 {place.avatar_url ? (
@@ -2645,7 +2657,7 @@ function OwnerDashboardPage() {
               </label>
             </div>
           </div>
-          <FormField label={isWorkspace ? "اسم المساحة" : "اسم المحل"} value={editName} onChange={setEditName} />
+          <FormField label={`اسم ${placeLabel(place.type, place.section)}`} value={editName} onChange={setEditName} />
           {place.section === "store" && (
             <div>
               <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
@@ -2969,7 +2981,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {badge}
-          <span className="text-[var(--d-text-muted)] text-sm">‹</span>
+          <span className="text-[var(--d-text-muted)] text-sm">›</span>
         </div>
       </button>
       {!last && <div className="h-px bg-[var(--d-border)]/50" />}
@@ -2985,6 +2997,7 @@ function NavItem({ icon, label, active, onClick }: { icon: string; label: string
     tag: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/></>,
     add: <><line x1={12} y1={5} x2={12} y2={19} /><line x1={5} y1={12} x2={19} y2={12} /></>,
     edit: <><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></>,
+    user: <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
   };
   return (
     <button onClick={onClick} className="flex-1 flex flex-col items-center gap-1 py-1.5 px-0.5 rounded-xl transition-colors relative">
@@ -3008,12 +3021,17 @@ function SheetWrap({ open, onClose, title, sub, children }: {
         <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
           <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
           <div className="flex items-center gap-2 mb-1 relative z-[1]">
-            <button onClick={onClose} className="w-[30px] h-[30px] lg:w-[36px] lg:h-[36px] bg-white/10 rounded-lg flex items-center justify-center">
+            <button onClick={onClose} className="w-[30px] h-[30px] bg-white/10 rounded-lg flex items-center justify-center lg:hidden">
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
-            <span className="font-bold text-sm lg:text-base text-white">{title}</span>
+            <span className="font-bold text-sm lg:text-base text-white flex-1">{title}</span>
+            <button onClick={onClose} className="hidden lg:flex w-[30px] h-[30px] bg-white/10 rounded-lg items-center justify-center hover:bg-white/20 transition-colors">
+              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
+                <path d="M18 6L6 18" /><path d="M6 6l12 12" />
+              </svg>
+            </button>
           </div>
           <div className="text-[11px] lg:text-xs text-white/50 pr-[38px] lg:pr-[44px]">{sub}</div>
         </div>

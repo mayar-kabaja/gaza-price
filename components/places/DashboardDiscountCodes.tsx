@@ -379,41 +379,19 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
           </button>
         </div>
 
-        {/* Stats strip */}
-        {codes.length > 0 && (
-          <div className="grid grid-cols-4 gap-2">
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
-              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">الإجمالي</p>
-              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{codes.length}</p>
-            </div>
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
-              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">نشطة</p>
-              <p className="text-[18px] font-medium text-[var(--d-mint-text)] tabular-nums">{mActiveCnt}</p>
-            </div>
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
-              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">متوقفة</p>
-              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{mInactiveCnt}</p>
-            </div>
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-2.5 rounded-lg text-center">
-              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">منتهية</p>
-              <p className="text-[18px] font-medium text-[var(--d-text)] tabular-nums">{mExpiredCnt}</p>
-            </div>
-          </div>
-        )}
-
         {/* Filter chips */}
         {codes.length > 0 && (
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-            <button onClick={() => setMobileFilter("all")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+            <button onClick={() => setMobileFilter("all")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
               الكل · {searchFiltered.length}
             </button>
-            <button onClick={() => setMobileFilter("active")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+            <button onClick={() => setMobileFilter("active")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />نشطة · {mActiveCnt}
             </button>
-            <button onClick={() => setMobileFilter("inactive")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+            <button onClick={() => setMobileFilter("inactive")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />متوقفة · {mInactiveCnt}
             </button>
-            <button onClick={() => setMobileFilter("expired")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+            <button onClick={() => setMobileFilter("expired")} className={`inline-flex items-center gap-1.5 px-2.5 py-[4px] text-[11px] rounded-full border cursor-pointer transition-colors whitespace-nowrap ${mobileFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
               <span className="w-1.5 h-1.5 rounded-full bg-[#888780]" />منتهية · {mExpiredCnt}
             </button>
           </div>
@@ -518,16 +496,16 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
       {/* Stats strip */}
       {/* Filter chips */}
       <div className="flex flex-wrap gap-1.5 mb-3.5">
-        <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("all")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "all" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
           الكل · {desktopAll.length}
         </button>
-        <button onClick={() => setActiveFilter("active")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("active")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "active" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />نشطة · {activeCnt}
         </button>
-        <button onClick={() => setActiveFilter("inactive")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("inactive")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "inactive" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />متوقفة · {inactiveCnt}
         </button>
-        <button onClick={() => setActiveFilter("expired")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]/50"}`}>
+        <button onClick={() => setActiveFilter("expired")} className={`inline-flex items-center gap-1.5 px-3 py-[5px] text-[12px] rounded-full border cursor-pointer transition-colors ${activeFilter === "expired" ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] font-medium border-transparent" : "bg-transparent text-[var(--d-text)] border-[var(--d-border)]"}`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#888780]" />منتهية · {expiredCnt}
         </button>
       </div>
