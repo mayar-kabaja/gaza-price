@@ -3021,19 +3021,14 @@ function SheetWrap({ open, onClose, title, sub, children }: {
         <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
           <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
           <div className="flex items-center gap-2 mb-1 relative z-[1]">
-            <button onClick={onClose} className="w-[30px] h-[30px] bg-white/10 rounded-lg flex items-center justify-center lg:hidden">
-              <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
             <span className="font-bold text-sm lg:text-base text-white flex-1">{title}</span>
-            <button onClick={onClose} className="hidden lg:flex w-[30px] h-[30px] bg-white/10 rounded-lg items-center justify-center hover:bg-white/20 transition-colors">
+            <button onClick={onClose} className="w-[30px] h-[30px] bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="white" strokeWidth={2.2} strokeLinecap="round">
                 <path d="M18 6L6 18" /><path d="M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="text-[11px] lg:text-xs text-white/50 pr-[38px] lg:pr-[44px]">{sub}</div>
+          <div className="text-[11px] lg:text-xs text-white/50">{sub}</div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 lg:px-6 lg:pb-8">
           {children}
