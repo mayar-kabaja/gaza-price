@@ -1,21 +1,35 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useArea } from '@/hooks/useArea';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAreas, usePlaces, usePlacesSearch } from '@/lib/queries/hooks';
+import { queryKeys, fetchPlaces } from '@/lib/queries/fetchers';
 import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 
 type Section = 'food' | 'store' | 'workspace';
+
+/** Deterministic shuffle — changes every 12 hours */
+function shuffleFeatured<T>(arr: T[], maxItems: number): T[] {
+  if (arr.length === 0) return [];
+  const seed = Math.floor(Date.now() / (12 * 60 * 60 * 1000));
+  const copy = arr.slice(0, Math.min(arr.length, 30));
+  for (let i = copy.length - 1; i > 0; i--) {
+    const hash = ((seed * 2654435761 + i * 40503) >>> 0) % (i + 1);
+    [copy[i], copy[hash]] = [copy[hash], copy[i]];
+  }
+  return copy.slice(0, maxItems);
+}
 
 const PAGE_SIZE = 20;
 
@@ -53,6 +67,17 @@ function typeLabel(type: string): string {
   if (type === 'cafe') return 'كافيه';
   if (type === 'workspace') return 'مساحة عمل';
   return type;
+}
+
+/** Extract Arabic portion of a name like "Pizza AlTaboon - بيتزا الطابون" */
+function arabicName(name: string): string {
+  const parts = name.split(' - ');
+  if (parts.length >= 2) {
+    // Return the part that contains Arabic characters
+    const arabic = parts.find(p => /[\u0600-\u06FF]/.test(p));
+    if (arabic) return arabic.trim();
+  }
+  return name;
 }
 
 
@@ -129,9 +154,20 @@ const BG_MAP: Record<string, [string, string]> = {
 };
 
 export default function PlacesPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlacesContent />
+    </Suspense>
+  );
+}
+
+function PlacesContent() {
   const isDesktop = useIsDesktop();
   const router = useRouter();
-  const [section, setSection] = useState<Section>('store');
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get('section') as Section | null;
+  const section: Section = (sectionParam === 'food' || sectionParam === 'store' || sectionParam === 'workspace') ? sectionParam : 'food';
+  const setSection = (s: Section) => { router.push(`/places?section=${s}`, { scroll: false }); };
   const [chip, setChip] = useState(0);
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,7 +184,7 @@ export default function PlacesPage() {
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
   const [placesArea, setPlacesArea] = useState<Area | null>(null);
-  const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
+  const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({});
 
   // "الكل" chip (0) = all areas, other chips = user's saved area
   const activeArea = placesArea;
@@ -160,6 +196,19 @@ export default function PlacesPage() {
   // Fetch ALL places for this section (no pagination limit) so client-side filtering works correctly
   const { data: placesData, isLoading: loading } = usePlaces(section, activeArea?.id, 500, 0);
   const allPlaces = placesData?.places ?? [];
+
+  // Prefetch other sections so switching is instant
+  const qc = useQueryClient();
+  useEffect(() => {
+    const others = (['food', 'store', 'workspace'] as const).filter(s => s !== section);
+    others.forEach(s => {
+      qc.prefetchQuery({
+        queryKey: queryKeys.places(s, activeArea?.id, 500, 0),
+        queryFn: () => fetchPlaces(s, activeArea?.id, 500, 0),
+        staleTime: 30 * 1000,
+      });
+    });
+  }, [section, activeArea?.id, qc]);
 
   const isSearching = debouncedSearch.length >= 1;
   const matchedItems = searchData?.matched_items ?? [];
@@ -249,6 +298,9 @@ export default function PlacesPage() {
   const isAllChip = !chips[chip] || chips[chip] === 'الكل';
   const count = isAllChip && !isSearching ? (placesData?.total ?? filteredPlaces.length) : filteredPlaces.length;
 
+  // Featured places — random shuffle, changes every 12 hours
+  const featured = useMemo(() => shuffleFeatured(places, 10), [places]);
+
   const grouped = areas.reduce<Record<string, Area[]>>((acc, a) => {
     const g = a.governorate;
     if (!acc[g]) acc[g] = [];
@@ -259,51 +311,42 @@ export default function PlacesPage() {
 
   useGlobalSidebar(isDesktop ? (
     <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col -m-3">
-      {/* Search */}
-      <div className="p-4 pb-3">
-        <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
-          <span className="text-xs text-mist">🔍</span>
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={section === 'food' ? 'ابحث عن مطعم أو وجبة...' : section === 'store' ? 'ابحث عن متجر أو منتج...' : 'ابحث عن مساحة عمل...'}
-            className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0 font-semibold"
-            dir="rtl"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-mist text-sm leading-none hover:text-ink">×</button>
-          )}
-        </div>
-      </div>
-
       {/* Place types — nested under محلات */}
-      <div className="px-4 pb-3">
+      <div className="px-4 pt-3 pb-3">
         <div className="flex items-center gap-2 mb-2.5">
-          <span className="text-olive text-base">🏠</span>
           <span className="text-sm font-display font-extrabold text-ink">محلات</span>
         </div>
         <div className="space-y-0.5 pr-2">
           {([
-            { key: 'store' as Section, icon: '🏪', label: 'متاجر' },
-            { key: 'workspace' as Section, icon: '💻', label: 'مساحات عمل' },
-            { key: 'food' as Section, icon: '🍽️', label: 'مطاعم وكافيهات' },
+            { key: 'food' as Section, label: 'مطاعم وكافيهات' },
+            { key: 'workspace' as Section, label: 'مساحات عمل' },
+            { key: 'store' as Section, label: 'متاجر' },
           ] as const).map((item) => (
-            <button
-              key={item.key}
-              onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
-              className={cn(
-                'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-body transition-colors text-right cursor-pointer',
-                section === item.key
-                  ? 'bg-olive-pale text-olive font-semibold'
-                  : 'text-slate hover:bg-fog hover:text-ink'
+            <div key={item.key}>
+              <button
+                onClick={() => { setSection(item.key); setChip(0); setPage(0); }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-body transition-colors text-right cursor-pointer',
+                  section === item.key
+                    ? 'bg-olive-pale text-olive font-semibold'
+                    : 'text-slate hover:bg-fog hover:text-ink'
+                )}
+              >
+                <span>{item.label}</span>
+                {section === item.key && (
+                  <span className="mr-auto w-1.5 h-1.5 rounded-full bg-olive" />
+                )}
+              </button>
+              {item.key === 'food' && (
+                <Link
+                  href="/orders"
+                  className="w-full flex items-center gap-2 px-5 py-1.5 rounded-lg text-[12px] font-body transition-colors text-right cursor-pointer text-mist hover:bg-fog hover:text-olive"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+                  <span>طلباتي</span>
+                </Link>
               )}
-            >
-              <span className="text-sm">{item.icon}</span>
-              <span>{item.label}</span>
-              {section === item.key && (
-                <span className="mr-auto w-1.5 h-1.5 rounded-full bg-olive" />
-              )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -389,26 +432,19 @@ export default function PlacesPage() {
         <div className="px-4 pb-3 pt-3">
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">تصفية</div>
           <div className="flex flex-wrap gap-1.5">
-            {chips.map((label, i) => {
-              const iconMap: Record<string, string> = {
-                'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
-                'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
-              };
-              const icon = iconMap[label];
-              return (
-                <button
-                  key={label}
-                  onClick={() => { setChip(i); setPage(0); }}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
-                    chip === i
-                      ? 'bg-olive-pale border-olive text-olive font-semibold'
-                      : 'bg-surface border-border text-slate hover:border-olive/50'
-                  }`}
-                >
-                  {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
-                </button>
-              );
-            })}
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] transition-colors ${
+                  chip === i
+                    ? 'bg-olive-pale border-olive text-olive font-semibold'
+                    : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -434,15 +470,6 @@ export default function PlacesPage() {
         </div>
       )}
 
-      {/* Register CTA */}
-      <div className="mt-auto p-4 border-t border-border">
-        <Link
-          href={`/places/register?section=${section}`}
-          className="flex items-center justify-center gap-2 bg-olive text-white font-display font-extrabold text-[12px] px-4 py-2.5 rounded-xl shadow-md hover:bg-olive-deep transition-colors w-full"
-        >
-          {section === 'food' ? '🍽️' : section === 'store' ? '🏪' : '💻'} سجّل {section === 'workspace' ? 'مساحة عملك' : 'محلك'} مجاناً
-        </Link>
-      </div>
     </div>
   ) : null);
 
@@ -453,14 +480,9 @@ export default function PlacesPage() {
         <div className="flex-1 min-h-0 overflow-y-auto" dir="rtl">
           {/* ── Main Content ── */}
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <div className="flex items-center gap-3">
-              <h1 className="font-display font-black text-lg text-ink">
-                {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
-              </h1>
-              <span className="text-[11px] font-semibold text-olive bg-olive-pale px-2.5 py-0.5 rounded-full">
-                {count} مكان
-              </span>
-            </div>
+            <h1 className="font-display font-black text-lg text-ink">
+              {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
+            </h1>
             {activeArea && (
               <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
             )}
@@ -541,23 +563,43 @@ export default function PlacesPage() {
                   </div>
                 )
               ) : loading ? (
-                <div className="bg-surface border-b border-border divide-y divide-border">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 px-6 py-3">
-                      <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                        <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
-                      </div>
-                      <div className="h-2.5 w-12 rounded-md bg-border/60 animate-pulse" />
+                <div className="p-6">
+                  {/* Story circles skeleton */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                      <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
                     </div>
-                  ))}
+                    <div className="flex gap-6">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex flex-col items-center gap-[6px]">
+                          <div className="w-[86px] h-[86px] rounded-full bg-border/40 animate-pulse" />
+                          <div className="h-2.5 w-14 bg-border/40 rounded animate-pulse" />
+                          <div className="h-2 w-10 bg-border/30 rounded animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* List skeleton */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                    <div className="h-3.5 w-10 bg-border/50 rounded animate-pulse" />
+                  </div>
+                  <div className="bg-surface rounded-2xl overflow-hidden border border-border/40 divide-y divide-border/40">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                        <div className="w-11 h-11 rounded-full bg-border/40 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3.5 w-28 bg-border/40 rounded" />
+                          <div className="h-2.5 w-20 bg-border/30 rounded" />
+                        </div>
+                        <div className="h-5 w-12 rounded-full bg-border/30" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : places.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-                  <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                    <span className="text-4xl">🏪</span>
-                  </div>
                   <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد متاجر حالياً</h2>
                   <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل متجر في منطقتك</p>
                   <Link
@@ -578,8 +620,8 @@ export default function PlacesPage() {
                           <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
                         </div>
                       </div>
-                      <div className="flex gap-5 overflow-x-auto no-scrollbar pb-1">
-                        {places.slice(0, 10).map((place) => {
+                      <div className="flex gap-6 overflow-x-auto no-scrollbar pb-1">
+                        {featured.map((place) => {
                           const emoji = EMOJI_MAP[place.type] || '🏪';
                           const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
                           const closed = !place.is_open;
@@ -587,29 +629,29 @@ export default function PlacesPage() {
                             <div
                               key={place.id}
                               onClick={() => router.push(`/places/${place.id}`)}
-                              className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
+                              className="flex-shrink-0 flex flex-col items-center gap-[6px] cursor-pointer group"
                             >
                               <div
-                                className="w-[64px] h-[64px] rounded-full p-[2.5px] transition-transform group-hover:scale-105"
+                                className="w-[86px] h-[86px] rounded-full p-[3px] transition-transform group-hover:scale-105"
                                 style={{
                                   background: closed
                                     ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
                                     : accent.ring,
                                 }}
                               >
-                                <div className="w-full h-full rounded-full bg-surface border-[2.5px] border-surface flex items-center justify-center overflow-hidden">
+                                <div className="w-full h-full rounded-full bg-surface border-[3px] border-surface flex items-center justify-center overflow-hidden">
                                   {place.avatar_url ? (
                                     <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
                                   ) : (
-                                    <span className={`text-[28px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
+                                    <span className={`text-[36px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
                                   )}
                                 </div>
                               </div>
-                              <div className={`text-[10px] font-semibold text-center max-w-[68px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
-                                {place.name}
+                              <div className={`text-[12px] font-semibold text-center max-w-[90px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                                {arabicName(place.name)}
                               </div>
-                              <div className="text-[9px] text-mist text-center -mt-[2px]">
-                                {closed ? 'مغلق' : (place.type || 'متجر')}
+                              <div className="text-[10px] text-mist text-center -mt-[2px]">
+                                {closed ? 'مغلق' : typeLabel(place.type || 'متجر')}
                               </div>
                             </div>
                           );
@@ -618,19 +660,16 @@ export default function PlacesPage() {
                     </div>
                   )}
 
-                  {/* الكل — Accent Bar Cards */}
+                  {/* الكل — Cards */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <div className="w-1 h-[18px] bg-olive rounded-sm" />
                       <span className="font-display font-black text-[14px] text-ink">الكل</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
-                      {count} متجر
-                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-surface rounded-2xl overflow-hidden border border-border/40">
                     {places.map((place, i) => (
-                      <StoreCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
+                      <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                     ))}
                   </div>
                   {totalPages > 1 && (
@@ -645,47 +684,44 @@ export default function PlacesPage() {
             ) : section === 'workspace' ? (
               /* Workspace listing */
               <>
-              {/* Workspace filter chips */}
-              <div className="flex gap-2 px-6 py-3 overflow-x-auto no-scrollbar">
-                {chips.map((label, i) => {
-                  const iconMap: Record<string, string> = {
-                    'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
-                    'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
-                  };
-                  const icon = iconMap[label];
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => { setChip(i); setPage(0); }}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
-                        chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
-                      }`}
-                    >
-                      {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
-                    </button>
-                  );
-                })}
-              </div>
               {loading ? (
-                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 p-6">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="bg-surface rounded-2xl border border-border p-4 animate-pulse">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 rounded-[14px] bg-border/60" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 w-28 rounded-md bg-border/60" />
-                          <div className="h-3 w-20 rounded-md bg-border/60" />
-                        </div>
-                      </div>
-                      <div className="h-8 rounded-lg bg-border/60" />
+                <div className="p-6">
+                  {/* Story circles skeleton */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                      <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
                     </div>
-                  ))}
+                    <div className="flex gap-6">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex flex-col items-center gap-[6px]">
+                          <div className="w-[86px] h-[86px] rounded-full bg-border/40 animate-pulse" />
+                          <div className="h-2.5 w-14 bg-border/40 rounded animate-pulse" />
+                          <div className="h-2 w-10 bg-border/30 rounded animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* List skeleton */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                    <div className="h-3.5 w-10 bg-border/50 rounded animate-pulse" />
+                  </div>
+                  <div className="bg-surface rounded-2xl overflow-hidden border border-border/40 divide-y divide-border/40">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                        <div className="w-12 h-12 rounded-[14px] bg-border/40 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3.5 w-28 bg-border/40 rounded" />
+                          <div className="h-2.5 w-20 bg-border/30 rounded" />
+                        </div>
+                        <div className="h-5 w-16 rounded-lg bg-border/30" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : places.length === 0 ? (
                 <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-                  <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                    <span className="text-4xl">💻</span>
-                  </div>
                   <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
                   <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
                   <Link
@@ -697,11 +733,70 @@ export default function PlacesPage() {
                 </div>
               ) : (
                 <div className="p-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    {places.map((place, i) => (
-                      <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
-                    ))}
-                  </div>
+                  {/* الأبرز — Story Circles (only on first page, الكل chip) */}
+                  {chip === 0 && page === 0 && featured.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                          <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-6 overflow-x-auto no-scrollbar pb-1">
+                        {featured.map((place) => {
+                          const emoji = EMOJI_MAP[place.type] || '💻';
+                          const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+                          const closed = !place.is_open;
+                          return (
+                            <div
+                              key={place.id}
+                              onClick={() => router.push(`/places/${place.id}`)}
+                              className="flex-shrink-0 flex flex-col items-center gap-[6px] cursor-pointer group"
+                            >
+                              <div
+                                className="w-[86px] h-[86px] rounded-full p-[3px] transition-transform group-hover:scale-105"
+                                style={{
+                                  background: closed
+                                    ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                    : accent.ring,
+                                }}
+                              >
+                                <div className="w-full h-full rounded-full bg-surface border-[3px] border-surface flex items-center justify-center overflow-hidden">
+                                  {place.avatar_url ? (
+                                    <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                                  ) : (
+                                    <span className={`text-[36px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={`text-[12px] font-semibold text-center max-w-[90px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                                {arabicName(place.name)}
+                              </div>
+                              <div className="text-[10px] text-mist text-center -mt-[2px]">
+                                {closed ? 'مغلق' : typeLabel(place.type || 'مساحة عمل')}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* الكل grid */}
+                  {places.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                        <span className="font-display font-extrabold text-[14px] text-ink">الكل</span>
+                      </div>
+                      <div className="bg-surface rounded-2xl overflow-hidden border border-border/40">
+                        {places.map((place, i) => (
+                          <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-3 py-6">
                       <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-4 py-2 rounded-xl border border-border bg-surface text-xs font-bold text-ink disabled:opacity-40 hover:border-olive transition-colors">السابق ←</button>
@@ -790,17 +885,40 @@ export default function PlacesPage() {
               /* Normal listing */
               <>
                 {loading ? (
-                  <div className="bg-surface border-b border-border divide-y divide-border">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-6 py-3">
-                        <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                          <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
-                        </div>
-                        <div className="h-2.5 w-12 rounded-md bg-border/60 animate-pulse" />
+                  <div className="px-8 pt-5">
+                    {/* Story circles skeleton */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                        <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
                       </div>
-                    ))}
+                      <div className="flex gap-6">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="flex flex-col items-center gap-[6px]">
+                            <div className="w-[86px] h-[86px] rounded-full bg-border/40 animate-pulse" />
+                            <div className="h-2.5 w-14 bg-border/40 rounded animate-pulse" />
+                            <div className="h-2 w-10 bg-border/30 rounded animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* List skeleton */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                      <div className="h-3.5 w-10 bg-border/50 rounded animate-pulse" />
+                    </div>
+                    <div className="bg-surface rounded-2xl overflow-hidden border border-border/40 divide-y divide-border/40">
+                      {[...Array(6)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                          <div className="w-11 h-11 rounded-full bg-border/40 flex-shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-3.5 w-28 bg-border/40 rounded" />
+                            <div className="h-2.5 w-20 bg-border/30 rounded" />
+                          </div>
+                          <div className="h-5 w-12 rounded-full bg-border/30" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : places.length === 0 ? (
                   <div className="text-center py-20">
@@ -808,29 +926,66 @@ export default function PlacesPage() {
                   </div>
                 ) : (
                   <>
-                    {/* Spotlight — only on الكل chip, first page */}
+                    {/* الأبرز — Story Circles */}
                     {chip === 0 && page === 0 && places.length > 0 && (
                       <div className="px-8 pt-5 pb-2">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="font-display font-extrabold text-[14px] text-ink">الأبرز</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                            <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          {places.slice(0, 3).map((place, i) => (
-                            <SpotlightCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
-                          ))}
+                        <div className="flex gap-6 overflow-x-auto no-scrollbar pb-1">
+                          {featured.map((place) => {
+                            const emoji = EMOJI_MAP[place.type] || '🍽️';
+                            const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+                            const closed = !place.is_open;
+                            return (
+                              <div
+                                key={place.id}
+                                onClick={() => router.push(`/places/${place.id}`)}
+                                className="flex-shrink-0 flex flex-col items-center gap-[6px] cursor-pointer group"
+                              >
+                                <div
+                                  className="w-[86px] h-[86px] rounded-full p-[3px] transition-transform group-hover:scale-105"
+                                  style={{
+                                    background: closed
+                                      ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                      : accent.ring,
+                                  }}
+                                >
+                                  <div className="w-full h-full rounded-full bg-surface border-[3px] border-surface flex items-center justify-center overflow-hidden">
+                                    {place.avatar_url ? (
+                                      <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                                    ) : (
+                                      <span className={`text-[36px] ${closed ? 'opacity-45' : ''}`}>{emoji}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className={`text-[12px] font-semibold text-center max-w-[90px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                                  {arabicName(place.name)}
+                                </div>
+                                <div className="text-[10px] text-mist text-center -mt-[2px]">
+                                  {closed ? 'مغلق' : typeLabel(place.type || 'مطعم')}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* List */}
-                    {((chip === 0 && page === 0) ? places.length > 3 : places.length > 0) && (
+                    {/* الكل — Row list */}
+                    {places.length > 0 && (
                       <>
-                        <div className="flex items-center justify-between px-8 py-2.5 bg-fog border-b border-border">
-                          <span className="font-display font-bold text-[12px] text-mist">الكل</span>
-                          <span className="text-[10px] text-mist">{chip === 0 && page === 0 ? (places.length > 3 ? places.length - 3 : 0) : places.length} مكان</span>
+                        <div className="flex items-center justify-between px-8 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                            <span className="font-display font-black text-[14px] text-ink">الكل</span>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 px-1">
-                          {(chip === 0 && page === 0 ? places.slice(3) : places).map((place, i) => (
+                        <div className="bg-surface rounded-2xl mx-6 overflow-hidden border border-border/40">
+                          {places.map((place, i) => (
                             <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
                           ))}
                         </div>
@@ -869,13 +1024,13 @@ export default function PlacesPage() {
   /* ═══ MOBILE LAYOUT ═══ */
   return (
     <div className="min-h-screen bg-fog" dir="rtl">
-      <AppHeader hideActions hideSearch />
+      <AppHeader hideActions hideSearch showOrders />
 
       {/* Search bar — inside green area */}
-      <div className="bg-olive px-4 pb-3 -mt-px">
+      <div className="bg-olive px-4 pt-3 pb-3">
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl flex items-center gap-2 px-3 py-2.5">
-            <span className="text-xs text-mist dark:text-white/50">🔍</span>
+          <div className="flex-1 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-full flex items-center gap-2 px-3 py-2.5">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-mist dark:text-white/50 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -889,11 +1044,6 @@ export default function PlacesPage() {
               </button>
             )}
           </div>
-          <Link href="/orders" className="w-9 h-9 rounded-full bg-white/12 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors flex-shrink-0">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
-            </svg>
-          </Link>
         </div>
       </div>
 
@@ -902,14 +1052,14 @@ export default function PlacesPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-0 bg-fog rounded-2xl p-1">
             <button
-              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
+              onClick={() => { setSection('food'); setChip(0); setPage(0); }}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                section === 'store'
+                section === 'food'
                   ? 'bg-olive text-white shadow-lg'
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              متاجر
+              مطاعم
             </button>
             <button
               onClick={() => { setSection('workspace'); setChip(0); setPage(0); }}
@@ -922,20 +1072,20 @@ export default function PlacesPage() {
               مساحات عمل
             </button>
             <button
-              onClick={() => { setSection('food'); setChip(0); setPage(0); }}
+              onClick={() => { setSection('store'); setChip(0); setPage(0); }}
               className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1 ${
-                section === 'food'
+                section === 'store'
                   ? 'bg-olive text-white shadow-lg'
                   : 'bg-transparent text-ink hover:bg-fog'
               }`}
             >
-              مطاعم
+              متاجر
             </button>
           </div>
         </div>
       </div>
 
-      {/* ─── Store listing ─── */}
+      {/* ─── Sections ─── */}
       {section === 'store' ? (
         <>
           {/* Area bar */}
@@ -1072,29 +1222,43 @@ export default function PlacesPage() {
               </div>
             )
           ) : loading ? (
-            <div className="px-4 pt-4 pb-28 flex flex-col gap-2">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-surface rounded-2xl border border-border flex items-center gap-3 px-3 py-2.5">
-                  <div className="w-[42px] h-[42px] rounded-full bg-border/60 animate-pulse flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-[18px] w-14 rounded-full bg-border/60 animate-pulse" />
-                      <div className="h-2.5 w-16 rounded-md bg-border/60 animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <div className="h-2.5 w-10 rounded-md bg-border/60 animate-pulse" />
-                    <div className="h-2 w-8 rounded-md bg-border/60 animate-pulse" />
-                  </div>
+            <>
+              {/* Story circles skeleton */}
+              <div className="px-4 pt-4 pb-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                  <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
                 </div>
-              ))}
-            </div>
+                <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex-shrink-0 flex flex-col items-center gap-[5px]">
+                      <div className="w-[60px] h-[60px] rounded-full bg-border/40 animate-pulse" />
+                      <div className="h-2.5 w-12 bg-border/40 rounded animate-pulse" />
+                      <div className="h-2 w-8 bg-border/30 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* List skeleton */}
+              <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
+                <div className="h-3 w-10 bg-border/40 rounded animate-pulse" />
+                <div className="h-2.5 w-14 bg-border/30 rounded animate-pulse" />
+              </div>
+              <div className="bg-surface border-b border-border mb-2 pb-28 divide-y divide-border">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                    <div className="w-[42px] h-[42px] rounded-full bg-border/40 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 w-28 bg-border/40 rounded" />
+                      <div className="h-2.5 w-20 bg-border/30 rounded" />
+                    </div>
+                    <div className="h-2.5 w-12 bg-border/30 rounded" />
+                  </div>
+                ))}
+              </div>
+            </>
           ) : places.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                <span className="text-4xl">🏪</span>
-              </div>
               <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد متاجر حالياً</h2>
               <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل متجر في منطقتك</p>
               <Link href={`/places/register?section=${section}`} className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
@@ -1114,7 +1278,7 @@ export default function PlacesPage() {
                     <span className="text-[11px] text-mist">اسحب ←</span>
                   </div>
                   <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
-                    {places.slice(0, 8).map((place) => {
+                    {featured.slice(0, 8).map((place) => {
                       const emoji = EMOJI_MAP[place.type] || '🏪';
                       const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
                       const closed = !place.is_open;
@@ -1141,10 +1305,10 @@ export default function PlacesPage() {
                             </div>
                           </div>
                           <div className={`text-[10px] font-semibold text-center max-w-[64px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
-                            {place.name}
+                            {arabicName(place.name)}
                           </div>
                           <div className="text-[9px] text-mist text-center -mt-[2px]">
-                            {closed ? 'مغلق' : (place.type || 'متجر')}
+                            {closed ? 'مغلق' : typeLabel(place.type || 'متجر')}
                           </div>
                         </div>
                       );
@@ -1153,22 +1317,15 @@ export default function PlacesPage() {
                 </div>
               )}
 
-              {/* الكل — Accent Bar Cards */}
-              <div className="px-4 mt-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-[18px] bg-olive rounded-sm" />
-                    <span className="font-display font-black text-[14px] text-ink">الكل</span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-olive bg-olive-pale px-[9px] py-[2px] rounded-full">
-                    {count} متجر
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2 pb-4">
-                  {places.map((place, i) => (
-                    <StoreCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
-                  ))}
-                </div>
+              {/* الكل */}
+              <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
+                <span className="font-display font-bold text-[12px] text-mist">الكل</span>
+                <span className="text-[10px] text-mist">{count} متجر</span>
+              </div>
+              <div className="bg-surface border-b border-border mb-2 pb-20">
+                {places.map((place, i) => (
+                  <PlaceRow key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
+                ))}
               </div>
             </div>
           )}
@@ -1187,24 +1344,17 @@ export default function PlacesPage() {
 
           {/* Chips */}
           <div className="flex gap-2 px-4 py-2.5 bg-surface border-b border-border overflow-x-auto no-scrollbar">
-            {chips.map((label, i) => {
-              const iconMap: Record<string, string> = {
-                'مفتوح': '', 'الأقل سعراً': '💰', 'واي فاي': '📶', 'كهرباء': '🔌',
-                'غرف خاصة': '🚪', 'طباعة': '🖨️', 'مشروبات': '☕',
-              };
-              const icon = iconMap[label];
-              return (
-                <button
-                  key={label}
-                  onClick={() => { setChip(i); setPage(0); }}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
-                    chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
-                  }`}
-                >
-                  {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : <>{icon && <span className="text-[10px]">{icon}</span>}{label}</>}
-                </button>
-              );
-            })}
+            {chips.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => { setChip(i); setPage(0); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                  chip === i ? 'bg-olive-pale border-olive text-olive font-semibold' : 'bg-surface border-border text-slate hover:border-olive/50'
+                }`}
+              >
+                {label === 'مفتوح' ? (<><span className={`w-[6px] h-[6px] rounded-full animate-pulse ${chip === i ? 'bg-olive' : 'bg-olive/60'}`} />مفتوح</>) : label}
+              </button>
+            ))}
           </div>
 
           {/* Section header */}
@@ -1217,22 +1367,43 @@ export default function PlacesPage() {
           </div>
 
           {loading ? (
-            <div className="px-4 py-3 space-y-3 pb-28">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-surface rounded-2xl border border-border p-4 animate-pulse">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-[14px] bg-border/60" />
-                    <div className="flex-1 space-y-2"><div className="h-4 w-28 rounded-md bg-border/60" /><div className="h-3 w-20 rounded-md bg-border/60" /></div>
-                  </div>
-                  <div className="h-8 rounded-lg bg-border/60" />
+            <>
+              {/* Story circles skeleton */}
+              <div className="px-4 pt-3 pb-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                  <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
                 </div>
-              ))}
-            </div>
+                <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex-shrink-0 flex flex-col items-center gap-[5px]">
+                      <div className="w-[60px] h-[60px] rounded-full bg-border/40 animate-pulse" />
+                      <div className="h-2.5 w-12 bg-border/40 rounded animate-pulse" />
+                      <div className="h-2 w-8 bg-border/30 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* List skeleton */}
+              <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
+                <div className="h-3 w-10 bg-border/40 rounded animate-pulse" />
+                <div className="h-2.5 w-14 bg-border/30 rounded animate-pulse" />
+              </div>
+              <div className="bg-surface border-b border-border mb-2 pb-28 divide-y divide-border">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                    <div className="w-12 h-12 rounded-[14px] bg-border/40 flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 w-28 bg-border/40 rounded" />
+                      <div className="h-2.5 w-20 bg-border/30 rounded" />
+                    </div>
+                    <div className="h-5 w-16 rounded-lg bg-border/30" />
+                  </div>
+                ))}
+              </div>
+            </>
           ) : places.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 pb-28 pt-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-fog border-[3px] border-border flex items-center justify-center mb-5">
-                <span className="text-4xl">💻</span>
-              </div>
               <h2 className="font-display font-black text-xl text-ink mb-2">لا توجد مساحات عمل حالياً</h2>
               <p className="text-sm text-mist leading-relaxed max-w-[260px]">كن أول من يسجّل مساحة عمل في منطقتك</p>
               <Link href={`/places/register?section=${section}`} className="mt-6 inline-flex items-center gap-2 bg-olive text-white font-display font-extrabold text-[13px] px-5 py-2.5 rounded-xl shadow-[0_3px_12px_rgba(30,77,43,0.2)] hover:bg-olive-deep transition-colors">
@@ -1240,27 +1411,83 @@ export default function PlacesPage() {
               </Link>
             </div>
           ) : (
-            <div className="px-4 py-3 space-y-3 pb-28">
+            <div className="pb-28">
               {/* Register banner */}
-              <Link
-                href={`/places/register?section=${section}`}
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
-              >
-                <div className="absolute w-[80px] h-[80px] rounded-full bg-white/[0.07] -bottom-[20px] -left-[10px] pointer-events-none" />
-                <div className="w-[38px] h-[38px] rounded-[10px] bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
-                </div>
-                <div className="flex-1 relative z-[1]">
-                  <div className="font-display font-black text-[12px] text-white">صاحب مساحة عمل؟ سجّل مجاناً</div>
-                  <div className="text-[10px] text-white/55">أضف مساحتك وابدأ الآن</div>
-                </div>
-                <span className="text-white/40 text-sm">‹</span>
-              </Link>
+              <div className="px-4 mt-2">
+                <Link
+                  href={`/places/register?section=${section}`}
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3 relative overflow-hidden mb-1"
+                  style={{ background: 'linear-gradient(135deg, #3A6347, #4A7C59)' }}
+                >
+                  <div className="absolute w-[80px] h-[80px] rounded-full bg-white/[0.07] -bottom-[20px] -left-[10px] pointer-events-none" />
+                  <div className="w-[38px] h-[38px] rounded-[10px] bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+                  </div>
+                  <div className="flex-1 relative z-[1]">
+                    <div className="font-display font-black text-[12px] text-white">صاحب مساحة عمل؟ سجّل مجاناً</div>
+                    <div className="text-[10px] text-white/55">أضف مساحتك وابدأ الآن</div>
+                  </div>
+                  <span className="text-white/40 text-sm">‹</span>
+                </Link>
+              </div>
 
-              {places.map((place, i) => (
-                <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
-              ))}
+              {/* الأبرز — Story Circles */}
+              {chip === 0 && places.length > 0 && (
+                <div className="px-4 pt-3 pb-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                      <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                    </div>
+                    <span className="text-[11px] text-mist">اسحب ←</span>
+                  </div>
+                  <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                    {featured.slice(0, 8).map((place) => {
+                      const closed = !place.is_open;
+                      return (
+                        <div
+                          key={place.id}
+                          onClick={() => router.push(`/places/${place.id}`)}
+                          className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
+                        >
+                          <div
+                            className="w-[60px] h-[60px] rounded-full p-[2.5px] transition-transform group-hover:scale-105"
+                            style={{
+                              background: closed
+                                ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                : 'linear-gradient(135deg, #3730A3, #818CF8)',
+                            }}
+                          >
+                            <div className="w-full h-full rounded-full bg-surface border-[2.5px] border-surface flex items-center justify-center overflow-hidden">
+                              {place.avatar_url ? (
+                                <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                              ) : (
+                                <span className={`text-[26px] ${closed ? 'opacity-45' : ''}`}>💻</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`text-[10px] font-semibold text-center max-w-[64px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                            {arabicName(place.name)}
+                          </div>
+                          <div className="text-[9px] text-mist text-center -mt-[2px]">
+                            {closed ? 'مغلق' : 'مساحة عمل'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
+                <span className="font-display font-bold text-[12px] text-mist">الكل</span>
+                <span className="text-[10px] text-mist">{count} مكان</span>
+              </div>
+              <div className="bg-surface border-b border-border mb-2 pb-20">
+                {places.map((place, i) => (
+                  <WorkspaceCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
+                ))}
+              </div>
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 py-4">
@@ -1429,22 +1656,36 @@ export default function PlacesPage() {
           {/* Spotlight + List */}
           {loading ? (
             <>
-              {/* Carousel skeleton */}
-              <div className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="w-[160px] flex-shrink-0 rounded-2xl bg-border/60 animate-pulse h-[190px]" />
-                ))}
+              {/* Story circles skeleton */}
+              <div className="px-4 pt-3 pb-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-[18px] bg-border/50 rounded-sm" />
+                  <div className="h-3.5 w-12 bg-border/50 rounded animate-pulse" />
+                </div>
+                <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex-shrink-0 flex flex-col items-center gap-[5px]">
+                      <div className="w-[60px] h-[60px] rounded-full bg-border/40 animate-pulse" />
+                      <div className="h-2.5 w-12 bg-border/40 rounded animate-pulse" />
+                      <div className="h-2 w-8 bg-border/30 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
               </div>
               {/* List skeleton */}
+              <div className="flex items-center justify-between px-4 py-1.5 bg-fog border-b border-border">
+                <div className="h-3 w-10 bg-border/40 rounded animate-pulse" />
+                <div className="h-2.5 w-14 bg-border/30 rounded animate-pulse" />
+              </div>
               <div className="bg-surface border-b border-border mb-2 pb-32 divide-y divide-border">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3">
-                    <div className="w-[46px] h-[46px] rounded-[13px] bg-border/60 animate-pulse flex-shrink-0" />
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
+                    <div className="w-[46px] h-[46px] rounded-full bg-border/40 flex-shrink-0" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                      <div className="h-2.5 w-20 rounded-md bg-border/60 animate-pulse" />
+                      <div className="h-3.5 w-28 bg-border/40 rounded" />
+                      <div className="h-2.5 w-20 bg-border/30 rounded" />
                     </div>
-                    <div className="h-2.5 w-12 rounded-md bg-border/60 animate-pulse" />
+                    <div className="h-2.5 w-12 bg-border/30 rounded" />
                   </div>
                 ))}
               </div>
@@ -1457,17 +1698,50 @@ export default function PlacesPage() {
             </div>
           ) : (
             <>
-              {/* Spotlight carousel — first page only, only on "الكل" chip */}
+              {/* الأبرز — Story Circles */}
               {chip === 0 && page === 0 && places.length > 0 && (
-                <div className="px-4 pt-2 pb-1">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-display font-extrabold text-[13px] text-ink">الأبرز</span>
-                    <span className="text-[10px] text-mist">اسحب ←</span>
+                <div className="px-4 pt-3 pb-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-[18px] bg-olive rounded-sm" />
+                      <span className="font-display font-black text-[14px] text-ink">الأبرز</span>
+                    </div>
+                    <span className="text-[11px] text-mist">اسحب ←</span>
                   </div>
-                  <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
-                    {places.slice(0, 4).map((place, i) => (
-                      <SpotlightCard key={place.id} place={place} index={i} onClick={() => router.push(`/places/${place.id}`)} />
-                    ))}
+                  <div className="flex gap-[14px] overflow-x-auto no-scrollbar pb-1">
+                    {featured.slice(0, 8).map((place) => {
+                      const closed = !place.is_open;
+                      return (
+                        <div
+                          key={place.id}
+                          onClick={() => router.push(`/places/${place.id}`)}
+                          className="flex-shrink-0 flex flex-col items-center gap-[5px] cursor-pointer group"
+                        >
+                          <div
+                            className="w-[60px] h-[60px] rounded-full p-[2.5px] transition-transform group-hover:scale-105"
+                            style={{
+                              background: closed
+                                ? 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
+                                : 'linear-gradient(135deg, #1E4D2B, #4CAF50)',
+                            }}
+                          >
+                            <div className="w-full h-full rounded-full bg-surface border-[2.5px] border-surface flex items-center justify-center overflow-hidden">
+                              {place.avatar_url ? (
+                                <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                              ) : (
+                                <span className={`text-[26px] ${closed ? 'opacity-45' : ''}`}>{EMOJI_MAP[place.type] || '🍽️'}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`text-[10px] font-semibold text-center max-w-[64px] truncate ${closed ? 'text-mist' : 'text-ink'}`}>
+                            {arabicName(place.name)}
+                          </div>
+                          <div className="text-[9px] text-mist text-center -mt-[2px]">
+                            {closed ? 'مغلق' : typeLabel(place.type)}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1721,7 +1995,7 @@ function StoreCard({ place, index, onClick }: { place: Place; index: number; onC
             className="text-[10px] font-bold px-[7px] py-[2px] rounded-full shadow-sm"
             style={{ background: accent.bg, color: accent.text, boxShadow: `0 1px 4px ${accent.border}30` }}
           >
-            {place.type || 'متجر'}
+            {typeLabel(place.type || 'متجر')}
           </span>
           <span className="text-[10px] text-mist flex items-center gap-[2px]">
             <svg viewBox="0 0 24 24" className="w-[9px] h-[9px]" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
@@ -1796,14 +2070,14 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
         </div>
       </div>
 
-      {/* Right */}
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+      {/* Status */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         {place.is_open ? (
           <span className="text-[9px] font-bold text-olive">● مفتوح</span>
         ) : (
           <span className="text-[9px] font-semibold text-mist">مغلق</span>
         )}
-        <span className="text-sm text-mist">{'‹'}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-mist/50"><path d="M15 18l-6-6 6-6"/></svg>
       </div>
     </div>
   );
@@ -1828,11 +2102,13 @@ function formatTime(t?: string | null): string {
 }
 
 function WorkspaceCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const { theme } = useTheme();
   const closed = !place.is_open;
   const wd = place.workspace_details;
   const services = place.workspace_services?.filter(s => s.available) || [];
+  const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
+  const bg = theme === 'dark' ? colors[1] : colors[0];
 
-  // Pick best price to show on card
   const priceDisplay = wd?.price_hour ? { val: wd.price_hour, unit: '/ ساعة' }
     : wd?.price_day ? { val: wd.price_day, unit: '/ يوم' }
     : wd?.price_month ? { val: wd.price_month, unit: '/ شهر' }
@@ -1841,64 +2117,164 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
   return (
     <div
       onClick={onClick}
-      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] flex flex-col ${closed ? 'opacity-60' : ''}`}
-      style={{ animation: `slideUp 0.25s ease both ${0.05 * (index + 1)}s` }}
+      className={`flex flex-col px-4 lg:px-6 py-3 border-b border-border last:border-b-0 cursor-pointer transition-colors hover:bg-olive-pale/40 active:bg-olive-pale ${
+        closed ? 'opacity-60' : ''
+      }`}
+      style={{ animation: `slideUp 0.25s ease both ${0.04 * (index + 1)}s` }}
     >
-      {/* Header: avatar + name + status */}
-      <div className="flex items-center gap-3 p-4">
+      <div className="flex items-center gap-3">
+        {/* Avatar */}
         <div
-          className={`w-[48px] h-[48px] rounded-[14px] flex items-center justify-center flex-shrink-0 text-[20px] border-[1.5px] ${
-            closed ? 'bg-fog border-border' : 'bg-[#EEF2FF] border-[rgba(30,77,43,0.15)]'
-          }`}
+          className={`w-[46px] h-[46px] ${place.avatar_url ? 'rounded-full' : 'rounded-[13px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
+            closed ? 'border-2 border-border' : 'border-2 border-olive'
+          } ${!place.avatar_url ? 'text-[22px]' : ''}`}
+          style={{ background: closed ? 'var(--color-fog)' : bg }}
         >
           {place.avatar_url ? (
-            <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-[14px]" loading="lazy" />
+            <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
           ) : '💻'}
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full border-2 border-surface ${
+              closed ? 'bg-mist' : 'bg-olive'
+            }`}
+          />
         </div>
+
+        {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="font-display font-extrabold text-[14px] text-ink truncate">{place.name}</div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] text-mist flex items-center gap-1 truncate">
-              <svg viewBox="0 0 24 24" className="w-[9px] h-[9px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-              {place.area?.name_ar}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="font-display font-extrabold text-[13px] text-ink truncate">
+              {place.name}
             </span>
-            <span className="text-mist">·</span>
-            {place.is_open ? (
-              <span className="flex items-center gap-1 text-[10px] font-bold text-olive flex-shrink-0">
-                <span className="w-[5px] h-[5px] rounded-full bg-olive" />مفتوح
+            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">
+              مساحة عمل
+            </span>
+          </div>
+          <div className="text-[10px] text-mist mb-0.5">
+            📍 {place.area?.name_ar}{place.address ? ` — ${place.address}` : ''}
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          {place.is_open ? (
+            <span className="text-[9px] font-bold text-olive">● مفتوح</span>
+          ) : (
+            <span className="text-[9px] font-semibold text-mist">مغلق</span>
+          )}
+          {priceDisplay && (
+            <span className="text-[10px] font-bold text-olive">{priceDisplay.val} ₪ <span className="font-normal text-olive/70 text-[9px]">{priceDisplay.unit}</span></span>
+          )}
+        </div>
+      </div>
+
+      {/* Details row: services + seats + hours */}
+      {(services.length > 0 || wd?.total_seats || (wd?.opens_at && wd?.closes_at)) && (
+        <div className="flex items-center gap-1.5 flex-wrap mt-2 mr-[58px]">
+          {wd?.total_seats ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
+              {wd.total_seats} مقعد
+            </span>
+          ) : null}
+          {wd?.opens_at && wd?.closes_at && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] text-mist bg-fog border border-border">
+              {formatTime(wd.opens_at)} — {formatTime(wd.closes_at)}
+            </span>
+          )}
+          {services.slice(0, 4).map(s => {
+            const info = SERVICE_LABELS[s.service];
+            return (
+              <span key={s.service} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-medium text-mist bg-fog">
+                {info?.icon}{info?.label || s.service}
               </span>
+            );
+          })}
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+/* ─── Desktop Workspace Card (matches mobile card style) ─── */
+function DesktopWorkspaceCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const { theme } = useTheme();
+  const closed = !place.is_open;
+  const wd = place.workspace_details;
+  const services = place.workspace_services?.filter(s => s.available) || [];
+  const colors = BG_MAP[place.type] || ['#F9FAFB', '#1A1D23'];
+  const bg = theme === 'dark' ? colors[1] : colors[0];
+
+  const priceDisplay = wd?.price_hour ? { val: wd.price_hour, unit: '/ ساعة' }
+    : wd?.price_day ? { val: wd.price_day, unit: '/ يوم' }
+    : wd?.price_month ? { val: wd.price_month, unit: '/ شهر' }
+    : null;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-olive/30 flex flex-col h-full ${closed ? 'opacity-60' : ''}`}
+      style={{ animation: `slideUp 0.25s ease both ${0.04 * (index + 1)}s` }}
+    >
+      {/* Top section: avatar + info */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div
+            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            style={{ background: closed ? 'var(--color-fog)' : bg }}
+          >
+            {place.avatar_url ? (
+              <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
             ) : (
-              <span className="text-[10px] font-semibold text-mist flex-shrink-0">مغلق</span>
+              <span className="text-[26px]">💻</span>
             )}
+            <span className={`absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full border-2 border-white ${closed ? 'bg-mist' : 'bg-olive'}`} />
+          </div>
+
+          {/* Name + area */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">مساحة عمل</span>
+            </div>
+            <div className="text-[11px] text-mist flex items-center gap-1">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {place.area?.name_ar}
+              <span className="opacity-40 mx-0.5">·</span>
+              {place.is_open ? (
+                <span className="text-olive font-bold">● مفتوح</span>
+              ) : (
+                <span className="text-mist font-semibold">مغلق</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Info row: price + hours + seats */}
-      <div className="flex items-center gap-2 flex-wrap px-4 pb-3">
+      {/* Badges row: price, seats, hours */}
+      <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
         {priceDisplay && (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-olive bg-olive-pale border border-olive/15">
-            {priceDisplay.val} ₪ <span className="font-normal text-olive/70">{priceDisplay.unit}</span>
+            {priceDisplay.val} ₪ <span className="font-normal text-olive/70 text-[10px]">{priceDisplay.unit}</span>
           </span>
         )}
         {wd?.total_seats ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
-            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-[#3B82F6] bg-[#EFF6FF] border border-[#BFDBFE]">
             {wd.total_seats} مقعد
           </span>
         ) : null}
         {wd?.opens_at && wd?.closes_at && (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] text-mist bg-fog border border-border">
-            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] text-mist bg-fog border border-border">
             {formatTime(wd.opens_at)} — {formatTime(wd.closes_at)}
           </span>
         )}
       </div>
 
-      {/* Services chips */}
+      {/* Services */}
       {services.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap px-4 pb-3">
-          {services.slice(0, 4).map(s => {
+        <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap">
+          {services.slice(0, 5).map(s => {
             const info = SERVICE_LABELS[s.service];
             return (
               <span key={s.service} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-mist bg-fog">
@@ -1909,26 +2285,158 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
         </div>
       )}
 
-      {/* Spacer to push footer down */}
-      <div className="flex-1" />
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border mt-auto">
+      {/* Bottom: address + details link — pinned to bottom */}
+      <div className="mt-auto px-5 py-3 border-t border-border/40 flex items-center justify-between gap-2">
         {place.address ? (
-          <span className="text-[10px] text-mist flex items-center gap-1 truncate max-w-[60%]">
-            <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            {place.address}
-          </span>
-        ) : (
-          <span />
-        )}
-        <span className="text-[11px] font-bold text-olive flex-shrink-0">التفاصيل ←</span>
+          <div className="text-[10px] text-mist truncate flex items-center gap-1 flex-1 min-w-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span className="truncate">{place.address}</span>
+          </div>
+        ) : <div />}
+        <span className="text-[11px] text-olive font-bold flex-shrink-0">التفاصيل ←</span>
       </div>
     </div>
   );
 }
 
-/* ─── Desktop Place Card ─── */
+/* ─── Desktop Store Card (matches workspace card style) ─── */
+function DesktopStoreCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const closed = !place.is_open;
+  const emoji = EMOJI_MAP[place.type] || '🏪';
+  const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-olive/30 flex flex-col h-full ${closed ? 'opacity-60' : ''}`}
+      style={{ animation: `slideUp 0.25s ease both ${0.04 * (index + 1)}s` }}
+    >
+      {/* Top section: avatar + info */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            style={{ background: closed ? 'var(--color-fog)' : accent.bg }}
+          >
+            {place.avatar_url ? (
+              <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+            ) : (
+              <span className="text-[26px]">{emoji}</span>
+            )}
+            <span className={`absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full border-2 border-white ${closed ? 'bg-mist' : 'bg-olive'}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: accent.bg, color: accent.text }}>{typeLabel(place.type || 'متجر')}</span>
+            </div>
+            <div className="text-[11px] text-mist flex items-center gap-1">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {place.area?.name_ar}
+              <span className="opacity-40 mx-0.5">&middot;</span>
+              {place.is_open ? (
+                <span className="text-olive font-bold">● مفتوح</span>
+              ) : (
+                <span className="text-mist font-semibold">مغلق</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges row */}
+      <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
+        {(place as any).menu_items_count != null && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-olive bg-olive-pale border border-olive/15">
+            {(place as any).menu_items_count} منتج
+          </span>
+        )}
+      </div>
+
+      {/* Bottom: address + details link — pinned to bottom */}
+      <div className="mt-auto px-5 py-3 border-t border-border/40 flex items-center justify-between gap-2">
+        {place.address ? (
+          <div className="text-[10px] text-mist truncate flex items-center gap-1 flex-1 min-w-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span className="truncate">{place.address}</span>
+          </div>
+        ) : <div />}
+        <span className="text-[11px] text-olive font-bold flex-shrink-0">التفاصيل ←</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Desktop Food Card (matches workspace card style) ─── */
+function DesktopFoodCard({ place, index, onClick }: { place: Place; index: number; onClick: () => void }) {
+  const closed = !place.is_open;
+  const isBoth = place.type === 'both';
+  const emoji = isBoth ? '🍽️' : (EMOJI_MAP[place.type] || '🍽️');
+  const accent = STORE_ACCENT[place.type] || DEFAULT_ACCENT;
+  const placeTypeLabel = typeLabel(place.type);
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-surface rounded-2xl border border-border overflow-hidden cursor-pointer transition-all hover:shadow-md hover:border-olive/30 flex flex-col h-full ${closed ? 'opacity-60' : ''}`}
+      style={{ animation: `slideUp 0.25s ease both ${0.04 * (index + 1)}s` }}
+    >
+      {/* Top section: avatar + info */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            style={{ background: closed ? 'var(--color-fog)' : accent.bg }}
+          >
+            {place.avatar_url ? (
+              <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+            ) : (
+              <span className="text-[26px]">{emoji}</span>
+            )}
+            <span className={`absolute -bottom-0.5 -right-0.5 w-[11px] h-[11px] rounded-full border-2 border-white ${closed ? 'bg-mist' : 'bg-olive'}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">{placeTypeLabel}</span>
+            </div>
+            <div className="text-[11px] text-mist flex items-center gap-1">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {place.area?.name_ar}
+              <span className="opacity-40 mx-0.5">&middot;</span>
+              {place.is_open ? (
+                <span className="text-olive font-bold">● مفتوح</span>
+              ) : (
+                <span className="text-mist font-semibold">مغلق</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges row */}
+      <div className="px-5 pb-3 flex items-center gap-2 flex-wrap">
+        {(place as any).menu_items_count != null && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-olive bg-olive-pale border border-olive/15">
+            {(place as any).menu_items_count} صنف
+          </span>
+        )}
+      </div>
+
+      {/* Bottom: address + details link — pinned to bottom */}
+      <div className="mt-auto px-5 py-3 border-t border-border/40 flex items-center justify-between gap-2">
+        {place.address ? (
+          <div className="text-[10px] text-mist truncate flex items-center gap-1 flex-1 min-w-0">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span className="truncate">{place.address}</span>
+          </div>
+        ) : <div />}
+        <span className="text-[11px] text-olive font-bold flex-shrink-0">التفاصيل ←</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Desktop Place Card ─── */
 function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => void }) {
   const { theme } = useTheme();

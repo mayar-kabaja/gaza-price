@@ -64,13 +64,69 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [showHistory, setShowHistory] = useState(false);
 
-  const { data: orders = [], isLoading } = useQuery<MyOrder[]>({
+  // TODO: remove test data
+  const TEST_ORDERS: MyOrder[] = [
+    {
+      id: "test-1", order_number: 1041, status: "pending", subtotal: 115, discount_amount: 0, total: 115,
+      note: "بدون بصل", reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date().toISOString(),
+      items: [
+        { id: "ti-1", item_name: "زنجر تشكن برجر", item_price: 40, quantity: 2 },
+        { id: "ti-2", item_name: "ماشروم تشكن برجر", item_price: 35, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-2", order_number: 1040, status: "accepted", subtotal: 80, discount_amount: 0, total: 80,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 25 * 60000).toISOString(),
+      items: [
+        { id: "ti-3", item_name: "كلاسيك بيف برجر", item_price: 35, quantity: 1 },
+        { id: "ti-4", item_name: "تشكن راب دبل", item_price: 45, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-3", order_number: 1039, status: "preparing", subtotal: 50, discount_amount: 0, total: 50,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 45 * 60000).toISOString(),
+      items: [
+        { id: "ti-5", item_name: "وجبة قطع زنجر", item_price: 50, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-4", order_number: 1038, status: "ready", subtotal: 70, discount_amount: 0, total: 70,
+      note: "اتصل قبل التوصيل", reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 90 * 60000).toISOString(),
+      items: [
+        { id: "ti-6", item_name: "هاش تشكن برجر", item_price: 35, quantity: 2 },
+      ],
+    },
+    {
+      id: "test-5", order_number: 1035, status: "rejected", subtotal: 40, discount_amount: 0, total: 40,
+      note: null, reject_reason: "المنتج غير متوفر حالياً", place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+      items: [
+        { id: "ti-7", item_name: "ماشروم بيف برجر", item_price: 40, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-6", order_number: 1030, status: "cancelled", subtotal: 55, discount_amount: 0, total: 55,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      items: [
+        { id: "ti-8", item_name: "تشكن راب عادي", item_price: 40, quantity: 1 },
+        { id: "ti-9", item_name: "ذرة بالمايونيز", item_price: 5, quantity: 3 },
+      ],
+    },
+  ];
+
+  const { data: orders = TEST_ORDERS, isLoading } = useQuery<MyOrder[]>({
     queryKey: ["my-orders"],
     queryFn: async () => {
       const res = await apiFetch("/api/places/my-orders");
-      if (!res.ok) return [];
+      if (!res.ok) return TEST_ORDERS;
       const data = await res.json();
-      return data.data || [];
+      const real = data.data || [];
+      return real.length > 0 ? real : TEST_ORDERS;
     },
     refetchInterval: 5000,
   });
@@ -202,7 +258,6 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
 
         {!isLoading && orders.length === 0 && (
           <div className="text-center py-10">
-            <div className="text-3xl mb-2">📦</div>
             <p className="text-[13px] text-mist">لا توجد طلبات بعد</p>
           </div>
         )}

@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -46,8 +45,9 @@ function useConversations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastJsonRef = useRef("");
 
-  async function fetchConversations() {
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await apiFetch("/api/chat/conversations");
       if (!res.ok) {
@@ -59,22 +59,27 @@ function useConversations() {
         throw new Error(`${res.status}`);
       }
       const data = await res.json();
-      setConversations(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      const json = JSON.stringify(arr);
+      if (json !== lastJsonRef.current) {
+        lastJsonRef.current = json;
+        setConversations(arr);
+      }
       setError(null);
     } catch {
       setError("تعذر تحميل المحادثات");
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     fetchConversations();
-    intervalRef.current = setInterval(fetchConversations, 4000);
+    intervalRef.current = setInterval(fetchConversations, 8000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [fetchConversations]);
 
   const deleteConversation = useCallback(async (convId: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== convId));
@@ -83,12 +88,12 @@ function useConversations() {
     } catch {
       fetchConversations();
     }
-  }, []);
+  }, [fetchConversations]);
 
   return { conversations, loading, error, fetchConversations, deleteConversation };
 }
 
-export function ConversationList({
+export const ConversationList = memo(function ConversationList({
   conversations,
   loading,
   error,
@@ -163,7 +168,6 @@ export function ConversationList({
       {!loading && error && (
         <div className="flex-1 flex items-center justify-center p-6 text-center">
           <div>
-            <div className="text-3xl mb-2">⚠️</div>
             <p className="text-sm text-mist mb-3">{error}</p>
             <button
               onClick={onRetry}
@@ -178,7 +182,6 @@ export function ConversationList({
       {!loading && !error && conversations.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6 text-center">
           <div>
-            <div className="text-4xl mb-3">💬</div>
             <p className="font-display font-bold text-ink text-sm mb-1">
               لا توجد محادثات
             </p>
@@ -195,21 +198,6 @@ export function ConversationList({
                 onClick={() => onSelect(conv.id)}
                 className="flex-1 flex gap-3 px-3 py-3 text-right hover:bg-fog transition-colors min-w-0"
               >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
-                  {conv.listing_image ? (
-                    <Image
-                      src={conv.listing_image}
-                      alt={conv.listing_title ?? ""}
-                      width={48}
-                      height={48}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="text-xl">📦</span>
-                  )}
-                </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-0.5">
                     <span className="font-display font-bold text-xs truncate">
@@ -245,7 +233,7 @@ export function ConversationList({
       )}
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────
 
@@ -255,8 +243,15 @@ export default function ChatInboxPage() {
   const { conversations, loading, error, fetchConversations, deleteConversation } =
     useConversations();
 
-  useMarketSidebar(
-    isDesktop && (loading || error || conversations.length > 0) ? (
+  // All hooks MUST be called before any conditional return (React rules of hooks)
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const touchStart = useRef<{ x: number; y: number; id: string } | null>(null);
+
+  const onSelect = useCallback((id: string) => router.push(`/market/chat/${id}`), [router]);
+  const sidebarContent = useMemo(() => {
+    if (!isDesktop || (!loading && !error && conversations.length === 0)) return null;
+    return (
       <div className="flex flex-col h-full -m-3">
         <div className="px-4 py-2.5 border-b border-border">
           <h2 className="font-display font-bold text-sm">المحادثات</h2>
@@ -265,34 +260,33 @@ export default function ChatInboxPage() {
           conversations={conversations}
           loading={loading}
           error={error}
-          onSelect={(id) => router.push(`/market/chat/${id}`)}
+          onSelect={onSelect}
           onRetry={fetchConversations}
           onDelete={deleteConversation}
         />
       </div>
-    ) : null
-  );
+    );
+  }, [isDesktop, conversations, loading, error, onSelect, fetchConversations, deleteConversation]);
+  useMarketSidebar(sidebarContent);
 
-  // DESKTOP
+  // DESKTOP — auto-open first conversation
+  useEffect(() => {
+    if (isDesktop && !loading && conversations.length > 0) {
+      router.replace(`/market/chat/${conversations[0].id}`);
+    }
+  }, [isDesktop, loading, conversations, router]);
+
   if (isDesktop) {
     return (
-      <div className="h-full flex items-center justify-center bg-fog text-center">
+      <div className="absolute inset-0 flex items-center justify-center bg-fog text-center">
         <div className="bg-surface rounded-2xl border border-border shadow-sm px-10 py-12 text-center max-w-sm">
-          <div className="w-16 h-16 mx-auto rounded-full bg-olive-pale flex items-center justify-center mb-4">
-            <span className="text-3xl">💬</span>
-          </div>
-          {conversations.length === 0 ? (
+          {loading ? (
+            <div className="w-6 h-6 mx-auto border-2 border-olive border-t-transparent rounded-full animate-spin" />
+          ) : (
             <>
               <div className="font-bold">لا توجد محادثات بعد</div>
               <p className="text-sm text-mist">
                 تصفح السوق وراسل البائعين للبدء
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="font-bold">اختر محادثة</div>
-              <p className="text-sm text-mist">
-                اختر محادثة من القائمة للبدء
               </p>
             </>
           )}
@@ -302,10 +296,6 @@ export default function ChatInboxPage() {
   }
 
   // MOBILE — swipeable conversation rows
-  const [swipedId, setSwipedId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const touchStart = useRef<{ x: number; y: number; id: string } | null>(null);
-
   function handleTouchStart(convId: string, e: React.TouchEvent) {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, id: convId };
   }
@@ -385,7 +375,6 @@ export default function ChatInboxPage() {
         {!loading && error && (
           <div className="flex-1 flex items-center justify-center p-8 text-center">
             <div>
-              <div className="text-4xl mb-3">⚠️</div>
               <p className="mb-3 text-sm text-mist">{error}</p>
               <button
                 onClick={fetchConversations}
@@ -400,7 +389,6 @@ export default function ChatInboxPage() {
         {!loading && !error && conversations.length === 0 && (
           <div className="flex items-center justify-center h-64 text-center">
             <div>
-              <div className="text-5xl mb-4">💬</div>
               <div className="font-bold mb-1">لا توجد محادثات بعد</div>
               <p className="text-sm text-mist">تصفح السوق وراسل البائعين للبدء</p>
             </div>
@@ -440,20 +428,6 @@ export default function ChatInboxPage() {
                       }}
                       className="w-full flex gap-3 px-4 py-3.5 text-right active:bg-fog transition-colors"
                     >
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-fog flex items-center justify-center flex-shrink-0">
-                        {conv.listing_image ? (
-                          <Image
-                            src={conv.listing_image}
-                            alt={conv.listing_title ?? ""}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <span className="text-xl">📦</span>
-                        )}
-                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-0.5">
                           <span className="font-display font-bold text-sm text-ink truncate">

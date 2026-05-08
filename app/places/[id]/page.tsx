@@ -11,7 +11,6 @@ import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
-import { getItemIcon, getItemBgColor } from '@/components/places/FoodIcons';
 
 /* ─── Constants ─── */
 
@@ -39,6 +38,7 @@ const SERVICE_COLORS: Record<string, { bg: string; stroke: string }> = {
   private_rooms: { bg: '#FEF0EB', stroke: '#E05C35' },
   drinks: { bg: '#E8F5EE', stroke: '#1E4D2B' },
 };
+
 
 const FLAG_REASONS = [
   { value: 'wrong_price', label: 'السعر غلط' },
@@ -173,14 +173,6 @@ function typeLabel(type: string): string {
   return type;
 }
 
-function resolvePublicImageUrl(url?: string | null): string | null {
-  if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
-  if (!base) return url;
-  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
-}
-
 /* ─── Workspace Content ─── */
 
 function WorkspaceContent({ place }: { place: Place }) {
@@ -206,10 +198,35 @@ function WorkspaceContent({ place }: { place: Place }) {
 
   if (wsLoading) {
     return (
-      <div className="space-y-3">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-14 rounded-[14px] bg-border/40 animate-pulse" />
-        ))}
+      <div className="animate-pulse">
+        {/* Pricing card skeleton */}
+        <div className="bg-surface border border-border rounded-[14px] overflow-hidden mb-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className={`flex items-center gap-3 px-4 py-3.5 ${i < 3 ? 'border-b border-border' : ''}`}>
+              <div className="w-8 h-8 rounded-[9px] bg-border/30 flex-shrink-0" />
+              <div className="space-y-1.5">
+                <div className="h-2.5 w-16 bg-border/30 rounded" />
+                <div className="h-3.5 w-24 bg-border/40 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Services section skeleton */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1 h-4 bg-border/40 rounded-sm" />
+          <div className="h-3.5 w-24 bg-border/40 rounded" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex items-center gap-2 p-3 rounded-xl border border-border/40 bg-fog/50">
+              <div className="w-[30px] h-[30px] rounded-lg bg-border/30 flex-shrink-0" />
+              <div className="space-y-1.5">
+                <div className="h-3 w-14 bg-border/30 rounded" />
+                <div className="h-2.5 w-10 bg-border/20 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -283,7 +300,7 @@ function WorkspaceContent({ place }: { place: Place }) {
             <div className="w-1 h-4 bg-olive rounded-sm" />
             <span className="font-display font-extrabold text-[13px] text-ink">الخدمات المتاحة</span>
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
             {services.map(s => {
               const colors = SERVICE_COLORS[s.service] || { bg: '#E8F5EE', stroke: '#1E4D2B' };
               return (
@@ -405,16 +422,39 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
   }, [place.id]);
 
   if (loading) {
+    const isFood = place.section === 'food';
+    if (isFood) {
+      return (
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-x-8 animate-pulse">
+          {[...Array(4)].map((_, si) => (
+            <div key={si} className="break-inside-avoid mb-6">
+              <div className="h-4 w-20 bg-border/40 rounded mb-2 pb-1.5 border-b-2 border-border/20" />
+              {[...Array(si % 2 === 0 ? 4 : 3)].map((_, j) => (
+                <div key={j} className="flex items-baseline gap-2 py-1.5">
+                  <div className="h-3 w-20 bg-border/30 rounded" />
+                  <div className="flex-1 border-b border-dotted border-border/20" />
+                  <div className="h-3.5 w-10 bg-border/30 rounded" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
     return (
-      <div className="space-y-4">
+      <div className="space-y-5 animate-pulse">
         {[...Array(3)].map((_, i) => (
           <div key={i}>
-            <div className="h-4 w-24 rounded-md bg-border/60 animate-pulse mb-3" />
+            <div className="h-4 w-24 rounded-md bg-border/40 mb-2" />
             <div className="space-y-1.5">
               {[...Array(3)].map((_, j) => (
-                <div key={j} className="flex items-center justify-between p-3 bg-surface rounded-[11px] border border-border">
-                  <div className="h-3.5 w-28 rounded-md bg-border/60 animate-pulse" />
-                  <div className="h-4 w-14 rounded-md bg-border/60 animate-pulse" />
+                <div key={j} className="flex items-center gap-3 p-3 bg-surface rounded-[11px] border border-border">
+                  <div className="w-10 h-10 rounded-lg bg-border/40 flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-28 rounded bg-border/40" />
+                    <div className="h-2.5 w-20 rounded bg-border/30" />
+                  </div>
+                  <div className="h-4 w-14 rounded bg-border/40" />
                 </div>
               ))}
             </div>
@@ -433,71 +473,113 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
     );
   }
 
+  const isFood = place.section === 'food';
+
   return (
     <>
       {menuSections.some((sec) => sec.items.some((item) => Number(item.price) === 0)) && (
-        <div className="bg-surface rounded-2xl border border-border p-3 mb-4 text-center">
-          <p className="text-[12px] font-semibold text-mist">بعض الأسعار لم تُضاف بعد من صاحب المحل</p>
-          <p className="text-[10px] text-mist/70 mt-1">تواصل مع المحل مباشرة للاستفسار عن الأسعار &nbsp;📞</p>
+        <div className="text-center mb-4">
+          <p className="text-[11px] text-olive/50">بعض الأسعار لم تُضاف بعد من صاحب المحل</p>
         </div>
       )}
+
+      {isFood ? (
+      /* ── Food: multi-column menu with dotted leaders ── */
+      <div className="columns-1 sm:columns-2 lg:columns-3 gap-x-8">
       {menuSections.map((sec) => (
-        <div key={sec.name} className="mb-5">
-          <div className="flex items-center gap-[7px] py-3">
-            <div className="w-1 h-[18px] bg-olive rounded-sm" />
-            <span className="font-display font-extrabold text-[13px] text-ink">{sec.name}</span>
-          </div>
-          <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[0_1px_6px_rgba(0,0,0,0.05)]">
+        <div key={sec.name} className="break-inside-avoid mb-6">
+          <h3 className="font-display font-black text-[16px] text-olive mb-2 pb-1.5 border-b-2 border-olive/20">
+            {sec.name}
+          </h3>
           {sec.items.map((item, idx) => {
-            const photoUrl = resolvePublicImageUrl(item.photo_url);
             const inCart = cart?.get(item.id!);
             const canOrder = onAddToCart && item.available && Number(item.price) > 0 && item.id;
             return (
             <div
               key={item.id || `${item.name}-${idx}`}
-              className={`flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#F2FAF5] ${idx < sec.items.length - 1 ? 'border-b border-border' : ''} ${!item.available ? 'opacity-45' : ''}`}
+              className={`group py-1.5 ${!item.available ? 'opacity-35' : ''}`}
             >
-              {photoUrl ? (
-                <div className="w-10 h-10 rounded-[10px] flex-shrink-0 overflow-hidden">
-                  <img src={photoUrl} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="flex items-start gap-1">
+                <div className="flex-1 min-w-0 flex items-baseline">
+                  <span className="text-[13px] font-semibold text-ink whitespace-nowrap">{item.name}</span>
+                  {item.available && Number(item.price) > 0 && (
+                    <span className="flex-1 mx-1.5 border-b border-dotted border-olive/20 min-w-[20px] relative top-[-3px]" />
+                  )}
+                  {item.available && Number(item.price) > 0 ? (
+                    <span className="font-display font-black text-[14px] text-olive whitespace-nowrap tabular-nums">{item.price} <span className="text-[9px] font-normal text-olive/50">₪</span></span>
+                  ) : item.available ? <span className="text-[11px] text-mist">—</span> : null}
                 </div>
-              ) : (
-                <div className="w-10 h-10 rounded-[10px] flex items-center justify-center flex-shrink-0 text-olive/60" style={{ background: getItemBgColor(item.name) }}>
-                  {getItemIcon(item.name)('w-5 h-5')}
+                <div className="flex items-center gap-1 flex-shrink-0 mr-1">
+                  {item.id && (
+                    <button onClick={() => openFlag(item)} className="text-[#E05C35]/40 hover:text-[#E05C35] transition-colors">
+                      <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    </button>
+                  )}
+                  {canOrder && !inCart && (
+                    <button onClick={() => onAddToCart(item)} className="w-5 h-5 rounded-full bg-olive text-white flex items-center justify-center active:scale-95">
+                      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 stroke-white" fill="none" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                  )}
+                  {canOrder && inCart && onUpdateQty && (
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => onUpdateQty(item.id!, -1)} className="w-5 h-5 rounded-full bg-[#FEF0EB] text-[#E05C35] flex items-center justify-center text-[12px] leading-none">−</button>
+                      <span className="font-display font-extrabold text-[12px] text-ink min-w-[12px] text-center">{inCart.quantity}</span>
+                      <button onClick={() => onUpdateQty(item.id!, 1)} className="w-5 h-5 rounded-full bg-olive-pale text-olive flex items-center justify-center text-[12px] leading-none">+</button>
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-[13px] text-ink mb-0.5">{item.name}</div>
-                {item.description && <div className="text-[11px] text-mist truncate">{item.description}</div>}
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {item.id && (
-                  <button onClick={() => openFlag(item)} className="flex items-center gap-0.5 text-[10px] text-[#E05C35]/60 hover:text-[#E05C35] transition-colors">
-                    <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                  </button>
-                )}
-                {item.available && Number(item.price) > 0 ? (
-                  <span className="font-display font-black text-[15px] text-olive">{item.price} <span className="text-[9px] font-normal text-mist">₪</span></span>
-                ) : item.available ? <span className="text-[11px] text-mist">—</span> : null}
-                {canOrder && !inCart && (
-                  <button onClick={() => onAddToCart(item)} className="w-7 h-7 rounded-full bg-olive text-white flex items-center justify-center shadow-[0_2px_8px_rgba(30,77,43,0.3)] active:scale-95 transition-transform">
-                    <svg viewBox="0 0 24 24" className="w-[13px] h-[13px] stroke-white" fill="none" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  </button>
-                )}
-                {canOrder && inCart && onUpdateQty && (
-                  <div className="flex items-center gap-[5px]">
-                    <button onClick={() => onUpdateQty(item.id!, -1)} className="w-[26px] h-[26px] rounded-full bg-[#FEF0EB] border-[1.5px] border-[#E05C35]/20 text-[#E05C35] flex items-center justify-center text-[16px] leading-none">−</button>
-                    <span className="font-display font-extrabold text-[14px] text-ink min-w-[16px] text-center">{inCart.quantity}</span>
-                    <button onClick={() => onUpdateQty(item.id!, 1)} className="w-[26px] h-[26px] rounded-full bg-olive-pale border-[1.5px] border-olive/20 text-olive flex items-center justify-center text-[14px] leading-none">+</button>
-                  </div>
-                )}
-              </div>
+              {item.description && <p className="text-[10px] text-olive/40 mt-0.5 pr-1">{item.description}</p>}
             </div>
             );
           })}
+        </div>
+      ))}
+      </div>
+      ) : (
+      /* ── Store: card-row style ── */
+      <div className="space-y-5">
+      {menuSections.map((sec) => (
+        <div key={sec.name}>
+          <h3 className="font-display font-bold text-[14px] text-ink mb-2">{sec.name}</h3>
+          <div className="space-y-1.5">
+            {sec.items.map((item, idx) => (
+              <div
+                key={item.id || `${item.name}-${idx}`}
+                className={`flex items-center gap-3 p-3 bg-surface rounded-[11px] border border-border ${!item.available ? 'opacity-40' : ''}`}
+              >
+                {item.photo_url ? (
+                  <img src={item.photo_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-fog flex items-center justify-center flex-shrink-0">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-mist" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[13px] font-semibold text-ink">{item.name}</span>
+                  {item.description && <p className="text-[10px] text-mist mt-0.5">{item.description}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 mr-1">
+                  {item.id && (
+                    <button onClick={() => openFlag(item)} className="text-[#E05C35]/40 hover:text-[#E05C35] transition-colors">
+                      <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    </button>
+                  )}
+                  {item.available && Number(item.price) > 0 ? (
+                    <span className="font-display font-bold text-[14px] text-olive whitespace-nowrap">{item.price} <span className="text-[9px] font-normal text-mist">₪</span></span>
+                  ) : item.available ? (
+                    <span className="text-[11px] text-mist">—</span>
+                  ) : (
+                    <span className="text-[10px] text-red-400">غير متوفر</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ))}
+      </div>
+      )}
 
       {/* Flag modal */}
       {flagItem && (
@@ -667,12 +749,35 @@ export default function PlaceDetailPage() {
   if (loading) {
     if (isDesktop) {
       return (
-        <div className="h-full overflow-y-auto bg-fog">
-          <div className="max-w-2xl mx-auto p-6 space-y-4">
-            <div className="h-6 w-40 bg-border/40 rounded animate-pulse" />
-            <div className="bg-surface rounded-2xl border border-border p-6 space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-14 rounded-[14px] bg-border/40 animate-pulse" />
+        <div className="h-full overflow-y-auto bg-white" dir="rtl">
+          <div className="p-6 animate-pulse">
+            {/* Place info row */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-full bg-border/40 flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-36 bg-border/40 rounded" />
+                <div className="h-3 w-24 bg-border/30 rounded" />
+              </div>
+              <div className="flex gap-2">
+                <div className="w-8 h-8 rounded-full bg-border/30" />
+                <div className="w-8 h-8 rounded-full bg-border/30" />
+              </div>
+            </div>
+            {/* Section title */}
+            <div className="h-4 w-28 bg-border/40 rounded mb-4" />
+            {/* Multi-column menu skeleton */}
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-x-8">
+              {[...Array(4)].map((_, si) => (
+                <div key={si} className="break-inside-avoid mb-6">
+                  <div className="h-4 w-20 bg-border/40 rounded mb-2 pb-1.5 border-b-2 border-border/20" />
+                  {[...Array(si % 2 === 0 ? 4 : 3)].map((_, j) => (
+                    <div key={j} className="flex items-baseline gap-2 py-1.5">
+                      <div className="h-3 w-20 bg-border/30 rounded" />
+                      <div className="flex-1 border-b border-dotted border-border/20" />
+                      <div className="h-3.5 w-10 bg-border/30 rounded" />
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -680,20 +785,34 @@ export default function PlaceDetailPage() {
       );
     }
     return (
-      <div className="min-h-screen bg-fog flex flex-col">
-        <div className="bg-olive p-4 pb-5">
-          <div className="h-8 w-24 rounded-md bg-white/20 animate-pulse mb-3" />
+      <div className="min-h-screen bg-fog flex flex-col" dir="rtl">
+        {/* Header skeleton */}
+        <div className="bg-olive p-4 pb-5 relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-[30px] h-[30px] rounded-lg bg-white/12" />
+            <div className="h-3.5 w-24 bg-white/20 rounded" />
+          </div>
           <div className="flex items-center gap-3">
-            <div className="w-[50px] h-[50px] rounded-[14px] bg-white/20 animate-pulse" />
-            <div className="flex-1">
-              <div className="h-5 w-40 rounded-md bg-white/20 animate-pulse mb-2" />
-              <div className="h-3 w-24 rounded-md bg-white/20 animate-pulse" />
+            <div className="w-[50px] h-[50px] rounded-full bg-white/14" />
+            <div className="flex-1 space-y-2">
+              <div className="h-5 w-36 bg-white/20 rounded" />
+              <div className="h-3 w-24 bg-white/15 rounded" />
             </div>
           </div>
         </div>
-        <div className="p-4 space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-14 rounded-[14px] bg-border/40 animate-pulse" />
+        {/* Menu skeleton */}
+        <div className="p-4 animate-pulse">
+          {[...Array(3)].map((_, si) => (
+            <div key={si} className="mb-5">
+              <div className="h-4 w-20 bg-border/40 rounded mb-2 pb-1.5 border-b-2 border-border/20" />
+              {[...Array(si === 0 ? 4 : 3)].map((_, j) => (
+                <div key={j} className="flex items-baseline gap-2 py-1.5">
+                  <div className="h-3 w-20 bg-border/30 rounded" />
+                  <div className="flex-1 border-b border-dotted border-border/20" />
+                  <div className="h-3.5 w-10 bg-border/30 rounded" />
+                </div>
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -703,7 +822,6 @@ export default function PlaceDetailPage() {
   if (error || !place) {
     return (
       <div className={`${isDesktop ? 'h-full' : 'min-h-screen'} bg-fog flex flex-col items-center justify-center px-6 text-center`}>
-        <p className="text-4xl mb-4">😕</p>
         <h1 className="font-display font-black text-xl text-ink mb-2">المكان غير موجود</h1>
         <p className="text-sm text-mist mb-6">قد يكون الرابط خاطئاً أو أن المكان لم يعد متاحاً</p>
         <Link href="/places" className="bg-olive text-white font-display font-bold text-[13px] px-5 py-2.5 rounded-xl">
@@ -724,13 +842,13 @@ export default function PlaceDetailPage() {
   // ── Desktop layout ──
   if (isDesktop) {
     return (
-      <div className="h-full overflow-y-auto bg-fog" dir="rtl">
-        <div className="max-w-2xl mx-auto p-6">
+      <div className="h-full overflow-y-auto bg-white" dir="rtl">
+        <div className="p-6">
           {/* Place info row */}
           <div className="flex items-center gap-3 mb-5">
-            <div className={`w-11 h-11 rounded-xl bg-olive-pale flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-lg' : ''}`}>
+            <div className={`w-11 h-11 rounded-full bg-olive-pale flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-lg' : ''}`}>
               {place.avatar_url ? (
-                <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
               ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
             </div>
             <div className="flex-1 min-w-0">
@@ -747,13 +865,13 @@ export default function PlaceDetailPage() {
             </div>
             <div className="flex gap-2 flex-shrink-0">
               {place.phone && (
-                <a href={`tel:${place.phone}`} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center text-sm">
-                  📞
+                <a href={`tel:${place.phone}`} className="w-8 h-8 rounded-full bg-fog border border-border flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-ink" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
                 </a>
               )}
               {place.whatsapp && (
-                <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center text-sm">
-                  💬
+                <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25D366]/10 border border-[#25D366]/20 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#25D366]" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                 </a>
               )}
             </div>
@@ -763,13 +881,11 @@ export default function PlaceDetailPage() {
           <h2 className="font-display font-bold text-sm text-ink mb-3">{sectionTitle}</h2>
 
           {/* Content */}
-          <div className="bg-surface rounded-2xl border border-border p-5">
-            {place.section === 'workspace' ? (
-              <WorkspaceContent place={place} />
-            ) : (
-              <MenuContent place={place} cart={ordersEnabled ? cart : undefined} onAddToCart={ordersEnabled ? addToCart : undefined} onUpdateQty={ordersEnabled ? updateCartQty : undefined} />
-            )}
-          </div>
+          {place.section === 'workspace' ? (
+            <WorkspaceContent place={place} />
+          ) : (
+            <MenuContent place={place} cart={ordersEnabled ? cart : undefined} onAddToCart={ordersEnabled ? addToCart : undefined} onUpdateQty={ordersEnabled ? updateCartQty : undefined} />
+          )}
 
           {/* Desktop cart */}
           {ordersEnabled && (
@@ -825,9 +941,9 @@ export default function PlaceDetailPage() {
 
         {/* Place info */}
         <div className="flex items-center gap-3 relative z-[1]">
-          <div className={`w-[50px] h-[50px] rounded-[14px] bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-2xl' : ''}`}>
+          <div className={`w-[50px] h-[50px] rounded-full bg-white/[0.14] border-[1.5px] border-white/[0.22] flex items-center justify-center flex-shrink-0 overflow-hidden ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-2xl' : ''}`}>
             {place.avatar_url ? (
-              <img src={place.avatar_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
             ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
           </div>
           <div className="flex-1 min-w-0">
@@ -847,13 +963,13 @@ export default function PlaceDetailPage() {
           </div>
           <div className="flex flex-col gap-2 flex-shrink-0">
             {place.phone && (
-              <a href={`tel:${place.phone}`} className="w-9 h-9 rounded-full bg-white/10 border border-white/[0.18] flex items-center justify-center text-[16px]">
-                📞
+              <a href={`tel:${place.phone}`} className="w-9 h-9 rounded-full bg-white/10 border border-white/[0.18] flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
               </a>
             )}
             {place.whatsapp && (
-              <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center text-[16px]">
-                💬
+              <a href={`https://wa.me/${cleanWhatsapp(place.whatsapp)}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-[#25D366]/20 border border-[#25D366]/30 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#25D366]" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               </a>
             )}
           </div>

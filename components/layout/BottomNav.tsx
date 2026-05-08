@@ -8,9 +8,9 @@ type IconType = "home" | "market" | "add" | "places" | "orders" | "account";
 
 const NAV_ITEMS: { href: string; icon: IconType; label: string }[] = [
   { href: "/", icon: "home", label: "الرئيسية" },
-  { href: "/market", icon: "market", label: "السوق" },
-  { href: "/submit", icon: "add", label: "إضافة" },
   { href: "/places", icon: "places", label: "محلات" },
+  { href: "/submit", icon: "add", label: "إضافة" },
+  { href: "/market", icon: "market", label: "السوق" },
   { href: "/account", icon: "account", label: "حسابي" },
 ];
 

@@ -1,23 +1,27 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useEffect } from "react";
 
 const QUERY = "(min-width: 1024px)";
 
-function getSnapshot(): boolean {
-  return window.matchMedia(QUERY).matches;
-}
+/**
+ * Returns `null` on the very first render (before mount),
+ * then `true`/`false` once the media query is evaluated.
+ * Pages should treat `null` as "not ready yet" and show nothing
+ * or a skeleton to avoid a mobile→desktop layout flash.
+ */
+export function useIsDesktop(): boolean | null {
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
-function getServerSnapshot(): boolean {
-  return false;
-}
+  useEffect(() => {
+    const mql = window.matchMedia(QUERY);
+    setIsDesktop(mql.matches);
+    function onChange(e: MediaQueryListEvent) {
+      setIsDesktop(e.matches);
+    }
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
-function subscribe(callback: () => void): () => void {
-  const mql = window.matchMedia(QUERY);
-  mql.addEventListener("change", callback);
-  return () => mql.removeEventListener("change", callback);
-}
-
-export function useIsDesktop(): boolean {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  return isDesktop;
 }

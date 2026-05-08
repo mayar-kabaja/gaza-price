@@ -120,7 +120,7 @@ body {
   color: inherit;
 }
 
-/* Dark mode: override Tailwind built-in red-50 (error boxes) */
+/* Dark mode: override Tailwind built-in colors that don't adapt */
 .dark .bg-red-50 {
   background-color: #2a1515 !important;
 }
@@ -133,8 +133,54 @@ body {
 .dark .text-red-800 {
   color: #f0a0a0 !important;
 }
-.dark .bg-red-50\/50 {
+.dark .bg-red-50\/50,
+.dark .hover\:bg-red-50\/50:hover {
   background-color: rgba(42, 21, 21, 0.5) !important;
+}
+
+/* Amber */
+.dark .bg-amber-50 {
+  background-color: #2a2010 !important;
+}
+.dark .bg-amber-100 {
+  background-color: #33280f !important;
+}
+.dark .bg-amber-50\/50,
+.dark .hover\:bg-amber-50\/50:hover {
+  background-color: rgba(42, 32, 16, 0.5) !important;
+}
+.dark .text-amber-700 {
+  color: #f0c060 !important;
+}
+.dark .text-amber-800 {
+  color: #f0c060 !important;
+}
+.dark .border-amber-200 {
+  border-color: #5c4a20 !important;
+}
+
+/* Emerald */
+.dark .bg-emerald-50 {
+  background-color: #0f2a1a !important;
+}
+.dark .text-emerald-600 {
+  color: #6ee7a0 !important;
+}
+
+/* Blue */
+.dark .bg-blue-50 {
+  background-color: #0f1a2a !important;
+}
+.dark .text-blue-500 {
+  color: #60a5fa !important;
+}
+
+/* Purple */
+.dark .bg-purple-50 {
+  background-color: #1a0f2a !important;
+}
+.dark .text-purple-500 {
+  color: #a78bfa !important;
 }
 
 /* Dark mode: shadows should be darker */

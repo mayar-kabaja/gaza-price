@@ -74,9 +74,6 @@ export default function ProductPage({ params }: Props) {
   if (isError || !product) {
     return (
       <div className={`flex flex-col ${isDesktop ? "h-full" : "min-h-dvh"} items-center justify-center px-6`}>
-        <div className="w-16 h-16 rounded-full bg-fog border-2 border-border flex items-center justify-center mb-4">
-          <span className="text-3xl">⏳</span>
-        </div>
         <p className="font-display font-bold text-ink text-base mb-1">المنتج قيد المراجعة</p>
         <p className="text-sm text-mist text-center leading-relaxed max-w-[280px]">
           هذا المنتج لم تتم الموافقة عليه بعد من قبل الإدارة. سيظهر هنا بعد المراجعة.

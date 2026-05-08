@@ -30,8 +30,8 @@ export function SearchBar({ hideActions = false }: SearchBarProps) {
 
   return (
     <div className="relative z-20">
-      <div className="bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-2xl flex items-center gap-2 px-3 py-2.5">
-        <span className="text-xs text-mist dark:text-white/50">🔍</span>
+      <div className="bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-full flex items-center gap-2 px-3 py-2.5">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 text-mist dark:text-white/50 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}

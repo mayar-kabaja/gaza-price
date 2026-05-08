@@ -11,6 +11,8 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useSession } from "@/hooks/useSession";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { useMarketSidebar, useMarketContext } from "@/app/market/layout";
+import { MarketSidebar } from "@/components/market/MarketSidebar";
+import { SliderRow } from "@/components/market/SliderRow";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/lib/queries/fetchers";
 
@@ -111,48 +113,57 @@ function ListingRow({ listing, markingSoldId, handleToggleSold }: {
 }) {
   const cat = CATEGORY_CONFIG[listing.category] ?? CATEGORY_CONFIG.other;
   const firstImage = listing.images?.sort((a, b) => a.sort_order - b.sort_order)[0];
+  const isSold = listing.status === "sold";
   return (
     <Link
       href={`/market/${listing.id}`}
-      className="flex items-stretch bg-surface rounded-2xl border border-border/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+      className={cn("block bg-surface rounded-2xl border border-border/60 overflow-hidden transition-all", isSold && "opacity-70")}
     >
-      <div className="w-[100px] flex-shrink-0 p-2.5">
+      <div>
         <div className={cn(
-          "relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center min-h-[84px]",
-          !firstImage && cat.bg
+          "relative w-full overflow-hidden flex items-center justify-center aspect-[4/3]",
+          !firstImage && "bg-fog"
         )}>
           {firstImage ? (
-            <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="100px" unoptimized />
+            <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="220px" unoptimized />
           ) : (
-            <span className="text-[28px] select-none">{cat.emoji}</span>
+            <span className="text-[11px] text-mist select-none">لا توجد صورة</span>
+          )}
+          {isSold && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1]">
+              <span className="bg-white/90 text-slate-700 text-[11px] font-bold px-3 py-1 rounded-full">تم البيع</span>
+            </div>
           )}
         </div>
       </div>
-      <div className="flex-1 px-3 py-3 min-w-0 flex flex-col justify-between">
-        <div>
-          <div className="font-bold text-[13px] text-ink leading-snug line-clamp-2 mb-1.5">{listing.title}</div>
-          <span className={cn("inline-block text-[10px] font-bold px-2 py-[2px] rounded-full", STATUS_BADGE[listing.status] ?? "bg-fog text-mist")}>
+      <div className="px-3 py-2.5 min-w-0 flex flex-col gap-1.5">
+        <div className="font-bold text-[13px] text-ink leading-snug line-clamp-2">{listing.title}</div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={cn("text-[10px] font-bold px-2 py-[2px] rounded-full", STATUS_BADGE[listing.status] ?? "bg-fog text-mist")}>
             {STATUS_LABEL[listing.status] ?? listing.status}
           </span>
+          {listing.area?.name_ar && (
+            <span className="text-[10px] text-mist">
+              {listing.area.name_ar}
+            </span>
+          )}
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-display font-black text-[16px] text-olive-deep leading-none" dir="ltr">
-            ₪{Number(listing.price).toLocaleString()}
-          </span>
+        <div className="flex items-center justify-between mt-auto pt-1">
+          <span className="font-display font-black text-[16px] text-olive-deep leading-none" dir="ltr">₪{Number(listing.price).toLocaleString()}</span>
           {(listing.status === "active" || listing.status === "sold") ? (
             <button
-              onClick={(e) => handleToggleSold(e, listing.id)}
+              onClick={(e) => { e.preventDefault(); handleToggleSold(e, listing.id); }}
               disabled={markingSoldId === listing.id}
-              className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full transition-transform disabled:opacity-60 flex-shrink-0 ${listing.status === "sold" ? "bg-olive/10 text-olive" : "bg-slate-100 text-slate-600"}`}
+              className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full transition-transform disabled:opacity-60 flex-shrink-0 ${isSold ? "bg-olive/10 text-olive" : "bg-slate-100 text-slate-600"}`}
             >
               {markingSoldId === listing.id ? (
                 <div className="w-3 h-3 border-[1.5px] border-slate-400 border-t-slate-700 rounded-full animate-spin" />
               ) : (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                  <path d={listing.status === "sold" ? "M4 4l16 16M4 20L20 4" : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d={isSold ? "M4 4l16 16M4 20L20 4" : "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"} strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
-              {listing.status === "sold" ? "إعادة للنشط" : "تحديد كمُباع"}
+              {isSold ? "إعادة" : "مُباع"}
             </button>
           ) : (
             <span className="text-[10px] text-mist">{timeAgo(listing.created_at)}</span>
@@ -194,22 +205,20 @@ export default function MyListingsPage() {
   // Register sidebar content unconditionally (hook rule)
   useMarketSidebar(
     isDesktop ? (
-      <div className="space-y-4">
+      <MarketSidebar>
         {/* Status tabs */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">الحالة</div>
+          <div className="flex flex-wrap gap-1.5">
             {STATUS_TABS.map((t) => {
               const count = t.value === "all" ? listings.length : listings.filter((l) => l.status === t.value).length;
               return (
                 <button key={t.value} onClick={() => setTab(t.value)}
-                  className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-body transition-colors",
-                    tab === t.value ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
-                  <span>{t.label}</span>
-                  {count > 0 && (
-                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center",
-                      tab === t.value ? "bg-olive text-white" : "bg-border text-mist")}>{count}</span>
-                  )}
+                  className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                    tab === t.value
+                      ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                      : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
+                  {t.label}{count > 0 ? ` (${count})` : ""}
                 </button>
               );
             })}
@@ -218,57 +227,57 @@ export default function MyListingsPage() {
 
         {/* Categories */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+          <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((cat) => (
               <button key={cat.value} onClick={() => setCategory(cat.value)}
-                className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors",
-                  category === cat.value ? "bg-olive-pale text-olive border border-olive-mid" : "text-ink hover:bg-fog")}>
+                className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                  category === cat.value
+                    ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                    : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
                 {cat.label}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </MarketSidebar>
     ) : null
   );
 
   if (isDesktop) {
     return (
       <div className="p-5 h-full overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-5">
           <h1 className="font-display font-bold text-xl text-ink">إعلاناتي</h1>
-          <div className="flex items-center gap-2">
-            <Link href="/market" className="text-xs font-semibold text-mist hover:text-ink">السوق</Link>
-            <Link href="/market/saved" className="text-xs font-semibold text-mist hover:text-ink">المحفوظات</Link>
-            <button onClick={handleNewListing} className="flex items-center gap-1.5 bg-olive text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-olive-deep transition-colors">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3"><path d="M12 5v14M5 12h14" strokeLinecap="round"/></svg>
-              إعلان جديد
-            </button>
-          </div>
         </div>
 
-        {loading && <div className="grid grid-cols-2 gap-3">{Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
+        {loading && (
+          <div className="flex gap-3 overflow-hidden">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-[220px] flex-shrink-0"><ListingCardSkeleton /></div>
+            ))}
+          </div>
+        )}
 
         {!loading && display.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-surface rounded-2xl border border-border">
-            <div className="text-4xl mb-3">📋</div>
             <div className="font-display font-bold text-ink mb-1">
               {tab === "all" && !category ? "لا توجد إعلانات بعد" : "لا توجد نتائج"}
             </div>
-            <div className="text-sm text-mist mb-4">
+            <div className="text-sm text-mist">
               {tab === "all" && !category ? "أضف أول إعلان لك الآن" : "جرب تغيير الفلاتر"}
             </div>
-            {tab === "all" && !category && (
-              <button onClick={handleNewListing} className="px-5 py-2 bg-olive text-white rounded-full font-semibold text-sm">أضف إعلاناً</button>
-            )}
           </div>
         )}
 
         {!loading && display.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            {display.map((l) => <ListingRow key={l.id} listing={l} markingSoldId={markingSoldId} handleToggleSold={handleToggleSold} />)}
-          </div>
+          <SliderRow>
+            {display.map((l) => (
+              <div key={l.id} className="w-[220px] flex-shrink-0">
+                <ListingRow listing={l} markingSoldId={markingSoldId} handleToggleSold={handleToggleSold} />
+              </div>
+            ))}
+          </SliderRow>
         )}
         <PhoneAuthPopup
           open={showAuthPopup}
@@ -326,7 +335,6 @@ export default function MyListingsPage() {
 
         {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-5xl mb-4">📋</div>
             <div className="font-display font-bold text-ink text-lg mb-1">
               {tab === "all" ? "لا توجد إعلانات بعد" : `لا توجد إعلانات ${STATUS_LABEL[tab] ?? ""}`}
             </div>

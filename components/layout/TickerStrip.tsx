@@ -97,7 +97,24 @@ export function TickerStrip() {
     return () => clearInterval(t);
   }, [items.length, advance]);
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    // CTA fallback instead of empty space
+    return (
+      <Link href="#" onClick={(e) => { e.preventDefault(); document.dispatchEvent(new CustomEvent("open-submit-modal")); }}>
+        <div className="h-[34px] w-full flex items-center justify-center overflow-hidden relative z-20 border-b" style={{ background: "#0F172A", borderColor: "#334155" }}>
+          <div className="flex items-center gap-2 px-4">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide flex-shrink-0" style={{ background: "#4A7C59", color: "#fff" }}>
+              ساعد مجتمعك
+            </span>
+            <span className="text-[12px]" style={{ color: "#F8FAFC" }}>أبلغ عن سعر اليوم وساعد جيرانك</span>
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 flex-shrink-0" style={{ stroke: "#94A3B8" }}>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   const current = items[index];
 

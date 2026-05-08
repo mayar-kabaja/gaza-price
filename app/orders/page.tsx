@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api/fetch";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { useGlobalSidebar } from "@/components/layout/GlobalDesktopShell";
+import Link from "next/link";
 
 function isToday(dateStr: string): boolean {
   const d = new Date(dateStr);
@@ -59,13 +61,63 @@ export default function OrdersPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_PER_PAGE = 10;
 
-  const { data: orders = [], isLoading } = useQuery<MyOrder[]>({
+  // TODO: remove test data
+  const TEST_ORDERS: MyOrder[] = [
+    {
+      id: "test-1", order_number: 1041, status: "pending", subtotal: 115, discount_amount: 0, total: 115,
+      note: "بدون بصل", reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date().toISOString(),
+      items: [
+        { id: "ti-1", item_name: "زنجر تشكن برجر", item_price: 40, quantity: 2 },
+        { id: "ti-2", item_name: "ماشروم تشكن برجر", item_price: 35, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-2", order_number: 1040, status: "accepted", subtotal: 80, discount_amount: 0, total: 80,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 25 * 60000).toISOString(),
+      items: [
+        { id: "ti-3", item_name: "كلاسيك بيف برجر", item_price: 35, quantity: 1 },
+        { id: "ti-4", item_name: "تشكن راب دبل", item_price: 45, quantity: 1 },
+      ],
+    },
+    {
+      id: "test-3", order_number: 1039, status: "preparing", subtotal: 50, discount_amount: 0, total: 50,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 45 * 60000).toISOString(),
+      items: [{ id: "ti-5", item_name: "وجبة قطع زنجر", item_price: 50, quantity: 1 }],
+    },
+    {
+      id: "test-4", order_number: 1038, status: "ready", subtotal: 70, discount_amount: 0, total: 70,
+      note: "اتصل قبل التوصيل", reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 90 * 60000).toISOString(),
+      items: [{ id: "ti-6", item_name: "هاش تشكن برجر", item_price: 35, quantity: 2 }],
+    },
+    {
+      id: "test-5", order_number: 1035, status: "rejected", subtotal: 40, discount_amount: 0, total: 40,
+      note: null, reject_reason: "المنتج غير متوفر حالياً", place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+      items: [{ id: "ti-7", item_name: "ماشروم بيف برجر", item_price: 40, quantity: 1 }],
+    },
+    {
+      id: "test-6", order_number: 1030, status: "cancelled", subtotal: 55, discount_amount: 0, total: 55,
+      note: null, reject_reason: null, place_id: "da33d917", place_name: "ماي برجر - My Burger",
+      created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      items: [
+        { id: "ti-8", item_name: "تشكن راب عادي", item_price: 40, quantity: 1 },
+        { id: "ti-9", item_name: "ذرة بالمايونيز", item_price: 5, quantity: 3 },
+      ],
+    },
+  ];
+
+  const { data: orders = TEST_ORDERS, isLoading } = useQuery<MyOrder[]>({
     queryKey: ["my-orders"],
     queryFn: async () => {
       const res = await apiFetch("/api/places/my-orders");
-      if (!res.ok) return [];
+      if (!res.ok) return TEST_ORDERS;
       const data = await res.json();
-      return data.data || [];
+      const real = data.data || [];
+      return real.length > 0 ? real : TEST_ORDERS;
     },
     refetchInterval: 5000,
   });
@@ -99,6 +151,45 @@ export default function OrdersPage() {
   const paginatedHistory = useMemo(() => historyOrders.slice(0, historyPage * HISTORY_PER_PAGE), [historyOrders, historyPage]);
   const displayOrders = showHistory ? paginatedHistory : todayOrders;
 
+  useGlobalSidebar(
+    isDesktop ? (
+      <div className="space-y-3">
+        <Link href="/places" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors font-semibold mb-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M19 12H5M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          العودة للمحلات
+        </Link>
+
+        <div className="bg-olive-pale rounded-xl p-3 mb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-xl bg-olive/10 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-olive">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+              </svg>
+            </div>
+            <span className="font-display font-bold text-sm text-ink">طلباتي</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => { setShowHistory(false); setHistoryPage(1); }}
+          className={`w-full text-right px-3 py-2 rounded-xl text-[12px] font-bold transition-colors ${
+            !showHistory ? "bg-olive/10 text-olive" : "text-mist hover:bg-fog"
+          }`}
+        >
+          اليوم {todayOrders.length > 0 && <span className="text-[10px] opacity-70">({todayOrders.length})</span>}
+        </button>
+        <button
+          onClick={() => setShowHistory(true)}
+          className={`w-full text-right px-3 py-2 rounded-xl text-[12px] font-bold transition-colors ${
+            showHistory ? "bg-olive/10 text-olive" : "text-mist hover:bg-fog"
+          }`}
+        >
+          السجل {historyOrders.length > 0 && <span className="text-[10px] opacity-70">({historyOrders.length})</span>}
+        </button>
+      </div>
+    ) : null
+  );
+
   function renderOrder(order: MyOrder) {
     const badge = STATUS_BADGE[order.status] || STATUS_BADGE.pending;
     const isCancelling = cancelMutation.isPending && cancelMutation.variables === order.id;
@@ -107,7 +198,7 @@ export default function OrdersPage() {
     return (
       <div
         key={order.id}
-        className={`flex flex-col rounded-2xl border bg-surface transition-all ${
+        className={`flex flex-col h-[280px] rounded-2xl border bg-surface transition-all ${
           isCancelling ? "opacity-50 pointer-events-none" : ""
         } ${
           isDead
@@ -146,7 +237,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Items table */}
-        <div className={`flex-1 min-h-0 overflow-hidden ${isDead ? "opacity-40" : ""}`}>
+        <div className={`flex-1 min-h-0 overflow-y-auto ${isDead ? "opacity-40" : ""}`}>
           <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5 text-[9px] font-semibold text-mist uppercase tracking-wide">
             <span>الصنف</span>
             <div className="flex gap-6">
@@ -224,7 +315,7 @@ export default function OrdersPage() {
       {!isDesktop && <AppHeader hideSearch />}
 
       <div className="min-h-screen bg-fog pb-20" dir="rtl">
-        <div className="max-w-[700px] mx-auto px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4">
           {/* Page title */}
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-olive/10 flex items-center justify-center">
@@ -235,52 +326,44 @@ export default function OrdersPage() {
             <h1 className="font-display font-bold text-[18px] text-ink">طلباتي</h1>
           </div>
 
-          {/* Today / History toggle */}
-          {!isLoading && orders.length > 0 && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setShowHistory(false); setHistoryPage(1); }}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
-                  !showHistory
-                    ? "bg-olive/10 text-olive border border-olive/20"
-                    : "bg-fog text-mist border border-border"
-                }`}
-              >
-                اليوم {todayOrders.length > 0 && `(${todayOrders.length})`}
-              </button>
-              <button
-                onClick={() => setShowHistory(true)}
-                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
-                  showHistory
-                    ? "bg-olive/10 text-olive border border-olive/20"
-                    : "bg-fog text-mist border border-border"
-                }`}
-              >
-                السجل {historyOrders.length > 0 && `(${historyOrders.length})`}
-              </button>
-            </div>
-          )}
 
           {/* Orders grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {isLoading && (
               <>
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-52 rounded-2xl bg-border/30 animate-pulse" />
+                  <div key={i} className="h-[280px] rounded-2xl border border-border bg-surface flex flex-col overflow-hidden">
+                    <div className="px-4 pt-4 pb-3 border-b border-border/60 flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-border/40 animate-pulse" />
+                      <div className="flex-1">
+                        <div className="h-3.5 w-24 bg-border/40 rounded animate-pulse mb-1.5" />
+                        <div className="h-2.5 w-16 bg-border/30 rounded animate-pulse" />
+                      </div>
+                      <div className="h-5 w-14 bg-border/30 rounded-full animate-pulse" />
+                    </div>
+                    <div className="flex-1 px-4 py-3 space-y-2.5">
+                      <div className="h-2.5 w-full bg-border/30 rounded animate-pulse" />
+                      <div className="h-2.5 w-3/4 bg-border/30 rounded animate-pulse" />
+                      <div className="h-2.5 w-2/3 bg-border/30 rounded animate-pulse" />
+                    </div>
+                    <div className="px-4 py-2.5 border-t border-border/60 flex justify-between">
+                      <div className="h-4 w-16 bg-border/40 rounded animate-pulse" />
+                      <div className="h-5 w-20 bg-border/30 rounded-lg animate-pulse" />
+                    </div>
+                  </div>
                 ))}
               </>
             )}
 
             {!isLoading && orders.length === 0 && (
-              <div className="col-span-2 text-center py-16">
-                <div className="text-4xl mb-3">📦</div>
+              <div className="col-span-full text-center py-16">
                 <p className="text-[14px] text-mist font-display">لا توجد طلبات بعد</p>
                 <p className="text-[12px] text-mist/60 mt-1">عند طلبك من أي محل ستظهر طلباتك هنا</p>
               </div>
             )}
 
             {!isLoading && orders.length > 0 && displayOrders.length === 0 && (
-              <div className="col-span-2 text-center py-10">
+              <div className="col-span-full text-center py-10">
                 <p className="text-[13px] text-mist">
                   {showHistory ? "لا توجد طلبات سابقة" : "لا توجد طلبات اليوم"}
                 </p>
@@ -290,12 +373,12 @@ export default function OrdersPage() {
             {!isLoading && displayOrders.map(renderOrder)}
 
             {!isLoading && showHistory && historyPage < historyTotalPages && (
-              <div className="col-span-2 flex justify-center pt-2">
+              <div className="col-span-full flex justify-center pt-1">
                 <button
                   onClick={() => setHistoryPage((p) => p + 1)}
-                  className="px-5 py-2 rounded-xl border border-border bg-surface text-[12px] font-bold text-mist hover:text-ink hover:border-olive/30 transition-colors"
+                  className="px-3 py-1 rounded-lg border border-border bg-surface text-[10px] font-bold text-mist hover:text-ink hover:border-olive/30 transition-colors"
                 >
-                  عرض المزيد ({historyOrders.length - historyPage * HISTORY_PER_PAGE} متبقي)
+                  عرض المزيد ({historyOrders.length - historyPage * HISTORY_PER_PAGE})
                 </button>
               </div>
             )}

@@ -91,12 +91,14 @@ export function DesktopProfilePanel() {
   const { saveArea, area: savedArea } = useArea();
 
   useGlobalSidebar(
-    <div className="space-y-1">
-      <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">حسابي</div>
-      <Link href="/account" className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+    <div className="space-y-0.5">
+      <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2 pr-1">حسابي</div>
+      <Link href="/account" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-olive flex-shrink-0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         مستوى الثقة
       </Link>
-      <Link href="/account/reports" className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+      <Link href="/account/reports" className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-body text-ink hover:bg-fog transition-colors">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-600 flex-shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         مساهماتي
       </Link>
     </div>
@@ -215,7 +217,7 @@ export function DesktopProfilePanel() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 p-6">
+    <div className="space-y-6 p-6">
       {/* Profile header */}
       <div className="rounded-2xl px-6 pt-6 pb-5 bg-olive">
         <div className="flex items-center gap-4 mb-5">
@@ -313,7 +315,7 @@ export function DesktopProfilePanel() {
       )}
 
       {/* Trust level + Contributions grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trust level */}
         <div>
           <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">مستوى الثقة</div>
@@ -363,7 +365,6 @@ export function DesktopProfilePanel() {
             </div>
           ) : (contributor?.report_count ?? 0) === 0 ? (
             <div className="bg-surface rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
-              <div className="text-3xl mb-2">📋</div>
               <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر أو منتج بعد</div>
               <div className="text-xs text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</div>
             </div>

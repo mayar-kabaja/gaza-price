@@ -354,7 +354,6 @@ function MobileAccountPage() {
             </div>
           ) : (contributor?.report_count ?? 0) === 0 ? (
             <div className="bg-surface rounded-2xl p-6 border-[1.5px] border-dashed border-border text-center">
-              <div className="text-3xl mb-2">📋</div>
               <div className="font-display font-bold text-sm text-ink mb-1">لم تضف أي سعر أو منتج بعد</div>
               <div className="text-xs text-mist mb-3">ابدأ بإضافة سعر أو اقتراح منتج جديد</div>
               <Link

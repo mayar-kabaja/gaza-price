@@ -179,7 +179,6 @@ export function DesktopMarketModal({ open, onClose }: Props) {
 
           {!isLoading && allListings.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="text-4xl mb-3">🛒</div>
               <div className="font-display font-bold text-ink mb-1">لا توجد إعلانات</div>
               <div className="text-sm text-mist">جرّب تصفية أخرى</div>
             </div>

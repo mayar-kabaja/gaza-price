@@ -15,7 +15,6 @@ export default function AdminError({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
-      <div className="text-5xl mb-4">🔧</div>
       <h1 className="font-bold text-lg text-gray-800 mb-2">
         خطأ في لوحة التحكم
       </h1>

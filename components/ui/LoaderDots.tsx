@@ -11,33 +11,25 @@ interface LoaderDotsProps {
   size?: "sm" | "md";
 }
 
-const dotClasses = "loader-dots-dot rounded-full";
-const defaultDots = [
-  "bg-olive",
-  "bg-olive-mid loader-dots-delay-200",
-  "bg-sand loader-dots-delay-400",
-];
-const lightDots = [
-  "bg-white",
-  "bg-white/80 loader-dots-delay-200",
-  "bg-white/60 loader-dots-delay-400",
-];
-
 export function LoaderDots({ className, variant = "default", size = "md" }: LoaderDotsProps) {
-  const colors = variant === "light" ? lightDots : defaultDots;
+  const s = size === "sm" ? 16 : 24;
+  const stroke = variant === "light" ? "rgba(255,255,255,0.9)" : "var(--color-olive, #4A7C59)";
+  const trackStroke = variant === "light" ? "rgba(255,255,255,0.2)" : "var(--color-border, #e2e8f0)";
   return (
     <div
-      className={cn(
-        "flex items-center justify-center gap-1.5",
-        size === "sm" && "gap-1 scale-75 origin-center",
-        className
-      )}
+      className={cn("flex items-center justify-center", className)}
       role="status"
       aria-label="جاري التحميل"
     >
-      {colors.map((c, i) => (
-        <span key={i} className={cn(dotClasses, c)} />
-      ))}
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" className="animate-spin">
+        <circle cx="12" cy="12" r="10" stroke={trackStroke} strokeWidth="3" />
+        <path
+          d="M12 2a10 10 0 0 1 10 10"
+          stroke={stroke}
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 }

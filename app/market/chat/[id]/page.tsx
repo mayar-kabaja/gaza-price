@@ -1,8 +1,7 @@
 "use client";
 
-import { use, useEffect, useRef, useState, useCallback } from "react";
+import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -103,6 +102,7 @@ function useChatDetail(id: string) {
     return conv.my_role === "buyer" ? conv.buyer_id : conv.seller_id;
   }
 
+  const lastMsgJsonRef = useRef("");
   const fetchMessages = useCallback(async (scroll = false) => {
     try {
       const res = await apiFetch(`/api/chat/conversations/${id}/messages`);
@@ -112,15 +112,20 @@ function useChatDetail(id: string) {
         throw new Error(`${res.status}`);
       }
       const data = await res.json();
-      setConversation(data.conversation);
       if (data.conversation) myId.current = getMyId(data.conversation);
       const serverMessages = Array.isArray(data.messages) ? data.messages : [];
-      setMessages(serverMessages);
-      setPendingMessages((prev) => {
-        if (prev.length === 0) return prev;
-        const serverContents = new Set(serverMessages.map((m: Message) => m.content + m.sender_id));
-        return prev.filter((p) => !serverContents.has(p.content + p.sender_id));
-      });
+      // Only update state if data actually changed
+      const json = JSON.stringify(serverMessages);
+      if (json !== lastMsgJsonRef.current) {
+        lastMsgJsonRef.current = json;
+        setConversation(data.conversation);
+        setMessages(serverMessages);
+        setPendingMessages((prev) => {
+          if (prev.length === 0) return prev;
+          const serverContents = new Set(serverMessages.map((m: Message) => m.content + m.sender_id));
+          return prev.filter((p) => !serverContents.has(p.content + p.sender_id));
+        });
+      }
       setError(null);
       if (scroll) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch { setError("تعذر تحميل الرسائل"); }
@@ -129,12 +134,18 @@ function useChatDetail(id: string) {
 
   useEffect(() => {
     fetchMessages(true);
-    intervalRef.current = setInterval(() => fetchMessages(false), 3000);
+    intervalRef.current = setInterval(() => fetchMessages(false), 5000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchMessages]);
 
   const totalCount = messages.length + pendingMessages.length;
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [totalCount]);
+  const prevCount = useRef(0);
+  useEffect(() => {
+    if (totalCount > prevCount.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevCount.current = totalCount;
+  }, [totalCount]);
 
   async function handleSend() {
     const content = inputText.trim();
@@ -221,7 +232,6 @@ function MessagesView({ id }: { id: string }) {
   if (error) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <div className="text-4xl">😕</div>
         <div className="font-display font-bold text-ink">{error}</div>
       </div>
     );
@@ -231,13 +241,6 @@ function MessagesView({ id }: { id: string }) {
     <>
       {/* Chat header */}
       <div className="bg-surface border-b border-border flex items-center gap-3 px-4 py-3 flex-shrink-0 rounded-t-2xl">
-        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-fog flex items-center justify-center">
-          {conversation?.listing_image ? (
-            <Image src={conversation.listing_image} alt="" width={36} height={36} className="w-full h-full object-cover" unoptimized />
-          ) : (
-            <span className="text-lg">📦</span>
-          )}
-        </div>
         <div className="flex-1 min-w-0">
           <Link href={`/market/${conversation?.listing_id}`} className="font-display font-bold text-sm text-ink truncate hover:text-olive transition-colors block">
             {conversation?.listing_title ?? "محادثة"}
@@ -266,7 +269,6 @@ function MessagesView({ id }: { id: string }) {
 
         {allMessages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-            <div className="text-4xl mb-3">👋</div>
             <p className="font-display font-bold text-ink mb-1">ابدأ المحادثة</p>
             <p className="text-sm text-mist">أرسل رسالتك الأولى</p>
           </div>
@@ -345,29 +347,37 @@ function MessagesView({ id }: { id: string }) {
 
 // ── Desktop conversations sidebar data hook ────────────────────────────────────
 
-function useDesktopConversations() {
+function useDesktopConversations(enabled: boolean | null) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [convsLoading, setConvsLoading] = useState(true);
   const [convsError, setConvsError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function fetchConversations() {
+  const lastJsonRef = useRef("");
+  const fetchConversations = useCallback(async () => {
     try {
       const res = await apiFetch("/api/chat/conversations");
       if (!res.ok) { if (res.status === 401) { setConvsError("يجب تسجيل الدخول"); setConvsLoading(false); return; } throw new Error(); }
       const data = await res.json();
-      setConversations(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      // Only update state if data actually changed — prevents unnecessary re-renders
+      const json = JSON.stringify(arr);
+      if (json !== lastJsonRef.current) {
+        lastJsonRef.current = json;
+        setConversations(arr);
+      }
       setConvsError(null);
     } catch { setConvsError("تعذر التحميل"); }
     finally { setConvsLoading(false); }
-  }
+  }, []);
 
   useEffect(() => {
+    if (!enabled) { setConvsLoading(false); return; }
     fetchConversations();
-    intervalRef.current = setInterval(fetchConversations, 4000);
+    intervalRef.current = setInterval(fetchConversations, 8000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  }, [enabled, fetchConversations]);
 
   return { conversations, convsLoading, convsError, fetchConversations, router };
 }
@@ -377,11 +387,12 @@ function useDesktopConversations() {
 export default function ChatDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const isDesktop = useIsDesktop();
-  const { conversations, convsLoading, convsError, fetchConversations, router } = useDesktopConversations();
+  const { conversations, convsLoading, convsError, fetchConversations, router } = useDesktopConversations(isDesktop);
 
-  // Register sidebar content unconditionally (hook rule)
-  useMarketSidebar(
-    isDesktop ? (
+  const onSelect = useCallback((cid: string) => router.push(`/market/chat/${cid}`), [router]);
+  const sidebarContent = useMemo(() => {
+    if (!isDesktop) return null;
+    return (
       <div className="flex flex-col h-full -m-3">
         <div className="px-4 py-2.5 border-b border-border flex-shrink-0">
           <h2 className="font-display font-bold text-sm text-ink">المحادثات</h2>
@@ -391,16 +402,17 @@ export default function ChatDetailPage({ params }: { params: Promise<{ id: strin
           loading={convsLoading}
           error={convsError}
           activeId={id}
-          onSelect={(cid) => router.push(`/market/chat/${cid}`)}
+          onSelect={onSelect}
           onRetry={fetchConversations}
         />
       </div>
-    ) : null
-  );
+    );
+  }, [isDesktop, conversations, convsLoading, convsError, id, onSelect, fetchConversations]);
+  useMarketSidebar(sidebarContent);
 
   if (isDesktop) {
     return (
-      <div className="flex-1 flex flex-col overflow-hidden p-3 pe-0">
+      <div className="absolute inset-0 flex flex-col overflow-hidden p-3 pe-0">
         <div className="flex-1 flex flex-col overflow-hidden bg-surface rounded-2xl border border-border/60 shadow-sm">
           <MessagesView id={id} />
         </div>
@@ -444,7 +456,6 @@ function MobileChatDetail({ id }: { id: string }) {
   if (error) {
     return (
       <div className="flex flex-col min-h-dvh bg-fog items-center justify-center gap-4 px-6 text-center" dir="rtl">
-        <div className="text-5xl">😕</div>
         <div className="font-display font-bold text-ink">{error}</div>
         <button onClick={() => router.back()} className="text-olive text-sm font-semibold">← رجوع</button>
       </div>
@@ -483,7 +494,6 @@ function MobileChatDetail({ id }: { id: string }) {
         )}
         {allMessages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-            <div className="text-4xl mb-3">👋</div>
             <p className="font-display font-bold text-ink mb-1">ابدأ المحادثة</p>
             <p className="text-sm text-mist">أرسل رسالتك الأولى للبائع</p>
           </div>

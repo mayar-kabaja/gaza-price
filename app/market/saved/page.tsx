@@ -9,6 +9,8 @@ import { apiFetch } from "@/lib/api/fetch";
 import { useSession } from "@/hooks/useSession";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
+import { MarketSidebar } from "@/components/market/MarketSidebar";
+import { SliderRow } from "@/components/market/SliderRow";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/lib/queries/fetchers";
 
@@ -93,15 +95,17 @@ export default function SavedListingsPage() {
   // Register sidebar content unconditionally (hook rule)
   useMarketSidebar(
     isDesktop ? (
-      <div className="space-y-4">
+      <MarketSidebar>
         {/* Categories */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+          <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((cat) => (
               <button key={cat.value} onClick={() => setCategory(cat.value)}
-                className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors",
-                  category === cat.value ? "bg-olive-pale text-olive border border-olive-mid" : "text-ink hover:bg-fog")}>
+                className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                  category === cat.value
+                    ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                    : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
                 {cat.label}
               </button>
             ))}
@@ -110,56 +114,57 @@ export default function SavedListingsPage() {
 
         {/* Condition */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">الحالة</div>
+          <div className="flex flex-wrap gap-1.5">
             {CONDITIONS.map((cond) => (
               <button key={cond.value} onClick={() => setCondition(cond.value)}
-                className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-body transition-colors",
-                  condition === cond.value ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
+                className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                  condition === cond.value
+                    ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                    : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
                 {cond.label}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </MarketSidebar>
     ) : null
   );
 
   if (isDesktop) {
     return (
       <div className="p-5 h-full overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-5">
           <h1 className="font-display font-bold text-xl text-ink">المحفوظات</h1>
-          <div className="flex items-center gap-2">
-            <Link href="/market" className="text-xs font-semibold text-mist hover:text-ink">السوق</Link>
-            <Link href="/market/my" className="text-xs font-semibold text-mist hover:text-ink">إعلاناتي</Link>
-            {listings.length > 0 && <span className="text-sm text-mist">{listings.length} إعلان</span>}
-          </div>
         </div>
 
-        {loading && <div className="grid grid-cols-2 gap-3">{Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
+        {loading && (
+          <div className="flex gap-3 overflow-hidden">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-[220px] flex-shrink-0"><ListingCardSkeleton /></div>
+            ))}
+          </div>
+        )}
 
         {!loading && display.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center bg-surface rounded-2xl border border-border">
-            <div className="text-4xl mb-3">🔖</div>
             <div className="font-display font-bold text-ink mb-1">
               {listings.length === 0 ? "لا توجد إعلانات محفوظة" : "لا توجد نتائج"}
             </div>
-            <div className="text-sm text-mist mb-4">
+            <div className="text-sm text-mist">
               {listings.length === 0 ? "احفظ الإعلانات التي تعجبك لتجدها هنا" : "جرب تغيير الفلاتر"}
             </div>
-            {listings.length === 0 && (
-              <Link href="/market" className="px-5 py-2 bg-olive text-white rounded-full font-semibold text-sm">تصفح السوق</Link>
-            )}
           </div>
         )}
 
         {!loading && display.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
+          <SliderRow>
             {display.map((l) => (
-              <ListingCard key={l.id} listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={handleSaveToggle} />
+              <div key={l.id} className="w-[220px] flex-shrink-0">
+                <ListingCard listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={handleSaveToggle} />
+              </div>
             ))}
-          </div>
+          </SliderRow>
         )}
       </div>
     );
@@ -183,7 +188,6 @@ export default function SavedListingsPage() {
 
         {!loading && listings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-5xl mb-4">🔖</div>
             <div className="font-display font-bold text-ink text-lg mb-1">لا توجد إعلانات محفوظة</div>
             <div className="text-sm text-mist mb-6">احفظ الإعلانات التي تعجبك لتجدها هنا</div>
             <button onClick={() => router.push("/market")} className="px-5 py-2.5 bg-olive text-white rounded-full font-semibold text-sm">

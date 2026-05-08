@@ -861,7 +861,6 @@ function OwnerDashboardPage() {
   if (error || !place) return (
     <div className="min-h-screen bg-[#0F1117] flex items-center justify-center p-4" dir="rtl">
       <div className="text-center">
-        <div className="text-4xl mb-4">🔒</div>
         <h1 className="text-lg font-bold text-[#E5E7EB] mb-2">{error ?? "رمز غير صحيح"}</h1>
         <p className="text-sm text-[var(--d-text-muted)]">تأكد من الرابط الذي حصلت عليه من فريق غزة بريس.</p>
       </div>

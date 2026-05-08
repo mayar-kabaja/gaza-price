@@ -97,19 +97,19 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
     <>
     <div
       onClick={() => router.push(`/market/${listing.id}`)}
-      className={cn("bg-surface rounded-2xl shadow-sm border border-border/60 overflow-hidden transition-all hover:shadow-md cursor-pointer active:scale-[0.99] relative", isSold && "opacity-70")}
+      className={cn("bg-surface rounded-2xl border border-border/60 overflow-hidden transition-all cursor-pointer active:scale-[0.99] relative", isSold && "opacity-70")}
     >
       {/* Desktop: vertical layout (image top) */}
       <div className="hidden lg:block">
-        <div className="p-2 pb-0">
+        <div>
           <div className={cn(
-            "relative w-full rounded-xl overflow-hidden flex items-center justify-center aspect-[4/3]",
-            !firstImage && cat.bg
+            "relative w-full overflow-hidden flex items-center justify-center aspect-[4/3]",
+            !firstImage && "bg-fog"
           )}>
             {firstImage ? (
               <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="280px" />
             ) : (
-              <span className="text-[36px] select-none">{cat.emoji}</span>
+              <span className="text-[11px] text-mist select-none">لا توجد صورة</span>
             )}
             {isSold && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1]">
@@ -154,12 +154,12 @@ export function ListingCard({ listing, isSaved = false, onSaveToggle }: ListingC
         <div className="w-[130px] flex-shrink-0 p-2.5">
           <div className={cn(
             "relative w-full h-full rounded-xl overflow-hidden flex items-center justify-center min-h-[110px]",
-            !firstImage && cat.bg
+            !firstImage && "bg-fog"
           )}>
             {firstImage ? (
               <Image src={firstImage.url} alt={listing.title} fill className="object-cover" sizes="130px" />
             ) : (
-              <span className="text-[36px] select-none">{cat.emoji}</span>
+              <span className="text-[11px] text-mist select-none">لا توجد صورة</span>
             )}
             {isSold && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-[1] rounded-xl">

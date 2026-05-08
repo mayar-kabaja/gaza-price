@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useListingsInfinite, useAreas } from "@/lib/queries/hooks";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { ListingCard, ListingCardSkeleton } from "@/components/market/ListingCard";
+import { MarketSidebar } from "@/components/market/MarketSidebar";
+import { SliderRow } from "@/components/market/SliderRow";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { apiFetch } from "@/lib/api/fetch";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -34,6 +36,10 @@ const CATEGORIES = [
   { value: "other",       label: "أخرى" },
 ];
 
+const CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  CATEGORIES.filter(c => c.value).map(c => [c.value, c.label])
+);
+
 const CONDITIONS = [
   { value: "",       label: "الكل" },
   { value: "new",    label: "جديد" },
@@ -54,7 +60,7 @@ export default function MarketPage() {
   const [openAreaPicker, setOpenAreaPicker] = useState(false);
   const [unread, setUnread] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({ central: true });
+  const [openGovs, setOpenGovs] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
 
   const { data: areasData } = useAreas();
@@ -125,7 +131,7 @@ export default function MarketPage() {
       area_id: selectedArea?.id || undefined,
     });
 
-  const allListings = data?.pages.flatMap((p) => p.listings) ?? [];
+  const allListings = (data?.pages.flatMap((p) => p.listings) ?? []).filter(l => !l.is_demo);
   const total = data?.pages[0]?.total ?? 0;
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -148,26 +154,17 @@ export default function MarketPage() {
   // Register sidebar content unconditionally (hook rule)
   useMarketSidebar(
     isDesktop ? (
-      <div className="space-y-4">
-        {/* Search */}
-        <div className="bg-fog rounded-xl flex items-center gap-2 px-3 py-2.5 border border-border">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 text-mist flex-shrink-0">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="ابحث في الإعلانات..."
-            className="flex-1 text-xs text-ink placeholder:text-mist bg-transparent outline-none min-w-0" dir="rtl" />
-          {search && <button onClick={() => setSearch("")} className="text-mist text-sm">×</button>}
-        </div>
-
+      <MarketSidebar>
         {/* Categories */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">التصنيف</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">التصنيف</div>
+          <div className="flex flex-wrap gap-1.5">
             {CATEGORIES.map((cat) => (
               <button key={cat.value} onClick={() => setCategory(cat.value)}
-                className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-display font-bold transition-colors",
-                  category === cat.value ? "bg-olive-pale text-olive border border-olive-mid" : "text-ink hover:bg-fog")}>
+                className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                  category === cat.value
+                    ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                    : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
                 {cat.label}
               </button>
             ))}
@@ -176,12 +173,14 @@ export default function MarketPage() {
 
         {/* Condition */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">الحالة</div>
-          <div className="space-y-0.5">
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">الحالة</div>
+          <div className="flex flex-wrap gap-1.5">
             {CONDITIONS.map((cond) => (
               <button key={cond.value} onClick={() => setCondition(cond.value)}
-                className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-body transition-colors",
-                  condition === cond.value ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
+                className={cn("px-3 py-1.5 rounded-full text-[12px] font-body border transition-colors",
+                  condition === cond.value
+                    ? "bg-olive-pale text-olive border-olive/30 font-semibold"
+                    : "bg-surface text-slate border-border hover:bg-fog hover:text-ink")}>
                 {cond.label}
               </button>
             ))}
@@ -190,9 +189,9 @@ export default function MarketPage() {
 
         {/* Areas */}
         <div>
-          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2">المنطقة</div>
+          <div className="text-[11px] font-semibold text-mist uppercase tracking-widest mb-2">المنطقة</div>
           <button onClick={() => setSelectedArea(null)}
-            className={cn("w-full text-right px-3 py-2 rounded-lg text-sm font-body transition-colors mb-1",
+            className={cn("w-full text-right px-3 py-2 rounded-lg text-[13px] font-body transition-colors mb-1",
               !selectedArea ? "bg-olive-pale text-olive font-semibold" : "text-slate hover:bg-fog hover:text-ink")}>
             كل المناطق
           </button>
@@ -202,7 +201,7 @@ export default function MarketPage() {
             return (
               <div key={gov} className="mb-1">
                 <button onClick={() => setOpenGovs((p) => ({ ...p, [gov]: !p[gov] }))}
-                  className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-mist uppercase tracking-wider hover:text-ink transition-colors">
+                  className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold text-mist uppercase tracking-wider hover:text-ink transition-colors">
                   <span>{GOV_LABELS[gov]}</span>
                   <svg width="10" height="10" viewBox="0 0 12 12" className={cn("text-mist transition-transform", openGovs[gov] && "rotate-90")}>
                     <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -219,49 +218,64 @@ export default function MarketPage() {
             );
           })}
         </div>
-      </div>
+      </MarketSidebar>
     ) : null
   );
 
   /* ── Desktop layout ── */
   if (isDesktop) {
     return (
-      <div className="p-5 h-full overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-display font-extrabold text-lg text-ink">السوق المحلي</h1>
-          <div className="flex items-center gap-2">
-            <Link href="/market/my" className="text-xs font-semibold text-olive hover:underline">إعلاناتي</Link>
-            <Link href="/market/saved" className="text-xs font-semibold text-mist hover:text-ink">المحفوظات</Link>
-          </div>
+      <div className="h-full overflow-y-auto">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <h1 className="font-display font-bold text-lg text-ink">السوق المحلي</h1>
         </div>
 
-        {isLoading && <div className="grid grid-cols-2 gap-3">{Array.from({ length: 6 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>}
+        <div className="px-5 pb-5">
+        {isLoading && (
+          <div className="space-y-6">
+            {[1, 2].map((g) => (
+              <div key={g}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-[18px] bg-border/60 rounded-sm animate-pulse" />
+                  <div className="h-4 w-20 rounded-md bg-border/60 animate-pulse" />
+                </div>
+                <div className="flex gap-3 overflow-hidden">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-[220px] flex-shrink-0 bg-surface rounded-2xl border border-border/60">
+                      <div className="p-2 pb-0"><div className="w-full aspect-[4/3] rounded-xl bg-fog animate-pulse" /></div>
+                      <div className="px-3 py-2.5 space-y-2">
+                        <div className="h-3.5 w-3/4 rounded-md bg-fog animate-pulse" />
+                        <div className="h-2.5 w-1/2 rounded-md bg-fog animate-pulse" />
+                        <div className="flex justify-between items-center pt-1">
+                          <div className="h-5 w-14 rounded-md bg-fog animate-pulse" />
+                          <div className="h-3 w-12 rounded-md bg-fog animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {!isLoading && allListings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center bg-surface rounded-2xl border border-border">
-            <div className="text-5xl mb-3">🛍️</div>
             <div className="font-display font-bold text-ink mb-1">لا توجد إعلانات</div>
-            <div className="text-sm text-mist mb-4">جرب تغيير الفلاتر</div>
-            <button onClick={handleNewListing} className="px-5 py-2 bg-olive text-white rounded-full text-sm font-semibold">+ أضف إعلاناً</button>
+            <div className="text-sm text-mist">جرب تغيير الفلاتر</div>
           </div>
         )}
 
         {!isLoading && allListings.length > 0 && (
           <>
             {total > 0 && <p className="text-[11px] text-mist mb-3">{total} إعلان نشط</p>}
-            <div className="grid grid-cols-2 gap-3">
-              {allListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing}
-                  isSaved={savedIds.has(listing.id)}
-                  onSaveToggle={toggleSavedId}
-                />
-              ))}
-            </div>
+            <CategorySliders listings={allListings} savedIds={savedIds} onSaveToggle={toggleSavedId} hasFilter={!!category} />
             {isFetchingNextPage && <div className="py-4 flex justify-center"><div className="w-5 h-5 border-2 border-olive/30 border-t-olive rounded-full animate-spin" /></div>}
             {!hasNextPage && allListings.length >= 20 && <p className="text-center text-xs text-mist py-4">لا توجد إعلانات أخرى</p>}
           </>
         )}
         <div ref={loadMoreRef} className="h-4" />
+        </div>
         <PhoneAuthPopup
           open={showAuthPopup}
           onClose={() => setShowAuthPopup(false)}
@@ -282,7 +296,7 @@ export default function MarketPage() {
     <div className="flex flex-col min-h-dvh bg-fog">
 
       {/* ── Header (olive) ── */}
-      <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0 relative">
+      <div className="bg-olive px-4 pt-3 pb-4 flex-shrink-0 relative">
         <div className="absolute w-[140px] h-[140px] rounded-full bg-white/[0.04] -top-[50px] -left-[30px] pointer-events-none" />
         {/* Top row */}
         <div className="flex items-center gap-2 mb-2.5 relative z-10">
@@ -306,7 +320,7 @@ export default function MarketPage() {
         </div>
 
         {/* Search bar */}
-        <div className="bg-white/[0.12] border border-white/15 rounded-xl flex items-center gap-2 px-3.5 py-2.5 relative z-10">
+        <div className="bg-white/[0.12] border border-white/15 rounded-full flex items-center gap-2 px-3.5 py-2.5 relative z-10">
           <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2" strokeLinecap="round" className="w-3.5 h-3.5 flex-shrink-0">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
@@ -437,7 +451,6 @@ export default function MarketPage() {
 
         {!isLoading && allListings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="text-5xl mb-4">🛍️</div>
             <div className="font-display font-bold text-ink text-lg mb-1">
               {debouncedSearch || category || condition || selectedArea ? "لا توجد نتائج" : "لا توجد إعلانات بعد"}
             </div>
@@ -547,6 +560,68 @@ export default function MarketPage() {
       />
 
       <BottomNav />
+    </div>
+  );
+}
+
+/* ── Category-based horizontal sliders for desktop ── */
+function CategorySliders({
+  listings,
+  savedIds,
+  onSaveToggle,
+  hasFilter,
+}: {
+  listings: Listing[];
+  savedIds: Set<string>;
+  onSaveToggle: (id: string, saved: boolean) => void;
+  hasFilter: boolean;
+}) {
+  // When a category filter is active, show all as one flat slider
+  if (hasFilter) {
+    return (
+      <SliderRow>
+        {listings.map((l) => (
+          <div key={l.id} className="w-[220px] flex-shrink-0">
+            <ListingCard listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={onSaveToggle} />
+          </div>
+        ))}
+      </SliderRow>
+    );
+  }
+
+  // Group listings by category
+  const grouped = useMemo(() => {
+    const map: Record<string, Listing[]> = {};
+    for (const l of listings) {
+      const cat = l.category || "other";
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(l);
+    }
+    // Sort categories by CATEGORIES order
+    const order = CATEGORIES.filter(c => c.value).map(c => c.value);
+    return order
+      .filter(cat => map[cat]?.length)
+      .map(cat => ({ category: cat, label: CATEGORY_LABELS[cat] || cat, items: map[cat] }));
+  }, [listings]);
+
+  return (
+    <div className="space-y-6">
+      {grouped.map(({ category, label, items }) => (
+        <section key={category}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-[18px] bg-olive rounded-sm" />
+            <span className="font-display font-medium text-[14px] text-ink">{label}</span>
+            <span className="text-[11px] text-mist">{items.length}</span>
+          </div>
+          <SliderRow>
+            {items.map((l) => (
+              <div key={l.id} className="w-[220px] flex-shrink-0">
+                <ListingCard listing={l} isSaved={savedIds.has(l.id)} onSaveToggle={onSaveToggle} />
+              </div>
+            ))}
+          </SliderRow>
+        </section>
+      ))}
     </div>
   );
 }

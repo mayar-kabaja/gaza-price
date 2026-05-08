@@ -204,7 +204,6 @@ function SuggestContent() {
         {/* Product not found card */}
         <div className="px-4 pt-4">
           <div className="bg-surface rounded-2xl border border-border p-5 text-center shadow-sm">
-            <div className="text-3xl mb-2">🔍</div>
             <p className="font-display font-bold text-ink text-lg">
               «{productDisplayName}» غير موجود
             </p>

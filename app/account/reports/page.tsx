@@ -91,6 +91,13 @@ export default function AccountReportsPage() {
   const reports = data?.pages.flatMap((p) => p.reports) ?? [];
   const total = data?.pages[0]?.total ?? 0;
 
+  const statusFilters = [
+    { val: "pending", label: "قيد المراجعة" },
+    { val: "confirmed", label: "مؤكد" },
+    { val: "expired", label: "منتهي" },
+    { val: "all", label: "الكل" },
+  ];
+
   useEffect(() => {
     const done = localStorage.getItem(LOCAL_STORAGE_KEYS.onboarding_done);
     if (!done) {
@@ -101,27 +108,49 @@ export default function AccountReportsPage() {
 
   useGlobalSidebar(
     isDesktop ? (
-      <div className="space-y-1">
-        <Link href="/account" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors font-semibold mb-3">
+      <div className="space-y-4">
+        <Link href="/account" className="flex items-center gap-1.5 text-xs text-mist hover:text-olive transition-colors font-semibold">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M19 12H5M12 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
           العودة لحسابي
         </Link>
-        <div className="bg-olive-pale rounded-xl p-3">
-          <div className="font-display font-bold text-sm text-ink mb-0.5">مساهماتي</div>
-          <div className="text-[11px] text-mist">
-            {toArabicNumerals(total)} مساهمة
+
+        {/* Status filters */}
+        <div>
+          <div className="text-[11px] font-bold text-mist uppercase tracking-widest mb-2 pr-1">تصفية حسب الحالة</div>
+          <div className="space-y-0.5">
+            {statusFilters.map(({ val, label }) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setStatus(val)}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-body transition-colors text-right",
+                  status === val
+                    ? "bg-olive-pale text-olive font-semibold"
+                    : "text-ink hover:bg-fog"
+                )}
+              >
+                <span className={cn(
+                  "w-2 h-2 rounded-full flex-shrink-0",
+                  val === "pending" && "bg-amber-500",
+                  val === "confirmed" && "bg-olive",
+                  val === "expired" && "bg-mist",
+                  val === "all" && "bg-ink"
+                )} />
+                {label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Total count */}
+        <div className="bg-fog rounded-xl px-3 py-2.5">
+          <div className="text-[11px] text-mist">إجمالي المساهمات</div>
+          <div className="font-display font-bold text-sm text-ink">{toArabicNumerals(total)} مساهمة</div>
         </div>
       </div>
     ) : null
   );
-
-  const statusFilters = [
-    { val: "pending", label: "قيد المراجعة" },
-    { val: "confirmed", label: "مؤكد" },
-    { val: "expired", label: "منتهي" },
-    { val: "all", label: "الكل" },
-  ];
 
   const reportsList = (
     <>
@@ -203,32 +232,13 @@ export default function AccountReportsPage() {
   if (isDesktop) {
     return (
       <div className="h-full overflow-y-auto bg-fog" dir="rtl">
-        <div className="max-w-2xl mx-auto p-6">
+        <div className="p-6">
           {/* Header */}
           <div className="mb-5">
             <h1 className="font-display font-bold text-lg text-ink">مساهماتي</h1>
             <p className="text-sm text-mist mt-0.5">
               أسعاري والمنتجات التي اقترحتها ({toArabicNumerals(total)})
             </p>
-          </div>
-
-          {/* Status filter */}
-          <div className="flex gap-2 mb-5">
-            {statusFilters.map(({ val, label }) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setStatus(val)}
-                className={cn(
-                  "px-4 py-2 rounded-full text-sm font-body font-medium shrink-0 transition-colors",
-                  status === val
-                    ? "bg-olive text-white"
-                    : "bg-surface border border-border text-ink hover:border-olive-mid"
-                )}
-              >
-                {label}
-              </button>
-            ))}
           </div>
 
           {/* List */}

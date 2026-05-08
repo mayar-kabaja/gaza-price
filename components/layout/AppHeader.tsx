@@ -24,9 +24,10 @@ const GOV_LABELS: Record<string, string> = {
 interface AppHeaderProps {
   hideActions?: boolean;
   hideSearch?: boolean;
+  showOrders?: boolean;
 }
 
-export function AppHeader({ hideActions = false, hideSearch = false }: AppHeaderProps) {
+export function AppHeader({ hideActions = false, hideSearch = false, showOrders = false }: AppHeaderProps) {
   const router = useRouter();
   const { area, saveArea } = useArea();
   const { accessToken } = useSession();
@@ -78,7 +79,7 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
   <>
     <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0 z-30">
 
-      {/* Single top row */}
+      {/* Top row */}
       <div className="flex items-center gap-3 mb-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
@@ -107,8 +108,15 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
           </button>
         )}
 
-
-
+        {/* Orders — only on places page */}
+        {showOrders && (
+          <Link
+            href="/orders"
+            className="bg-white/15 hover:bg-white/25 transition-colors rounded-full px-3 py-1.5 text-[12px] font-semibold text-white cursor-pointer flex-shrink-0"
+          >
+            طلباتي
+          </Link>
+        )}
 
         {/* Login / profile */}
         {contributor?.phone_verified ? (
@@ -134,7 +142,7 @@ export function AppHeader({ hideActions = false, hideSearch = false }: AppHeader
           </button>
         )}
 
-         {/* Theme toggle */}
+        {/* Theme toggle */}
         <button
           type="button"
           onClick={toggleTheme}

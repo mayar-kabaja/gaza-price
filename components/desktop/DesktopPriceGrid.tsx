@@ -53,7 +53,6 @@ export function DesktopPriceGrid({
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="text-4xl mb-3">🔍</div>
         <div className="font-display font-bold text-ink mb-1">لا توجد منتجات</div>
         <div className="text-sm text-mist">جرب تصنيفاً آخر أو غيّر المنطقة</div>
       </div>
