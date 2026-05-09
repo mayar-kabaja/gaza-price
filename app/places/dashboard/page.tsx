@@ -400,6 +400,8 @@ function OwnerDashboardPage() {
   const [mobileTab, setMobileTab] = useState<"home" | "orders" | "menu" | "codes" | "settings" | "plans">("home");
   const [dashSearch, setDashSearch] = useState("");
   const [menuDropdown, setMenuDropdown] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (id: string) => setCollapsedSections((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const [menuPage, setMenuPage] = useState(1);
   const [mMenuPage, setMMenuPage] = useState(1);
   const MENU_PER_PAGE = 10;
@@ -1504,10 +1506,7 @@ function OwnerDashboardPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[15px] text-[var(--d-text)]">إدارة القائمة</h3>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5">+ قسم</button>
-                <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5">+ صنف</button>
-              </div>
+              <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5">+ قسم</button>
             </div>
 
             {(() => {
@@ -1523,6 +1522,7 @@ function OwnerDashboardPage() {
 
               return sectionGroups.map((sec) => {
                 const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
+                const isCollapsed = collapsedSections.has(sec.id);
                 return (
                   <div key={sec.id} className={`bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
                     {isSectionLoading && (
@@ -1531,61 +1531,68 @@ function OwnerDashboardPage() {
                       </div>
                     )}
                     {/* Section header */}
-                    <div className="px-3 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
-                      <div className="flex items-center gap-2">
-                        <span className="w-[7px] h-[7px] rounded-full" style={{ background: getItemBgColor(sec.name).replace(/0\.\d+\)/, '1)') || 'var(--d-green)' }} />
+                    <div className="px-3 py-2.5 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
+                      <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
-                        <span className="text-[11px] text-[var(--d-text-muted)] tabular-nums">· {sec.items.length} أصناف</span>
-                      </div>
-                      <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
-                        <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                        <span className="text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[10px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-2 py-1 hover:bg-[var(--d-green-bg)] transition-colors">+ صنف</button>
+                        <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
+                          <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Items */}
-                    {sec.filteredItems.map((item) => {
-                      const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
-                      return (
-                        <div
-                          key={item.id}
-                          className={`flex items-center gap-2.5 px-3 py-2.5 border-t border-[var(--d-border)]/50 first:border-t-0 ${isItemLoading ? "pointer-events-none opacity-50" : ""} ${!item.available ? "opacity-55" : ""}`}
-                        >
-                          {/* Icon */}
-                          {resolvePublicImageUrl(item.photo_url) ? (
-                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
-                              {getItemIcon(item.name)('w-5 h-5')}
+                    {!isCollapsed && (
+                      <>
+                        {/* Items */}
+                        {sec.filteredItems.map((item) => {
+                          const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex items-center gap-2.5 px-3 py-2.5 border-t border-[var(--d-border)]/50 ${isItemLoading ? "pointer-events-none opacity-50" : ""} ${!item.available ? "opacity-55" : ""}`}
+                            >
+                              {/* Icon */}
+                              {resolvePublicImageUrl(item.photo_url) ? (
+                                <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
+                                  {getItemIcon(sec.name)('w-5 h-5')}
+                                </div>
+                              )}
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
+                                  {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
+                                </div>
+                                {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
+                              </div>
+                              {/* Price */}
+                              <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums shrink-0" dir="ltr">
+                                {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
+                              </p>
+                              {/* Toggle */}
+                              <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
+                                <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
+                              </button>
+                              {/* Actions */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
+                                  <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                                </button>
+                                <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
+                                  <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                                </button>
+                              </div>
                             </div>
-                          )}
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
-                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
-                            </div>
-                            {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
-                          </div>
-                          {/* Price */}
-                          <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums shrink-0" dir="ltr">
-                            {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
-                          </p>
-                          {/* Toggle */}
-                          <button onClick={() => handleToggleItem(item.id)} disabled={!!actionLoading} className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}>
-                            <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
-                          </button>
-                          {/* Actions */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => openEditItem(item)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-green)] bg-[var(--d-green-bg)]">
-                              <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
-                            </button>
-                            <button onClick={() => handleDeleteItem(item.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
-                              <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
                 );
               });
@@ -2265,10 +2272,7 @@ function OwnerDashboardPage() {
                   <h3 className="font-medium text-[18px] text-[var(--d-text)]">إدارة القائمة</h3>
                   <p className="text-[12px] text-[var(--d-text-muted)] tabular-nums mt-0.5">{totalItems} صنف · {availableItems} متوفر · {place.menu.length} أقسام</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setSheet("addSection")} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-card)] text-[var(--d-text)] border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors">+ إضافة قسم</button>
-                  <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">+ إضافة صنف</button>
-                </div>
+                <button onClick={() => setSheet("addSection")} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-card)] text-[var(--d-text)] border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors">+ إضافة قسم</button>
               </div>
 
               {/* Category filter strip */}
@@ -2305,88 +2309,96 @@ function OwnerDashboardPage() {
                   filteredItems: filteredItems.filter(item => item.sectionId === sec.id),
                 })).filter(s => s.filteredItems.length > 0);
 
-                return sectionGroups.map((sec) => (
+                return sectionGroups.map((sec) => {
+                  const isCollapsed = collapsedSections.has(sec.id);
+                  return (
                   <div key={sec.id} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
                     {/* Section header */}
-                    <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--d-border)]/50">
-                      <div className="flex items-center gap-2">
-                        <span className="w-[7px] h-[7px] rounded-full" style={{ background: getItemBgColor(sec.name).replace(/0\.\d+\)/, '1)') || 'var(--d-green)' }} />
+                    <div className="px-4 py-3 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
+                      <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2.5 flex-1 min-w-0">
                         <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
-                        <span className="text-[11px] text-[var(--d-text-muted)] tabular-nums">· {sec.items.length} أصناف</span>
-                      </div>
+                        <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg)] transition-colors shrink-0">+ إضافة صنف</button>
                     </div>
 
-                    {/* Items */}
-                    {sec.filteredItems.map((item) => {
-                      const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
-                      return (
-                        <div
-                          key={item.id}
-                          className={`grid items-center gap-2.5 px-3.5 py-2.5 border-t border-[var(--d-border)]/50 first:border-t-0 hover:bg-[var(--d-subtle-bg)]/50 transition-colors ${isItemLoading ? "pointer-events-none opacity-50" : ""}`}
-                          style={{ gridTemplateColumns: "44px 1fr 70px 30px 28px" }}
-                        >
-                          {/* Thumbnail */}
-                          {resolvePublicImageUrl(item.photo_url) ? (
-                            <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-11 h-11 rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(item.name) }}>
-                              {getItemIcon(item.name)('w-6 h-6')}
-                            </div>
-                          )}
-
-                          {/* Name + description */}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
-                              {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
-                            </div>
-                            {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
-                          </div>
-
-                          {/* Price */}
-                          <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums text-left" dir="ltr">
-                            {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
-                          </p>
-
-                          {/* Toggle */}
-                          <button
-                            onClick={() => handleToggleItem(item.id)}
-                            disabled={!!actionLoading}
-                            className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
-                          >
-                            <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
-                          </button>
-
-                          {/* Menu */}
-                          <div className="relative">
-                            <button
-                              onClick={() => setMenuDropdown(menuDropdown === item.id ? null : item.id)}
-                              className="px-1.5 py-0.5 text-[14px] leading-none tracking-widest text-[var(--d-text-muted)] rounded hover:bg-[var(--d-subtle-bg)] border border-transparent hover:border-[var(--d-border)]/50 transition-colors"
+                    {!isCollapsed && (
+                      <>
+                        {/* Items */}
+                        {sec.filteredItems.map((item) => {
+                          const isItemLoading = actionLoading === `toggle-item-${item.id}` || actionLoading === `delete-item-${item.id}`;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`grid items-center gap-2.5 px-4 py-2.5 border-t border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)]/50 transition-colors ${isItemLoading ? "pointer-events-none opacity-50" : ""}`}
+                              style={{ gridTemplateColumns: "44px 1fr 70px 30px 28px" }}
                             >
-                              ⋯
-                            </button>
-                            {menuDropdown === item.id && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setMenuDropdown(null)} />
-                                <div className="absolute left-0 top-full mt-1 z-20 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg py-1 min-w-[140px]">
-                                  <button onClick={() => { openEditItem(item); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors text-right">
-                                    <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
-                                    تعديل
-                                  </button>
-                                  <div className="border-t border-[var(--d-border)] my-1" />
-                                  <button onClick={() => { handleDeleteItem(item.id); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-right">
-                                    <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                                    حذف
-                                  </button>
+                              {/* Thumbnail */}
+                              {resolvePublicImageUrl(item.photo_url) ? (
+                                <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-11 h-11 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-11 h-11 rounded-lg flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
+                                  {getItemIcon(sec.name)('w-6 h-6')}
                                 </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                              )}
+
+                              {/* Name + description */}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[13px] font-medium text-[var(--d-text)] truncate">{item.name}</p>
+                                  {!item.available && <span className="text-[10px] font-medium px-[7px] py-px rounded-full bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)] shrink-0">غير متوفر</span>}
+                                </div>
+                                {item.description && <p className="text-[11px] text-[var(--d-text-muted)] truncate mt-0.5">{item.description}</p>}
+                              </div>
+
+                              {/* Price */}
+                              <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums text-left" dir="ltr">
+                                {Number(item.price) > 0 ? `₪${Number(item.price).toFixed(2)}` : "—"}
+                              </p>
+
+                              {/* Toggle */}
+                              <button
+                                onClick={() => handleToggleItem(item.id)}
+                                disabled={!!actionLoading}
+                                className={`relative w-[30px] h-[17px] rounded-full transition-colors shrink-0 ${item.available ? "bg-[var(--d-green)]" : "bg-[var(--d-toggle-off)]"}`}
+                              >
+                                <span className={`absolute top-[2px] w-[13px] h-[13px] rounded-full bg-white shadow transition-all ${item.available ? "left-[2px]" : "left-[15px]"}`} />
+                              </button>
+
+                              {/* Vertical menu */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setMenuDropdown(menuDropdown === item.id ? null : item.id)}
+                                  className="w-7 h-7 inline-flex flex-col items-center justify-center gap-[3px] rounded-md text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] border border-transparent hover:border-[var(--d-border)]/50 transition-colors"
+                                >
+                                  <span className="w-[3px] h-[3px] rounded-full bg-current" /><span className="w-[3px] h-[3px] rounded-full bg-current" /><span className="w-[3px] h-[3px] rounded-full bg-current" />
+                                </button>
+                                {menuDropdown === item.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setMenuDropdown(null)} />
+                                    <div className="absolute left-0 top-full mt-1 z-20 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg py-1 min-w-[140px]">
+                                      <button onClick={() => { openEditItem(item); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors text-right">
+                                        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M11.33 2a1.88 1.88 0 012.67 2.67L5.33 13.33 2 14l.67-3.33z" /></svg>
+                                        تعديل
+                                      </button>
+                                      <div className="border-t border-[var(--d-border)] my-1" />
+                                      <button onClick={() => { handleDeleteItem(item.id); setMenuDropdown(null); }} disabled={!!actionLoading} className="w-full flex items-center gap-2 px-3.5 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors text-right">
+                                        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
+                                        حذف
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
-                ));
+                  );
+                });
               })()}
 
               {/* Helper note */}
