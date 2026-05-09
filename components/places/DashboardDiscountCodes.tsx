@@ -246,7 +246,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         className={`flex flex-col rounded-xl p-4 transition-all bg-[var(--d-card)] border border-[var(--d-border)]/50 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
       >
         {/* ── Header: status badge (right) | icons + code name (left) ── */}
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-3.5">
           <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full whitespace-nowrap ${badge.cls}`}>
             {status === "maxed" ? (
               <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -268,7 +268,7 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         </div>
 
         {/* ── Big discount value ── */}
-        <div className="text-center my-3">
+        <div className="text-center my-4">
           <p className="text-[30px] font-medium leading-none text-[var(--d-text)] tabular-nums" dir="ltr">
             {dc.discount_type === "fixed" ? `‎₪${cleanVal}` : `${cleanVal}%`}
           </p>
@@ -279,9 +279,8 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
 
         {/* ── Usage progress ── */}
         {dc.max_uses && (
-          <div className="mb-3">
-            <div className="flex justify-between items-baseline mb-1.5">
-              <span className="text-[11px] text-[var(--d-text-muted)]">الاستخدام</span>
+          <div className="mb-4">
+            <div className="flex justify-between items-baseline mb-2">
               <span className="text-[11px] tabular-nums">
                 <span className="font-medium text-[var(--d-text)]">{dc.used_count} من {dc.max_uses}</span>
                 <span className="text-[var(--d-text-muted)]"> · {usagePct}%</span>
@@ -290,62 +289,55 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
             <div className="w-full h-[5px] bg-[var(--d-subtle-bg)] rounded-full overflow-hidden">
               <div className="h-full rounded-full" style={{ width: `${usagePct}%`, background: barColor }} />
             </div>
+            <p className="text-[10px] text-[var(--d-text-muted)] mt-1.5">الاستخدامات</p>
           </div>
         )}
 
         {/* ── KV info grid ── */}
         {dc.expires_at && (
-          <div className="grid grid-cols-2 gap-2 p-2.5 rounded-md mb-3 bg-[var(--d-subtle-bg)]">
-            <div>
-              <p className={`text-[10px] mb-0.5 ${
-                isExpired(dc) ? "text-[var(--d-text-muted)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text-muted)]"
-              }`}>{isExpired(dc) ? "انتهت" : "ينتهي"}</p>
-              <p className={`text-[12px] font-medium ${
-                isExpired(dc) ? "text-[var(--d-text)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text)]"
-              }`}>
-                {isExpired(dc)
-                  ? `قبل ${Math.abs(Math.ceil((new Date(dc.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوماً`
-                  : remaining !== null ? `خلال ${remaining} يوم` : formatDate(dc.expires_at)
-                }
-              </p>
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] text-[var(--d-text-muted)] mb-0.5">استخدامات</p>
-              <p className="text-[12px] font-medium text-[var(--d-text)]">{dc.used_count}</p>
-            </div>
+          <div className="p-2.5 rounded-md mb-4 bg-[var(--d-subtle-bg)]">
+            <p className={`text-[10px] mb-0.5 ${
+              isExpired(dc) ? "text-[var(--d-text-muted)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text-muted)]"
+            }`}>{isExpired(dc) ? "انتهت" : "ينتهي"}</p>
+            <p className={`text-[12px] font-medium ${
+              isExpired(dc) ? "text-[var(--d-text)]" : remaining !== null && remaining <= 30 ? "text-[var(--d-red-text)]" : "text-[var(--d-text)]"
+            }`}>
+              {isExpired(dc)
+                ? `قبل ${Math.abs(Math.ceil((new Date(dc.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوماً`
+                : remaining !== null ? `خلال ${remaining} يوم` : formatDate(dc.expires_at)
+              }
+            </p>
           </div>
         )}
 
         {/* ── Actions ── */}
-        <div className="flex items-center justify-end gap-1 pt-2.5 border-t border-[var(--d-border)]/50">
+        <div className="flex items-center justify-end gap-1.5 pt-3.5 border-t border-[var(--d-border)]/50">
           <button
             onClick={() => onEditCode ? onEditCode(dc) : openEdit(dc)}
-            className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] hover:opacity-80 transition-colors"
+            className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md bg-[var(--d-mint-bg)] text-[var(--d-mint-text)] hover:opacity-80 transition-colors"
             title="تعديل"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
           <button
             onClick={() => handleToggle(dc)}
             disabled={!!actionLoading}
-            className={`w-[26px] h-[26px] inline-flex items-center justify-center rounded-md hover:opacity-80 transition-colors disabled:opacity-50 ${
-              dc.active ? "bg-[var(--d-gray-alt-bg)] text-[var(--d-gray-alt-text)]" : "bg-[var(--d-blue-bg)] text-[var(--d-blue-text)]"
-            }`}
+            className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-sec)] border border-[var(--d-border)]/50 hover:opacity-80 transition-colors disabled:opacity-50"
             title={dc.active ? "إيقاف مؤقت" : "تفعيل"}
           >
             {dc.active ? (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
             ) : (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             )}
           </button>
           <button
             onClick={() => handleDelete(dc.id)}
             disabled={!!actionLoading}
-            className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md bg-[var(--d-red-bg)] text-[var(--d-red-text)] hover:opacity-80 transition-colors disabled:opacity-50"
+            className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-md bg-[var(--d-red-bg)] text-[var(--d-red-text)] hover:opacity-80 transition-colors disabled:opacity-50"
             title="حذف"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6m5 0V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
           </button>
         </div>
       </div>
