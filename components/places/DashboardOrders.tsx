@@ -424,11 +424,11 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
             />
 
             {!mobile && totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-3">
+              <div className="flex items-center justify-center gap-1 pt-3">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--d-text-sec)] hover:bg-[var(--d-green-bg)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   السابق
                 </button>
@@ -436,10 +436,10 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`w-8 h-8 rounded-lg text-[11px] font-bold transition-colors ${
+                    className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-colors ${
                       p === page
-                        ? "border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)]"
-                        : "text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)]"
+                        ? "border border-[var(--d-green)] bg-[var(--d-green-bg)] text-[var(--d-green)]"
+                        : "text-[var(--d-text-sec)] hover:bg-[var(--d-green-bg)]"
                     }`}
                   >
                     {p}
@@ -448,7 +448,7 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-[var(--d-text-sec)] hover:bg-[var(--d-green-bg)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   التالي
                 </button>
