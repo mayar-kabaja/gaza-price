@@ -29,7 +29,7 @@ type WorkspaceDetailsForm = {
   total_seats: string; available_seats: string; opens_at: string; closes_at: string;
 };
 type WorkspaceServiceForm = { service: string; available: boolean; detail: string };
-type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editItem" | "wsDetails" | "wsServices" | "addDiscount";
+type Sheet = null | "menu" | "edit" | "plans" | "addItem" | "addSection" | "editSection" | "editItem" | "wsDetails" | "wsServices" | "addDiscount";
 
 const STORE_CATEGORIES = [
   { label: "مواد غذائية وبقالة", icon: "🛒", types: ["بقالية عامة", "سوبرماركت", "خضار وفواكه", "لحوم", "سمك", "مخبز", "حلويات ومعجنات", "بهارات وتوابل"] },
@@ -499,6 +499,9 @@ function OwnerDashboardPage() {
 
   // Add section form
   const [addSectionName, setAddSectionName] = useState("");
+  const [editSectionId, setEditSectionId] = useState<string | null>(null);
+  const [editSectionName, setEditSectionName] = useState("");
+  const [sectionMenuOpen, setSectionMenuOpen] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Discount code form
@@ -890,6 +893,22 @@ function OwnerDashboardPage() {
       setSheet(null);
       showToast("تمت الإضافة ✓");
     } catch { showToast("حدث خطأ"); } finally { setSaving(false); setActionLoading(null); }
+  }
+
+  async function handleRenameSection() {
+    if (!editSectionId || !editSectionName.trim()) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/api/places/dashboard/menu/sections/${editSectionId}/rename?${qs}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editSectionName.trim() }),
+      });
+      await load();
+      setEditSectionId(null);
+      setEditSectionName("");
+      setSheet(null);
+      showToast("تم التعديل ✓");
+    } catch { showToast("حدث خطأ"); } finally { setSaving(false); }
   }
 
   async function handleSaveDiscount() {
@@ -1515,16 +1534,16 @@ function OwnerDashboardPage() {
                 ? allItemsRaw.filter((item) => item.name.toLowerCase().includes(dashSearch.trim().toLowerCase()) || item.sectionName.toLowerCase().includes(dashSearch.trim().toLowerCase()))
                 : allItemsRaw;
 
-              const sectionGroups = place.menu.filter(s => s.items.length > 0).map((sec) => ({
+              const sectionGroups = place.menu.map((sec) => ({
                 ...sec,
                 filteredItems: filteredItems.filter(item => item.sectionId === sec.id),
-              })).filter(s => s.filteredItems.length > 0);
+              })).filter(s => !dashSearch.trim() || s.filteredItems.length > 0);
 
               return sectionGroups.map((sec) => {
                 const isSectionLoading = actionLoading === `delete-section-${sec.id}`;
                 const isCollapsed = collapsedSections.has(sec.id);
                 return (
-                  <div key={sec.id} className={`bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
+                  <div key={sec.id} className={`bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl ${isSectionLoading ? "pointer-events-none opacity-50" : ""}`}>
                     {isSectionLoading && (
                       <div className="absolute inset-0 flex items-center justify-center z-10">
                         <div className="w-5 h-5 border-2 border-[var(--d-warn-text)]/30 border-t-[var(--d-warn-text)] rounded-full animate-spin" />
@@ -1539,9 +1558,26 @@ function OwnerDashboardPage() {
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[10px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-2 py-1 hover:bg-[var(--d-green-bg)] transition-colors">+ صنف</button>
-                        <button onClick={() => handleDeleteSection(sec.id)} disabled={!!actionLoading} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-warn-text)] bg-[var(--d-red-bg)]">
-                          <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" /></svg>
-                        </button>
+                        <div className="relative">
+                          <button onClick={(e) => { e.stopPropagation(); setSectionMenuOpen(sectionMenuOpen === sec.id ? null : sec.id); }} className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                          </button>
+                          {sectionMenuOpen === sec.id && (
+                            <>
+                              <div className="fixed inset-0 z-[98]" onClick={() => setSectionMenuOpen(null)} />
+                              <div className="absolute left-0 top-full mt-1 z-[99] w-32 bg-[var(--d-card)] border border-[var(--d-border)] rounded-lg shadow-xl overflow-hidden">
+                                <button onClick={() => { setSectionMenuOpen(null); setEditSectionId(sec.id); setEditSectionName(sec.name); setSheet("editSection"); }} className="w-full text-right px-3 py-2 text-[11px] font-medium text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors flex items-center gap-2">
+                                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                  تعديل الاسم
+                                </button>
+                                <button onClick={() => { setSectionMenuOpen(null); handleDeleteSection(sec.id); }} disabled={!!actionLoading} className="w-full text-right px-3 py-2 text-[11px] font-medium text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2">
+                                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                                  حذف القسم
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -2191,15 +2227,15 @@ function OwnerDashboardPage() {
                   : allItemsRaw;
 
                 // Group by section
-                const sectionGroups = place.menu.filter(s => s.items.length > 0).map((sec) => ({
+                const sectionGroups = place.menu.map((sec) => ({
                   ...sec,
                   filteredItems: filteredItems.filter(item => item.sectionId === sec.id),
-                })).filter(s => s.filteredItems.length > 0);
+                })).filter(s => !dashSearch.trim() || s.filteredItems.length > 0);
 
                 return sectionGroups.map((sec) => {
                   const isCollapsed = collapsedSections.has(sec.id);
                   return (
-                  <div key={sec.id} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
+                  <div key={sec.id} className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl">
                     {/* Section header */}
                     <div className="px-4 py-3 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
                       <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -2207,7 +2243,29 @@ function OwnerDashboardPage() {
                         <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg)] transition-colors shrink-0">+ إضافة صنف</button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg)] transition-colors">+ إضافة صنف</button>
+                        <div className="relative">
+                          <button onClick={(e) => { e.stopPropagation(); setSectionMenuOpen(sectionMenuOpen === sec.id ? null : sec.id); }} className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                          </button>
+                          {sectionMenuOpen === sec.id && (
+                            <>
+                              <div className="fixed inset-0 z-[98]" onClick={() => setSectionMenuOpen(null)} />
+                              <div className="absolute left-0 top-full mt-1 z-[99] w-36 bg-[var(--d-card)] border border-[var(--d-border)] rounded-lg shadow-xl overflow-hidden">
+                                <button onClick={() => { setSectionMenuOpen(null); setEditSectionId(sec.id); setEditSectionName(sec.name); setSheet("editSection"); }} className="w-full text-right px-3 py-2.5 text-[12px] font-medium text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors flex items-center gap-2">
+                                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                  تعديل الاسم
+                                </button>
+                                <button onClick={() => { setSectionMenuOpen(null); handleDeleteSection(sec.id); }} disabled={!!actionLoading} className="w-full text-right px-3 py-2.5 text-[12px] font-medium text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2">
+                                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                                  حذف القسم
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {!isCollapsed && (
@@ -2643,15 +2701,26 @@ function OwnerDashboardPage() {
                   >
                     + صنف
                   </button>
-                  <button
-                    onClick={() => handleDeleteSection(sec.id)}
-                    disabled={!!actionLoading}
-                    className="text-[11px] font-bold text-[var(--d-warn-text)] bg-[var(--d-red-bg)] rounded-full px-2 py-1"
-                  >
-                    <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                      <path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M12.67 4v9.33a1.33 1.33 0 01-1.34 1.34H4.67a1.33 1.33 0 01-1.34-1.34V4" />
-                    </svg>
-                  </button>
+                  <div className="relative">
+                    <button onClick={() => setSectionMenuOpen(sectionMenuOpen === sec.id ? null : sec.id)} className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] transition-colors">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    </button>
+                    {sectionMenuOpen === sec.id && (
+                      <>
+                        <div className="fixed inset-0 z-[98]" onClick={() => setSectionMenuOpen(null)} />
+                        <div className="absolute left-0 top-full mt-1 z-[99] w-36 bg-[var(--d-card)] border border-[var(--d-border)] rounded-lg shadow-xl overflow-hidden">
+                          <button onClick={() => { setSectionMenuOpen(null); setEditSectionId(sec.id); setEditSectionName(sec.name); setSheet("editSection"); }} className="w-full text-right px-3 py-2.5 text-[12px] font-medium text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors flex items-center gap-2">
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            تعديل الاسم
+                          </button>
+                          <button onClick={() => { setSectionMenuOpen(null); handleDeleteSection(sec.id); }} disabled={!!actionLoading} className="w-full text-right px-3 py-2.5 text-[12px] font-medium text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2">
+                            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                            حذف القسم
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               {sec.items.map((item) => {
@@ -2893,6 +2962,20 @@ function OwnerDashboardPage() {
             className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
           >
             {saving ? "جاري الإضافة..." : "إضافة القسم"}
+          </button>
+        </div>
+      </SheetWrap>
+
+      {/* Edit Section Sheet */}
+      <SheetWrap open={sheet === "editSection"} onClose={() => { setSheet(null); setEditSectionId(null); }} title="تعديل اسم القسم" sub="غيّر اسم القسم">
+        <div className="space-y-3.5">
+          <FormField label="اسم القسم" value={editSectionName} onChange={setEditSectionName} placeholder="مثال: فطور" />
+          <button
+            onClick={handleRenameSection}
+            disabled={saving || !editSectionName.trim()}
+            className="w-full bg-[var(--d-green)] text-white font-bold text-[15px] rounded-[14px] py-3.5 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50 mt-2"
+          >
+            {saving ? "جاري الحفظ..." : "حفظ التعديل"}
           </button>
         </div>
       </SheetWrap>
