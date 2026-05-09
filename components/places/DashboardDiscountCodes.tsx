@@ -398,23 +398,48 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
         )}
 
         {!loading && filteredCodes.length === 0 && !showForm && (
-          <div className="flex flex-col items-center justify-center py-10 px-4">
-            <div className="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
-              </svg>
-            </div>
+          <div className="flex flex-col items-center justify-center py-12 px-4">
             {search.trim() ? (
-              <p className="text-[13px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+              <>
+                <div className="w-14 h-14 rounded-2xl bg-[var(--d-subtle-bg)] flex items-center justify-center mb-3">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <p className="text-[13px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+              </>
             ) : (
               <>
-                <p className="font-bold text-[14px] text-[var(--d-text)] mb-1">لا توجد أكواد خصم</p>
-                <p className="text-[12px] text-[var(--d-text-muted)] mb-4 text-center">أضف كود خصم لجذب الزبائن وزيادة المبيعات</p>
+                <div className="w-20 h-20 rounded-full bg-[var(--d-purple-bg)] flex items-center justify-center mb-4">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
+                  </svg>
+                </div>
+                <p className="font-bold text-[15px] text-[var(--d-text)] mb-1.5">لا توجد أكواد خصم بعد</p>
+                <p className="text-[12px] text-[var(--d-text-muted)] mb-1 text-center leading-relaxed max-w-[240px]">أنشئ أكواد خصم لجذب زبائن جدد وزيادة الطلبات على متجرك</p>
+                <div className="flex items-center gap-4 mt-4 mb-5 text-[var(--d-text-muted)]">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--d-mint-bg)] flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    </div>
+                    <span className="text-[9px]">جذب زبائن</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--d-amber-bg)] flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-amber-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                    </div>
+                    <span className="text-[9px]">زيادة مبيعات</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--d-blue-bg)] flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <span className="text-[9px]">ولاء العملاء</span>
+                  </div>
+                </div>
                 <button
                   onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
-                  className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-xl px-5 py-2.5 hover:opacity-90 transition-colors"
+                  className="text-[12px] font-bold text-white bg-[var(--d-green)] rounded-xl px-6 py-2.5 hover:opacity-90 transition-colors shadow-lg shadow-[var(--d-green)]/20"
                 >
-                  + إضافة كود
+                  + إضافة أول كود خصم
                 </button>
               </>
             )}
@@ -511,23 +536,48 @@ export const DashboardDiscountCodes = forwardRef<{ reload: () => void }, Props>(
       )}
 
       {!loading && desktopFiltered.length === 0 && !showForm && (
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
-          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
-            </svg>
-          </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-16">
           {search.trim() ? (
-            <p className="text-[13px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+            <>
+              <div className="w-16 h-16 rounded-2xl bg-[var(--d-subtle-bg)] flex items-center justify-center mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <p className="text-[14px] text-[var(--d-text-muted)]">لا توجد نتائج للبحث</p>
+            </>
           ) : (
             <>
-              <p className="font-bold text-[16px] text-[var(--d-text)] mb-1">لا توجد أكواد خصم</p>
-              <p className="text-[13px] text-[var(--d-text-muted)] mb-5 text-center">أنشئ أكواد خصم لجذب الزبائن وزيادة الطلبات</p>
+              <div className="w-24 h-24 rounded-full bg-[var(--d-purple-bg)] flex items-center justify-center mb-5">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1={7} y1={7} x2={7.01} y2={7}/>
+                </svg>
+              </div>
+              <p className="font-bold text-[18px] text-[var(--d-text)] mb-2">لا توجد أكواد خصم بعد</p>
+              <p className="text-[13px] text-[var(--d-text-muted)] mb-2 text-center leading-relaxed max-w-[320px]">أنشئ أكواد خصم لجذب زبائن جدد وتشجيعهم على الطلب وزيادة مبيعاتك</p>
+              <div className="flex items-center gap-6 mt-5 mb-6 text-[var(--d-text-muted)]">
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--d-mint-bg)] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v-2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  </div>
+                  <span className="text-[10px]">جذب زبائن</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--d-amber-bg)] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-amber-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  </div>
+                  <span className="text-[10px]">زيادة مبيعات</span>
+                </div>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--d-blue-bg)] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  </div>
+                  <span className="text-[10px]">ولاء العملاء</span>
+                </div>
+              </div>
               <button
                 onClick={() => onAddCode ? onAddCode() : (() => { resetForm(); setShowForm(true); })()}
-                className="text-[13px] font-medium text-white bg-[var(--d-green)] rounded-lg px-5 py-2.5 hover:opacity-90 transition-colors"
+                className="text-[14px] font-bold text-white bg-[var(--d-green)] rounded-xl px-7 py-3 hover:opacity-90 transition-colors shadow-lg shadow-[var(--d-green)]/20"
               >
-                + إضافة كود خصم
+                + إضافة أول كود خصم
               </button>
             </>
           )}
