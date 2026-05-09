@@ -60,7 +60,7 @@ const TYPES = [
   {
     key: "place" as const,
     label: "مكان جديد",
-    desc: "عندك محل أو مطعم أو كافيه؟ سجّله ليظهر للكل",
+    desc: "هل لديك محل أو مطعم أو كافيه؟ سجّله ليظهر للكل",
     iconBg: "bg-purple-50",
     iconColor: "#8B5CF6",
     activeBorder: "border-olive",

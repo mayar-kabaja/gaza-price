@@ -243,7 +243,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
                 {/* Promo card */}
                 <div className="bg-olive-pale rounded-xl border border-olive-mid/30 px-3 py-2.5 flex items-center gap-3 flex-shrink-0">
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-display font-bold text-olive-deep">عندك محل؟</div>
+                    <div className="text-[12px] font-display font-bold text-olive-deep">هل لديك محل ؟</div>
                     <div className="text-[11px] text-olive leading-snug">انضم للتجار وزد مبيعاتك</div>
                   </div>
                   <Link
