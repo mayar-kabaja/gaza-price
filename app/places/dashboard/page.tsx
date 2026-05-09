@@ -1506,7 +1506,7 @@ function OwnerDashboardPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[15px] text-[var(--d-text)]">إدارة القائمة</h3>
-              <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-[var(--d-green)] border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] rounded-lg px-3 py-1.5">+ قسم</button>
+              <button onClick={() => setSheet("addSection")} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5 hover:opacity-90 transition-opacity">+ قسم</button>
             </div>
 
             {(() => {
@@ -2268,32 +2268,8 @@ function OwnerDashboardPage() {
             <div className="space-y-3">
               {/* Page header */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium text-[18px] text-[var(--d-text)]">إدارة القائمة</h3>
-                  <p className="text-[12px] text-[var(--d-text-muted)] tabular-nums mt-0.5">{totalItems} صنف · {availableItems} متوفر · {place.menu.length} أقسام</p>
-                </div>
-                <button onClick={() => setSheet("addSection")} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-card)] text-[var(--d-text)] border border-[var(--d-border)]/50 hover:bg-[var(--d-subtle-bg)] transition-colors">+ إضافة قسم</button>
-              </div>
-
-              {/* Category filter strip */}
-              <div className="flex items-center gap-1.5 flex-wrap pb-3 border-b border-[var(--d-border)]/50">
-                <span className="text-[12px] text-[var(--d-text-muted)] ml-1">الأقسام:</span>
-                {place.menu.filter(s => s.items.length > 0).map((sec) => (
-                  <button key={sec.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] border border-[var(--d-border)] bg-transparent text-[var(--d-text)] hover:border-[var(--d-text-muted)] transition-colors">
-                    <span className="shrink-0 text-[var(--d-green)]">{getItemIcon(sec.name)('w-5 h-5')}</span>
-                    {sec.name} · {sec.items.length}
-                  </button>
-                ))}
-                {place.menu.filter(s => s.items.length === 0).length > 0 && (
-                  <>
-                    <span className="w-px h-4 bg-[var(--d-border)]/50 mx-1" />
-                    {place.menu.filter(s => s.items.length === 0).map((sec) => (
-                      <button key={`empty-chip-${sec.id}`} onClick={() => { setAddItemSection(sec.id); setSheet("addItem"); }} className="inline-flex items-center px-3 py-1.5 rounded-full text-[12px] border border-dashed border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:border-[var(--d-border)] transition-colors">
-                        + {sec.name}
-                      </button>
-                    ))}
-                  </>
-                )}
+                <h3 className="font-medium text-[18px] text-[var(--d-text)]">إدارة القائمة</h3>
+                <button onClick={() => setSheet("addSection")} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">+ إضافة قسم</button>
               </div>
 
               {/* Section cards */}
