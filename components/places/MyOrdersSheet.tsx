@@ -163,56 +163,79 @@ export function MyOrdersSheet({ onClose }: { onClose: () => void }) {
     const isCancelling = cancelMutation.isPending && cancelMutation.variables === order.id;
     const isDead = order.status === "cancelled" || order.status === "rejected";
     return (
-      <div key={order.id} className={`border border-border rounded-xl overflow-hidden transition-opacity ${isDead ? "opacity-60" : ""}`}>
-        <div className="flex items-center justify-between px-3 py-2 bg-fog">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-[12px] text-ink">#{order.order_number}</span>
-            <span className={`text-[9px] font-bold px-1.5 py-[2px] rounded-full ${badge.cls}`}>{badge.label}</span>
-          </div>
-          <span className="text-[10px] text-mist">
-            {showHistory ? formatDate(order.created_at) : timeAgo(order.created_at)}
-          </span>
-        </div>
-
-        <div className="px-3 py-2.5 space-y-1.5">
-          {order.place_name && (
-            <div className="text-[11px] font-semibold text-ink">{order.place_name}</div>
-          )}
-
-          <div className="space-y-0.5">
-            {order.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-[10px]">
-                <span className="text-mist">{item.item_name} <span className="text-ink">x{item.quantity}</span></span>
-                <span className="text-mist tabular-nums">{(item.item_price * item.quantity).toFixed(2)} ₪</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between pt-1.5 border-t border-border">
-            <span className="text-[11px] font-bold text-ink">المجموع</span>
-            <span className="text-[12px] font-bold text-olive tabular-nums">{Number(order.total).toFixed(2)} ₪</span>
-          </div>
-
-          {order.reject_reason && (
-            <div className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/10 rounded-lg px-2 py-1.5">سبب الرفض: {order.reject_reason}</div>
-          )}
-
-          {order.status === "pending" && (
-            <div className="flex justify-end pt-1">
-              <button
-                onClick={() => cancelMutation.mutate(order.id)}
-                disabled={isCancelling}
-                className="px-3 py-1 rounded-md border border-red-200 text-red-500 text-[10px] font-bold disabled:opacity-50"
-              >
-                {isCancelling ? "جاري الإلغاء..." : "إلغاء الطلب"}
-              </button>
+      <div key={order.id} className={`flex flex-col rounded-2xl border bg-surface transition-all ${isDead ? "border-border opacity-70" : "border-border shadow-sm"}`}>
+        {/* ── Card header ── */}
+        <div className={`px-4 pt-4 pb-3 border-b border-border/60 ${isDead ? "opacity-50" : ""}`}>
+          <div className="flex items-start justify-between">
+            <div className="min-w-0">
+              <div className="font-semibold text-[13px] text-ink truncate">{order.place_name || "طلب"} <span className="text-mist">#{order.order_number}</span></div>
             </div>
-          )}
-
-          {cancelMutation.isError && cancelMutation.variables === order.id && (
-            <p className="text-[10px] text-red-500">{(cancelMutation.error as Error).message}</p>
-          )}
+            <span className={`text-[9px] font-bold px-1.5 py-[2px] rounded-full shrink-0 ${badge.cls}`}>{badge.label}</span>
+          </div>
         </div>
+
+        {/* ── Date & Time ── */}
+        <div className={`flex items-center justify-between px-4 py-2 text-[10px] text-mist ${isDead ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-1.5">
+            {isToday(order.created_at) && (
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive/10 text-olive">اليوم</span>
+            )}
+            <span>{formatDate(order.created_at)}</span>
+          </div>
+          <span>{formatTime(order.created_at)}</span>
+        </div>
+
+        {/* ── Items ── */}
+        <div className={`px-4 space-y-1 ${isDead ? "opacity-40" : ""}`}>
+          {order.items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between text-[11px] py-0.5">
+              <span className="text-ink truncate flex-1 ml-3">{item.item_name} <span className="text-mist mr-1">x{item.quantity}</span></span>
+              <span className="tabular-nums text-ink shrink-0">₪{(item.item_price * item.quantity).toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Note ── */}
+        {order.note && (
+          <div className={`px-4 py-1.5 text-[9px] text-mist border-t border-dashed border-border/60 mt-1 ${isDead ? "opacity-40" : ""}`}>
+            📝 {order.note}
+          </div>
+        )}
+
+        {/* ── Reject reason ── */}
+        {order.reject_reason && (
+          <div className="px-4 py-1.5 text-[9px] text-red-500 bg-red-500/5">
+            سبب الرفض: {order.reject_reason}
+          </div>
+        )}
+
+        {/* ── Total ── */}
+        <div className={`px-4 py-2.5 flex items-center justify-between ${isDead ? "opacity-50" : ""}`}>
+          <span className="text-[12px] font-bold text-ink">الإجمالي</span>
+          <div>
+            <span className="text-[14px] font-bold text-ink tabular-nums">₪{Number(order.total).toFixed(2)}</span>
+            {Number(order.discount_amount) > 0 && (
+              <span className="text-[9px] text-emerald-500 font-medium mr-1">(-₪{Number(order.discount_amount).toFixed(2)})</span>
+            )}
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        {order.status === "pending" && (
+          <div className={`px-4 py-2.5 border-t border-border/60 flex items-center justify-end ${isDead ? "opacity-50" : ""}`}>
+            <button
+              onClick={() => cancelMutation.mutate(order.id)}
+              disabled={isCancelling}
+              className="px-3 py-1 rounded-lg border border-red-500/20 text-red-500 text-[10px] font-bold disabled:opacity-50"
+            >
+              {isCancelling ? "جاري الإلغاء..." : "إلغاء الطلب"}
+            </button>
+          </div>
+        )}
+
+        {cancelMutation.isError && cancelMutation.variables === order.id && (
+          <p className="text-[10px] text-red-500 px-4 pb-2">{(cancelMutation.error as Error).message}</p>
+        )}
       </div>
     );
   }

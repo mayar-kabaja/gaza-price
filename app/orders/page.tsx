@@ -198,7 +198,7 @@ export default function OrdersPage() {
     return (
       <div
         key={order.id}
-        className={`flex flex-col h-[280px] rounded-2xl border bg-surface transition-all ${
+        className={`flex flex-col rounded-2xl border bg-surface transition-all ${
           isCancelling ? "opacity-50 pointer-events-none" : ""
         } ${
           isDead
@@ -206,81 +206,71 @@ export default function OrdersPage() {
             : "border-border shadow-sm"
         }`}
       >
-        {/* Card header */}
+        {/* ── Card header ── */}
         <div className={`px-4 pt-4 pb-3 border-b border-border/60 ${isDead ? "opacity-50" : ""}`}>
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-olive/10 flex items-center justify-center text-[12px] font-bold text-olive shrink-0">
-                {order.place_name ? order.place_name.slice(0, 2) : "#"}
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-[13px] text-ink truncate">{order.place_name || "طلب"}</div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-mist">طلب #{order.order_number}</span>
-                </div>
-              </div>
+            <div className="min-w-0">
+              <div className="font-semibold text-[13px] text-ink truncate">{order.place_name || "طلب"} <span className="text-mist">#{order.order_number}</span></div>
             </div>
             <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-full shrink-0 ${badge.cls}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
               {badge.label}
             </span>
           </div>
-          <div className="flex items-center justify-between mt-2 text-[10px] text-mist">
-            <div className="flex items-center gap-1.5">
-              {isToday(order.created_at) && (
-                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive/10 text-olive">اليوم</span>
-              )}
-              <span>{formatDate(order.created_at)}</span>
-            </div>
-            <span>{formatTime(order.created_at)}</span>
-          </div>
         </div>
 
-        {/* Items table */}
-        <div className={`flex-1 min-h-0 overflow-y-auto ${isDead ? "opacity-40" : ""}`}>
-          <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5 text-[9px] font-semibold text-mist uppercase tracking-wide">
-            <span>الصنف</span>
-            <div className="flex gap-6">
-              <span className="w-6 text-center">الكمية</span>
-              <span className="w-14 text-left">السعر</span>
-            </div>
+        {/* ── Date & Time ── */}
+        <div className={`flex items-center justify-between px-4 py-2 text-[10px] text-mist ${isDead ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-1.5">
+            {isToday(order.created_at) && (
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive/10 text-olive">اليوم</span>
+            )}
+            <span>{formatDate(order.created_at)}</span>
           </div>
-          <div className="px-4 space-y-1 pb-2">
+          <span>{formatTime(order.created_at)}</span>
+        </div>
+
+        {/* ── Items ── */}
+        <div className={`flex-1 min-h-0 overflow-hidden ${isDead ? "opacity-40" : ""}`}>
+          <div className="overflow-y-auto max-h-full px-4 space-y-1">
             {order.items.map((item) => (
               <div key={item.id} className="flex items-center justify-between text-[11px] py-0.5">
-                <span className="text-ink truncate flex-1 ml-3">{item.item_name}</span>
-                <div className="flex gap-6 shrink-0">
-                  <span className="w-6 text-center text-mist">{item.quantity}</span>
-                  <span className="w-14 text-left tabular-nums text-ink">{(item.item_price * item.quantity).toFixed(2)} ₪</span>
-                </div>
+                <span className="text-ink truncate flex-1 ml-3">{item.item_name} <span className="text-mist mr-1">x{item.quantity}</span></span>
+                <span className="tabular-nums text-ink shrink-0">₪{(item.item_price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Note */}
+        {/* ── Note ── */}
         {order.note && (
           <div className={`px-4 py-1.5 text-[9px] text-mist border-t border-dashed border-border/60 ${isDead ? "opacity-40" : ""}`}>
             📝 {order.note}
           </div>
         )}
 
-        {/* Reject reason */}
+        {/* ── Reject reason ── */}
         {order.reject_reason && (
           <div className="px-4 py-1.5 text-[9px] text-red-500 bg-red-500/5">
             سبب الرفض: {order.reject_reason}
           </div>
         )}
 
-        {/* Footer */}
+        {/* ── Total ── */}
+        <div className={`px-4 py-2.5 flex items-center justify-between ${isDead ? "opacity-50" : ""}`}>
+          <span className="text-[12px] font-bold text-ink">الإجمالي</span>
+          <div>
+            <span className="text-[14px] font-bold text-ink tabular-nums">₪{Number(order.total).toFixed(2)}</span>
+            {Number(order.discount_amount) > 0 && (
+              <span className="text-[9px] text-emerald-500 font-medium mr-1">(-₪{Number(order.discount_amount).toFixed(2)})</span>
+            )}
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
         <div className={`px-4 py-2.5 border-t border-border/60 ${isDead ? "opacity-50" : ""}`}>
           <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[14px] font-bold text-ink tabular-nums">{Number(order.total).toFixed(2)} ₪</span>
-              {Number(order.discount_amount) > 0 && (
-                <span className="text-[9px] text-emerald-500 font-medium mr-1">(-{Number(order.discount_amount).toFixed(2)} ₪)</span>
-              )}
-            </div>
+            <div></div>
             <div className="flex items-center gap-1.5">
               {order.status === "pending" && (
                 <button
@@ -332,7 +322,7 @@ export default function OrdersPage() {
             {isLoading && (
               <>
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-[280px] rounded-2xl border border-border bg-surface flex flex-col overflow-hidden">
+                  <div key={i} className="rounded-2xl border border-border bg-surface flex flex-col overflow-hidden">
                     <div className="px-4 pt-4 pb-3 border-b border-border/60 flex items-center gap-2.5">
                       <div className="w-9 h-9 rounded-full bg-border/40 animate-pulse" />
                       <div className="flex-1">
