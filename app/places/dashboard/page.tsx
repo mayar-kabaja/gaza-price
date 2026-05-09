@@ -1510,9 +1510,6 @@ function OwnerDashboardPage() {
               </div>
             </div>
 
-            {/* Menu QR */}
-            <MenuQRCard placeId={place.id} placeName={place.name} plan={place.plan} section={place.section} onUpgrade={() => setMobileTab("plans")} />
-
             {(() => {
               const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
               const filteredItems = dashSearch.trim()
@@ -2273,9 +2270,6 @@ function OwnerDashboardPage() {
                   <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">+ إضافة صنف</button>
                 </div>
               </div>
-
-              {/* Menu QR */}
-              <MenuQRCard placeId={place.id} placeName={place.name} plan={place.plan} section={place.section} onUpgrade={() => setActiveView("plans")} />
 
               {/* Category filter strip */}
               <div className="flex items-center gap-1.5 flex-wrap pb-3 border-b border-[var(--d-border)]/50">
