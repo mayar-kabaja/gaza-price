@@ -1634,9 +1634,12 @@ function OwnerDashboardPage() {
               const isSelected = selectedPlan === p.key;
               const isPaid = p.key !== "free";
               const feats = PLAN_FEATURES[p.key];
+              const isDisabled = p.key === "free" && place.plan !== "free";
               return (
-                <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl p-4 transition-all relative ${
-                  p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"
+                <div key={p.key} className={`rounded-2xl p-4 transition-all relative ${
+                  isDisabled
+                    ? "bg-[var(--d-card)] border border-[var(--d-border)]/50"
+                    : `bg-[var(--d-card)] ${p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"}`
                 }`}>
                   {p.featured && (
                     <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[9px] font-medium px-3 py-1 rounded-full whitespace-nowrap">الأكثر اختياراً</div>
@@ -1691,20 +1694,26 @@ function OwnerDashboardPage() {
                   )}
 
                   {/* CTA button */}
-                  <button
-                    onClick={() => setSelectedPlan(isSelected ? null : p.key)}
-                    className={`w-full py-2.5 rounded-xl text-[12px] font-medium transition-all ${
-                      isCurrent
-                        ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
-                        : isSelected
-                          ? "bg-[var(--d-green)] text-white"
-                          : p.featured
+                  {isDisabled ? (
+                    <div className="w-full py-2.5 rounded-xl text-[12px] font-medium text-center text-[var(--d-text-muted)] bg-[var(--d-border)]/30 cursor-not-allowed">
+                      غير متاح
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSelectedPlan(isSelected ? null : p.key)}
+                      className={`w-full py-2.5 rounded-xl text-[12px] font-medium transition-all ${
+                        isCurrent
+                          ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
+                          : isSelected
                             ? "bg-[var(--d-green)] text-white"
-                            : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
-                    }`}
-                  >
-                    {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : `ترقية إلى ${p.badge}`}
-                  </button>
+                            : p.featured
+                              ? "bg-[var(--d-green)] text-white"
+                              : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
+                      }`}
+                    >
+                      {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : `ترقية إلى ${p.badge}`}
+                    </button>
+                  )}
 
                   {/* Payment inside card */}
                   {isPaid && isSelected && !isCurrent && (
@@ -2463,9 +2472,12 @@ function OwnerDashboardPage() {
                   const isSelected = selectedPlan === p.key;
                   const isPaid = p.key !== "free";
                   const feats = PLAN_FEATURES[p.key];
+                  const isDisabled = p.key === "free" && place.plan !== "free";
                   return (
-                    <div key={p.key} className={`bg-[var(--d-card)] rounded-2xl p-5 flex flex-col relative transition-all ${
-                      p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"
+                    <div key={p.key} className={`rounded-2xl p-5 flex flex-col relative transition-all ${
+                      isDisabled
+                        ? "bg-[var(--d-card)] border border-[var(--d-border)]/50"
+                        : `bg-[var(--d-card)] ${p.featured ? "border-2 border-[var(--d-green)]" : "border border-[var(--d-border)]/50"}`
                     }`}>
                       {p.featured && (
                         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[var(--d-green)] text-white text-[10.5px] font-medium px-3 py-1 rounded-full whitespace-nowrap">الأكثر اختياراً</div>
@@ -2520,20 +2532,26 @@ function OwnerDashboardPage() {
                       )}
 
                       {/* CTA button */}
-                      <button
-                        onClick={() => setSelectedPlan(isSelected ? null : p.key)}
-                        className={`w-full py-2.5 rounded-xl text-[12.5px] font-medium transition-all ${
-                          isCurrent
-                            ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
-                            : isSelected
-                              ? "bg-[var(--d-green)] text-white"
-                              : p.featured
+                      {isDisabled ? (
+                        <div className="w-full py-2.5 rounded-xl text-[12.5px] font-medium text-center text-[var(--d-text-muted)] bg-[var(--d-border)]/30 cursor-not-allowed">
+                          غير متاح
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedPlan(isSelected ? null : p.key)}
+                          className={`w-full py-2.5 rounded-xl text-[12.5px] font-medium transition-all ${
+                            isCurrent
+                              ? "bg-transparent text-[var(--d-mint-text)] border border-[#9FE1CB]"
+                              : isSelected
                                 ? "bg-[var(--d-green)] text-white"
-                                : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
-                        }`}
-                      >
-                        {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : isCurrent ? "باقتك الحالية" : `ترقية إلى ${p.badge}`}
-                      </button>
+                                : p.featured
+                                  ? "bg-[var(--d-green)] text-white"
+                                  : "bg-[var(--d-card)] text-[var(--d-mint-text)] border border-[var(--d-mint-text)]"
+                          }`}
+                        >
+                          {isCurrent ? (<><svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="inline-block align-[-1px] ml-1"><path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>باقتك الحالية</>) : isSelected ? "تم الاختيار ✓" : `ترقية إلى ${p.badge}`}
+                        </button>
+                      )}
 
                       {/* Payment inside card */}
                       {isPaid && isSelected && !isCurrent && (
