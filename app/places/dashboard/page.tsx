@@ -1831,95 +1831,6 @@ function OwnerDashboardPage() {
               </div>
             </div>
 
-            {/* Avatar upload */}
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
-              <h3 className="text-[13px] font-medium text-[var(--d-text)]">{`صورة ${placeLabel(place.type, place.section)}`}</h3>
-              <div className="flex items-center gap-3">
-                <div className="w-[52px] h-[52px] rounded-full bg-[var(--d-subtle-bg)] border-2 border-dashed border-[var(--d-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {place.avatar_url ? (
-                    <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                  )}
-                </div>
-                <label className="flex-1 cursor-pointer">
-                  <div className="text-center py-2 rounded-xl border-[1.5px] border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors">
-                    {saving ? "جاري الرفع..." : "رفع صورة"}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || saving) return;
-                      setSaving(true);
-                      try {
-                        const compressed = await compressImageForUpload(file);
-                        const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
-                        const fd = new FormData();
-                        fd.append("file", compressed);
-                        const up = await fetch(`${base}/upload/avatar`, { method: "POST", body: fd });
-                        const upData = await up.json();
-                        if (upData.url) {
-                          await apiFetch(`/api/places/dashboard/update?${qs}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ avatar_url: upData.url }),
-                          });
-                          await load();
-                          showToast("تم تحديث الصورة ✓");
-                        }
-                      } catch { /* ignore */ } finally { setSaving(false); }
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Edit form */}
-            <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-3.5 space-y-3">
-              <h3 className="text-[13px] font-medium text-[var(--d-text)]">تعديل البيانات</h3>
-              <FormField label={`اسم ${placeLabel(place.type, place.section)}`} value={editName} onChange={setEditName} />
-              {place.section === "store" && (
-                <div>
-                  <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">
-                    نوع المتجر <span className="text-[var(--d-warn-text)] text-[11px]">*</span>
-                  </label>
-                  <select
-                    value={editStoreType}
-                    onChange={(e) => setEditStoreType(e.target.value)}
-                    className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]"
-                  >
-                    <option value="">اختر نوع المتجر...</option>
-                    {STORE_CATEGORIES.map((cat) => (
-                      <optgroup key={cat.label} label={`${cat.icon} ${cat.label}`}>
-                        {cat.types.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">المنطقة</label>
-                <select value={editAreaId} onChange={(e) => setEditAreaId(e.target.value)} className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none appearance-none focus:border-[var(--d-green)]">
-                  <option value="">اختر المنطقة...</option>
-                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name_ar}</option>)}
-                </select>
-              </div>
-              <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
-              <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
-              <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
-              <button
-                onClick={handleSaveEdit}
-                disabled={saving || (place.section === "store" && !STORE_TYPE_VALUES.includes(editStoreType))}
-                className="w-full bg-[var(--d-green)] text-white font-bold text-[14px] rounded-[14px] py-3 shadow-lg shadow-[var(--d-green)]/25 disabled:opacity-50"
-              >
-                {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
-              </button>
-            </div>
           </div>
         )}
 
@@ -2589,123 +2500,97 @@ function OwnerDashboardPage() {
                 </div>
               </div>
 
-              {/* Hero card */}
-              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-xl overflow-hidden">
-                <div className="h-[80px] bg-[var(--d-green)] relative overflow-hidden">
-                  <svg width="100%" height="100%" viewBox="0 0 680 80" className="absolute inset-0 opacity-60" preserveAspectRatio="none">
-                    <circle cx="540" cy="20" r="60" fill="white" opacity="0.08"/>
-                    <circle cx="120" cy="100" r="80" fill="white" opacity="0.06"/>
-                    <circle cx="340" cy="-20" r="40" fill="white" opacity="0.05"/>
-                  </svg>
-                </div>
-                <div className="px-4 pb-3.5 flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="-mt-7 w-[60px] h-[60px] rounded-full border-[3px] border-white bg-[var(--d-green)] flex items-center justify-center text-white text-[22px] font-medium shrink-0 overflow-hidden shadow-md relative z-10">
-                      {place.avatar_url ? (
-                        <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : place.name.charAt(0)}
-                    </div>
-                    <div className="pt-3 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-[17px] font-medium text-[var(--d-text)]">{place.name}</h2>
-                        <VerifiedBadge plan={place.plan} />
-                        <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full ${place.is_open ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-text-muted)]"}`} />
+              {/* Hero card — green banner with avatar, name, status, edit, share, link */}
+              <div className="rounded-2xl overflow-hidden">
+                <div className="bg-[var(--d-green)] px-5 pt-5 pb-6 relative overflow-hidden">
+                  <div className="absolute w-[200px] h-[200px] rounded-full bg-white/5 -bottom-16 -left-10" />
+                  <div className="absolute w-[100px] h-[100px] rounded-full bg-white/5 top-2 right-[30%]" />
+
+                  <div className="flex items-center justify-between relative z-[1]">
+                    {/* Right (in RTL): avatar + name + status */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-[70px] h-[70px] rounded-full border-[3px] border-white/30 bg-white flex items-center justify-center text-[var(--d-green)] text-[26px] font-bold shrink-0 overflow-hidden shadow-lg">
+                        {place.avatar_url ? (
+                          <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : place.name.charAt(0)}
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`self-start text-[9px] font-medium px-1.5 py-[2px] rounded-full ${place.is_open ? "bg-white/20 text-white" : "bg-white/10 text-white/60"}`}>
                           {place.is_open ? "مفتوح" : "مغلق"}
                         </span>
+                        <h2 className="text-[18px] font-bold text-white">{place.name}</h2>
+                        <p className="text-[12px] text-white/60">{place.type || (place.section === "food" ? "مطعم" : "متجر")}{place.area ? ` · ${place.area.name_ar}` : ""}</p>
                       </div>
-                      <p className="text-[12px] text-[var(--d-text-muted)] mt-1">{place.type || (place.section === "food" ? "مطعم" : "متجر")}{place.area ? ` · ${place.area.name_ar}` : ""}</p>
+                    </div>
+
+                    {/* Left (in RTL): edit + share + link */}
+                    <div className="flex flex-col items-start gap-2">
+                      <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="inline-flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg bg-white/15 text-white hover:bg-white/25 transition-colors">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        تعديل
+                      </button>
+                      <button onClick={() => { navigator.clipboard.writeText(`https://gazaprice.com/${place.name}`); showToast("تم نسخ الرابط ✓"); }} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/70 hover:text-white transition-colors">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        مشاركة الرابط
+                      </button>
+                      <div className="inline-flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
+                        <code className="text-[11px] text-white/80 font-mono" dir="ltr">gazaprice.com/{place.name}</code>
+                        <button onClick={() => { navigator.clipboard.writeText(`https://gazaprice.com/${place.name}`); showToast("تم نسخ الرابط ✓"); }} className="text-white/50 hover:text-white transition-colors">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="mt-3 text-[12px] font-medium px-3 py-1.5 rounded-md border border-[var(--d-border)]/50 text-[var(--d-text)] hover:bg-[var(--d-subtle-bg)] transition-colors">تعديل</button>
-                </div>
-
-                {/* Public link bar */}
-                <div className="bg-[var(--d-subtle-bg)] px-3.5 py-2.5 flex items-center gap-2 text-[12px] border-t border-[var(--d-border)]/50">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[var(--d-text-muted)]"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                  <span className="text-[var(--d-text-muted)] shrink-0">الرابط العام:</span>
-                  <code className="font-mono flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[var(--d-text)] text-[12px]" dir="ltr">gazaprice.com/{place.name}</code>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => navigator.clipboard.writeText(`https://gazaprice.com/${place.name}`)} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="نسخ">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    </button>
-                    <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`https://gazaprice.com/${place.name}`)}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="مشاركة">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                    </button>
-                    <button onClick={() => window.open(`https://gazaprice.com/${place.name}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-card)] hover:text-[var(--d-text)] transition-colors" title="فتح">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
-                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">أصناف القائمة</p>
-                  <p className="text-[22px] font-medium text-[var(--d-text)] tabular-nums">{totalItems}</p>
-                </div>
-                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
-                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">الأقسام</p>
-                  <p className="text-[22px] font-medium text-[var(--d-text)] tabular-nums">{place.menu.length}</p>
-                </div>
-                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 p-3 rounded-xl text-center">
-                  <p className="text-[11px] text-[var(--d-text-muted)] mb-1">متوفر</p>
-                  <p className="text-[22px] font-medium text-[var(--d-mint-text)] tabular-nums">{availableItems}</p>
                 </div>
               </div>
 
               {/* Contact info section */}
-              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--d-border)]/50">
-                  <h3 className="text-[14px] font-medium text-[var(--d-text)]">معلومات التواصل</h3>
-                  <button onClick={() => { populateEditForm(); setSheet("edit"); }} className="text-[12px] font-medium text-[var(--d-mint-text)] hover:bg-[var(--d-subtle-bg)] px-2 py-1 rounded transition-colors">تعديل</button>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
+                <div className="px-5 pt-4 pb-2">
+                  <h3 className="text-[15px] font-bold text-[var(--d-text)]">معلومات التواصل</h3>
                 </div>
-                <div className="px-4 py-1.5">
+                <div className="px-5 pb-2">
                   {/* Phone */}
                   {place.phone && (
-                    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
-                      <div className="w-8 h-8 rounded-lg bg-[var(--d-blue-bg)] flex items-center justify-center shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                    <div className="flex items-center justify-between py-3.5 border-b border-[var(--d-border)]/50">
+                      <div className="flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--d-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                        <span className="text-[13px] font-medium text-[var(--d-text)]">رقم الهاتف</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] text-[var(--d-text-muted)]">رقم الهاتف</p>
-                        <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.phone.replace(/(\d{3})(\d{2})(\d{3})(\d{4})/, '+$1 $2 $3 $4')}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-medium text-[var(--d-text)] tabular-nums" dir="ltr">{place.phone}</span>
+                        <button onClick={() => navigator.clipboard.writeText(place.phone || '')} className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors" title="نسخ">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </button>
                       </div>
-                      <button onClick={() => navigator.clipboard.writeText(place.phone || '')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] hover:text-[var(--d-text)] transition-colors" title="نسخ">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                      </button>
                     </div>
                   )}
                   {/* WhatsApp */}
                   {place.whatsapp && (
-                    <div className="flex items-center gap-3 py-2.5 border-b border-[var(--d-border)]/50">
-                      <div className="w-8 h-8 rounded-lg bg-[var(--d-mint-bg)] flex items-center justify-center shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-mint-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                    <div className="flex items-center justify-between py-3.5 border-b border-[var(--d-border)]/50">
+                      <div className="flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.96 11.96 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.39 0-4.598-.788-6.379-2.117l-.446-.338-2.634.883.883-2.634-.338-.446A9.723 9.723 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
+                        <span className="text-[13px] font-medium text-[var(--d-text)]">رقم الواتساب</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] text-[var(--d-text-muted)]">واتساب</p>
-                        <p className="text-[13px] font-medium text-[var(--d-text)] tabular-nums mt-0.5" dir="ltr">{place.whatsapp.replace(/(\d{3})(\d{2})(\d{3})(\d{4})/, '+$1 $2 $3 $4')}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-medium text-[var(--d-text)] tabular-nums" dir="ltr">{place.whatsapp}</span>
+                        <button onClick={() => window.open(`https://wa.me/${place.whatsapp?.replace(/\D/g, '')}`, '_blank')} className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors" title="فتح">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </button>
                       </div>
-                      <button onClick={() => window.open(`https://wa.me/${place.whatsapp?.replace(/\D/g, '')}`, '_blank')} className="w-[26px] h-[26px] inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-text-muted)] hover:bg-[var(--d-subtle-bg)] hover:text-[var(--d-text)] transition-colors" title="فتح في واتساب">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                      </button>
                     </div>
                   )}
-                  {/* Area & Address */}
-                  <div className="flex items-start gap-3 py-3">
-                    <div className="w-8 h-8 rounded-lg bg-[var(--d-amber-bg)] flex items-center justify-center shrink-0">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-amber-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {/* Address */}
+                  <div className="flex items-center justify-between py-3.5">
+                    <div className="flex items-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <span className="text-[13px] font-medium text-[var(--d-text)]">العنوان</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-[var(--d-text-muted)]">المنطقة</p>
-                      <p className="text-[13px] font-medium text-[var(--d-text)] mt-0.5">{place.area?.name_ar || "—"}</p>
-                      {place.address && (
-                        <>
-                          <p className="text-[11px] text-[var(--d-text-muted)] mt-1.5">العنوان التفصيلي</p>
-                          <p className="text-[13px] text-[var(--d-text)] mt-0.5 leading-relaxed">{place.address}</p>
-                        </>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] text-[var(--d-text)] text-left max-w-[280px] truncate" dir="ltr">{place.area?.name_ar || "—"}{place.address ? ` - ${place.address}` : ""}</span>
+                      <button onClick={() => navigator.clipboard.writeText(`${place.area?.name_ar || ''} ${place.address || ''}`)} className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-[var(--d-border)]/50 text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors shrink-0" title="نسخ">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2860,7 +2745,7 @@ function OwnerDashboardPage() {
                 {place.avatar_url ? (
                   <img src={place.avatar_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-2xl">{place.section === "workspace" ? "💼" : place.section === "food" ? "🍽️" : "🏪"}</span>
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--d-text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 )}
               </div>
               <label className="flex-1 cursor-pointer">
@@ -2967,7 +2852,7 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setAddItemPhoto(""); setAddItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
-              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[var(--d-border)] rounded-xl py-4 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[var(--d-border)] rounded-xl py-5 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -2980,7 +2865,10 @@ function OwnerDashboardPage() {
                 {uploadingPhoto ? (
                   <span className="text-xs text-[var(--d-text-muted)]">جاري الرفع...</span>
                 ) : (
-                  <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
+                  <>
+                    <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--d-text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
+                  </>
                 )}
               </label>
             )}
@@ -3058,7 +2946,7 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setEditItemPhoto(""); setEditItemPhotoPreview(""); }} className="absolute top-0.5 left-0.5 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
               </div>
             ) : (
-              <label className={`flex items-center justify-center gap-2 border-2 border-dashed border-[var(--d-border)] rounded-xl py-4 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[var(--d-border)] rounded-xl py-5 cursor-pointer hover:border-[var(--d-green)] transition-colors ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -3071,7 +2959,10 @@ function OwnerDashboardPage() {
                 {uploadingPhoto ? (
                   <span className="text-xs text-[var(--d-text-muted)]">جاري الرفع...</span>
                 ) : (
-                  <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
+                  <>
+                    <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--d-text-muted)]" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span className="text-xs text-[var(--d-text-muted)]">اضغط لرفع صورة</span>
+                  </>
                 )}
               </label>
             )}
@@ -3257,7 +3148,7 @@ function SheetWrap({ open, onClose, title, sub, children }: {
     <>
       {/* Backdrop for desktop */}
       {open && <div className="hidden lg:block fixed inset-0 bg-black/20 z-[19]" onClick={onClose} />}
-      <div className={`fixed inset-0 bg-[var(--d-page)] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[520px] lg:max-w-[90vw] lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0 lg:shadow-2xl" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none invisible"}`} dir="rtl">
+      <div className={`fixed inset-0 bg-[var(--d-page)] z-20 flex flex-col transition-transform duration-300 lg:inset-auto lg:top-0 lg:right-0 lg:bottom-0 lg:w-[460px] lg:max-w-[85vw] lg:transition-transform ${open ? "translate-y-0 lg:translate-y-0 lg:translate-x-0 lg:shadow-2xl" : "translate-y-full lg:translate-y-0 lg:translate-x-full"} ${open ? "" : "pointer-events-none invisible"}`} dir="rtl">
         <div className="bg-[var(--d-green)] px-4 pt-4 pb-5 flex-shrink-0 relative overflow-hidden lg:px-6 lg:pt-6 lg:pb-6">
           <div className="absolute w-[130px] h-[130px] rounded-full bg-white/5 -bottom-10 -left-4" />
           <div className="flex items-center gap-2 mb-1 relative z-[1]">
@@ -3283,10 +3174,10 @@ function FormField({ label, value, onChange, type = "text", placeholder, textare
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; textarea?: boolean;
 }) {
-  const cls = "w-full border border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-2.5 text-[13px] text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-text-muted)] focus:border-[var(--d-green)]";
+  const cls = "w-full border border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-2.5 text-[13px] text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-border)] focus:border-[var(--d-green)]";
   return (
     <div>
-      <label className="text-xs font-bold text-[var(--d-text-muted)] mb-1.5 block">{label}</label>
+      <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{label}</label>
       {textarea ? (
         <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${cls} resize-none h-[72px]`} />
       ) : (
