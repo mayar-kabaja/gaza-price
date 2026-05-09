@@ -3221,7 +3221,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
 }) {
   return (
     <>
-      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-subtle-bg)] ${active ? "bg-[var(--d-subtle-bg)]" : ""}`}>
+      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-green-bg)] ${active ? "bg-[var(--d-green-bg)]" : ""}`}>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
           <svg viewBox="0 0 24 24" className={`w-4 h-4 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
