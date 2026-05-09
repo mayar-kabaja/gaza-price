@@ -1105,7 +1105,7 @@ function OwnerDashboardPage() {
                   </button>
                 )}
               </div>
-              <DashboardNotifications token={token!} ordersEnabled={place.orders_enabled ?? false} onOrderEvent={handleOrderEvent} />
+              <DashboardNotifications token={token!} ordersEnabled={place.orders_enabled ?? false} isDark={isDark} onOrderEvent={handleOrderEvent} onNavigateToOrders={() => setActiveView("orders")} />
               <button
                 onClick={() => { const next = !isDark; setIsDark(next); localStorage.setItem("dashboardTheme", next ? "dark" : "light"); }}
                 className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors"
@@ -1140,6 +1140,8 @@ function OwnerDashboardPage() {
                 </span>
               </div>
             </div>
+            {/* Notifications bell — mobile */}
+            <DashboardNotifications token={token!} ordersEnabled={place.orders_enabled ?? false} isDark={isDark} onOrderEvent={handleOrderEvent} onNavigateToOrders={() => { setMobileTab("orders"); setDashSearch(""); }} />
           </div>
 
           {/* Search bar — mobile (hide on home & settings) */}

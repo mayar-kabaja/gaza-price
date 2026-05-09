@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 
@@ -49,10 +50,12 @@ function timeAgo(date: Date): string {
 interface Props {
   token: string;
   ordersEnabled: boolean;
+  isDark?: boolean;
   onOrderEvent?: (type: "order_created" | "order_updated", order: any) => void;
+  onNavigateToOrders?: () => void;
 }
 
-export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: Props) {
+export function DashboardNotifications({ token, ordersEnabled, isDark, onOrderEvent, onNavigateToOrders }: Props) {
   const onOrderEventRef = useRef(onOrderEvent);
   onOrderEventRef.current = onOrderEvent;
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -60,11 +63,15 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
   const [unreadCount, setUnreadCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  // Close on outside click (works with portal)
+  const portalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return; // bell button
+      if (portalRef.current?.contains(t)) return; // dropdown content
+      setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -181,8 +188,18 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
     if (!open) setUnreadCount(0);
   }
 
+  // Calculate position for dropdown anchored to the bell
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    // Anchor left edge of dropdown to left edge of bell, clamp to screen
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 296));
+    setPos({ top: rect.bottom + 8, left });
+  }, [open]);
+
   return (
-    <div className="relative z-[100]" ref={ref}>
+    <div className="relative" ref={ref}>
       {/* Bell button */}
       <button
         onClick={handleOpen}
@@ -199,56 +216,83 @@ export function DashboardNotifications({ token, ordersEnabled, onOrderEvent }: P
         )}
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-[var(--d-card)] border border-[var(--d-border)] rounded-xl shadow-lg z-50 overflow-hidden" dir="rtl">
-          <div className="px-3 py-2.5 border-b border-[var(--d-border)] flex items-center justify-between">
-            <span className="font-bold text-[13px] text-[var(--d-text)]">الإشعارات</span>
-            {notifications.length > 0 && (
-              <button
-                onClick={() => { setNotifications([]); setUnreadCount(0); }}
-                className="text-[10px] text-[var(--d-text-muted)] hover:text-[var(--d-text)]"
-              >
-                مسح الكل
-              </button>
-            )}
-          </div>
+      {/* Dropdown — portal to body */}
+      {open && pos && typeof document !== "undefined" && createPortal(
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-[9998]" style={{ background: "rgba(0,0,0,0.25)" }} onClick={() => setOpen(false)} />
+          {/* Panel */}
+          <div
+            ref={portalRef}
+            className="fixed z-[9999] w-72 rounded-xl shadow-2xl overflow-hidden"
+            style={{
+              top: pos.top,
+              left: pos.left,
+              background: isDark ? "#1e1e1e" : "#fff",
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: isDark ? "#333" : "#e5e5e5",
+            }}
+            dir="rtl"
+          >
+            <div className="px-3.5 py-2.5 flex items-center justify-between" style={{ borderBottom: `1px solid ${isDark ? "#333" : "#e5e5e5"}` }}>
+              <span className="font-bold text-[13px]" style={{ color: isDark ? "#eee" : "#111" }}>الإشعارات</span>
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => { setNotifications([]); setUnreadCount(0); }}
+                  className="text-[10px]"
+                  style={{ color: isDark ? "#888" : "#999" }}
+                >
+                  مسح الكل
+                </button>
+              )}
+            </div>
 
-          <div className="max-h-72 overflow-y-auto">
-            {notifications.length === 0 && (
-              <div className="py-8 text-center text-[12px] text-[var(--d-text-muted)]">
-                لا توجد إشعارات
-              </div>
-            )}
-
-            {notifications.map((n) => {
-              const si = STATUS_ICONS[n.status] || STATUS_ICONS.pending;
-              return (
-                <div key={n.id} className="px-3 py-2.5 border-b border-[var(--d-border)] last:border-0 hover:bg-[var(--d-subtle-bg)] transition-colors">
-                  <div className="flex items-start gap-2.5">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5 ${si.cls}`}>
-                      {si.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-bold text-[var(--d-text)]">
-                        {n.type === "order_created"
-                          ? `طلب جديد #${n.orderNumber}`
-                          : `${STATUS_LABELS[n.status] || n.status} — #${n.orderNumber}`
-                        }
-                      </div>
-                      <div className="text-[10px] text-[var(--d-text-muted)] mt-0.5">
-                        {n.customerName}
-                      </div>
-                      <div className="text-[9px] text-[var(--d-text-muted)] mt-0.5">
-                        {timeAgo(n.time)}
-                      </div>
-                    </div>
-                  </div>
+            <div className="max-h-72 overflow-y-auto">
+              {notifications.length === 0 && (
+                <div className="py-8 text-center text-[12px]" style={{ color: isDark ? "#777" : "#999" }}>
+                  لا توجد إشعارات
                 </div>
-              );
-            })}
+              )}
+
+              {notifications.map((n) => {
+                const si = STATUS_ICONS[n.status] || STATUS_ICONS.pending;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => { setOpen(false); onNavigateToOrders?.(); }}
+                    className="w-full px-3.5 py-2.5 text-right transition-colors"
+                    style={{ borderBottom: `1px solid ${isDark ? "#2a2a2a" : "#f0f0f0"}` }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = isDark ? "#2a2a2a" : "#f8f8f8"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 mt-0.5 ${si.cls}`}>
+                        {si.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold" style={{ color: isDark ? "#eee" : "#111" }}>
+                          {n.type === "order_created"
+                            ? `طلب جديد #${n.orderNumber}`
+                            : `${STATUS_LABELS[n.status] || n.status} — #${n.orderNumber}`
+                          }
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: isDark ? "#888" : "#777" }}>
+                          {n.customerName}
+                        </div>
+                        <div className="text-[9px] mt-0.5" style={{ color: isDark ? "#666" : "#aaa" }}>
+                          {timeAgo(n.time)}
+                        </div>
+                      </div>
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 flex-shrink-0 mt-1" style={{ color: isDark ? "#555" : "#ccc" }} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </div>
   );
