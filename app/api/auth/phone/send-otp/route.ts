@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "X-Forwarded-For": clientIp,
+        ...(req.headers.get("x-device-id") ? { "X-Device-Id": req.headers.get("x-device-id")! } : {}),
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15000),

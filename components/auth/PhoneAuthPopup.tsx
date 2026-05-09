@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { setStoredToken } from "@/lib/auth/token";
+import { getDeviceId } from "@/lib/fingerprint";
 
 
 type Step = "phone" | "otp" | "name" | "success";
@@ -43,6 +44,9 @@ export function PhoneAuthPopup({
   const [shake, setShake] = useState(false);
   const [countdown, setCountdown] = useState(90);
   const [canResend, setCanResend] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [blockMessage, setBlockMessage] = useState("");
+  const [deviceId, setDeviceId] = useState("");
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +68,11 @@ export function PhoneAuthPopup({
       setShake(false);
       setCountdown(90);
       setCanResend(false);
+      setBlocked(false);
+      setBlockMessage("");
       setTimeout(() => phoneInputRef.current?.focus(), 300);
+      // Load device fingerprint
+      getDeviceId().then(setDeviceId);
     }
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
@@ -114,10 +122,26 @@ export function PhoneAuthPopup({
     try {
       const res = await fetch("/api/auth/phone/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(deviceId ? { "X-Device-Id": deviceId } : {}),
+        },
         body: JSON.stringify({ phone: fullPhone }),
       });
       const data = await res.json();
+
+      if (res.status === 429) {
+        // Device-specific block from backend (error code DEVICE_BLOCKED)
+        if (data.error === "DEVICE_BLOCKED") {
+          setBlocked(true);
+          setBlockMessage(data.message || "تم حظرك مؤقتاً — حاول لاحقاً");
+        } else {
+          // Regular rate limit (e.g. too many OTPs to same number)
+          setError(data.message || "انتظر قليلاً قبل المحاولة مرة أخرى");
+        }
+        setSending(false);
+        return;
+      }
 
       if (!res.ok) {
         setError(data.message || "فشل إرسال الرمز");
@@ -279,9 +303,23 @@ export function PhoneAuthPopup({
     try {
       const res = await fetch("/api/auth/phone/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(deviceId ? { "X-Device-Id": deviceId } : {}),
+        },
         body: JSON.stringify({ phone: fullPhone }),
       });
+      if (res.status === 429) {
+        const data = await res.json();
+        if (data.error === "DEVICE_BLOCKED") {
+          setBlocked(true);
+          setBlockMessage(data.message || "تم حظرك مؤقتاً — حاول لاحقاً");
+        } else {
+          setError(data.message || "انتظر قليلاً قبل المحاولة مرة أخرى");
+          setCanResend(true);
+        }
+        return;
+      }
       if (res.ok) {
         startCountdown();
         setOtp(["", "", "", "", "", ""]);
@@ -384,8 +422,43 @@ export function PhoneAuthPopup({
             />
           </div>
 
+          {/* ═══ BLOCKED STATE ═══ */}
+          {blocked && (
+            <div className="text-center py-4">
+              <div className="flex justify-center mb-5">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-lg"
+                  style={{
+                    background: "linear-gradient(135deg, #EF4444, #DC2626)",
+                    boxShadow: "0 8px 24px rgba(239,68,68,0.3)",
+                  }}
+                >
+                  🚫
+                </div>
+              </div>
+              <h2 className="font-display font-extrabold text-xl text-ink text-center mb-2">
+                تم حظرك مؤقتاً
+              </h2>
+              <p className="text-[13px] text-mist text-center leading-relaxed mb-5">
+                {blockMessage}
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
+                <p className="text-[12px] text-red-600 leading-relaxed">
+                  لأسباب أمنية، تم تقييد محاولات التحقق من هذا الجهاز. يرجى المحاولة مرة أخرى لاحقاً.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-[15px] rounded-[14px] bg-border font-display font-bold text-[15px] text-ink transition-all duration-150 hover:bg-fog active:scale-[0.98]"
+              >
+                إغلاق
+              </button>
+            </div>
+          )}
+
           {/* ═══ STEP 1: Phone Number ═══ */}
-          {step === "phone" && (
+          {step === "phone" && !blocked && (
             <div>
               {/* Icon */}
               <div className="flex justify-center mb-5">
