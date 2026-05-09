@@ -910,7 +910,7 @@ export default function PlaceDetailPage() {
                       cart={cart}
                       onUpdateQty={updateCartQty}
                       onClear={clearCart}
-                      onOrderPlaced={() => {}}
+                      onOrderPlaced={() => setCart(new Map())}
                       phoneVerified={contributor?.phone_verified}
                       userPhone={contributor?.phone_number}
                       userHandle={contributor?.display_handle}
@@ -1010,7 +1010,7 @@ export default function PlaceDetailPage() {
                   cart={cart}
                   onUpdateQty={updateCartQty}
                   onClear={clearCart}
-                  onOrderPlaced={() => {}}
+                  onOrderPlaced={() => setCart(new Map())}
                   phoneVerified={contributor?.phone_verified}
                   userPhone={contributor?.phone_number}
                   userHandle={contributor?.display_handle}
