@@ -3257,7 +3257,7 @@ function FormField({ label, value, onChange, type = "text", placeholder, textare
   label: string; value: string; onChange: (v: string) => void;
   type?: string; placeholder?: string; textarea?: boolean;
 }) {
-  const cls = "w-full border border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-2.5 text-[13px] text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-border)] focus:border-[var(--d-green)]";
+  const cls = "w-full border border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-2.5 text-[13px] text-[var(--d-text)] outline-none transition-colors placeholder:text-[var(--d-text-muted)] focus:border-[var(--d-green)]";
   return (
     <div>
       <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">{label}</label>
