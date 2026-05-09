@@ -1019,13 +1019,13 @@ function OwnerDashboardPage() {
 
   // Theme colors
   const t = isDark ? {
-    pageBg: "#0B0F14", card: "#1A1D27", border: "#2A2D37", cardHover: "#252830",
-    text: "#E5E7EB", textSec: "#9CA3AF", textMuted: "#6B7280",
-    green: "#5B9A6A", greenBg: "#1A2E22", greenBgHover: "#243A2C",
-    indigoBg: "#1E2340", grayBg: "#1E2128", subtleBg: "#252830",
+    pageBg: "#0F1115", card: "#20283A", border: "#2B3446", cardHover: "#252830",
+    text: "#F3F4F6", textSec: "#B0B7C3", textMuted: "#6B7280",
+    green: "#5B9A6A", greenBg: "#1A2E22", greenBgHover: "#1B2A22",
+    indigoBg: "#1E2340", grayBg: "#1E2128", subtleBg: "#3A4458",
     redBg: "#2D1B1B", toggleOff: "#374151", navShadow: "rgba(0,0,0,0.3)",
-    sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2A2D37",
-    cancelBg: "#252830", overlayBg: "#1A1D27",
+    sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2B3446",
+    cancelBg: "#252830", overlayBg: "#20283A", iconColor: "#BFC7D5",
     // Accent color pairs
     mintBg: "#1A2E22", mintText: "#6ECF97",
     amberBg: "#2D2516", amberText: "#D4A54A",
@@ -1043,7 +1043,7 @@ function OwnerDashboardPage() {
     indigoBg: "#EEF2FF", grayBg: "#F1F5F9", subtleBg: "#F3F4F6",
     redBg: "#FEF2F2", toggleOff: "#E5E7EB", navShadow: "rgba(0,0,0,0.05)",
     sheetBg: "#F9FAFB", inputBg: "#ffffff", inputBorder: "#E5E7EB",
-    cancelBg: "#ffffff", overlayBg: "#ffffff",
+    cancelBg: "#ffffff", overlayBg: "#ffffff", iconColor: "#4A7C59",
     // Accent color pairs
     mintBg: "#E1F5EE", mintText: "#0F6E56",
     amberBg: "#FAEEDA", amberText: "#854F0B",
@@ -1072,7 +1072,7 @@ function OwnerDashboardPage() {
       "--d-red-text": t.redText, "--d-red-accent": t.redAccent,
       "--d-gray-alt-bg": t.grayAltBg, "--d-gray-alt-text": t.grayAltText,
       "--d-pending-bg": t.pendingBg, "--d-pending-text": t.pendingText,
-      "--d-warn-text": t.warnText,
+      "--d-warn-text": t.warnText, "--d-icon-color": t.iconColor,
       backgroundColor: t.pageBg, color: t.text,
     } as React.CSSProperties}>
       {/* ══ GREEN HEADER ══ */}
@@ -1533,7 +1533,7 @@ function OwnerDashboardPage() {
                     {/* Section header */}
                     <div className="px-3 py-2.5 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
                       <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
+                        <span className="text-[13px] font-semibold text-[var(--d-text)]">{sec.name}</span>
                         <span className="text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
@@ -1559,7 +1559,7 @@ function OwnerDashboardPage() {
                               {resolvePublicImageUrl(item.photo_url) ? (
                                 <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                               ) : (
-                                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-[var(--d-icon-color)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
                                   {getItemIcon(sec.name)('w-5 h-5')}
                                 </div>
                               )}
@@ -2203,7 +2203,7 @@ function OwnerDashboardPage() {
                     {/* Section header */}
                     <div className="px-4 py-3 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
                       <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2.5 flex-1 min-w-0">
-                        <span className="text-[13px] font-medium text-[var(--d-text)]">{sec.name}</span>
+                        <span className="text-[13px] font-semibold text-[var(--d-text)]">{sec.name}</span>
                         <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
@@ -2225,7 +2225,7 @@ function OwnerDashboardPage() {
                               {resolvePublicImageUrl(item.photo_url) ? (
                                 <img src={resolvePublicImageUrl(item.photo_url)!} alt="" className="w-11 h-11 rounded-lg object-cover" />
                               ) : (
-                                <div className="w-11 h-11 rounded-lg flex items-center justify-center text-[var(--d-green)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
+                                <div className="w-11 h-11 rounded-lg flex items-center justify-center text-[var(--d-icon-color)]" style={{ backgroundColor: getItemBgColor(sec.name) }}>
                                   {getItemIcon(sec.name)('w-6 h-6')}
                                 </div>
                               )}
@@ -3100,7 +3100,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
 }) {
   return (
     <>
-      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-green-bg)] ${active ? "bg-[var(--d-green-bg)]" : ""}`}>
+      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-green-bg-hover)] ${active ? "bg-[var(--d-green-bg)]" : ""}`}>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
           <svg viewBox="0 0 24 24" className={`w-4 h-4 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}
@@ -3108,7 +3108,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium text-[var(--d-text)] mb-0.5">{title}</p>
-          <p className="text-[12px] text-[var(--d-text-muted)] leading-snug">{sub}</p>
+          <p className="text-[12px] text-[var(--d-text-sec)] leading-snug">{sub}</p>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {badge}

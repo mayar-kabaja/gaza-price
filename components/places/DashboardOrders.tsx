@@ -788,12 +788,12 @@ function OrderCards({ orders, mobile, rejectId, setRejectId, rejectReason, setRe
         </colgroup>
         <thead>
           <tr className="border-b border-[var(--d-border)]">
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">#</th>
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">العميل</th>
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الواتس</th>
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الوقت</th>
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">المجموع</th>
-            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text-muted)] text-right uppercase tracking-wide">الحالة</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">#</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">العميل</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">الواتس</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">الوقت</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">المجموع</th>
+            <th className="px-3 py-2.5 text-[11px] font-semibold text-[var(--d-text)] text-right uppercase tracking-wide">الحالة</th>
             <th></th>
           </tr>
         </thead>
