@@ -1081,12 +1081,12 @@ function OwnerDashboardPage() {
         {/* Top bar */}
         <div>
           <div className="flex items-center justify-between mb-4 lg:mb-0 relative z-[1]">
-            <a href="/" className="flex items-center gap-2">
+            <button onClick={() => { setActiveView("home"); setMobileTab("home"); }} className="flex items-center gap-2">
               <img src="/logo.svg" alt="" className="w-8 h-8 rounded-full" />
               <span className="font-bold text-xl text-white leading-none">
                 غزة <span className="text-[#C9A96E]">بريس</span>
               </span>
-            </a>
+            </button>
 
             {/* Desktop: search + icons inline */}
             <div className="flex items-center gap-2">
