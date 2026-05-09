@@ -329,9 +329,10 @@ export function HomeData() {
   // Desktop: sidebar area is browse-only (doesn't save to profile)
   const [browseAreaId, setBrowseAreaId] = useState<string | null>(areaFromUrl);
   const [desktopAreaFilter, setDesktopAreaFilter] = useState<"all" | "myArea">("all");
+  const [mobileAreaFilter, setMobileAreaFilter] = useState<"all" | "myArea">("all");
   const activeAreaId = isDesktop
     ? (desktopAreaFilter === "all" ? null : (browseAreaId ?? area?.id ?? null))
-    : (area?.id ?? null);
+    : (mobileAreaFilter === "all" ? null : (area?.id ?? null));
 
   // Sync from URL when navigating from /categories or /account
   useEffect(() => {
@@ -808,6 +809,25 @@ export function HomeData() {
             ) : (
               <div className="text-xs text-mist font-body px-2">لا توجد تصنيفات</div>
             )}
+
+            {/* Area filter — separator + pills */}
+            <div className="w-px h-6 bg-border/60 flex-shrink-0 self-center mx-0.5" />
+            <button
+              onClick={() => setMobileAreaFilter("all")}
+              className={`px-3 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                mobileAreaFilter === "all"
+                  ? "bg-olive-pale border-olive text-olive font-semibold"
+                  : "bg-surface border-border text-slate hover:border-olive/50"
+              }`}
+            >🌍 الكل</button>
+            <button
+              onClick={() => setMobileAreaFilter("myArea")}
+              className={`px-3 py-1.5 rounded-full text-xs font-body whitespace-nowrap border-[1.5px] flex-shrink-0 transition-colors ${
+                mobileAreaFilter === "myArea"
+                  ? "bg-olive-pale border-olive text-olive font-semibold"
+                  : "bg-surface border-border text-slate hover:border-olive/50"
+              }`}
+            >📍 منطقتي</button>
           </div>
 
           <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
