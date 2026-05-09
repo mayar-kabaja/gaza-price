@@ -16,6 +16,7 @@ import type { Place, MatchedItem } from '@/lib/api/places';
 import type { Area } from '@/types/app';
 import { cn } from '@/lib/utils';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
+import { VerifiedBadge } from '@/components/places/VerifiedBadge';
 
 type Section = 'food' | 'store' | 'workspace';
 
@@ -1989,7 +1990,10 @@ function StoreCard({ place, index, onClick }: { place: Place; index: number; onC
 
       {/* Name + type flag */}
       <div className="flex-1 min-w-0">
-        <div className="font-display font-extrabold text-[13px] text-ink truncate mb-[3px]">{place.name}</div>
+        <div className="flex items-center gap-1 mb-[3px]">
+          <span className="font-display font-extrabold text-[13px] text-ink truncate">{place.name}</span>
+          <VerifiedBadge plan={place.plan} />
+        </div>
         <div className="flex items-center gap-[6px]">
           <span
             className="text-[10px] font-bold px-[7px] py-[2px] rounded-full shadow-sm"
@@ -2061,6 +2065,7 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
           <span className="font-display font-extrabold text-[13px] text-ink truncate">
             {place.name}
           </span>
+          <VerifiedBadge plan={place.plan} />
           <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">
             {typeLabel(place.type)}
           </span>
@@ -2146,6 +2151,7 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
             <span className="font-display font-extrabold text-[13px] text-ink truncate">
               {place.name}
             </span>
+            <VerifiedBadge plan={place.plan} />
             <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">
               مساحة عمل
             </span>
@@ -2236,6 +2242,7 @@ function DesktopWorkspaceCard({ place, index, onClick }: { place: Place; index: 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <VerifiedBadge plan={place.plan} />
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">مساحة عمل</span>
             </div>
             <div className="text-[11px] text-mist flex items-center gap-1">
@@ -2328,6 +2335,7 @@ function DesktopStoreCard({ place, index, onClick }: { place: Place; index: numb
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <VerifiedBadge plan={place.plan} />
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: accent.bg, color: accent.text }}>{typeLabel(place.type || 'متجر')}</span>
             </div>
             <div className="text-[11px] text-mist flex items-center gap-1">
@@ -2398,6 +2406,7 @@ function DesktopFoodCard({ place, index, onClick }: { place: Place; index: numbe
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="font-display font-extrabold text-[15px] text-ink truncate">{place.name}</span>
+              <VerifiedBadge plan={place.plan} />
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15 flex-shrink-0">{placeTypeLabel}</span>
             </div>
             <div className="text-[11px] text-mist flex items-center gap-1">
@@ -2480,7 +2489,10 @@ function DesktopPlaceCard({ place, onClick }: { place: Place; onClick: () => voi
 
       {/* Info */}
       <div className="p-3">
-        <div className="font-display font-extrabold text-[13px] text-ink mb-1 truncate">{place.name}</div>
+        <div className="flex items-center gap-1 mb-1">
+          <span className="font-display font-extrabold text-[13px] text-ink truncate">{place.name}</span>
+          <VerifiedBadge plan={place.plan} />
+        </div>
         <div className="flex items-center gap-1.5 mb-1">
           <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-olive-pale text-olive border border-olive/15">{placeTypeLabel}</span>
           <span className="text-[10px] text-mist truncate">📍 {place.area?.name_ar}</span>

@@ -18,6 +18,7 @@ import { VoteButtons } from "@/components/actions/VoteButtons";
 import { useVote } from "@/hooks/useVote";
 import { formatRelativeTime, toArabicNumerals } from "@/lib/arabic";
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "@/components/places/VerifiedBadge";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { isStale } from "@/lib/price";
 import { normalizeDigits } from "@/lib/normalize-digits";
@@ -676,7 +677,10 @@ export function HomeData() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-display font-medium text-[13px] text-ink truncate">{place.name}</div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-display font-medium text-[13px] text-ink truncate">{place.name}</span>
+                            <VerifiedBadge plan={place.plan} />
+                          </div>
                           <div className="text-[11px] text-mist flex items-center gap-1">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             {place.area?.name_ar ?? ""}

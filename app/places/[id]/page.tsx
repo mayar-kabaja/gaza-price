@@ -11,6 +11,7 @@ import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
+import { VerifiedBadge } from '@/components/places/VerifiedBadge';
 
 /* ─── Constants ─── */
 
@@ -730,6 +731,7 @@ export default function PlaceDetailPage() {
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">{isBoth ? '🍴☕' : emoji}</span>
               <span className="font-display font-bold text-sm text-ink truncate">{place.name}</span>
+              <VerifiedBadge plan={place.plan} />
             </div>
             {place.area?.name_ar && (
               <div className="text-[11px] text-mist">📍 {place.area.name_ar}</div>
@@ -852,7 +854,10 @@ export default function PlaceDetailPage() {
               ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="font-display font-bold text-lg text-ink">{place.name}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-display font-bold text-lg text-ink">{place.name}</h1>
+                <VerifiedBadge plan={place.plan} size="md" />
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[11px] text-mist">📍 {place.area?.name_ar}</span>
                 {place.is_open && (
@@ -947,7 +952,10 @@ export default function PlaceDetailPage() {
             ) : isBoth ? <span className="flex items-center -space-x-1"><span>🍴</span><span>☕</span></span> : emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display font-black text-[17px] text-white mb-1">{place.name}</div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="font-display font-black text-[17px] text-white">{place.name}</span>
+              <VerifiedBadge plan={place.plan} size="md" />
+            </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] text-white/55">📍 {place.area?.name_ar}</span>
               {place.is_open && (

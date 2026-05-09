@@ -10,6 +10,7 @@ import { DashboardDiscountCodes } from "@/components/places/DashboardDiscountCod
 import { DashboardNotifications } from "@/components/places/DashboardNotifications";
 import { QRCodeSVG } from "qrcode.react";
 import { getItemIcon, getItemBgColor } from "@/components/places/FoodIcons";
+import { VerifiedBadge } from "@/components/places/VerifiedBadge";
 
 /* ── Types ── */
 type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null; icon?: string | null };
@@ -73,7 +74,7 @@ const FREE_MISSING = [
   "أكواد الخصم",
   "إحصائيات الزيارات",
   'شارة "موثّق"',
-  "PDF المنيو",
+  "منيو + QR code",
 ];
 
 const BASIC_FEATURES = [
@@ -83,7 +84,7 @@ const BASIC_FEATURES = [
   "أكواد الخصم",
   "إحصائيات الزيارات",
   'شارة "موثّق"',
-  "PDF المنيو",
+  "منيو + QR code",
 ];
 
 const BASIC_MISSING = [
@@ -114,6 +115,149 @@ const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
   basic: { has: BASIC_FEATURES, missing: BASIC_MISSING },
   premium: { has: PREMIUM_FEATURES, missing: [] },
 };
+
+/* ── Menu QR Card ── */
+function MenuQRCard({ placeId, placeName, plan, section, onUpgrade }: { placeId: string; placeName: string; plan?: string; section?: string; onUpgrade?: () => void }) {
+  const isFood = section === "food";
+  const [copied, setCopied] = useState(false);
+  const placeUrl = typeof window !== "undefined" ? `${window.location.origin}/places/${placeId}` : `/places/${placeId}`;
+  const hasPlan = plan === "basic" || plan === "premium";
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(placeUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${isFood ? "شوف المنيو" : "شوف محلنا"}:\n${placeUrl}`)}`, "_blank");
+  };
+
+  const downloadQR = () => {
+    const svg = document.getElementById("place-qr-svg");
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const size = 512;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      const link = document.createElement("a");
+      link.download = `qr-${placeName}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  /* ── Free plan: locked state ── */
+  if (!hasPlan) {
+    return (
+      <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-5 relative overflow-hidden">
+        {/* Faded header */}
+        <div className="opacity-55 mb-4">
+          <h3 className="text-[15px] font-medium text-[var(--d-text)] mb-1">أكواد QR للمشاركة</h3>
+          <p className="text-[12px] text-[var(--d-text-sec)]">{isFood ? "شارك المنيو مع زبائنك بسهولة" : "شارك محلك مع زبائنك بسهولة"}</p>
+        </div>
+        {/* Blurred placeholder */}
+        <div className="opacity-40 blur-[2px] pointer-events-none">
+          <div className="bg-[var(--d-subtle-bg)] rounded-xl h-[100px]" />
+        </div>
+        {/* Upgrade overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-12 h-12 rounded-full bg-[var(--d-amber-bg)] flex items-center justify-center mb-3">
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="var(--d-warn-text)" strokeWidth={2} strokeLinecap="round">
+              <rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/>
+            </svg>
+          </div>
+          <h4 className="text-[15px] font-medium text-[var(--d-text)] mb-1.5">أكواد QR غير متاحة في الباقة المجانية</h4>
+          <p className="text-[12px] text-[var(--d-text-sec)] mb-3.5 max-w-[340px] leading-relaxed">رقّي باقتك إلى Basic أو Best للحصول على أكواد QR قابلة للطباعة والمشاركة</p>
+          {onUpgrade && (
+            <button onClick={onUpgrade} className="inline-flex items-center gap-1.5 text-[12px] font-medium px-4 py-2 rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              مقارنة الباقات
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Basic / Premium: active state ── */
+  return (
+    <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-5">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-[15px] font-medium text-[var(--d-text)] mb-1">أكواد QR للمشاركة</h3>
+          <p className="text-[12px] text-[var(--d-text-sec)]">{isFood ? "شارك المنيو مع زبائنك بسهولة" : "شارك محلك مع زبائنك بسهولة"}</p>
+        </div>
+      </div>
+
+      {/* QR card */}
+      <div className="bg-[var(--d-subtle-bg)] rounded-xl p-4 flex gap-3.5 items-center">
+        {/* QR code */}
+        <div className="flex-shrink-0 bg-white p-1.5 rounded-lg border border-[var(--d-border)]/30">
+          <QRCodeSVG
+            id="place-qr-svg"
+            value={placeUrl}
+            size={88}
+            fgColor="#4A7C59"
+            bgColor="white"
+            level="M"
+          />
+        </div>
+
+        {/* Info + actions */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-[var(--d-green)]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span className="font-medium text-[13px] text-[var(--d-text)]">{isFood ? "رابط المنيو" : "رابط المحل"}</span>
+          </div>
+          <p className="text-[11px] text-[var(--d-text-muted)] mb-2.5 leading-relaxed">{isFood ? "للطباعة على الطاولة أو المشاركة" : "يفتح صفحة محلك الرئيسية"}</p>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={downloadQR}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-[var(--d-border)] text-[var(--d-text)] hover:bg-[var(--d-card)] transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PNG
+            </button>
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-[var(--d-border)] text-[var(--d-text)] hover:bg-[var(--d-card)] transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              {copied ? "تم ✓" : "نسخ"}
+            </button>
+            <button
+              onClick={shareWhatsApp}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-[var(--d-border)] text-[#25D366] hover:bg-[#25D366]/5 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              واتساب
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tip footer */}
+      <div className="mt-3 px-3 py-2.5 bg-[var(--d-blue-bg)] rounded-xl flex gap-2 items-start">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--d-blue-text)]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>
+        <span className="text-[11px] text-[var(--d-blue-text)] leading-relaxed">{isFood ? "اطبع QR وضعه على طاولات المطعم ليتصفح الزبون المنيو من جواله مباشرة" : "اطبع QR وضعه في محلك ليصل الزبائن لصفحتك مباشرة"}</span>
+      </div>
+    </div>
+  );
+}
 
 /* ── Feature check/x icons ── */
 const CheckIcon = () => (
@@ -985,7 +1129,10 @@ function OwnerDashboardPage() {
               ) : <span className="text-white font-medium">{place.name.charAt(0)}</span>}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-[15px] text-white truncate">{place.name}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-[15px] text-white truncate">{place.name}</span>
+                <VerifiedBadge plan={place.plan} />
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {place.area && <span className="text-[10px] text-white/55">{place.area.name_ar}</span>}
                 <span className="text-[9px] font-medium py-0.5 px-2 rounded-full bg-white/[0.14] text-white/85">
@@ -1030,7 +1177,10 @@ function OwnerDashboardPage() {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-[20px] font-semibold text-white mb-0.5 leading-tight">أهلاً، {place.name}</h2>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <h2 className="text-[20px] font-semibold text-white leading-tight">أهلاً، {place.name}</h2>
+                      <VerifiedBadge plan={place.plan} size="md" />
+                    </div>
                     <p className="text-[12px] opacity-85 mb-2.5">محلك جاهز. خطوتك التالية: استقبال أول زبون.</p>
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5 bg-white/[0.12] px-2 py-[4px] rounded-full border border-white/[0.15]">
@@ -1048,17 +1198,20 @@ function OwnerDashboardPage() {
                       )}
                     </div>
                   </div>
-                  {/* QR Code — mobile */}
-                  <div className="flex-shrink-0 bg-white p-2 rounded-lg text-center">
-                    <QRCodeSVG
-                      value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
-                      size={64}
-                      fgColor="#4A7C59"
-                      bgColor="white"
-                      level="M"
-                    />
-                    <p className="text-[8px] text-[#4A7C59] mt-1 font-medium">امسح للمحل</p>
-                  </div>
+                  {/* QR Code — mobile (basic/premium only) */}
+                  {(place.plan === "basic" || place.plan === "premium") && (
+                    <div className="flex-shrink-0 bg-white p-2 rounded-lg text-center">
+                      <QRCodeSVG
+                        id="place-qr-mobile-hero"
+                        value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
+                        size={64}
+                        fgColor="#4A7C59"
+                        bgColor="white"
+                        level="M"
+                      />
+                      <p className="text-[8px] text-[#4A7C59] mt-1 font-medium">{place.section === "food" ? "امسح للمنيو" : "امسح للمحل"}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1244,6 +1397,34 @@ function OwnerDashboardPage() {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     نسخ الرابط
                   </button>
+                  {(place.plan === "basic" || place.plan === "premium") ? (
+                    <button
+                      onClick={() => {
+                        const svg = document.getElementById("place-qr-mobile-hero");
+                        if (!svg) return;
+                        const svgData = new XMLSerializer().serializeToString(svg);
+                        const canvas = document.createElement("canvas");
+                        canvas.width = 512; canvas.height = 512;
+                        const ctx = canvas.getContext("2d");
+                        if (!ctx) return;
+                        const img = new Image();
+                        img.onload = () => { ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const a = document.createElement("a"); a.download = `qr-${place.name}.png`; a.href = canvas.toDataURL("image/png"); a.click(); };
+                        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                      }}
+                      className="flex items-center justify-center gap-1.5 border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)] text-[12px] rounded-xl px-3 py-2 hover:opacity-80 transition-opacity"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      QR
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setMobileTab("plans")}
+                      className="flex items-center justify-center gap-1.5 border border-[var(--d-amber-bg)] text-[var(--d-warn-text)] text-[12px] rounded-xl px-3 py-2 hover:bg-[var(--d-amber-bg)] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/></svg>
+                      QR · ترقية
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1255,7 +1436,7 @@ function OwnerDashboardPage() {
                 { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
                 { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
                 { name: "شارة التوثيق", desc: "زيد الثقة", icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></> },
-                { name: "منيو PDF", desc: "للطباعة", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></> },
+                { name: "منيو + QR", desc: "شارك المنيو", icon: <><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/></> },
               ] : place.plan === "basic" ? [
                 { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
                 { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
@@ -1326,6 +1507,10 @@ function OwnerDashboardPage() {
                 <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[11px] font-bold text-white bg-[var(--d-green)] rounded-lg px-3 py-1.5">+ صنف</button>
               </div>
             </div>
+
+            {/* Menu QR */}
+            <MenuQRCard placeId={place.id} placeName={place.name} plan={place.plan} section={place.section} onUpgrade={() => setMobileTab("plans")} />
+
             {(() => {
               const allItemsRaw = place.menu.flatMap((sec) => sec.items.map((item) => ({ ...item, sectionName: sec.name, sectionId: sec.id })));
               const filteredItems = dashSearch.trim()
@@ -1740,7 +1925,10 @@ function OwnerDashboardPage() {
                 ) : place.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-medium text-[var(--d-text)] truncate">{place.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[14px] font-medium text-[var(--d-text)] truncate">{place.name}</p>
+                  <VerifiedBadge plan={place.plan} />
+                </div>
                 <p className="text-[12px] text-[var(--d-text-muted)] mt-0.5">{place.type}{place.area ? ` · ${place.area.name_ar}` : ""}</p>
               </div>
             </div>
@@ -1840,7 +2028,10 @@ function OwnerDashboardPage() {
                       <span className="text-[11px] bg-white/[0.18] px-2.5 py-[3px] rounded-full tracking-wide">{planLabels[place.plan] ? `باقة ${planLabels[place.plan]}` : place.plan}</span>
                       <span className="text-[12px] opacity-75">{today}{hijriDate ? ` · ${hijriDate}` : ""}</span>
                     </div>
-                    <h2 className="text-[26px] font-semibold text-white mb-1 leading-tight">أهلاً، {place.name}</h2>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h2 className="text-[26px] font-semibold text-white leading-tight">أهلاً، {place.name}</h2>
+                      <VerifiedBadge plan={place.plan} size="md" />
+                    </div>
                     <p className="text-[13px] opacity-85 mb-3.5">محلك جاهز. خطوتك التالية: استقبال أول زبون.</p>
 
                     <div className="flex items-center gap-3">
@@ -1862,17 +2053,20 @@ function OwnerDashboardPage() {
                     </div>
                   </div>
 
-                  {/* QR Code */}
-                  <div className="flex-shrink-0 bg-white p-3 rounded-xl text-center">
-                    <QRCodeSVG
-                      value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
-                      size={100}
-                      fgColor="#4A7C59"
-                      bgColor="white"
-                      level="M"
-                    />
-                    <p className="text-[10px] text-[#4A7C59] mt-1.5 font-medium">امسح للوصول للمحل</p>
-                  </div>
+                  {/* QR Code (basic/premium only) */}
+                  {(place.plan === "basic" || place.plan === "premium") && (
+                    <div className="flex-shrink-0 bg-white p-3 rounded-xl text-center">
+                      <QRCodeSVG
+                        id="place-qr-hero"
+                        value={typeof window !== "undefined" ? `${window.location.origin}/places/${place.id}` : `/places/${place.id}`}
+                        size={100}
+                        fgColor="#4A7C59"
+                        bgColor="white"
+                        level="M"
+                      />
+                      <p className="text-[10px] text-[#4A7C59] mt-1.5 font-medium">{place.section === "food" ? "امسح للمنيو" : "امسح للوصول للمحل"}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1916,7 +2110,7 @@ function OwnerDashboardPage() {
                   <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">صفحتك العامة</span>
                   <div className="flex-1 h-px bg-[var(--d-border)]/50" />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {/* Preview */}
                   <a
                     href={`/places/${place.id}`}
@@ -1928,7 +2122,7 @@ function OwnerDashboardPage() {
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-purple-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </div>
                     <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">معاينة الصفحة</p>
-                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">شاهد محلك كما يراه الزبائن</p>
+                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">{place.section === "food" ? "شاهد المنيو كما يراه الزبائن" : "شاهد محلك كما يراه الزبائن"}</p>
                   </a>
                   {/* Copy link */}
                   <button
@@ -1939,7 +2133,7 @@ function OwnerDashboardPage() {
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </div>
                     <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">نسخ الرابط</p>
-                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">انسخ رابط محلك وأرسله للزبائن</p>
+                    <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">{place.section === "food" ? "انسخ رابط المنيو وأرسله للزبائن" : "انسخ رابط محلك وأرسله للزبائن"}</p>
                   </button>
                   {/* WhatsApp share */}
                   <a
@@ -1954,6 +2148,47 @@ function OwnerDashboardPage() {
                     <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">شارك عبر واتساب</p>
                     <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">أرسل الرابط مباشرة للزبائن</p>
                   </a>
+                  {/* QR Code download */}
+                  {(place.plan === "basic" || place.plan === "premium") ? (
+                    <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 pr-5 text-right">
+                      <div className="flex items-start justify-between mb-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--d-green-bg)] flex items-center justify-center">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/></svg>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const svg = document.getElementById("place-qr-hero");
+                            if (!svg) return;
+                            const svgData = new XMLSerializer().serializeToString(svg);
+                            const canvas = document.createElement("canvas");
+                            canvas.width = 512; canvas.height = 512;
+                            const ctx = canvas.getContext("2d");
+                            if (!ctx) return;
+                            const img = new Image();
+                            img.onload = () => { ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const a = document.createElement("a"); a.download = `qr-${place.name}.png`; a.href = canvas.toDataURL("image/png"); a.click(); };
+                            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                          }}
+                          className="w-8 h-8 rounded-lg bg-[var(--d-green)] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
+                          title="تحميل QR"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                      </div>
+                      <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">كود QR</p>
+                      <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">{place.section === "food" ? "حمّله واطبعه على طاولات المطعم" : "حمّله واطبعه وضعه في محلك"}</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setActiveView("plans")}
+                      className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-4 pr-5 text-right hover:bg-[var(--d-subtle-bg)] transition-colors relative"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-[var(--d-amber-bg)] flex items-center justify-center mb-2.5">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--d-warn-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/></svg>
+                      </div>
+                      <p className="text-[14px] font-medium text-[var(--d-text)] mb-0.5">كود QR</p>
+                      <p className="text-[12px] text-[var(--d-text-sec)] leading-relaxed">متاح في باقة Basic وBest</p>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1964,7 +2199,7 @@ function OwnerDashboardPage() {
                   { name: "الطلبات", desc: "تتبع كل طلب", icon: <><circle cx="9" cy="20" r="1.5"/><circle cx="19" cy="20" r="1.5"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></> },
                   { name: "أكواد الخصم", desc: "اجذب الزبائن", icon: <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="var(--d-purple-text)"/></> },
                   { name: "شارة التوثيق", desc: "زيد الثقة", icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></> },
-                  { name: "منيو PDF", desc: "للطباعة", icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></> },
+                  { name: "منيو + QR", desc: "شارك المنيو", icon: <><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/><rect x="18" y="18" width="4" height="4" rx="0.5"/></> },
                 ] : place.plan === "basic" ? [
                   { name: "في قسم الأبرز", desc: "ظهور مميز", icon: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
                   { name: "فيديو إعلان AI", desc: "إعلان احترافي", icon: <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></> },
@@ -2027,6 +2262,9 @@ function OwnerDashboardPage() {
                   <button onClick={() => { setAddItemSection(place.menu[0]?.id ?? ""); setSheet("addItem"); }} className="text-[13px] font-medium px-3.5 py-[7px] rounded-lg bg-[var(--d-green)] text-white hover:opacity-90 transition-opacity">+ إضافة صنف</button>
                 </div>
               </div>
+
+              {/* Menu QR */}
+              <MenuQRCard placeId={place.id} placeName={place.name} plan={place.plan} section={place.section} onUpgrade={() => setActiveView("plans")} />
 
               {/* Category filter strip */}
               <div className="flex items-center gap-1.5 flex-wrap pb-3 border-b border-[var(--d-border)]/50">
@@ -2368,6 +2606,7 @@ function OwnerDashboardPage() {
                     <div className="pt-3 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="text-[17px] font-medium text-[var(--d-text)]">{place.name}</h2>
+                        <VerifiedBadge plan={place.plan} />
                         <span className={`inline-flex items-center gap-[5px] text-[11px] font-medium px-2.5 py-[3px] rounded-full ${place.is_open ? "bg-[var(--d-mint-bg)] text-[var(--d-mint-text)]" : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]"}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${place.is_open ? "bg-[var(--d-green)]" : "bg-[var(--d-text-muted)]"}`} />
                           {place.is_open ? "مفتوح" : "مغلق"}

@@ -45,7 +45,7 @@ const PLAN_FEATURES = [
   { name: "في قسم الأبرز",       free: false, basic: false, premium: true },
   { name: 'شارة "موثّق"',       free: false, basic: true,  premium: true },
   { name: "تقارير الأسعار",      free: false, basic: true,  premium: true },
-  { name: "PDF المنيو",          free: false, basic: false, premium: true },
+  { name: "منيو + QR code",      free: false, basic: true,  premium: true },
 ];
 
 function CheckIcon() {
@@ -364,7 +364,7 @@ function RegisterPlacePage() {
                 {
                   key: "basic" as const, label: "أساسي", price: "100",
                   desc: isWorkspace ? "لمساحات العمل التي تريد حضور رقمي حقيقي" : "لمن يريد قائمة حية وحضور رقمي حقيقي",
-                  features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "تقارير الأسعار"],
+                  features: ["كل شيء في المجاني", "قائمة أصناف كاملة", "تحديث الأسعار أي وقت", 'شارة "موثّق ✓"', "منيو + QR code", "تقارير الأسعار"],
                   missing: ["ظهور مميّز أولاً"],
                   btnClass: "bg-olive text-white shadow-md shadow-olive/25",
                   btnText: "اشترك الآن",
@@ -374,7 +374,7 @@ function RegisterPlacePage() {
                 {
                   key: "premium" as const, label: "مميّز", price: "200",
                   desc: isWorkspace ? "لمساحات العمل التي تريد التميّز وأكثر عملاء" : "لمن يريد التميّز وأكثر زبائن",
-                  features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "PDF المنيو", "إحصائيات مفصّلة"],
+                  features: ["كل شيء في الأساسي", "ظهور أول في القائمة", "في قسم الأبرز", "إحصائيات مفصّلة"],
                   missing: [],
                   btnClass: "bg-gradient-to-l from-[#C9A96E] to-[#A07840] text-white shadow-md shadow-[#C9A96E]/30",
                   btnText: "اشترك الآن",
