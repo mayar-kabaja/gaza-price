@@ -27,6 +27,7 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useGlobalSidebar, useGlobalContext } from "@/components/layout/GlobalDesktopShell";
 
 const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar"), { ssr: false });
+const PlacesMap = dynamic(() => import("@/components/map/PlacesMap"), { ssr: false });
 
 const ALL_CATEGORY_ID = "__all__";
 
@@ -117,7 +118,7 @@ const CURRENCY_STYLES: Record<string, { symbol: string; bg: string; text: string
   EUR: { symbol: "\u20AC", bg: "#F0FDF4", text: "#16a34a" },
 };
 
-function ExchangeRatesWidget() {
+function ExchangeRatesBanner() {
   const [rates, setRates] = useState<{ currency: string; code: string; rate: number; change: number; direction: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -129,65 +130,36 @@ function ExchangeRatesWidget() {
   }, []);
 
   return (
-    <div className="bg-surface rounded-2xl border border-border/50 overflow-hidden">
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="font-display font-medium text-[14px] text-ink">اسعار الصرف اليوم</span>
-      </div>
-      <div className="px-4 pb-4 space-y-0">
-        {loading ? (
-          <div className="space-y-0">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="flex items-center justify-between py-2.5 animate-pulse">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-fog" />
-                          <div className="space-y-1.5">
-                            <div className="h-3 w-16 bg-fog rounded" />
-                            <div className="h-2.5 w-10 bg-fog rounded" />
-                          </div>
-                        </div>
-                        <div className="h-4 w-12 bg-fog rounded" />
-                      </div>
-                    ))}
-                  </div>
-        ) : rates.length === 0 ? (
-          <div className="py-4 text-center text-[12px] text-mist">تعذر تحميل الاسعار</div>
-        ) : (
-          rates.map((r, idx) => {
-            const style = CURRENCY_STYLES[r.code] ?? { symbol: r.code, bg: "#F3F4F6", text: "#6B7280" };
-            const isLast = idx === rates.length - 1;
-            return (
-              <div key={r.code} className={`flex items-center justify-between py-2.5 ${!isLast ? "border-b border-border/30" : ""}`}>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold"
-                    style={{ background: style.bg, color: style.text }}
-                  >
-                    {style.symbol}
-                  </span>
-                  <div>
-                    <div className="text-[13px] font-medium text-ink">{r.currency}</div>
-                    <div className="text-[11px] text-mist">{r.code}</div>
-                  </div>
-                </div>
-                <div className="text-left">
-                  <div className="text-[15px] font-semibold text-ink">
-                    {toArabicNumerals(r.rate)} <span className="text-[11px] text-mist font-normal">₪</span>
-                  </div>
-                  {r.direction === "up" && r.change > 0 && (
-                    <div className="text-[11px] text-[#16a34a] font-medium">↑ {toArabicNumerals(r.change)}</div>
-                  )}
-                  {r.direction === "down" && r.change > 0 && (
-                    <div className="text-[11px] text-[#dc2626] font-medium">↓ {toArabicNumerals(r.change)}</div>
-                  )}
-                  {r.direction === "stable" && (
-                    <div className="text-[11px] text-mist font-medium">← ثابت</div>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+    <div className="bg-surface border border-border/50 rounded-xl px-4 py-2 flex items-center gap-5">
+      <span className="text-[11px] font-display font-bold text-mist flex-shrink-0">أسعار الصرف</span>
+      {loading ? (
+        <div className="flex items-center gap-4 flex-1">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-3 w-20 bg-fog rounded animate-pulse" />
+          ))}
+        </div>
+      ) : rates.length === 0 ? (
+        <span className="text-[11px] text-mist flex-1">—</span>
+      ) : (
+        <div className="flex items-center gap-5 flex-1">
+          {rates.map((r) => (
+            <div key={r.code} className="flex items-center gap-1.5 text-[12px]">
+              <span className="text-mist">{r.code}</span>
+              <span className="font-semibold text-ink">{toArabicNumerals(r.rate)} ₪</span>
+              {r.direction === "up" && r.change > 0 && (
+                <span className="text-[10px] text-[#16a34a] font-medium">↑</span>
+              )}
+              {r.direction === "down" && r.change > 0 && (
+                <span className="text-[10px] text-[#dc2626] font-medium">↓</span>
+              )}
+              {r.direction === "stable" && (
+                <span className="text-[10px] text-mist">—</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <span className="text-[10px] text-mist flex-shrink-0">آخر تحديث: اليوم</span>
     </div>
   );
 }
@@ -396,11 +368,21 @@ export function HomeData() {
   );
   const allReports = reportsData?.pages?.flatMap((p) => p.reports) ?? [];
 
-  // Desktop dashboard: places + market listings
-  const { data: placesData, isLoading: placesLoading } = usePlaces("food", activeAreaId, 6);
-  const homePlaces: Place[] = (placesData as any)?.places ?? [];
+  // Desktop dashboard: nearby places — mix of all types from user's area
+  const userAreaId = area?.id ?? null;
+  const { data: foodData, isLoading: foodLoading } = usePlaces("food", userAreaId, 3);
+  const { data: cafeData, isLoading: cafeLoading } = usePlaces("cafe", userAreaId, 2);
+  const { data: storeData, isLoading: storeLoading } = usePlaces("store", userAreaId, 2);
+  const { data: wsData, isLoading: wsLoading } = usePlaces("workspace", userAreaId, 2);
+  const placesLoading = foodLoading || cafeLoading || storeLoading || wsLoading;
+  const homePlaces: Place[] = [
+    ...((foodData as any)?.places ?? []),
+    ...((cafeData as any)?.places ?? []),
+    ...((storeData as any)?.places ?? []),
+    ...((wsData as any)?.places ?? []),
+  ];
   const { data: listingsData, isLoading: listingsLoading } = useListingsInfinite({});
-  const homeListings: Listing[] = listingsData?.pages?.flatMap((p: any) => p.listings) ?? [];
+  const homeListings: Listing[] = (listingsData?.pages?.flatMap((p: any) => p.listings) ?? []).filter((l: Listing) => l.images?.[0]?.url).slice(0, 2);
 
   const rawProducts = infiniteData?.pages?.flatMap((p) => p.products) ?? [];
   // When user has area selected, only show products that have prices in that area
@@ -468,51 +450,51 @@ export function HomeData() {
 
       {/* ═══ Desktop rich dashboard ═══ */}
       {isDesktop && (
-        <div className="flex flex-col gap-4">
-          {/* Hero banner */}
-          <div className="bg-gradient-to-l from-olive to-olive-deep rounded-2xl px-6 py-5 text-white relative overflow-hidden">
-            <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/svg%3E\")" }} />
-            <div className="flex items-center gap-4 relative">
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] opacity-80 mb-1 flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  {area?.name_ar ?? "كل المناطق"} · {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
-                </div>
-                <h2 className="text-[18px] font-display font-bold m-0">أهلاً، تابع أسعار اليوم</h2>
+        <div className="flex flex-col gap-3">
+          {/* Exchange rates banner */}
+          <ExchangeRatesBanner />
+
+          {/* Welcome band */}
+          <div className="bg-olive rounded-2xl px-5 py-3.5 flex items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[15px] font-display font-bold text-white m-0">أهلاً، تابع أسعار اليوم</h2>
+              <div className="text-[12px] text-white/70 mt-0.5 flex items-center gap-1.5">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                {area?.name_ar ?? "كل المناطق"} · {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
               </div>
-              <div className="flex gap-5 px-4 border-l border-white/20 flex-shrink-0">
-                <div className="text-center">
-                  <div className="text-xl font-display font-bold">{globalStats?.products ? toArabicNumerals(globalStats.products) : "—"}</div>
-                  <div className="text-[11px] opacity-70">منتج</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-display font-bold">{globalStats?.categories ? toArabicNumerals(globalStats.categories) : "—"}</div>
-                  <div className="text-[11px] opacity-70">تصنيف</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-display font-bold">{globalStats?.prices ? toArabicNumerals(globalStats.prices) : "—"}</div>
-                  <div className="text-[11px] opacity-70">سعر</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => openSubmitModal()}
-                className="bg-white text-olive border-none px-4 py-2 rounded-xl text-[13px] font-display font-bold whitespace-nowrap flex-shrink-0 hover:bg-white/90 transition-colors cursor-pointer shadow-sm"
-              >
-                + أبلغ عن سعر
-              </button>
             </div>
+            <div className="flex gap-5 flex-shrink-0">
+              <div className="text-center">
+                <div className="text-[16px] font-display font-bold text-white">{globalStats?.products ? toArabicNumerals(globalStats.products) : "—"}</div>
+                <div className="text-[11px] text-white/60">منتج</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[16px] font-display font-bold text-white">{globalStats?.categories ? toArabicNumerals(globalStats.categories) : "—"}</div>
+                <div className="text-[11px] text-white/60">تصنيف</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[16px] font-display font-bold text-white">{globalStats?.prices ? toArabicNumerals(globalStats.prices) : "—"}</div>
+                <div className="text-[11px] text-white/60">سعر</div>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-white/20 flex-shrink-0" />
+            <button
+              onClick={openSubmitModal}
+              className="px-4 py-2 bg-white text-olive rounded-xl text-[12px] font-display font-bold hover:bg-white/90 transition-colors flex-shrink-0"
+            >
+              أبلغ عن سعر
+            </button>
           </div>
 
-          {/* Two-column dashboard: right (prices) | left (places + widgets) — RTL: first child = right */}
-          <div className="grid grid-cols-[1fr_340px] gap-4">
+          {/* Main grid: Prices | السوق + workspaces + stores */}
+          <div className="grid grid-cols-[2fr_1fr] gap-3 items-start">
 
-            {/* ── Right column (prices) — first in RTL ── */}
-            <div className="flex flex-col">
+            {/* ── Prices (the hero) ── */}
+            <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
               {/* Section header */}
-              <div className="flex items-center justify-between gap-3 px-1 pb-3">
+              <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2">
                 <div>
                   <div className="text-[14px] font-medium text-ink">الأسعار</div>
                   <div className="text-[11px] text-mist">{allReports.length || products.length} نتيجة{area?.name_ar ? ` في ${area.name_ar}` : ""}</div>
@@ -529,12 +511,12 @@ export function HomeData() {
                 </div>
               </div>
 
-              {/* List container */}
-              <div className={isAllTab ? "bg-surface rounded-2xl overflow-hidden" : ""}>
+              {/* Paginated list — 10 items per page */}
+              <div>
                 {showSkeletons ? (
-                  <div className="divide-y divide-border/40 bg-surface rounded-2xl overflow-hidden">
-                    {[...Array(8)].map((_, i) => (
-                      <div key={i} className="h-16 px-3.5 py-3 animate-pulse flex items-center gap-3">
+                  <div className="divide-y divide-border/40">
+                    {[...Array(10)].map((_, i) => (
+                      <div key={i} className="h-[52px] px-3.5 py-3 animate-pulse flex items-center gap-3">
                         <div className="flex-1 space-y-2">
                           <div className="h-3 w-40 bg-fog rounded" />
                           <div className="h-2.5 w-28 bg-fog rounded" />
@@ -553,7 +535,7 @@ export function HomeData() {
                     </div>
                   ) : (
                     (() => {
-                      const PAGE_SIZE = 12;
+                      const PAGE_SIZE = 10;
                       const totalPages = Math.ceil(allReports.length / PAGE_SIZE);
                       const pageReports = allReports.slice(desktopPage * PAGE_SIZE, (desktopPage + 1) * PAGE_SIZE);
                       return (
@@ -599,168 +581,173 @@ export function HomeData() {
                     <div className="text-sm text-mist">{activeAreaId ? "جرب فئة أخرى أو غيّر المنطقة أعلاه" : "جرب فئة أخرى أو ابحث عن منتج أعلاه"}</div>
                   </div>
                 ) : (
-                  <>
-                    {products.map((product, idx) => (
-                      <HomeProductCard key={product.id} product={product} areaId={activeAreaId} isRefetching={productsFetching} />
-                    ))}
-                    {isFetchingNextPage && (
-                      <div className="divide-y divide-border/40">
-                        {[...Array(3)].map((_, i) => (
-                          <div key={i} className="h-16 px-3.5 py-3 animate-pulse flex items-center gap-3">
-                            <div className="flex-1 space-y-2">
-                              <div className="h-3 w-40 bg-fog rounded" />
-                              <div className="h-2.5 w-28 bg-fog rounded" />
-                            </div>
-                            <div className="h-4 w-16 bg-fog rounded" />
-                          </div>
+                  (() => {
+                    const PAGE_SIZE = 10;
+                    const totalPages = Math.ceil(products.length / PAGE_SIZE);
+                    const pageProducts = products.slice(desktopPage * PAGE_SIZE, (desktopPage + 1) * PAGE_SIZE);
+                    return (
+                      <>
+                        {pageProducts.map((product) => (
+                          <HomeProductCard key={product.id} product={product} areaId={activeAreaId} isRefetching={productsFetching} />
                         ))}
-                      </div>
-                    )}
-                    {hasNextPage && !isFetchingNextPage && (
-                      <div className="py-3 flex justify-center border-t border-border/40">
-                        <button
-                          type="button"
-                          onClick={() => fetchNextPage()}
-                          className="w-full mx-3 py-3 rounded-xl border-[1.5px] border-olive text-olive font-display font-bold text-sm hover:bg-olive-pale transition-colors"
-                        >
-                          تحميل المزيد
-                        </button>
-                      </div>
-                    )}
-                  </>
+                        {totalPages > 1 && (
+                          <div className="py-3 flex items-center justify-center gap-2 border-t border-border/40">
+                            <button
+                              type="button"
+                              onClick={() => setDesktopPage((p) => Math.max(0, p - 1))}
+                              disabled={desktopPage === 0}
+                              className="px-3 py-1.5 rounded-lg bg-fog text-ink text-[12px] font-medium disabled:opacity-30 hover:bg-border/50 transition-colors"
+                            >
+                              السابق
+                            </button>
+                            <span className="text-[12px] text-mist">
+                              {toArabicNumerals(desktopPage + 1)} / {toArabicNumerals(totalPages)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => { setDesktopPage((p) => p + 1); if (desktopPage + 2 >= totalPages && hasNextPage) fetchNextPage(); }}
+                              disabled={desktopPage + 1 >= totalPages && !hasNextPage}
+                              className="px-3 py-1.5 rounded-lg bg-fog text-ink text-[12px] font-medium disabled:opacity-30 hover:bg-border/50 transition-colors"
+                            >
+                              التالي
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
                 )}
               </div>
-
             </div>
 
-            {/* ── Left column (places + widgets) — second in RTL ── */}
-            <div className="flex flex-col gap-4">
+            {/* ── Right column: Map + nearby places ── */}
+            <div className="flex flex-col gap-3">
+              {/* Map */}
+              <div className="bg-surface border border-border/50 rounded-2xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-display font-bold text-ink">قريب منك</span>
+                  <Link href="/places/map" className="text-[11px] text-olive font-bold hover:underline">عرض الخريطة</Link>
+                </div>
+                <Link href="/places/map" className="block h-[180px] rounded-xl overflow-hidden">
+                  <PlacesMap places={[]} className="h-full w-full" />
+                </Link>
+              </div>
 
-              {/* Exchange rates widget */}
-              <ExchangeRatesWidget />
-
-              {/* Places section */}
-              <div className="bg-surface rounded-2xl border border-border/50 overflow-hidden">
-                <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display font-medium text-[14px] text-ink">محلات قريبة</span>
-                  </div>
+              {/* Nearby places list — mixed types */}
+              <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                  <span className="text-[13px] font-display font-bold text-ink">محلات قريبة منك</span>
                   <Link href="/places" className="text-[11px] text-olive font-bold hover:underline">عرض الكل</Link>
                 </div>
-                <div className="px-3 pb-3 space-y-1.5">
+                <div className="px-3 pb-3 space-y-1">
                   {placesLoading ? (
-                    [...Array(4)].map((_, i) => (
+                    [...Array(5)].map((_, i) => (
                       <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
-                        <div className="w-10 h-10 rounded-full bg-fog flex-shrink-0" />
+                        <div className="w-9 h-9 rounded-full bg-fog flex-shrink-0" />
                         <div className="flex-1 space-y-1.5">
                           <div className="h-3 w-24 bg-fog rounded" />
                           <div className="h-2.5 w-16 bg-fog rounded" />
                         </div>
-                        <div className="h-3 w-10 bg-fog rounded" />
                       </div>
                     ))
                   ) : homePlaces.length === 0 ? (
                     <div className="text-center py-6 text-[12px] text-mist">لا توجد محلات قريبة</div>
                   ) : (
-                    homePlaces.slice(0, 4).map((place) => (
-                      <Link
-                        key={place.id}
-                        href={`/places/${place.id}`}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-fog transition-colors"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-fog flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
-                          {place.avatar_url ? (
-                            <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mist">
-                              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1">
-                            <span className="font-display font-medium text-[13px] text-ink truncate">{place.name}</span>
-                            <VerifiedBadge plan={place.plan} />
+                    homePlaces.slice(0, 4).map((place) => {
+                      const sectionLabel: Record<string, string> = { food: "مطعم", cafe: "كافيه", store: "متجر", workspace: "مساحة عمل" };
+                      const label = sectionLabel[(place as any).section] ?? "";
+                      return (
+                        <Link
+                          key={place.id}
+                          href={`/places/${place.id}`}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-fog transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-fog flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {place.avatar_url ? (
+                              <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mist">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                              </svg>
+                            )}
                           </div>
-                          <div className="text-[11px] text-mist flex items-center gap-1">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            {place.area?.name_ar ?? ""}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="font-display font-medium text-[12px] text-ink truncate">{place.name}</span>
+                              <VerifiedBadge plan={place.plan} />
+                            </div>
+                            <div className="text-[10px] text-mist flex items-center gap-1.5">
+                              {label && <span className="text-olive font-bold">{label}</span>}
+                              {label && place.area?.name_ar && <span>·</span>}
+                              {place.area?.name_ar ?? ""}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {place.is_open ? (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-olive">
-                              <span className="w-1.5 h-1.5 rounded-full bg-olive" />مفتوح
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-semibold text-mist">مغلق</span>
-                          )}
-                        </div>
-                      </Link>
-                    ))
+                          <div className="flex-shrink-0">
+                            {place.is_open ? (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-olive">
+                                <span className="w-1.5 h-1.5 rounded-full bg-olive" />مفتوح
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-mist">مغلق</span>
+                            )}
+                          </div>
+                        </Link>
+                      );
+                    })
                   )}
                 </div>
               </div>
 
-              {/* Market listings section */}
-              <div className="bg-surface rounded-2xl border border-border/50 overflow-hidden">
-                <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-display font-medium text-[14px] text-ink">السوق</span>
-                  </div>
+              {/* Market listings */}
+              <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                  <span className="text-[13px] font-display font-bold text-ink">السوق</span>
                   <Link href="/market" className="text-[11px] text-olive font-bold hover:underline">عرض الكل</Link>
                 </div>
-                <div className="px-3 pb-3 space-y-1.5">
+                <div className="px-3 pb-3 space-y-1">
                   {listingsLoading ? (
-                    [...Array(3)].map((_, i) => (
+                    [...Array(2)].map((_, i) => (
                       <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
-                        <div className="w-10 h-10 rounded-xl bg-fog flex-shrink-0" />
+                        <div className="w-12 h-12 rounded-lg bg-fog flex-shrink-0" />
                         <div className="flex-1 space-y-1.5">
-                          <div className="h-3 w-28 bg-fog rounded" />
-                          <div className="h-2.5 w-20 bg-fog rounded" />
+                          <div className="h-3 w-24 bg-fog rounded" />
+                          <div className="h-2.5 w-16 bg-fog rounded" />
                         </div>
-                        <div className="h-3.5 w-12 bg-fog rounded" />
                       </div>
                     ))
                   ) : homeListings.length === 0 ? (
-                    <div className="text-center py-6 text-[12px] text-mist">لا توجد إعلانات</div>
+                    <div className="text-center py-4 text-[12px] text-mist">لا توجد إعلانات</div>
                   ) : (
-                    homeListings.slice(0, 3).map((listing) => (
-                      <Link
-                        key={listing.id}
-                        href={`/market/${listing.id}`}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-fog transition-colors"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-fog flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {listing.images?.[0]?.url ? (
-                            <img src={listing.images[0].url} alt="" className="w-full h-full object-cover rounded-xl" loading="lazy" />
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mist">
-                              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-display font-medium text-[13px] text-ink truncate">{listing.title}</div>
-                          <div className="text-[11px] text-mist">
-                            {listing.condition === "new" ? "جديد" : listing.condition === "used" ? "مستعمل" : "عاجل"}
-                            {listing.area?.name_ar ? ` · ${listing.area.name_ar}` : ""}
+                    homeListings.map((listing) => {
+                      const cond = listing.condition === "new" ? "جديد" : listing.condition === "used" ? "مستعمل" : "عاجل";
+                      const condCls = listing.condition === "new" ? "bg-emerald-100 text-emerald-800" : listing.condition === "urgent" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800";
+                      return (
+                        <Link
+                          key={listing.id}
+                          href={`/market/${listing.id}`}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-fog transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-fog flex-shrink-0 overflow-hidden">
+                            <img src={listing.images![0].url} alt="" className="w-full h-full object-cover" loading="lazy" />
                           </div>
-                        </div>
-                        <div className="font-display font-bold text-[13px] text-olive flex-shrink-0">
-                          {listing.price} ₪
-                        </div>
-                      </Link>
-                    ))
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display font-medium text-[12px] text-ink truncate">{listing.title}</div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className={`text-[9px] font-bold px-1.5 py-[1px] rounded-full ${condCls}`}>{cond}</span>
+                              {listing.area?.name_ar && <span className="text-[10px] text-mist">{listing.area.name_ar}</span>}
+                            </div>
+                          </div>
+                          <span className="font-display font-black text-[14px] text-olive-deep flex-shrink-0" dir="ltr">{"\u20AA"}{Number(listing.price).toLocaleString()}</span>
+                        </Link>
+                      );
+                    })
                   )}
                 </div>
               </div>
-
-
-
             </div>
 
           </div>
+
         </div>
       )}
 
@@ -829,6 +816,25 @@ export function HomeData() {
               }`}
             >📍 منطقتي</button>
           </div>
+
+          {/* Map banner — mobile */}
+          <Link
+            href="/places/map"
+            className="mx-4 mt-2 flex items-center gap-3 bg-olive-pale border border-olive-mid/30 rounded-xl px-4 py-3 flex-shrink-0"
+          >
+            <div className="w-10 h-10 rounded-full bg-olive/10 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-olive" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-display font-bold text-[13px] text-olive-deep">الأماكن القريبة</div>
+              <div className="text-[11px] text-olive">اكتشف المحلات والمطاعم حولك على الخريطة</div>
+            </div>
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-olive flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </Link>
 
           <div className="flex-1 overflow-y-auto no-scrollbar py-3 pb-24">
             {showSkeletons ? (

@@ -11,6 +11,9 @@ import { DashboardNotifications } from "@/components/places/DashboardNotificatio
 import { QRCodeSVG } from "qrcode.react";
 import { getItemIcon, getItemBgColor } from "@/components/places/FoodIcons";
 import { VerifiedBadge } from "@/components/places/VerifiedBadge";
+import dynamic from "next/dynamic";
+
+const PlacesMap = dynamic(() => import("@/components/map/PlacesMap"), { ssr: false });
 
 /* ── Types ── */
 type MenuItem = { id: string; name: string; description?: string | null; price: string; available: boolean; photo_url?: string | null; icon?: string | null };
@@ -19,6 +22,7 @@ type PlaceData = {
   id: string; name: string; section: string; type: string;
   area?: { id: string; name_ar: string }; area_id?: string;
   address?: string | null; phone?: string | null; whatsapp?: string | null;
+  latitude?: number | null; longitude?: number | null;
   is_open: boolean; status: string; plan: string;
   avatar_url?: string | null;
   plan_expires_at?: string | null; menu: MenuSection[];
@@ -373,6 +377,15 @@ function OwnerDashboardPage() {
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
 
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const [place, setPlace] = useState<PlaceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -487,6 +500,9 @@ function OwnerDashboardPage() {
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editAreaId, setEditAreaId] = useState("");
   const [editStoreType, setEditStoreType] = useState("");
+  const [editLat, setEditLat] = useState<number | null>(null);
+  const [editLng, setEditLng] = useState<number | null>(null);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Add item form
@@ -722,6 +738,10 @@ function OwnerDashboardPage() {
     setEditWhatsapp(place.whatsapp ?? "");
     setEditAreaId(place.area_id ?? place.area?.id ?? "");
     setEditStoreType(place.type ?? "");
+    const lat = Number(place.latitude);
+    const lng = Number(place.longitude);
+    setEditLat(isFinite(lat) ? lat : null);
+    setEditLng(isFinite(lng) ? lng : null);
   }
 
   function openEdit() {
@@ -759,13 +779,15 @@ function OwnerDashboardPage() {
     setSaving(true);
     setActionLoading("save-edit");
     try {
-      const body: Record<string, string> = {};
+      const body: Record<string, any> = {};
       if (editName !== place?.name) body.name = editName;
       if (editAddress !== (place?.address ?? "")) body.address = editAddress;
       if (editPhone !== (place?.phone ?? "")) body.phone = editPhone;
       if (editWhatsapp !== (place?.whatsapp ?? "")) body.whatsapp = editWhatsapp;
       if (editAreaId !== (place?.area_id ?? place?.area?.id ?? "")) body.area_id = editAreaId;
       if (place?.section === "store" && editStoreType && editStoreType !== place?.type) body.type = editStoreType;
+      if (editLat != null && editLat !== (place?.latitude ?? null)) body.latitude = editLat;
+      if (editLng != null && editLng !== (place?.longitude ?? null)) body.longitude = editLng;
       const res = await apiFetch(`/api/places/dashboard/update?${qs}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       });
@@ -1452,6 +1474,61 @@ function OwnerDashboardPage() {
               </div>
             </div>
 
+            {/* ── الموقع على الخريطة — mobile ── */}
+            <div className="mb-4">
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-[10px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">الموقع على الخريطة</span>
+                <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+              </div>
+              <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden">
+                {place.latitude != null && place.longitude != null && !isNaN(Number(place.latitude)) && !isNaN(Number(place.longitude)) ? (
+                  <>
+                    <div className="h-[160px]">
+                      {!isDesktop && (
+                        <PlacesMap
+                          places={[]}
+                          userLat={Number(place.latitude)}
+                          userLng={Number(place.longitude)}
+                          className="h-full w-full"
+                        />
+                      )}
+                    </div>
+                    <div className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--d-border)]/50">
+                      <div>
+                        <p className="text-[12px] font-medium text-[var(--d-text)]">موقعك محدد</p>
+                        <p className="text-[10px] text-[var(--d-text-muted)]" dir="ltr">{place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}</p>
+                      </div>
+                      <button
+                        onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
+                        className="text-[11px] font-bold text-[var(--d-green)] px-2.5 py-1.5 rounded-lg border border-[var(--d-border)]/50 hover:bg-[var(--d-green-bg)] transition-colors"
+                      >
+                        تغيير
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="px-4 py-5 text-center">
+                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-2">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                      </svg>
+                    </div>
+                    <p className="text-[13px] font-medium text-[var(--d-text)] mb-0.5">لم تحدد موقعك</p>
+                    <p className="text-[11px] text-[var(--d-text-muted)] mb-2.5">حدد موقعك ليظهر للزبائن القريبين</p>
+                    <button
+                      onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--d-green)] text-white rounded-xl text-[12px] font-bold hover:opacity-90 transition-opacity"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      حدد الموقع
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* ── ميزات بانتظارك — mobile ── */}
             {(() => {
               const isPremium = place.plan === "premium";
@@ -2032,37 +2109,92 @@ function OwnerDashboardPage() {
                 </div>
               </div>
 
-              {/* ── Visits ── */}
-              <div>
-                <div className="flex items-baseline gap-2 mb-2.5">
-                  <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">من زار صفحتك؟</span>
-                  <div className="flex-1 h-px bg-[var(--d-border)]/50" />
-                </div>
-                <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-5">
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    {[
-                      { label: "زيارات اليوم", num: visitStats.today },
-                      { label: "هذا الأسبوع", num: visitStats.week },
-                      { label: "الإجمالي", num: visitStats.total },
-                    ].map((v, i) => (
-                      <div key={v.label} className={`text-center ${i === 1 ? "border-r border-l border-[var(--d-border)]/50" : ""}`}>
-                        <p className="text-[28px] font-medium text-[var(--d-text)] tabular-nums leading-none mb-1.5">{v.num}</p>
-                        <p className="text-[11px] text-[var(--d-text-sec)]">{v.label}</p>
-                      </div>
-                    ))}
+              {/* ── Visits + Map row ── */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Visits */}
+                <div>
+                  <div className="flex items-baseline gap-2 mb-2.5">
+                    <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">من زار صفحتك؟</span>
+                    <div className="flex-1 h-px bg-[var(--d-border)]/50" />
                   </div>
-
-                  {/* Blue tip */}
-                  <div className="bg-[var(--d-blue-bg)] rounded-xl px-3.5 py-3 mb-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>
-                      <span className="text-[13px] font-medium text-[var(--d-blue-text)]">شارك محلك لتبدأ بجذب الزوار</span>
+                  <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl p-5 h-[calc(100%-28px)] flex flex-col">
+                    <div className="grid grid-cols-3 gap-4 flex-1">
+                      {[
+                        { label: "زيارات اليوم", num: visitStats.today },
+                        { label: "هذا الأسبوع", num: visitStats.week },
+                        { label: "الإجمالي", num: visitStats.total },
+                      ].map((v, i) => (
+                        <div key={v.label} className={`text-center ${i === 1 ? "border-r border-l border-[var(--d-border)]/50" : ""}`}>
+                          <p className="text-[28px] font-medium text-[var(--d-text)] tabular-nums leading-none mb-1.5">{v.num}</p>
+                          <p className="text-[11px] text-[var(--d-text-sec)]">{v.label}</p>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-[12px] text-[var(--d-blue-text)] leading-relaxed">انسخ الرابط وأرسله للزبائن عبر واتساب أو ضعه في بايو حساباتك على السوشال ميديا.</p>
-                  </div>
 
-                  {/* Locked analytics */}
-                  
+                    {/* Blue tip */}
+                    <div className="bg-[var(--d-blue-bg)] rounded-xl px-3.5 py-3 mt-auto text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-blue-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 4 12.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>
+                        <span className="text-[13px] font-medium text-[var(--d-blue-text)]">شارك محلك لتبدأ بجذب الزوار</span>
+                      </div>
+                      <p className="text-[12px] text-[var(--d-blue-text)] leading-relaxed">انسخ الرابط وأرسله للزبائن عبر واتساب أو ضعه في بايو حساباتك على السوشال ميديا.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Map */}
+                <div>
+                  <div className="flex items-baseline gap-2 mb-2.5">
+                    <span className="text-[11px] text-[var(--d-text-muted)] uppercase tracking-wider font-medium">الموقع على الخريطة</span>
+                    <div className="flex-1 h-px bg-[var(--d-border)]/50" />
+                  </div>
+                  <div className="bg-[var(--d-card)] border border-[var(--d-border)]/50 rounded-2xl overflow-hidden h-[calc(100%-28px)]">
+                    {place.latitude != null && place.longitude != null && !isNaN(Number(place.latitude)) && !isNaN(Number(place.longitude)) ? (
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 min-h-0">
+                          {isDesktop && (
+                            <PlacesMap
+                              places={[]}
+                              userLat={Number(place.latitude)}
+                              userLng={Number(place.longitude)}
+                              className="h-full w-full"
+                            />
+                          )}
+                        </div>
+                        <div className="px-4 py-3 flex items-center justify-between border-t border-[var(--d-border)]/50">
+                          <div>
+                            <p className="text-[13px] font-medium text-[var(--d-text)]">موقع {placeLabel(place.type, place.section)}</p>
+                            <p className="text-[11px] text-[var(--d-text-muted)]" dir="ltr">{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</p>
+                          </div>
+                          <button
+                            onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
+                            className="text-[12px] font-bold text-[var(--d-green)] px-3 py-1.5 rounded-lg border border-[var(--d-border)]/50 hover:bg-[var(--d-green-bg)] transition-colors"
+                          >
+                            تغيير الموقع
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-5 py-6 text-center flex flex-col items-center justify-center h-full">
+                        <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                        </div>
+                        <p className="text-[14px] font-medium text-[var(--d-text)] mb-1">لم تحدد موقعك بعد</p>
+                        <p className="text-[12px] text-[var(--d-text-muted)] mb-3">حدد موقع {placeLabel(place.type, place.section)} ليظهر للزبائن القريبين منك على الخريطة</p>
+                        <button
+                          onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[var(--d-green)] text-white rounded-xl text-[13px] font-bold hover:opacity-90 transition-opacity"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          حدد الموقع الآن
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2639,7 +2771,7 @@ function OwnerDashboardPage() {
                     </div>
                   )}
                   {/* Address */}
-                  <div className="flex items-center justify-between py-3.5">
+                  <div className="flex items-center justify-between py-3.5 border-b border-[var(--d-border)]/50">
                     <div className="flex items-center gap-2">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                       <span className="text-[13px] font-medium text-[var(--d-text)]">العنوان</span>
@@ -2650,6 +2782,19 @@ function OwnerDashboardPage() {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                       </button>
                     </div>
+                  </div>
+                  {/* Location on map */}
+                  <div className="flex items-center justify-between py-3.5">
+                    <div className="flex items-center gap-2">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--d-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <span className="text-[13px] font-medium text-[var(--d-text)]">الموقع على الخريطة</span>
+                    </div>
+                    <span className="text-[12px] text-[var(--d-text-muted)]">
+                      {place.latitude != null && place.longitude != null && !isNaN(Number(place.latitude)) && !isNaN(Number(place.longitude))
+                        ? <span dir="ltr">{place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}</span>
+                        : <span className="text-amber-500">غير محدد — أضفه من التعديل</span>
+                      }
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2883,6 +3028,82 @@ function OwnerDashboardPage() {
             </select>
           </div>
           <FormField label="العنوان التفصيلي" value={editAddress} onChange={setEditAddress} textarea />
+
+          {/* Location picker */}
+          <div>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">الموقع على الخريطة</label>
+            {editLat != null && editLng != null && !locationPickerOpen ? (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 text-[12px] text-[var(--d-text-muted)] bg-[var(--d-subtle-bg)] border border-[var(--d-border)] rounded-xl px-3 py-2.5" dir="ltr">
+                  {editLat.toFixed(5)}, {editLng.toFixed(5)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLocationPickerOpen(true)}
+                  className="text-[12px] font-bold text-[var(--d-green)] px-3 py-2.5 rounded-xl border border-[var(--d-border)] hover:bg-[var(--d-green-bg)] transition-colors"
+                >
+                  تغيير
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditLat(null); setEditLng(null); }}
+                  className="text-[12px] font-bold text-red-500 px-3 py-2.5 rounded-xl border border-[var(--d-border)] hover:bg-red-50 transition-colors"
+                >
+                  حذف
+                </button>
+              </div>
+            ) : (
+              <div>
+                {!locationPickerOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setLocationPickerOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-[1.5px] border-dashed border-[var(--d-border)] text-[13px] font-bold text-[var(--d-green)] bg-[var(--d-green-bg)] hover:bg-[var(--d-green-bg-hover)] transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    حدد موقع {placeLabel(place.type, place.section)} على الخريطة
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="h-[200px] rounded-xl overflow-hidden border border-[var(--d-border)]">
+                      <PlacesMap
+                        places={[]}
+                        userLat={editLat != null && isFinite(editLat) ? editLat : 31.4}
+                        userLng={editLng != null && isFinite(editLng) ? editLng : 34.38}
+                        className="h-full w-full"
+                        adjustMode={true}
+                        onLocationChange={(lat, lng) => {
+                          setEditLat(lat);
+                          setEditLng(lng);
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-[var(--d-text-muted)] flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                        انقر على الخريطة لتحديد الموقع
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setLocationPickerOpen(false)}
+                        className="text-[12px] font-bold text-[var(--d-green)] hover:underline"
+                      >
+                        {editLat != null ? "تم" : "إلغاء"}
+                      </button>
+                    </div>
+                    {editLat != null && editLng != null && (
+                      <div className="text-[11px] text-[var(--d-text-muted)] bg-[var(--d-subtle-bg)] rounded-lg px-2.5 py-1.5 text-center" dir="ltr">
+                        {editLat.toFixed(5)}, {editLng.toFixed(5)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <FormField label="رقم الهاتف" value={editPhone} onChange={setEditPhone} type="tel" />
           <FormField label="واتساب" value={editWhatsapp} onChange={setEditWhatsapp} type="tel" />
           <button

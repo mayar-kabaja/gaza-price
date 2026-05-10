@@ -484,9 +484,14 @@ function PlacesContent() {
             <h1 className="font-display font-black text-lg text-ink">
               {section === 'food' ? 'مطاعم وكافيه' : section === 'store' ? 'متاجر' : 'مساحات عمل'}
             </h1>
-            {activeArea && (
-              <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
-            )}
+            <div className="flex items-center gap-2">
+              {activeArea && (
+                <span className="text-[12px] text-mist">📍 {activeArea.name_ar}</span>
+              )}
+              <Link href="/places/map" className="w-8 h-8 flex items-center justify-center rounded-full bg-olive/10 text-olive hover:bg-olive/20 transition-colors" title="عرض الخريطة">
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
+              </Link>
+            </div>
           </div>
 
           {section === 'store' ? (
@@ -1030,6 +1035,9 @@ function PlacesContent() {
       {/* Search bar — inside green area */}
       <div className="bg-olive px-4 pt-3 pb-3">
         <div className="flex items-center gap-2">
+          <Link href="/places/map" className="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors flex-shrink-0" title="عرض الخريطة">
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
+          </Link>
           <div className="flex-1 bg-white/95 dark:bg-white/12 dark:border dark:border-white/20 rounded-full flex items-center gap-2 px-3 py-2.5">
             <svg viewBox="0 0 24 24" className="w-4 h-4 text-mist dark:text-white/50 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input

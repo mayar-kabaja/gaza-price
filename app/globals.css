@@ -1,4 +1,25 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* ── Leaflet popup light/dark ── */
+.leaflet-popup-content-wrapper {
+  background: #fff;
+  color: #1a1f2e;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.leaflet-popup-tip {
+  background: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  .leaflet-popup-content-wrapper {
+    background: #18181b;
+    color: #e5e7eb;
+  }
+  .leaflet-popup-tip {
+    background: #18181b;
+  }
+}
 
 /* ── Light / Dark CSS variables ─────────────────────────────── */
 :root {
