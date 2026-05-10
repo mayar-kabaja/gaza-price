@@ -3080,10 +3080,30 @@ function OwnerDashboardPage() {
                         }}
                       />
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!navigator.geolocation) return;
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setEditLat(pos.coords.latitude);
+                            setEditLng(pos.coords.longitude);
+                          },
+                          () => {},
+                          { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--d-border)] text-[12px] font-bold text-[var(--d-green)] hover:bg-[var(--d-green-bg)] transition-colors"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                      </svg>
+                      استخدم موقعي الحالي
+                    </button>
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] text-[var(--d-text-muted)] flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                        انقر على الخريطة لتحديد الموقع
+                        أو انقر على الخريطة لتحديد الموقع
                       </p>
                       <button
                         type="button"
