@@ -526,14 +526,21 @@ function OwnerDashboardPage() {
   const [dcValue, setDcValue] = useState("");
   const [dcMinOrder, setDcMinOrder] = useState("");
   const [dcMaxUses, setDcMaxUses] = useState("");
+  const [dcStartDate, setDcStartDate] = useState("");
   const [dcExpires, setDcExpires] = useState("");
+  const [dcStartHour, setDcStartHour] = useState("");
+  const [dcEndHour, setDcEndHour] = useState("");
+  const [dcDays, setDcDays] = useState<string[]>([]);
+  const [dcSectionId, setDcSectionId] = useState("");
   const [dcEditId, setDcEditId] = useState<string | null>(null);
   const [dcFormError, setDcFormError] = useState<string | null>(null);
   const dcCodesRef = useRef<{ reload: () => void } | null>(null);
 
   function resetDcForm() {
     setDcCode(""); setDcType("percentage"); setDcValue("");
-    setDcMinOrder(""); setDcMaxUses(""); setDcExpires(""); setDcEditId(null); setDcFormError(null);
+    setDcMinOrder(""); setDcMaxUses(""); setDcStartDate(""); setDcExpires("");
+    setDcStartHour(""); setDcEndHour(""); setDcDays([]); setDcSectionId("");
+    setDcEditId(null); setDcFormError(null);
   }
 
   // Edit item form
@@ -947,13 +954,18 @@ function OwnerDashboardPage() {
     }
     setSaving(true);
     try {
-      const body = {
+      const body: Record<string, any> = {
         code: dcCode.trim().toUpperCase(),
         discount_type: dcType,
         discount_value: Number(dcValue),
         min_order_total: dcMinOrder ? Number(dcMinOrder) : 0,
         max_uses: dcMaxUses ? Number(dcMaxUses) : null,
+        start_date: dcStartDate || null,
         expires_at: dcExpires || null,
+        start_hour: dcStartHour || null,
+        end_hour: dcEndHour || null,
+        days_of_week: dcDays.length > 0 ? dcDays.join(",") : null,
+        section_id: dcSectionId || null,
       };
       if (dcEditId) {
         await apiFetch(`/api/places/dashboard/discount-codes/${dcEditId}?token=${token}`, { method: "PATCH", body: JSON.stringify(body) });
@@ -2511,7 +2523,12 @@ function OwnerDashboardPage() {
                     setDcValue(String(dc.discount_value));
                     setDcMinOrder(dc.min_order_total > 0 ? String(dc.min_order_total) : "");
                     setDcMaxUses(dc.max_uses ? String(dc.max_uses) : "");
+                    setDcStartDate(dc.start_date ? dc.start_date.slice(0, 10) : "");
                     setDcExpires(dc.expires_at ? dc.expires_at.slice(0, 10) : "");
+                    setDcStartHour(dc.start_hour ?? "");
+                    setDcEndHour(dc.end_hour ?? "");
+                    setDcDays(dc.days_of_week ? dc.days_of_week.split(",") : []);
+                    setDcSectionId(dc.section_id ?? "");
                     setDcEditId(dc.id); setSheet("addDiscount");
                   }}
                 />
@@ -3235,10 +3252,80 @@ function OwnerDashboardPage() {
           <FormField label={dcType === "percentage" ? "القيمة (%)" : "المبلغ (₪)"} value={dcValue} onChange={setDcValue} type="number" placeholder="0" />
           <FormField label="حد أدنى للطلب (₪)" value={dcMinOrder} onChange={setDcMinOrder} type="number" placeholder="اختياري" />
           <FormField label="عدد الاستخدامات" value={dcMaxUses} onChange={setDcMaxUses} type="number" placeholder="بلا حد" />
+          {/* Date range */}
           <div>
-            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">تاريخ الانتهاء</label>
-            <input value={dcExpires} onChange={(e) => setDcExpires(e.target.value)} type="date" className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">فترة الصلاحية (اختياري)</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <p className="text-[10px] text-[var(--d-text-muted)] mb-1">من</p>
+                <input value={dcStartDate} onChange={(e) => setDcStartDate(e.target.value)} type="date" className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3 py-2.5 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-[var(--d-text-muted)] mb-1">إلى</p>
+                <input value={dcExpires} onChange={(e) => setDcExpires(e.target.value)} type="date" className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3 py-2.5 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+              </div>
+            </div>
           </div>
+
+          {/* Days of week */}
+          <div>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">أيام التفعيل (اختياري)</label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { key: "sun", label: "أحد" },
+                { key: "mon", label: "اثنين" },
+                { key: "tue", label: "ثلاثاء" },
+                { key: "wed", label: "أربعاء" },
+                { key: "thu", label: "خميس" },
+                { key: "fri", label: "جمعة" },
+                { key: "sat", label: "سبت" },
+              ].map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setDcDays((prev) => prev.includes(d.key) ? prev.filter((x) => x !== d.key) : [...prev, d.key])}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                    dcDays.includes(d.key)
+                      ? "bg-[var(--d-green)] text-white border-[var(--d-green)]"
+                      : "bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)] border-[var(--d-border)]"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[var(--d-text-muted)] mt-1">اتركه فارغ ليعمل كل الأيام</p>
+          </div>
+
+          {/* Time range */}
+          <div>
+            <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">ساعات التفعيل (اختياري)</label>
+            <div className="flex items-center gap-2">
+              <input value={dcStartHour} onChange={(e) => setDcStartHour(e.target.value)} type="time" className="flex-1 border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+              <span className="text-[var(--d-text-muted)] text-sm">إلى</span>
+              <input value={dcEndHour} onChange={(e) => setDcEndHour(e.target.value)} type="time" className="flex-1 border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]" dir="ltr" />
+            </div>
+            <p className="text-[10px] text-[var(--d-text-muted)] mt-1">اتركه فارغ ليعمل طوال اليوم</p>
+          </div>
+
+          {/* Menu section */}
+          {place.menu && place.menu.length > 0 && (
+            <div>
+              <label className="text-xs font-bold text-[var(--d-text-sec)] mb-1.5 block">قسم المنيو (اختياري)</label>
+              <select
+                value={dcSectionId}
+                onChange={(e) => setDcSectionId(e.target.value)}
+                className="w-full border-[1.5px] border-[var(--d-border)] bg-[var(--d-subtle-bg)] rounded-xl px-3.5 py-3 text-sm text-[var(--d-text)] outline-none focus:border-[var(--d-green)]"
+              >
+                <option value="">كل الأقسام</option>
+                {place.menu.map((sec: any) => (
+                  <option key={sec.id} value={sec.id}>{sec.name}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-[var(--d-text-muted)] mt-1">اختر قسم محدد أو اتركه على "كل الأقسام"</p>
+            </div>
+          )}
+
           {dcFormError && <p className="text-[12px] text-red-500 font-medium text-center">{dcFormError}</p>}
           <button
             onClick={handleSaveDiscount}
