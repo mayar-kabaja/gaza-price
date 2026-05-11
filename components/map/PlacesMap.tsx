@@ -25,24 +25,20 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-/* ── Section colors ── */
+/* ── Section colors (matching brand) ── */
 const SECTION_COLORS: Record<string, string> = {
-  food: "#16a34a",
-  store: "#d97706",
-  workspace: "#7c3aed",
+  food: "#4A7C59",
+  store: "#C9A96E",
+  workspace: "#3A6347",
 };
 
-function createColorIcon(color: string) {
+function createColorIcon(_color: string) {
   return L.divIcon({
     className: "",
-    html: `<div style="
-      width:28px;height:28px;border-radius:50%;
-      background:${color};border:3px solid white;
-      box-shadow:0 2px 6px rgba(0,0,0,0.35);
-    "></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -16],
+    html: `<span style="font-size:22px;line-height:1;display:block;">📍</span>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 22],
+    popupAnchor: [0, -20],
   });
 }
 
@@ -166,9 +162,10 @@ export default function PlacesMap({
       className={className}
       style={{ height: "100%", width: "100%", minHeight: "150px", zIndex: 0 }}
       zoomControl={false}
+      attributionControl={false}
     >
       <TileLayer
-        attribution="&copy; OpenStreetMap"
+        attribution=""
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
@@ -186,7 +183,7 @@ export default function PlacesMap({
             center={[safeLat, safeLng]}
             radius={8}
             pathOptions={{
-              fillColor: adjustMode ? "#ef4444" : "#3b82f6",
+              fillColor: adjustMode ? "#ef4444" : "#4A7C59",
               fillOpacity: 1,
               color: "#fff",
               weight: 3,
@@ -196,9 +193,9 @@ export default function PlacesMap({
             center={[safeLat, safeLng]}
             radius={18}
             pathOptions={{
-              fillColor: adjustMode ? "#ef4444" : "#3b82f6",
+              fillColor: adjustMode ? "#ef4444" : "#4A7C59",
               fillOpacity: 0.15,
-              color: adjustMode ? "#ef4444" : "#3b82f6",
+              color: adjustMode ? "#ef4444" : "#4A7C59",
               weight: 1,
               opacity: 0.4,
             }}
@@ -216,27 +213,23 @@ export default function PlacesMap({
           <Popup>
             <div dir="rtl" className="text-right min-w-[160px]">
               <div className="font-bold text-sm mb-1">{place.name}</div>
-              <div className="text-xs text-gray-500 mb-1">{place.type}</div>
+              <div className="text-xs mb-1 opacity-60">{place.type}</div>
 
               <div className="flex items-center gap-2 text-xs mb-2">
-                <span
-                  className={
-                    place.is_open ? "text-green-600" : "text-red-500"
-                  }
-                >
-                  {place.is_open ? "مفتوح" : "مغلق"}
+                <span style={{ color: place.is_open ? '#4A7C59' : '#ef4444', fontWeight: 600 }}>
+                  {place.is_open ? "● مفتوح" : "مغلق"}
                 </span>
-
-                <span className="text-gray-400">
+                <span className="opacity-60">
                   {formatDistance(place.distance_km)}
                 </span>
               </div>
 
               <Link
                 href={`/places/${place.id}`}
-                className="text-xs text-blue-600 underline"
+                className="text-xs font-bold no-underline"
+                style={{ color: '#4A7C59' }}
               >
-                عرض الصفحة
+                عرض الصفحة ←
               </Link>
             </div>
           </Popup>

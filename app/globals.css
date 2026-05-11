@@ -1,24 +1,33 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* ── Leaflet map tile tint ── */
+.leaflet-tile-pane {
+  filter: hue-rotate(40deg) saturate(0.6) brightness(1.05);
+}
+.dark .leaflet-tile-pane {
+  filter: hue-rotate(40deg) saturate(0.4) brightness(0.75) invert(1) contrast(1.1);
+}
+
 /* ── Leaflet popup light/dark ── */
 .leaflet-popup-content-wrapper {
   background: #fff;
   color: #1a1f2e;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(74, 124, 89, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E4EAF0;
 }
 .leaflet-popup-tip {
   background: #fff;
 }
-@media (prefers-color-scheme: dark) {
-  .leaflet-popup-content-wrapper {
-    background: #18181b;
-    color: #e5e7eb;
-  }
-  .leaflet-popup-tip {
-    background: #18181b;
-  }
+.dark .leaflet-popup-content-wrapper {
+  background: #111820;
+  color: #D8E4F0;
+  border-color: #243040;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.dark .leaflet-popup-tip {
+  background: #111820;
 }
 
 /* ── Light / Dark CSS variables ─────────────────────────────── */
