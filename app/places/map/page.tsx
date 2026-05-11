@@ -51,7 +51,7 @@ export default function MapPage() {
   useEffect(() => {
     if (userLat == null || userLng == null) return;
     setLoading(true);
-    fetchNearbyPlaces(userLat, userLng, 15, 100)
+    fetchNearbyPlaces(userLat, userLng, 50, 500)
       .then(setPlaces)
       .catch(() => setPlaces([]))
       .finally(() => setLoading(false));
