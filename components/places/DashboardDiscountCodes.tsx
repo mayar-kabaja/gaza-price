@@ -13,7 +13,12 @@ interface DiscountCode {
   max_uses: number | null;
   used_count: number;
   active: boolean;
+  start_date: string | null;
   expires_at: string | null;
+  start_hour: string | null;
+  end_hour: string | null;
+  days_of_week: string | null;
+  section_id: string | null;
   created_at: string;
 }
 
@@ -24,7 +29,12 @@ export interface DiscountCodeData {
   discount_value: number;
   min_order_total: number;
   max_uses: number | null;
+  start_date: string | null;
   expires_at: string | null;
+  start_hour: string | null;
+  end_hour: string | null;
+  days_of_week: string | null;
+  section_id: string | null;
 }
 
 interface Props {
