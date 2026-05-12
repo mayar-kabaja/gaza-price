@@ -87,7 +87,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const load = useCallback(async () => {
     // Skip contributor load on admin routes — admin uses same token key but JWT auth.
     // Loading contributors/me with admin JWT would 404 and clear the token.
-    if (pathname?.startsWith("/admin")) {
+    if (pathname?.startsWith("/gp-ctrl")) {
       setLoading(false);
       return;
     }

@@ -16,8 +16,8 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 export async function middleware(request: NextRequest) {
-  // Guard all /api/admin/* routes — only allow admin tokens
-  if (request.nextUrl.pathname.startsWith("/api/admin")) {
+  // Guard all /api/gp-ctrl/* routes — only allow admin tokens
+  if (request.nextUrl.pathname.startsWith("/api/gp-ctrl")) {
     const auth = request.headers.get("authorization");
     if (!auth?.startsWith("Bearer ")) {
       return NextResponse.json(

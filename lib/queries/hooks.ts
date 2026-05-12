@@ -407,7 +407,7 @@ export function useReviewProduct() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, action }: { id: string; action: "approve" | "reject" }) => {
-      const res = await apiFetchAdmin(`/api/admin/products/${id}/review`, {
+      const res = await apiFetchAdmin(`/api/gp-ctrl/products/${id}/review`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),

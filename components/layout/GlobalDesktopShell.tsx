@@ -152,7 +152,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [newListingOpen, setNewListingOpen] = useState(false);
 
-  const skipShell = pathname.startsWith("/admin") || pathname.startsWith("/places/dashboard") || pathname.match(/^\/places\/[^/]+\/menu$/);
+  const skipShell = pathname.startsWith("/gp-ctrl") || pathname.startsWith("/places/dashboard") || pathname.match(/^\/places\/[^/]+\/menu$/);
 
   if (skipShell) return <>{children}</>;
 

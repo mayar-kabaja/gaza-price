@@ -7,35 +7,35 @@ import { ReactNode, createContext, useContext, useEffect, useState } from "react
 import { clearAdminToken } from "@/lib/auth/token";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/admin/dashboard": "Dashboard",
-  "/admin/suggestions": "Suggestions",
-  "/admin/products": "Products",
-  "/admin/sections": "Sections",
-  "/admin/categories": "Categories",
-  "/admin/areas": "Areas",
-  "/admin/users": "Users",
-  "/admin/flags": "Flags",
-  "/admin/reports": "Reports",
-  "/admin/logs": "Logs",
-  "/admin/snapshots": "Price Snapshots",
-  "/admin/places": "Places",
-  "/admin/listings": "Listings",
-  "/admin/numbers": "Platform Numbers",
+  "/gp-ctrl/dashboard": "Dashboard",
+  "/gp-ctrl/suggestions": "Suggestions",
+  "/gp-ctrl/products": "Products",
+  "/gp-ctrl/sections": "Sections",
+  "/gp-ctrl/categories": "Categories",
+  "/gp-ctrl/areas": "Areas",
+  "/gp-ctrl/users": "Users",
+  "/gp-ctrl/flags": "Flags",
+  "/gp-ctrl/reports": "Reports",
+  "/gp-ctrl/logs": "Logs",
+  "/gp-ctrl/snapshots": "Price Snapshots",
+  "/gp-ctrl/places": "Places",
+  "/gp-ctrl/listings": "Listings",
+  "/gp-ctrl/numbers": "Platform Numbers",
 };
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: "grid" },
-  { href: "/admin/suggestions", label: "Suggestions", icon: "clipboard", badge: "pending" },
-  { href: "/admin/products", label: "Products", icon: "package" },
-  { href: "/admin/sections", label: "Sections", icon: "layers" },
-  { href: "/admin/categories", label: "Categories", icon: "tag" },
-  { href: "/admin/areas", label: "Areas", icon: "map" },
-  { href: "/admin/places", label: "Places", icon: "map", badge: "pending" },
-  { href: "/admin/listings", label: "Listings", icon: "store", badge: "pending" },
-  { href: "/admin/users", label: "Users", icon: "users", badge: "sand" },
-  { href: "/admin/flags", label: "Flags", icon: "bell", badge: "red" },
-  { href: "/admin/reports", label: "Reports", icon: "message" },
-  { href: "/admin/logs", label: "Logs", icon: "file" },
+  { href: "/gp-ctrl/dashboard", label: "Dashboard", icon: "grid" },
+  { href: "/gp-ctrl/suggestions", label: "Suggestions", icon: "clipboard", badge: "pending" },
+  { href: "/gp-ctrl/products", label: "Products", icon: "package" },
+  { href: "/gp-ctrl/sections", label: "Sections", icon: "layers" },
+  { href: "/gp-ctrl/categories", label: "Categories", icon: "tag" },
+  { href: "/gp-ctrl/areas", label: "Areas", icon: "map" },
+  { href: "/gp-ctrl/places", label: "Places", icon: "map", badge: "pending" },
+  { href: "/gp-ctrl/listings", label: "Listings", icon: "store", badge: "pending" },
+  { href: "/gp-ctrl/users", label: "Users", icon: "users", badge: "sand" },
+  { href: "/gp-ctrl/flags", label: "Flags", icon: "bell", badge: "red" },
+  { href: "/gp-ctrl/reports", label: "Reports", icon: "message" },
+  { href: "/gp-ctrl/logs", label: "Logs", icon: "file" },
 ] as const;
 
 const iconMap: Record<string, ReactNode> = {
@@ -228,7 +228,7 @@ export function AdminLayout({ children, adminName = "Admin", adminRole = "modera
 
   function handleLogout() {
     clearAdminToken();
-    router.replace("/admin/login");
+    router.replace("/gp-ctrl/login");
   }
 
   const pageTitle = PAGE_TITLES[pathname] ?? "Admin";
@@ -247,32 +247,32 @@ export function AdminLayout({ children, adminName = "Admin", adminRole = "modera
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Overview</div>
-        <NavLink href="/admin/dashboard" label="Dashboard" icon="grid" pathname={pathname} />
+        <NavLink href="/gp-ctrl/dashboard" label="Dashboard" icon="grid" pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Content</div>
-        <NavLink href="/admin/suggestions" label="Suggestions" icon="clipboard" badge="pending" badgeCount={pendingCount} pathname={pathname} />
-        <NavLink href="/admin/products" label="Products" icon="package" count={sidebarCounts.products} pathname={pathname} />
-        <NavLink href="/admin/sections" label="Sections" icon="layers" count={sidebarCounts.sections} pathname={pathname} />
-        <NavLink href="/admin/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
-        <NavLink href="/admin/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
-        <NavLink href="/admin/places" label="Places" icon="map" badge="pending" badgeCount={sidebarCounts.pendingPlaces} pathname={pathname} />
-        <NavLink href="/admin/listings" label="Listings" icon="store" badge="pending" badgeCount={sidebarCounts.pendingListings} pathname={pathname} />
+        <NavLink href="/gp-ctrl/suggestions" label="Suggestions" icon="clipboard" badge="pending" badgeCount={pendingCount} pathname={pathname} />
+        <NavLink href="/gp-ctrl/products" label="Products" icon="package" count={sidebarCounts.products} pathname={pathname} />
+        <NavLink href="/gp-ctrl/sections" label="Sections" icon="layers" count={sidebarCounts.sections} pathname={pathname} />
+        <NavLink href="/gp-ctrl/categories" label="Categories" icon="tag" count={sidebarCounts.categories} pathname={pathname} />
+        <NavLink href="/gp-ctrl/areas" label="Areas" icon="map" count={sidebarCounts.areas} pathname={pathname} />
+        <NavLink href="/gp-ctrl/places" label="Places" icon="map" badge="pending" badgeCount={sidebarCounts.pendingPlaces} pathname={pathname} />
+        <NavLink href="/gp-ctrl/listings" label="Listings" icon="store" badge="pending" badgeCount={sidebarCounts.pendingListings} pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">Community</div>
-        <NavLink href="/admin/users" label="Users" icon="users" count={sidebarCounts.users} pathname={pathname} />
-        <NavLink href="/admin/flags" label="Flags" icon="bell" badge="red" badgeType="red" badgeCount={flagsCount} pathname={pathname} />
-        <NavLink href="/admin/reports" label="Reports" icon="message" count={sidebarCounts.reports} pathname={pathname} />
+        <NavLink href="/gp-ctrl/users" label="Users" icon="users" count={sidebarCounts.users} pathname={pathname} />
+        <NavLink href="/gp-ctrl/flags" label="Flags" icon="bell" badge="red" badgeType="red" badgeCount={flagsCount} pathname={pathname} />
+        <NavLink href="/gp-ctrl/reports" label="Reports" icon="message" count={sidebarCounts.reports} pathname={pathname} />
       </nav>
 
       <nav className="p-5 pt-2 pb-2 sm:p-2 sm:pt-1 sm:pb-1">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[#4E6070] px-2 mb-1.5">System</div>
-        <NavLink href="/admin/logs" label="Logs" icon="file" count={sidebarCounts.logs} pathname={pathname} />
-        <NavLink href="/admin/snapshots" label="Price Snapshots" icon="chart" count={sidebarCounts.snapshots} pathname={pathname} />
-        <NavLink href="/admin/numbers" label="Platform Numbers" icon="chart" pathname={pathname} />
+        <NavLink href="/gp-ctrl/logs" label="Logs" icon="file" count={sidebarCounts.logs} pathname={pathname} />
+        <NavLink href="/gp-ctrl/snapshots" label="Price Snapshots" icon="chart" count={sidebarCounts.snapshots} pathname={pathname} />
+        <NavLink href="/gp-ctrl/numbers" label="Platform Numbers" icon="chart" pathname={pathname} />
       </nav>
 
       <div className="mt-auto p-3 border-t border-[#243040]">
@@ -375,18 +375,18 @@ export function AdminLayout({ children, adminName = "Admin", adminRole = "modera
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <Link
-            href="/admin/dashboard"
+            href="/gp-ctrl/dashboard"
             className={`flex flex-col items-center justify-center gap-0.5 py-2 flex-1 ${
-              pathname === "/admin/dashboard" ? "text-[#6BA880]" : "text-[#4E6070]"
+              pathname === "/gp-ctrl/dashboard" ? "text-[#6BA880]" : "text-[#4E6070]"
             }`}
           >
             {iconMap.grid}
             <span className="text-[9px]">Dashboard</span>
           </Link>
           <Link
-            href="/admin/suggestions"
+            href="/gp-ctrl/suggestions"
             className={`flex flex-col items-center justify-center gap-0.5 py-2 flex-1 relative ${
-              pathname === "/admin/suggestions" ? "text-[#6BA880]" : "text-[#4E6070]"
+              pathname === "/gp-ctrl/suggestions" ? "text-[#6BA880]" : "text-[#4E6070]"
             }`}
           >
             <span className="relative">
@@ -400,9 +400,9 @@ export function AdminLayout({ children, adminName = "Admin", adminRole = "modera
             <span className="text-[9px]">Suggestions</span>
           </Link>
           <Link
-            href="/admin/flags"
+            href="/gp-ctrl/flags"
             className={`flex flex-col items-center justify-center gap-0.5 py-2 flex-1 ${
-              pathname === "/admin/flags" ? "text-[#6BA880]" : "text-[#4E6070]"
+              pathname === "/gp-ctrl/flags" ? "text-[#6BA880]" : "text-[#4E6070]"
             }`}
           >
             {iconMap.bell}

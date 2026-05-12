@@ -241,14 +241,14 @@ export async function fetchContributorMeReports(params: {
 
 // ── Admin dashboard ──
 export async function fetchAdminStats(): Promise<Record<string, unknown>> {
-  const res = await apiFetchAdmin("/api/admin/stats");
+  const res = await apiFetchAdmin("/api/gp-ctrl/stats");
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return data as Record<string, unknown>;
 }
 
 export async function fetchAdminPlatformNumbers(): Promise<Record<string, unknown>> {
-  const res = await apiFetchAdmin("/api/admin/platform-numbers");
+  const res = await apiFetchAdmin("/api/gp-ctrl/platform-numbers");
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return data as Record<string, unknown>;
@@ -270,7 +270,7 @@ export async function fetchAdminPendingProducts(limit: number, offset: number): 
   total: number;
 }> {
   const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  const res = await apiFetchAdmin(`/api/admin/products/pending?${sp.toString()}`);
+  const res = await apiFetchAdmin(`/api/gp-ctrl/products/pending?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {
@@ -293,7 +293,7 @@ export async function fetchAdminFlags(limit: number, offset: number): Promise<{
   total: number;
 }> {
   const sp = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  const res = await apiFetchAdmin(`/api/admin/flags?${sp.toString()}`);
+  const res = await apiFetchAdmin(`/api/gp-ctrl/flags?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {
@@ -329,7 +329,7 @@ export async function fetchAdminPlaces(status: string, limit: number, offset: nu
   if (search) sp.set("search", search);
   if (section) sp.set("section", section);
   if (type) sp.set("type", type);
-  const res = await apiFetchAdmin(`/api/admin/places?${sp.toString()}`);
+  const res = await apiFetchAdmin(`/api/gp-ctrl/places?${sp.toString()}`);
   const data = await res.json();
   if (!res.ok) throw { status: res.status, data };
   return {
