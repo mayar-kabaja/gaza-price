@@ -120,6 +120,187 @@ const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
   premium: { has: PREMIUM_FEATURES, missing: [] },
 };
 
+/* ── QR Card Generator (modern green branded card) ── */
+async function generateQRCard(svgEl: Element, placeName: string, isFood: boolean) {
+  // Load Arabic font
+  try {
+    const font = new FontFace(
+      "Cairo",
+      "url(https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmZQcNirfH5lkQ.woff2)"
+    );
+    const loaded = await font.load();
+    document.fonts.add(loaded);
+  } catch {}
+
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const scale = 2; // retina quality
+  const W = 540 * scale;
+  const H = 760 * scale;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(scale, scale);
+  const w = 540, h = 760;
+
+  const f = (px: number, weight: string) => `${weight} ${px}px 'Cairo', 'SF Pro Display', 'Segoe UI', sans-serif`;
+
+  // Rounded card clip
+  const cr = 28;
+  ctx.beginPath();
+  ctx.moveTo(cr, 0); ctx.lineTo(w - cr, 0);
+  ctx.quadraticCurveTo(w, 0, w, cr);
+  ctx.lineTo(w, h - cr);
+  ctx.quadraticCurveTo(w, h, w - cr, h);
+  ctx.lineTo(cr, h);
+  ctx.quadraticCurveTo(0, h, 0, h - cr);
+  ctx.lineTo(0, cr);
+  ctx.quadraticCurveTo(0, 0, cr, 0);
+  ctx.closePath();
+  ctx.clip();
+
+  // Background gradient — rich dark green
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "#1B3D2A");
+  grad.addColorStop(0.5, "#234A33");
+  grad.addColorStop(1, "#1A3726");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle decorative circles (background texture)
+  ctx.globalAlpha = 0.04;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath(); ctx.arc(w + 20, -30, 180, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-40, h + 10, 140, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Thin top accent line
+  const accent = ctx.createLinearGradient(60, 0, w - 60, 0);
+  accent.addColorStop(0, "rgba(255,255,255,0)");
+  accent.addColorStop(0.5, "rgba(255,255,255,0.15)");
+  accent.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, 44); ctx.lineTo(w - 60, 44); ctx.stroke();
+
+  // ── Header text ──
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = f(42, "700");
+  ctx.fillText(isFood ? "شوف المنيو واطلب" : "تصفّح واطلب", w / 2, 100);
+
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = f(18, "400");
+
+  // ── QR code area ──
+  const qrSize = 220;
+  const qrPad = 24;
+  const boxW = qrSize + qrPad * 2;
+  const boxH = qrSize + qrPad * 2;
+  const boxX = (w - boxW) / 2;
+  const boxY = 175;
+  const boxR = 20;
+
+  // White rounded rect behind QR
+  ctx.fillStyle = "#FFFFFF";
+  ctx.beginPath();
+  ctx.moveTo(boxX + boxR, boxY);
+  ctx.lineTo(boxX + boxW - boxR, boxY);
+  ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + boxR);
+  ctx.lineTo(boxX + boxW, boxY + boxH - boxR);
+  ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - boxR, boxY + boxH);
+  ctx.lineTo(boxX + boxR, boxY + boxH);
+  ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - boxR);
+  ctx.lineTo(boxX, boxY + boxR);
+  ctx.quadraticCurveTo(boxX, boxY, boxX + boxR, boxY);
+  ctx.closePath();
+  ctx.shadowColor = "rgba(0,0,0,0.25)";
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 8;
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Corner brackets (decorative, subtle green)
+  ctx.strokeStyle = "rgba(74,124,89,0.35)";
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  const bLen = 28;
+  const bGap = 10;
+  const bx1 = boxX - bGap, by1 = boxY - bGap;
+  const bx2 = boxX + boxW + bGap, by2 = boxY + boxH + bGap;
+  // TL
+  ctx.beginPath(); ctx.moveTo(bx1, by1 + bLen); ctx.lineTo(bx1, by1); ctx.lineTo(bx1 + bLen, by1); ctx.stroke();
+  // TR
+  ctx.beginPath(); ctx.moveTo(bx2 - bLen, by1); ctx.lineTo(bx2, by1); ctx.lineTo(bx2, by1 + bLen); ctx.stroke();
+  // BL
+  ctx.beginPath(); ctx.moveTo(bx1, by2 - bLen); ctx.lineTo(bx1, by2); ctx.lineTo(bx1 + bLen, by2); ctx.stroke();
+  // BR
+  ctx.beginPath(); ctx.moveTo(bx2 - bLen, by2); ctx.lineTo(bx2, by2); ctx.lineTo(bx2, by2 - bLen); ctx.stroke();
+
+  // ── "SCAN" instruction ──
+  const instrY = boxY + boxH + bGap + 45;
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.textAlign = "center";
+  ctx.font = f(16, "500");
+  ctx.fillText(isFood ? "شوف المنيو واطلب أونلاين" : "تصفّح المنتجات واطلب الآن", w / 2, instrY);
+
+  // Thin divider line
+  const divY = instrY + 28;
+  const divGrad = ctx.createLinearGradient(w * 0.25, 0, w * 0.75, 0);
+  divGrad.addColorStop(0, "rgba(255,255,255,0)");
+  divGrad.addColorStop(0.5, "rgba(255,255,255,0.12)");
+  divGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.strokeStyle = divGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(w * 0.25, divY); ctx.lineTo(w * 0.75, divY); ctx.stroke();
+
+  // ── Place name — centered below divider ──
+  const nameY = divY + 40;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "center";
+  ctx.font = f(24, "700");
+  ctx.fillText(placeName, w / 2, nameY);
+
+  // Section label
+  ctx.fillStyle = "rgba(255,255,255,0.4)";
+  ctx.font = f(14, "400");
+  ctx.fillText(isFood ? "مطعم" : "متجر", w / 2, nameY + 28);
+
+  // ── Bottom branding ──
+  // Thin line above footer
+  const footDivY = h - 70;
+  const footGrad = ctx.createLinearGradient(40, 0, w - 40, 0);
+  footGrad.addColorStop(0, "rgba(255,255,255,0)");
+  footGrad.addColorStop(0.5, "rgba(255,255,255,0.08)");
+  footGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.strokeStyle = footGrad;
+  ctx.beginPath(); ctx.moveTo(40, footDivY); ctx.lineTo(w - 40, footDivY); ctx.stroke();
+
+  // Brand name centered
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.textAlign = "center";
+  ctx.font = f(16, "600");
+  ctx.fillText("غزة بريس", w / 2, h - 38);
+
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.font = f(11, "400");
+  ctx.fillText("gazaprice.com", w / 2, h - 18);
+
+  // ── Draw QR code ──
+  const qrImg = new Image();
+  qrImg.onload = () => {
+    ctx.drawImage(qrImg, boxX + qrPad, boxY + qrPad, qrSize, qrSize);
+    const link = document.createElement("a");
+    link.download = `qr-${placeName}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+  qrImg.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+}
+
 /* ── Menu QR Card ── */
 function MenuQRCard({ placeId, placeName, plan, section, onUpgrade }: { placeId: string; placeName: string; plan?: string; section?: string; onUpgrade?: () => void }) {
   const isFood = section === "food";
@@ -140,24 +321,7 @@ function MenuQRCard({ placeId, placeName, plan, section, onUpgrade }: { placeId:
   const downloadQR = () => {
     const svg = document.getElementById("place-qr-svg");
     if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const size = 512;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const img = new Image();
-    img.onload = () => {
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-      const link = document.createElement("a");
-      link.download = `qr-${placeName}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    generateQRCard(svg, placeName, isFood);
   };
 
   /* ── Free plan: locked state ── */
@@ -1459,14 +1623,7 @@ function OwnerDashboardPage() {
                       onClick={() => {
                         const svg = document.getElementById("place-qr-mobile-hero");
                         if (!svg) return;
-                        const svgData = new XMLSerializer().serializeToString(svg);
-                        const canvas = document.createElement("canvas");
-                        canvas.width = 512; canvas.height = 512;
-                        const ctx = canvas.getContext("2d");
-                        if (!ctx) return;
-                        const img = new Image();
-                        img.onload = () => { ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const a = document.createElement("a"); a.download = `qr-${place.name}.png`; a.href = canvas.toDataURL("image/png"); a.click(); };
-                        img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                        generateQRCard(svg, place.name, place.section === "food");
                       }}
                       className="flex items-center justify-center gap-1.5 border border-[var(--d-green)]/30 bg-[var(--d-green-bg)] text-[var(--d-green)] text-[12px] rounded-xl px-3 py-2 hover:opacity-80 transition-opacity"
                     >
@@ -2265,14 +2422,7 @@ function OwnerDashboardPage() {
                           onClick={() => {
                             const svg = document.getElementById("place-qr-hero");
                             if (!svg) return;
-                            const svgData = new XMLSerializer().serializeToString(svg);
-                            const canvas = document.createElement("canvas");
-                            canvas.width = 512; canvas.height = 512;
-                            const ctx = canvas.getContext("2d");
-                            if (!ctx) return;
-                            const img = new Image();
-                            img.onload = () => { ctx.fillStyle = "white"; ctx.fillRect(0, 0, 512, 512); ctx.drawImage(img, 0, 0, 512, 512); const a = document.createElement("a"); a.download = `qr-${place.name}.png`; a.href = canvas.toDataURL("image/png"); a.click(); };
-                            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                            generateQRCard(svg, place.name, place.section === "food");
                           }}
                           className="w-8 h-8 rounded-lg bg-[var(--d-green)] text-white flex items-center justify-center hover:opacity-90 transition-opacity"
                           title="تحميل QR"
