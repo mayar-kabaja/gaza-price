@@ -45,6 +45,13 @@
   --details-bg: #F5FAF6;
   --details-border: #D8EADC;
 
+  --ws-green-bg: #E8F5EE;
+  --ws-blue-bg: #EFF6FF;
+  --ws-amber-bg: #FFFBEB;
+  --ws-green-stroke: #1E4D2B;
+  --ws-blue-stroke: #3B82F6;
+  --ws-amber-stroke: #F59E0B;
+
   --font-body: var(--font-noto-arabic), "Segoe UI", Tahoma, sans-serif;
   --font-display: var(--font-tajawal), "Segoe UI", Tahoma, sans-serif;
 }
@@ -62,6 +69,13 @@
 
   --details-bg: #152018;
   --details-border: #2D5C3C;
+
+  --ws-green-bg: #142a1c;
+  --ws-blue-bg: #121e30;
+  --ws-amber-bg: #2a2010;
+  --ws-green-stroke: #6ee7a0;
+  --ws-blue-stroke: #60a5fa;
+  --ws-amber-stroke: #fbbf24;
 }
 
 /* Tailwind v4: @theme generates --color-* custom properties */

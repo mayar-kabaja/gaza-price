@@ -159,7 +159,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
         </div>
         <h3 className="text-[16px] font-semibold text-ink mb-1">تم إلغاء الطلب</h3>
         <p className="text-[13px] text-mist mb-5">طلبك رقم #{placedOrder.order_number} تم إلغاؤه</p>
-        <button onClick={onClear} className="w-full h-11 rounded-xl bg-[#f5f5f5] text-mist text-[13px] font-medium">
+        <button onClick={onClear} className="w-full h-11 rounded-xl bg-fog text-mist text-[13px] font-medium">
           العودة للرئيسية
         </button>
       </div>
@@ -171,8 +171,8 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
     const waNum = placeWhatsapp?.replace(/[^0-9]/g, "") || "";
     return (
       <div className="px-5 py-8 text-center">
-        <div className="w-14 h-14 rounded-full bg-[#EAF3DE] flex items-center justify-center mx-auto mb-4">
-          <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#3B6D11]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <div className="w-14 h-14 rounded-full bg-olive-pale flex items-center justify-center mx-auto mb-4">
+          <svg viewBox="0 0 24 24" className="w-6 h-6 text-olive" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <h3 className="text-[16px] font-semibold text-ink mb-1">تم إرسال طلبك!</h3>
         <p className="text-[13px] text-mist leading-relaxed mb-5">
@@ -180,14 +180,14 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
         </p>
 
         {dineIn && tableNumber.trim() ? (
-          <div className="bg-[#EAF3DE] rounded-xl px-4 py-3 flex items-center justify-between mb-4">
-            <span className="text-[13px] text-[#3B6D11]">رقم الطاولة</span>
-            <span className="text-[18px] font-semibold text-[#3B6D11]">{tableNumber.trim()}</span>
+          <div className="bg-olive-pale rounded-xl px-4 py-3 flex items-center justify-between mb-4">
+            <span className="text-[13px] text-olive">رقم الطاولة</span>
+            <span className="text-[18px] font-semibold text-olive">{tableNumber.trim()}</span>
           </div>
         ) : (
-          <div className="bg-[#EAF3DE] rounded-xl px-4 py-3 flex items-center justify-between mb-4">
-            <span className="text-[13px] text-[#3B6D11]">رقم الطلب</span>
-            <span className="text-[18px] font-semibold text-[#3B6D11]">#{placedOrder.order_number}</span>
+          <div className="bg-olive-pale rounded-xl px-4 py-3 flex items-center justify-between mb-4">
+            <span className="text-[13px] text-olive">رقم الطلب</span>
+            <span className="text-[18px] font-semibold text-olive">#{placedOrder.order_number}</span>
           </div>
         )}
 
@@ -217,7 +217,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
 
         {error && <p className="text-[12px] text-red-500 mb-2">{error}</p>}
 
-        <button onClick={onClear} className="w-full h-11 rounded-xl bg-[#f5f5f5] text-mist text-[13px] font-medium">
+        <button onClick={onClear} className="w-full h-11 rounded-xl bg-fog text-mist text-[13px] font-medium">
           العودة للرئيسية
         </button>
       </div>
@@ -228,7 +228,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
   if (items.length === 0) {
     return (
       <div className="px-5 py-12 text-center">
-        <div className="w-14 h-14 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-3">
+        <div className="w-14 h-14 rounded-full bg-fog flex items-center justify-center mx-auto mb-3">
           <svg viewBox="0 0 24 24" className="w-6 h-6 text-mist" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
           </svg>
@@ -249,10 +249,10 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
               <div className="text-[14px] font-medium text-ink mb-0.5 truncate">{stripEmojis(item.name)}</div>
               <div className="text-[13px] text-mist">{item.price.toFixed(2)} ₪ / وحدة</div>
             </div>
-            <div className="flex items-center gap-1 bg-white rounded-full p-1 border border-border/50 flex-shrink-0">
+            <div className="flex items-center gap-1 bg-surface rounded-full p-1 border border-border/50 flex-shrink-0">
               <button
                 onClick={() => onUpdateQty(item.menu_item_id, -1)}
-                className="w-[26px] h-[26px] rounded-full bg-[#f5f5f5] flex items-center justify-center text-mist"
+                className="w-[26px] h-[26px] rounded-full bg-fog flex items-center justify-center text-mist"
               >
                 <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
@@ -314,7 +314,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
           <div className="h-px bg-border/50 my-2.5" />
           <div className="flex justify-between items-baseline">
             <span className="text-[14px] font-medium text-ink">المجموع الكلي</span>
-            <span className="text-[18px] font-medium text-[#3B6D11]">{total.toFixed(2)} ₪</span>
+            <span className="text-[18px] font-medium text-olive">{total.toFixed(2)} ₪</span>
           </div>
         </div>
 
@@ -325,7 +325,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
             onClick={() => { setDineIn(!dineIn); if (dineIn) setTableNumber(""); }}
             className="flex items-center gap-2.5 w-full"
           >
-            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${dineIn ? 'bg-[#3B6D11] border-[#3B6D11]' : 'border-border'}`}>
+            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${dineIn ? 'bg-olive border-olive' : 'border-border'}`}>
               {dineIn && (
                 <svg viewBox="0 0 24 24" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               )}

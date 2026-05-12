@@ -32,12 +32,12 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 const SERVICE_COLORS: Record<string, { bg: string; stroke: string }> = {
-  wifi: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  electricity: { bg: '#FFFBEB', stroke: '#F59E0B' },
-  printing: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  screens: { bg: '#EFF6FF', stroke: '#3B82F6' },
-  private_rooms: { bg: '#FEF0EB', stroke: '#E05C35' },
-  drinks: { bg: '#E8F5EE', stroke: '#1E4D2B' },
+  wifi: { bg: 'var(--ws-blue-bg)', stroke: 'var(--ws-blue-stroke)' },
+  electricity: { bg: 'var(--ws-amber-bg)', stroke: 'var(--ws-amber-stroke)' },
+  printing: { bg: 'var(--ws-blue-bg)', stroke: 'var(--ws-blue-stroke)' },
+  screens: { bg: 'var(--ws-blue-bg)', stroke: 'var(--ws-blue-stroke)' },
+  private_rooms: { bg: 'var(--ws-amber-bg)', stroke: 'var(--ws-amber-stroke)' },
+  drinks: { bg: 'var(--ws-green-bg)', stroke: 'var(--ws-green-stroke)' },
 };
 
 
@@ -178,9 +178,9 @@ function WorkspaceContent({ place }: { place: Place }) {
   ].filter(r => r.value);
 
   const iconColors: Record<string, { bg: string; stroke: string }> = {
-    green: { bg: '#E8F5EE', stroke: '#1E4D2B' },
-    blue: { bg: '#EFF6FF', stroke: '#3B82F6' },
-    amber: { bg: '#FFFBEB', stroke: '#F59E0B' },
+    green: { bg: 'var(--ws-green-bg)', stroke: 'var(--ws-green-stroke)' },
+    blue: { bg: 'var(--ws-blue-bg)', stroke: 'var(--ws-blue-stroke)' },
+    amber: { bg: 'var(--ws-amber-bg)', stroke: 'var(--ws-amber-stroke)' },
   };
 
   return (
@@ -207,8 +207,8 @@ function WorkspaceContent({ place }: { place: Place }) {
         {/* Hours */}
         {wd?.opens_at && wd?.closes_at && (
           <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#FFFBEB' }}>
-              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#F59E0B" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: 'var(--ws-amber-bg)' }}>
+              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="var(--ws-amber-stroke)" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
             </div>
             <div>
               <div className="text-[11px] text-mist">أوقات العمل</div>
@@ -220,8 +220,8 @@ function WorkspaceContent({ place }: { place: Place }) {
         {/* Seats */}
         {wd?.total_seats ? (
           <div className="flex items-center gap-3 px-4 py-3.5 border-t border-border">
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: '#EFF6FF' }}>
-              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="#3B82F6" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
+            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center flex-shrink-0" style={{ background: 'var(--ws-blue-bg)' }}>
+              <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="var(--ws-blue-stroke)" strokeWidth={2} strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>
             </div>
             <div>
               <div className="text-[11px] text-mist">الطاقة الاستيعابية</div>
@@ -240,7 +240,7 @@ function WorkspaceContent({ place }: { place: Place }) {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
             {services.map(s => {
-              const colors = SERVICE_COLORS[s.service] || { bg: '#E8F5EE', stroke: '#1E4D2B' };
+              const colors = SERVICE_COLORS[s.service] || { bg: 'var(--ws-green-bg)', stroke: 'var(--ws-green-stroke)' };
               return (
                 <div
                   key={s.id}
@@ -460,7 +460,7 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
                   )}
                   {canOrder && inCart && onUpdateQty && (
                     <div className="flex items-center gap-0.5">
-                      <button onClick={() => onUpdateQty(item.id!, -1)} className="w-5 h-5 rounded-full bg-[#FEF0EB] text-[#E05C35] flex items-center justify-center text-[12px] leading-none">−</button>
+                      <button onClick={() => onUpdateQty(item.id!, -1)} className="w-5 h-5 rounded-full bg-red-50 text-[#E05C35] flex items-center justify-center text-[12px] leading-none">−</button>
                       <span className="font-display font-extrabold text-[12px] text-ink min-w-[12px] text-center">{inCart.quantity}</span>
                       <button onClick={() => onUpdateQty(item.id!, 1)} className="w-5 h-5 rounded-full bg-olive-pale text-olive flex items-center justify-center text-[12px] leading-none">+</button>
                     </div>
@@ -692,7 +692,7 @@ export default function PlaceDetailPage() {
   if (loading) {
     if (isDesktop) {
       return (
-        <div className="h-full overflow-y-auto bg-white" dir="rtl">
+        <div className="h-full overflow-y-auto bg-surface" dir="rtl">
           <div className="p-6 animate-pulse">
             {/* Place info row */}
             <div className="flex items-center gap-3 mb-5">
@@ -785,7 +785,7 @@ export default function PlaceDetailPage() {
   // ── Desktop layout ──
   if (isDesktop) {
     return (
-      <div className="h-full overflow-y-auto bg-white" dir="rtl">
+      <div className="h-full overflow-y-auto bg-surface" dir="rtl">
         <div className="p-6">
           {/* Place info row */}
           <div className="flex items-center gap-3 mb-5">
