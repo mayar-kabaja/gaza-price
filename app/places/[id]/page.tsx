@@ -405,7 +405,7 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
                 <div className="flex items-center gap-1 flex-shrink-0 mr-1">
                   {item.id && place.whatsapp && (
                     <button onClick={() => openFlag(item)} className="text-mist/40 hover:text-mist transition-colors">
-                      <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     </button>
                   )}
                   {canOrder && !inCart && (
@@ -455,7 +455,7 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
                 <div className="flex items-center gap-2 flex-shrink-0 mr-1">
                   {item.id && place.whatsapp && (
                     <button onClick={() => openFlag(item)} className="text-mist/40 hover:text-mist transition-colors">
-                      <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     </button>
                   )}
                   {item.available && Number(item.price) > 0 ? (
@@ -478,7 +478,7 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
       {flagItem && (
         <>
           <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setFlagItem(null)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)]" dir="rtl">
+          <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_-4px_24px_rgba(0,0,0,0.2)] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[420px] lg:max-w-[90vw]" dir="rtl">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="font-display font-bold text-[14px] text-ink">ملاحظة للمحل</h3>
