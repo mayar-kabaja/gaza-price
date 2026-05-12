@@ -8,6 +8,7 @@ import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
+import { MyOrdersSheet } from '@/components/places/MyOrdersSheet';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
 import { VerifiedBadge } from '@/components/places/VerifiedBadge';
@@ -533,6 +534,7 @@ export default function PlaceDetailPage() {
   const [showAuthPopup, setShowAuthPopup] = useState(false);
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [showCart, setShowCart] = useState(false);
+  const [showMyOrders, setShowMyOrders] = useState(false);
 
   const addToCart = useCallback((item: MenuItem) => {
     if (!item.id) return;
@@ -755,8 +757,15 @@ export default function PlaceDetailPage() {
             </div>
           </div>
 
-          {/* Section title */}
-          <h2 className="font-display font-bold text-sm text-ink mb-3">{sectionTitle}</h2>
+          {/* Section title + My Orders */}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display font-bold text-sm text-ink">{sectionTitle}</h2>
+            {ordersEnabled && contributor?.phone_verified && (
+              <button onClick={() => setShowMyOrders(true)} className="text-[12px] font-semibold text-olive hover:underline">
+                طلباتي
+              </button>
+            )}
+          </div>
 
           {/* Content */}
           {place.section === 'workspace' ? (
@@ -775,7 +784,12 @@ export default function PlaceDetailPage() {
                   <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[480px] lg:max-w-[90vw]" dir="rtl">
                     <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
                       <h3 className="font-display font-bold text-[14px] text-ink">سلة الطلب</h3>
-                      <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                      <div className="flex items-center gap-3">
+                        {contributor?.phone_verified && (
+                          <button onClick={() => { setShowCart(false); setShowMyOrders(true); }} className="text-[12px] font-semibold text-olive hover:underline">طلباتي</button>
+                        )}
+                        <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                      </div>
                     </div>
                     <OrderSheet
                       placeId={id}
@@ -803,6 +817,7 @@ export default function PlaceDetailPage() {
             mode="login"
             reason="سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك وتأكيد طلبك"
           />
+          {showMyOrders && <MyOrdersSheet onClose={() => setShowMyOrders(false)} />}
         </div>
       </div>
     );
@@ -823,7 +838,12 @@ export default function PlaceDetailPage() {
           >
             {'›'}
           </Link>
-          <span className="font-display font-bold text-[13px] text-white">{sectionTitle}</span>
+          <span className="font-display font-bold text-[13px] text-white flex-1">{sectionTitle}</span>
+          {ordersEnabled && contributor?.phone_verified && (
+            <button onClick={() => setShowMyOrders(true)} className="text-[12px] font-semibold text-white/70 hover:text-white">
+              طلباتي
+            </button>
+          )}
         </div>
 
         {/* Place info */}
@@ -885,7 +905,12 @@ export default function PlaceDetailPage() {
               <div className="fixed bottom-0 left-0 right-0 z-[70] bg-surface rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-[0_-4px_24px_rgba(0,0,0,0.2)] lg:top-1/2 lg:left-1/2 lg:right-auto lg:bottom-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-h-[80vh] lg:w-[480px] lg:max-w-[90vw]" dir="rtl">
                 <div className="px-4 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
                   <h3 className="font-display font-bold text-[14px] text-ink">سلة الطلب</h3>
-                  <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                  <div className="flex items-center gap-3">
+                    {contributor?.phone_verified && (
+                      <button onClick={() => { setShowCart(false); setShowMyOrders(true); }} className="text-[12px] font-semibold text-olive hover:underline">طلباتي</button>
+                    )}
+                    <button onClick={() => setShowCart(false)} className="text-mist hover:text-ink p-1 text-lg leading-none">×</button>
+                  </div>
                 </div>
                 <OrderSheet
                   placeId={id}
@@ -911,6 +936,7 @@ export default function PlaceDetailPage() {
         mode="login"
         reason="سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك وتأكيد طلبك"
       />
+      {showMyOrders && <MyOrdersSheet onClose={() => setShowMyOrders(false)} />}
     </div>
   );
 }
