@@ -47,6 +47,8 @@ export function PhoneAuthPopup({
   const [blocked, setBlocked] = useState(false);
   const [blockMessage, setBlockMessage] = useState("");
   const [deviceId, setDeviceId] = useState("");
+  const [retryCountdown, setRetryCountdown] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -70,12 +72,15 @@ export function PhoneAuthPopup({
       setCanResend(false);
       setBlocked(false);
       setBlockMessage("");
+      setRetryCountdown(0);
+      if (retryTimerRef.current) clearInterval(retryTimerRef.current);
       setTimeout(() => phoneInputRef.current?.focus(), 300);
       // Load device fingerprint
       getDeviceId().then(setDeviceId);
     }
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
+      if (retryTimerRef.current) clearInterval(retryTimerRef.current);
     };
   }, [open]);
 
@@ -95,6 +100,32 @@ export function PhoneAuthPopup({
       });
     }, 1000);
   }, []);
+
+  // Start a retry countdown (auto-clears error when done)
+  const startRetryCountdown = useCallback((seconds: number) => {
+    if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+    setRetryCountdown(seconds);
+    retryTimerRef.current = setInterval(() => {
+      setRetryCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(retryTimerRef.current!);
+          retryTimerRef.current = null;
+          setError("");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Parse minutes from Arabic error message like "انتظر 5 دقيقة"
+  function parseWaitSeconds(msg: string): number {
+    const minMatch = msg.match(/(\d+)\s*دقيق/);
+    if (minMatch) return parseInt(minMatch[1], 10) * 60;
+    const secMatch = msg.match(/(\d+)\s*ثاني/);
+    if (secMatch) return parseInt(secMatch[1], 10);
+    return 10; // default 10s
+  }
 
   // Format phone for display
   const formattedPhone = phone
@@ -136,8 +167,10 @@ export function PhoneAuthPopup({
           setBlocked(true);
           setBlockMessage(data.message || "تم حظرك مؤقتاً — حاول لاحقاً");
         } else {
-          // Regular rate limit (e.g. too many OTPs to same number)
-          setError(data.message || "انتظر قليلاً قبل المحاولة مرة أخرى");
+          // Regular rate limit — show countdown
+          const msg = data.message || "انتظر قليلاً قبل المحاولة مرة أخرى";
+          setError(msg);
+          startRetryCountdown(parseWaitSeconds(msg));
         }
         setSending(false);
         return;
@@ -145,6 +178,8 @@ export function PhoneAuthPopup({
 
       if (!res.ok) {
         setError(data.message || "فشل إرسال الرمز");
+        // Auto-clear generic errors after 5 seconds
+        setTimeout(() => setError((prev) => prev === (data.message || "فشل إرسال الرمز") ? "" : prev), 5000);
         setSending(false);
         return;
       }
@@ -154,6 +189,8 @@ export function PhoneAuthPopup({
       setTimeout(() => otpRefs.current[0]?.focus(), 300);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
+      // Auto-clear network errors after 5 seconds
+      setTimeout(() => setError((prev) => prev === "تعذر الاتصال — تحقق من الإنترنت" ? "" : prev), 5000);
     } finally {
       setSending(false);
     }
@@ -553,16 +590,23 @@ export function PhoneAuthPopup({
 
               {/* Error */}
               {error && (
-                <p className="text-center text-xs text-[#C0622A] font-semibold mb-3">
-                  {error}
-                </p>
+                <div className="text-center mb-3">
+                  <p className="text-xs text-[#C0622A] font-semibold">
+                    {error}
+                  </p>
+                  {retryCountdown > 0 && (
+                    <p className="text-[11px] text-mist mt-1">
+                      يمكنك المحاولة بعد <strong className="text-ink">{Math.floor(retryCountdown / 60)}:{(retryCountdown % 60).toString().padStart(2, "0")}</strong>
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Send button */}
               <button
                 type="button"
                 onClick={handleSendOtp}
-                disabled={sending}
+                disabled={sending || retryCountdown > 0}
                 className={`
                   w-full py-[15px] rounded-[14px] font-display font-bold text-[15px] text-white
                   flex items-center justify-center gap-2
