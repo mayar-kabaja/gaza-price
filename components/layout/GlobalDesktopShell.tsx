@@ -25,6 +25,10 @@ const DesktopNewListingModal = dynamic(
   () => import("@/components/desktop/DesktopNewListingModal").then(m => ({ default: m.DesktopNewListingModal })),
   { ssr: false }
 );
+const MyOrdersSheet = dynamic(
+  () => import("@/components/places/MyOrdersSheet").then(m => ({ default: m.MyOrdersSheet })),
+  { ssr: false }
+);
 const DesktopAddChooser = dynamic(
   () => import("@/components/desktop/DesktopAddChooser").then(m => ({ default: m.DesktopAddChooser })),
   { ssr: false }
@@ -60,6 +64,18 @@ export function useGlobalSidebar(content: React.ReactNode) {
 function SidebarSlot() {
   const { content } = useSyncExternalStore(_sidebarSubscribe, _getSidebarSnapshot, _getServerSnapshot);
   return <>{content}</>;
+}
+
+// ── Global cart store (external store — same pattern as sidebar) ──
+let _cartSnapshot = { count: 0, onOpen: null as (() => void) | null };
+const _cartListeners = new Set<() => void>();
+function _cartSubscribe(cb: () => void) { _cartListeners.add(cb); return () => _cartListeners.delete(cb); }
+function _getCartSnapshot() { return _cartSnapshot; }
+
+export function setGlobalCartInfo(count: number, onOpen: (() => void) | null) {
+  if (_cartSnapshot.count === count && _cartSnapshot.onOpen === onOpen) return;
+  _cartSnapshot = { count, onOpen };
+  _cartListeners.forEach(l => l());
 }
 
 // ── Global modal/action context ──
@@ -151,6 +167,8 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
   const [submitOpen, setSubmitOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [newListingOpen, setNewListingOpen] = useState(false);
+  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
+  const cartInfo = useSyncExternalStore(_cartSubscribe, _getCartSnapshot, _getCartSnapshot);
 
   const skipShell = pathname.startsWith("/gp-ctrl") || pathname.startsWith("/places/dashboard") || pathname.match(/^\/places\/[^/]+\/menu$/);
 
@@ -181,6 +199,9 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
               onSubmitClick={() => setSubmitOpen(true)}
               onSuggestClick={() => setSuggestOpen(true)}
               onNewListingClick={() => setNewListingOpen(true)}
+              onMyOrdersClick={() => setMyOrdersOpen(true)}
+              onCartClick={cartInfo.onOpen || undefined}
+              cartCount={cartInfo.count}
               onProfileClick={() => { window.location.href = "/account"; }}
               isProfileActive={false}
             />
@@ -278,6 +299,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
             <DesktopSubmitModal open={submitOpen} onClose={() => setSubmitOpen(false)} />
             <DesktopSuggestModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
             <DesktopNewListingModal open={newListingOpen} onClose={() => setNewListingOpen(false)} />
+            {myOrdersOpen && <MyOrdersSheet onClose={() => setMyOrdersOpen(false)} />}
           </>
         )}
       </div>

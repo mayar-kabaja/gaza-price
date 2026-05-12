@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api/fetch';
 import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
-import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
+import { useGlobalSidebar, setGlobalCartInfo } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { MyOrdersSheet } from '@/components/places/MyOrdersSheet';
 import { useSessionContext } from '@/contexts/SessionContext';
@@ -590,6 +590,14 @@ export default function PlaceDetailPage() {
     if (!id || error) return;
     fetch(`/api/places/${id}/visit`, { method: "POST" }).catch(() => {});
   }, [id, error]);
+
+  // Sync cart to global header
+  const cartCountForHeader = Array.from(cart.values()).reduce((s, i) => s + i.quantity, 0);
+  useEffect(() => {
+    const openCart = () => setShowCart(true);
+    setGlobalCartInfo(cartCountForHeader, openCart);
+    return () => setGlobalCartInfo(0, null);
+  }, [cartCountForHeader]);
 
   const isBoth = !loading && !error && place ? place.type === 'both' : false;
   const emoji = place ? (isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'))) : '🏪';
