@@ -80,7 +80,7 @@ export function AppHeader({ hideActions = false, hideSearch = false, showOrders 
     <div className="bg-olive px-4 pt-3 pb-3 flex-shrink-0 z-30">
 
       {/* Top row */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-2 mb-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
           <img src="/logo.svg" alt="" className="w-7 h-7 rounded-full" />
@@ -108,14 +108,21 @@ export function AppHeader({ hideActions = false, hideSearch = false, showOrders 
           </button>
         )}
 
-        {/* Orders — only on places page */}
-        {showOrders && (
-          <Link
-            href="/orders"
-            className="bg-white/15 hover:bg-white/25 transition-colors rounded-full px-3 py-1.5 text-[12px] font-semibold text-white cursor-pointer flex-shrink-0"
-          >
-            طلباتي
-          </Link>
+        {/* Cart & Orders — plain text to save space */}
+        {showOrders && contributor?.phone_verified && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('open-cart'))}
+              className="text-[11px] font-semibold text-white/70 hover:text-white"
+            >
+              السلة
+            </button>
+            <div className="w-px h-3 bg-white/20" />
+            <Link href="/orders" className="text-[11px] font-semibold text-white/70 hover:text-white">
+              طلباتي
+            </Link>
+          </div>
         )}
 
         {/* Login / profile */}
@@ -146,7 +153,7 @@ export function AppHeader({ hideActions = false, hideSearch = false, showOrders 
         <button
           type="button"
           onClick={toggleTheme}
-          className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors cursor-pointer flex-shrink-0"
+          className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/80 hover:bg-white/20 transition-colors cursor-pointer flex-shrink-0"
           aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
         >
           {theme === "dark" ? (

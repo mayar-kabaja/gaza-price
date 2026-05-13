@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { createContext, useContext, useState, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -23,10 +23,6 @@ const DesktopSuggestModal = dynamic(
 );
 const DesktopNewListingModal = dynamic(
   () => import("@/components/desktop/DesktopNewListingModal").then(m => ({ default: m.DesktopNewListingModal })),
-  { ssr: false }
-);
-const MyOrdersSheet = dynamic(
-  () => import("@/components/places/MyOrdersSheet").then(m => ({ default: m.MyOrdersSheet })),
   { ssr: false }
 );
 const DesktopAddChooser = dynamic(
@@ -64,18 +60,6 @@ export function useGlobalSidebar(content: React.ReactNode) {
 function SidebarSlot() {
   const { content } = useSyncExternalStore(_sidebarSubscribe, _getSidebarSnapshot, _getServerSnapshot);
   return <>{content}</>;
-}
-
-// ── Global cart store (external store — same pattern as sidebar) ──
-let _cartSnapshot = { count: 0, onOpen: null as (() => void) | null };
-const _cartListeners = new Set<() => void>();
-function _cartSubscribe(cb: () => void) { _cartListeners.add(cb); return () => _cartListeners.delete(cb); }
-function _getCartSnapshot() { return _cartSnapshot; }
-
-export function setGlobalCartInfo(count: number, onOpen: (() => void) | null) {
-  if (_cartSnapshot.count === count && _cartSnapshot.onOpen === onOpen) return;
-  _cartSnapshot = { count, onOpen };
-  _cartListeners.forEach(l => l());
 }
 
 // ── Global modal/action context ──
@@ -167,8 +151,22 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
   const [submitOpen, setSubmitOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [newListingOpen, setNewListingOpen] = useState(false);
-  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
-  const cartInfo = useSyncExternalStore(_cartSubscribe, _getCartSnapshot, _getCartSnapshot);
+  const [emptyCartOpen, setEmptyCartOpen] = useState(false);
+
+  // Listen for global "open-cart" — only show empty cart fallback if NOT on a place page
+  // (place pages have their own listener with real cart data)
+  useEffect(() => {
+    const handler = () => {
+      const onPlacePage = /^\/places\/[^/]+$/.test(window.location.pathname)
+        && !window.location.pathname.endsWith('/register')
+        && !window.location.pathname.endsWith('/dashboard');
+      if (!onPlacePage) {
+        setEmptyCartOpen(true);
+      }
+    };
+    window.addEventListener('open-cart', handler);
+    return () => window.removeEventListener('open-cart', handler);
+  }, []);
 
   const skipShell = pathname.startsWith("/gp-ctrl") || pathname.startsWith("/places/dashboard") || pathname.match(/^\/places\/[^/]+\/menu$/);
 
@@ -199,9 +197,6 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
               onSubmitClick={() => setSubmitOpen(true)}
               onSuggestClick={() => setSuggestOpen(true)}
               onNewListingClick={() => setNewListingOpen(true)}
-              onMyOrdersClick={() => setMyOrdersOpen(true)}
-              onCartClick={cartInfo.onOpen || undefined}
-              cartCount={cartInfo.count}
               onProfileClick={() => { window.location.href = "/account"; }}
               isProfileActive={false}
             />
@@ -299,7 +294,21 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
             <DesktopSubmitModal open={submitOpen} onClose={() => setSubmitOpen(false)} />
             <DesktopSuggestModal open={suggestOpen} onClose={() => setSuggestOpen(false)} />
             <DesktopNewListingModal open={newListingOpen} onClose={() => setNewListingOpen(false)} />
-            {myOrdersOpen && <MyOrdersSheet onClose={() => setMyOrdersOpen(false)} />}
+          </>
+        )}
+
+        {/* Global modals — work on both mobile and desktop */}
+        {emptyCartOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setEmptyCartOpen(false)} />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[61] bg-surface rounded-2xl p-6 shadow-xl text-center" style={{ width: "min(22rem, calc(100vw - 2rem))" }}>
+              <div className="text-[40px] mb-3">🛒</div>
+              <h3 className="font-display font-bold text-ink text-base mb-1">سلة الطلب فارغة</h3>
+              <p className="text-sm text-mist mb-4">ادخل على محل وأضف منتجات للسلة</p>
+              <button type="button" onClick={() => setEmptyCartOpen(false)} className="px-6 py-2 rounded-xl bg-olive text-white font-display font-bold text-sm hover:bg-olive-deep transition-colors cursor-pointer">
+                حسناً
+              </button>
+            </div>
           </>
         )}
       </div>

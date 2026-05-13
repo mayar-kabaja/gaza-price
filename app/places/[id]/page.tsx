@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api/fetch';
 import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
-import { useGlobalSidebar, setGlobalCartInfo } from '@/components/layout/GlobalDesktopShell';
+import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
 import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
 import { MyOrdersSheet } from '@/components/places/MyOrdersSheet';
 import { useSessionContext } from '@/contexts/SessionContext';
@@ -591,13 +591,14 @@ export default function PlaceDetailPage() {
     fetch(`/api/places/${id}/visit`, { method: "POST" }).catch(() => {});
   }, [id, error]);
 
-  // Sync cart to global header
-  const cartCountForHeader = Array.from(cart.values()).reduce((s, i) => s + i.quantity, 0);
+  // Listen for global header cart open event
   useEffect(() => {
-    const openCart = () => setShowCart(true);
-    setGlobalCartInfo(cartCountForHeader, openCart);
-    return () => setGlobalCartInfo(0, null);
-  }, [cartCountForHeader]);
+    const handleOpenCart = () => setShowCart(true);
+    window.addEventListener('open-cart', handleOpenCart);
+    return () => {
+      window.removeEventListener('open-cart', handleOpenCart);
+    };
+  }, []);
 
   const isBoth = !loading && !error && place ? place.type === 'both' : false;
   const emoji = place ? (isBoth ? '🍴☕' : (EMOJI_MAP[place.type] || (place.section === 'food' ? '🍽️' : place.section === 'workspace' ? '💻' : '🏪'))) : '🏪';
@@ -848,9 +849,14 @@ export default function PlaceDetailPage() {
           </Link>
           <span className="font-display font-bold text-[13px] text-white flex-1">{sectionTitle}</span>
           {ordersEnabled && contributor?.phone_verified && (
-            <button onClick={() => setShowMyOrders(true)} className="text-[12px] font-semibold text-white/70 hover:text-white">
-              طلباتي
-            </button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowCart(true)} className="text-[12px] font-semibold text-white/70 hover:text-white">
+                سلة الطلب
+              </button>
+              <button onClick={() => setShowMyOrders(true)} className="text-[12px] font-semibold text-white/70 hover:text-white">
+                طلباتي
+              </button>
+            </div>
           )}
         </div>
 

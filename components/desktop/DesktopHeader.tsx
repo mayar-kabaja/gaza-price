@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { DesktopSearchBar } from "./DesktopSearchBar";
 import type { Area, Governorate } from "@/types/app";
 import { useAreas } from "@/lib/queries/hooks";
@@ -25,13 +26,11 @@ interface DesktopHeaderProps {
   onAddClick?: () => void;
   onMarketClick?: () => void;
   onProfileClick?: () => void;
-  onMyOrdersClick?: () => void;
-  onCartClick?: () => void;
-  cartCount?: number;
   isProfileActive?: boolean;
 }
 
-export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick, onAddClick, onMarketClick, onProfileClick, onMyOrdersClick, onCartClick, cartCount, isProfileActive }: DesktopHeaderProps) {
+export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick, onAddClick, onMarketClick, onProfileClick, isProfileActive }: DesktopHeaderProps) {
+  const pathname = usePathname();
   const { area, saveArea, clearArea } = useArea();
   const { theme, toggle: toggleTheme } = useTheme();
   const { contributor, refreshContributor, logout } = useSession();
@@ -181,24 +180,22 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
           إضافة
         </button>
 
-        {onCartClick && cartCount != null && cartCount > 0 && (
-          <button
-            type="button"
-            onClick={onCartClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap cursor-pointer"
-          >
-            سلة الطلب
-            <span className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] font-extrabold">{cartCount}</span>
-          </button>
-        )}
-        {contributor?.phone_verified && onMyOrdersClick && (
-          <button
-            type="button"
-            onClick={onMyOrdersClick}
-            className="flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap cursor-pointer"
-          >
-            طلباتي
-          </button>
+        {contributor?.phone_verified && (
+          <>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('open-cart'))}
+              className="flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap cursor-pointer"
+            >
+              سلة الطلب
+            </button>
+            <Link
+              href="/orders"
+              className="flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap"
+            >
+              طلباتي
+            </Link>
+          </>
         )}
 
         <div className="w-px h-5 bg-white/12 mx-1" />

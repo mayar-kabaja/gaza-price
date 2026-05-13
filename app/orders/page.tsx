@@ -316,6 +316,27 @@ export default function OrdersPage() {
             <h1 className="font-display font-bold text-[18px] text-ink">طلباتي</h1>
           </div>
 
+          {/* Today / History toggle — mobile only */}
+          {!isDesktop && (
+            <div className="flex gap-0 bg-fog rounded-xl p-1">
+              <button
+                onClick={() => { setShowHistory(false); setHistoryPage(1); }}
+                className={`flex-1 py-2 rounded-lg font-bold text-[12px] transition-all ${
+                  !showHistory ? "bg-olive text-white shadow-sm" : "text-mist hover:text-ink"
+                }`}
+              >
+                اليوم {todayOrders.length > 0 && <span className="opacity-70">({todayOrders.length})</span>}
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className={`flex-1 py-2 rounded-lg font-bold text-[12px] transition-all ${
+                  showHistory ? "bg-olive text-white shadow-sm" : "text-mist hover:text-ink"
+                }`}
+              >
+                السجل {historyOrders.length > 0 && <span className="opacity-70">({historyOrders.length})</span>}
+              </button>
+            </div>
+          )}
 
           {/* Orders grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
