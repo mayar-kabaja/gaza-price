@@ -313,7 +313,8 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
         const res = await apiFetch(`/api/places/${place.id}/menu?no_cache=1&_t=${Date.now()}`);
         if (res.ok) {
           const data = await res.json();
-          setMenuSections(data.data || data || []);
+          const sections = (data.data || data || []) as MenuSection[];
+          setMenuSections(sections.filter((s) => s.items && s.items.length > 0));
         }
       } catch { /* menu might not exist */ }
       setLoading(false);
