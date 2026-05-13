@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useArea } from "@/hooks/useArea";
 import { useSession } from "@/hooks/useSession";
 import { useTheme } from "@/hooks/useTheme";
-import { SearchBar } from "@/components/search/SearchBar";
+import { UnifiedSearch } from "@/components/search/UnifiedSearch";
 import { TickerStrip } from "@/components/layout/TickerStrip";
 import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import type { Area } from "@/types/app";
@@ -175,7 +175,7 @@ export function AppHeader({ hideActions = false, hideSearch = false, showOrders 
       {/* Search */}
       {!hideSearch && (
         <div className="relative z-10">
-          <SearchBar hideActions={hideActions} />
+          <UnifiedSearch variant="mobile" />
         </div>
       )}
 

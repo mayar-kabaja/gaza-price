@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DesktopSearchBar } from "./DesktopSearchBar";
+import { UnifiedSearch } from "@/components/search/UnifiedSearch";
 import type { Area, Governorate } from "@/types/app";
 import { useAreas } from "@/lib/queries/hooks";
 import { useArea } from "@/hooks/useArea";
@@ -86,7 +86,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
       <div className="w-px h-7 bg-white/12 flex-shrink-0" />
 
       {/* Search */}
-      <DesktopSearchBar />
+      <UnifiedSearch variant="desktop" />
 
       {/* Area picker */}
       <div className="relative flex-shrink-0" ref={ref}>
