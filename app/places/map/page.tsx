@@ -64,7 +64,7 @@ function MapPlaceRow({ place }: { place: NearbyPlace }) {
     >
       {/* Avatar */}
       <div
-        className={`w-[46px] h-[46px] ${place.avatar_url ? 'rounded-full' : 'rounded-[13px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
+        className={`w-[46px] h-[46px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
           closed ? 'border-2 border-border' : 'border-2 border-olive'
         } ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-[22px]' : ''}`}
         style={{ background: closed ? 'var(--color-fog)' : bg }}

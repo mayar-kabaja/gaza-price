@@ -637,13 +637,16 @@ export function HomeData() {
               <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 pt-3 pb-2">
                   <span className="text-[13px] font-display font-bold text-ink">محلات قريبة منك</span>
-                  <Link href="/places" className="text-[11px] text-olive font-bold hover:underline">عرض الكل</Link>
+                  <Link href="/places" className="flex items-center gap-1 text-[11px] text-olive font-bold hover:underline">
+                    عرض الكل
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </Link>
                 </div>
-                <div className="px-3 pb-3 space-y-1">
+                <div className="px-3 pb-2">
                   {placesLoading ? (
                     [...Array(5)].map((_, i) => (
                       <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
-                        <div className="w-9 h-9 rounded-full bg-fog flex-shrink-0" />
+                        <div className="w-10 h-10 rounded-full bg-fog flex-shrink-0" />
                         <div className="flex-1 space-y-1.5">
                           <div className="h-3 w-24 bg-fog rounded" />
                           <div className="h-2.5 w-16 bg-fog rounded" />
@@ -653,45 +656,47 @@ export function HomeData() {
                   ) : homePlaces.length === 0 ? (
                     <div className="text-center py-6 text-[12px] text-mist">لا توجد محلات قريبة</div>
                   ) : (
-                    homePlaces.slice(0, 4).map((place) => {
+                    homePlaces.slice(0, 4).map((place, idx) => {
                       const sectionLabel: Record<string, string> = { food: "مطعم", cafe: "كافيه", store: "متجر", workspace: "مساحة عمل" };
                       const label = sectionLabel[(place as any).section] ?? "";
                       return (
-                        <Link
-                          key={place.id}
-                          href={`/places/${place.id}`}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-fog transition-colors"
-                        >
-                          <div className="w-9 h-9 rounded-full bg-fog flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            {place.avatar_url ? (
-                              <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
-                            ) : (
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mist">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                              </svg>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1">
-                              <span className="font-display font-medium text-[12px] text-ink truncate">{place.name}</span>
-                              <VerifiedBadge plan={place.plan} />
+                        <div key={place.id}>
+                          <Link
+                            href={`/places/${place.id}`}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-fog transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-fog border-2 border-olive/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {place.avatar_url ? (
+                                <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
+                              ) : (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-mist">
+                                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                                </svg>
+                              )}
                             </div>
-                            <div className="text-[10px] text-mist flex items-center gap-1.5">
-                              {label && <span className="text-olive font-bold">{label}</span>}
-                              {label && place.area?.name_ar && <span>·</span>}
-                              {place.area?.name_ar ?? ""}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <span className="font-display font-medium text-[12px] text-ink truncate">{place.name}</span>
+                                <VerifiedBadge plan={place.plan} />
+                              </div>
+                              <div className="text-[10px] text-mist flex items-center gap-1.5">
+                                {label && <span className="text-olive font-bold">{label}</span>}
+                                {label && place.area?.name_ar && <span>·</span>}
+                                {place.area?.name_ar ?? ""}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex-shrink-0">
-                            {place.is_open ? (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-olive">
-                                <span className="w-1.5 h-1.5 rounded-full bg-olive" />مفتوح
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold text-mist">مغلق</span>
-                            )}
-                          </div>
-                        </Link>
+                            <div className="flex-shrink-0">
+                              {place.is_open ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />مفتوح
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold text-mist bg-fog px-2 py-0.5 rounded-full">مغلق</span>
+                              )}
+                            </div>
+                          </Link>
+                          {idx < Math.min(homePlaces.length, 4) - 1 && <div className="h-px bg-border/50 mx-3" />}
+                        </div>
                       );
                     })
                   )}
@@ -702,43 +707,51 @@ export function HomeData() {
               <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 pt-3 pb-2">
                   <span className="text-[13px] font-display font-bold text-ink">السوق</span>
-                  <Link href="/market" className="text-[11px] text-olive font-bold hover:underline">عرض الكل</Link>
+                  <Link href="/market" className="flex items-center gap-1 text-[11px] text-olive font-bold hover:underline">
+                    عرض الكل
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </Link>
                 </div>
-                <div className="px-3 pb-3 space-y-1">
+                <div className="pb-1">
                   {listingsLoading ? (
                     [...Array(2)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
-                        <div className="w-12 h-12 rounded-lg bg-fog flex-shrink-0" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-3 w-24 bg-fog rounded" />
-                          <div className="h-2.5 w-16 bg-fog rounded" />
+                      <div key={i}>
+                        <div className="flex items-center gap-3 px-4 py-2.5 animate-pulse">
+                          <div className="w-10 h-10 rounded-full bg-fog flex-shrink-0" />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="h-3 w-24 bg-fog rounded" />
+                            <div className="h-2.5 w-16 bg-fog rounded" />
+                          </div>
                         </div>
+                        {i < 1 && <div className="h-px bg-border/50 mx-3" />}
                       </div>
                     ))
                   ) : homeListings.length === 0 ? (
                     <div className="text-center py-4 text-[12px] text-mist">لا توجد إعلانات</div>
                   ) : (
-                    homeListings.map((listing) => {
+                    homeListings.map((listing, idx) => {
                       const cond = listing.condition === "new" ? "جديد" : listing.condition === "used" ? "مستعمل" : "عاجل";
                       const condCls = listing.condition === "new" ? "bg-emerald-100 text-emerald-800" : listing.condition === "urgent" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800";
                       return (
-                        <Link
-                          key={listing.id}
-                          href={`/market/${listing.id}`}
-                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-fog transition-colors"
-                        >
-                          <div className="w-12 h-12 rounded-lg bg-fog flex-shrink-0 overflow-hidden">
-                            <img src={listing.images![0].url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-display font-medium text-[12px] text-ink truncate">{listing.title}</div>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className={`text-[9px] font-bold px-1.5 py-[1px] rounded-full ${condCls}`}>{cond}</span>
-                              {listing.area?.name_ar && <span className="text-[10px] text-mist">{listing.area.name_ar}</span>}
+                        <div key={listing.id}>
+                          <Link
+                            href={`/market/${listing.id}`}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-fog transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-fog flex-shrink-0 overflow-hidden border-2 border-olive/15">
+                              <img src={listing.images![0].url} alt="" className="w-full h-full object-cover" loading="lazy" />
                             </div>
-                          </div>
-                          <span className="font-display font-black text-[14px] text-olive-deep flex-shrink-0" dir="ltr">{"\u20AA"}{Number(listing.price).toLocaleString()}</span>
-                        </Link>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-display font-medium text-[12px] text-ink truncate">{listing.title}</div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`text-[9px] font-bold px-1.5 py-[1px] rounded-full ${condCls}`}>{cond}</span>
+                                {listing.area?.name_ar && <span className="text-[10px] text-mist">{listing.area.name_ar}</span>}
+                              </div>
+                            </div>
+                            <span className="font-display font-black text-[14px] text-olive-deep flex-shrink-0" dir="ltr">{"\u20AA"}{Number(listing.price).toLocaleString()}</span>
+                          </Link>
+                          {idx < homeListings.length - 1 && <div className="h-px bg-border/50 mx-3" />}
+                        </div>
                       );
                     })
                   )}

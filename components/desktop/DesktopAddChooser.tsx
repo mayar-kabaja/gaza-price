@@ -15,14 +15,12 @@ const OPTIONS = [
     desc: "عندك سعر من محل؟ ساعد الناس يعرفوا الأسعار الحقيقية",
     exampleText: "كيلو أرز في محل أبو أحمد = 12₪",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 stroke-olive" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-olive" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
         <line x1="7" y1="7" x2="7.01" y2="7"/>
       </svg>
     ),
     iconBg: "bg-olive-pale",
-    arrowBg: "bg-olive-pale",
-    arrowCls: "stroke-olive",
   },
   {
     key: "product",
@@ -30,15 +28,13 @@ const OPTIONS = [
     desc: "منتج مش موجود في القائمة؟ اقترحه وأضف أول سعر له",
     exampleText: "حليب بودرة نيدو 900غ",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 stroke-sand" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-sand" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
         <line x1="12" y1="8" x2="12" y2="16"/>
         <line x1="8" y1="12" x2="16" y2="12"/>
       </svg>
     ),
     iconBg: "bg-sand-light",
-    arrowBg: "bg-sand-light",
-    arrowCls: "stroke-sand",
   },
   {
     key: "listing",
@@ -46,15 +42,13 @@ const OPTIONS = [
     desc: "عندك شي للبيع؟ انشر إعلان مجاني في السوق المحلي",
     exampleText: "جوال · أثاث · ملابس",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 stroke-blue-500 dark:stroke-blue-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-blue-500 dark:stroke-blue-400" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
         <line x1="3" y1="6" x2="21" y2="6"/>
         <path d="M16 10a4 4 0 01-8 0"/>
       </svg>
     ),
     iconBg: "bg-blue-50 dark:bg-blue-500/15",
-    arrowBg: "bg-blue-50 dark:bg-blue-500/15",
-    arrowCls: "stroke-blue-500 dark:stroke-blue-400",
   },
 ];
 
@@ -78,7 +72,7 @@ export function DesktopAddChooser({ open, onClose, onSubmit, onSuggest, onListin
             <h2 className="font-display font-black text-lg text-ink">إضافة</h2>
             <p className="text-xs text-mist mt-0.5">شو بدك تضيف؟</p>
           </div>
-          <button onClick={onClose} className="text-mist hover:text-ink p-1 text-xl leading-none">×</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F3F4F6] dark:bg-white/10 text-mist hover:text-ink text-lg leading-none transition-colors">×</button>
         </div>
 
         {/* Options */}
@@ -90,7 +84,7 @@ export function DesktopAddChooser({ open, onClose, onSubmit, onSuggest, onListin
               className="w-full text-right bg-fog border border-border rounded-[20px] p-[18px] transition-all duration-150 hover:-translate-x-[3px] hover:border-olive-mid hover:shadow-lg active:scale-[0.99]"
             >
               <div className="flex items-center gap-3.5">
-                <div className={`w-[52px] h-[52px] ${opt.iconBg} rounded-2xl flex items-center justify-center flex-shrink-0`}>
+                <div className={`w-[44px] h-[44px] ${opt.iconBg} rounded-2xl flex items-center justify-center flex-shrink-0`}>
                   {opt.icon}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -101,24 +95,21 @@ export function DesktopAddChooser({ open, onClose, onSubmit, onSuggest, onListin
                     <span className="text-[10px] text-mist bg-surface border border-border px-2 py-0.5 rounded-full">{opt.exampleText}</span>
                   </div>
                 </div>
-                <div className={`w-7 h-7 ${opt.arrowBg} rounded-full flex items-center justify-center flex-shrink-0`}>
-                  <svg viewBox="0 0 24 24" fill="none" className={`w-[13px] h-[13px] ${opt.arrowCls}`} strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-                </div>
               </div>
             </button>
           ))}
         </div>
 
         {/* Tip box */}
-        <div className="mx-5 mb-5 bg-olive-pale border border-olive-mid/30 rounded-2xl p-3.5 flex items-start gap-2.5">
-          <div className="w-8 h-8 bg-olive rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+        <div className="mx-5 mb-5 bg-olive-pale/50 dark:bg-olive-pale/10 border border-olive-mid/15 rounded-xl p-3.5 flex items-start gap-2.5">
+          <div className="w-7 h-7 bg-olive/80 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>
             </svg>
           </div>
           <div>
-            <div className="font-display text-xs font-extrabold text-olive mb-0.5">كل مساهمة تفرق</div>
-            <div className="text-[11px] text-olive-deep dark:text-olive-mid leading-relaxed">كل سعر تضيفه يساعد عائلة في غزة تتخذ قرار أفضل. شكراً لك.</div>
+            <div className="font-display text-xs font-extrabold text-olive/80 dark:text-olive mb-0.5">كل مساهمة تفرق</div>
+            <div className="text-[11px] text-ink/60 dark:text-mist leading-relaxed">كل سعر تضيفه يساعد عائلة في غزة تتخذ قرار أفضل. شكراً لك.</div>
           </div>
         </div>
       </div>

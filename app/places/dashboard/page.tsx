@@ -1214,7 +1214,7 @@ function OwnerDashboardPage() {
   const t = isDark ? {
     pageBg: "#0F1115", card: "#20283A", border: "#2B3446", cardHover: "#252830",
     text: "#F3F4F6", textSec: "#B0B7C3", textMuted: "#6B7280",
-    green: "#5B9A6A", greenBg: "#1A2E22", greenBgHover: "#1B2A22",
+    green: "#6B9E78", greenBg: "#1C3328", greenBgHover: "#243D2F",
     indigoBg: "#1E2340", grayBg: "#1E2128", subtleBg: "#3A4458",
     redBg: "#2D1B1B", toggleOff: "#374151", navShadow: "rgba(0,0,0,0.3)",
     sheetBg: "#0F1117", inputBg: "#252830", inputBorder: "#2B3446",
@@ -1641,7 +1641,10 @@ function OwnerDashboardPage() {
                     <div className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--d-border)]/50">
                       <div>
                         <p className="text-[12px] font-medium text-[var(--d-text)]">موقعك محدد</p>
-                        <p className="text-[10px] text-[var(--d-text-muted)]" dir="ltr">{place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}</p>
+                        <button onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }} className="text-[10px] text-[var(--d-green)] hover:underline flex items-center gap-1">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          عرض على الخريطة
+                        </button>
                       </div>
                       <button
                         onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
@@ -1774,9 +1777,9 @@ function OwnerDashboardPage() {
                     {/* Section header */}
                     <div className="px-3 py-2.5 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
                       <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2 flex-1 min-w-0">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform flex-shrink-0 ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                         <span className="text-[13px] font-semibold text-[var(--d-text)]">{sec.name}</span>
                         <span className="text-[10px] font-medium tabular-nums px-1.5 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[10px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-2 py-1 hover:bg-[var(--d-green-bg)] transition-colors">+ صنف</button>
@@ -2309,7 +2312,10 @@ function OwnerDashboardPage() {
                         <div className="px-4 py-3 flex items-center justify-between border-t border-[var(--d-border)]/50">
                           <div>
                             <p className="text-[13px] font-medium text-[var(--d-text)]">موقع {placeLabel(place.type, place.section)}</p>
-                            <p className="text-[11px] text-[var(--d-text-muted)]" dir="ltr">{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</p>
+                            <button onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }} className="text-[11px] text-[var(--d-green)] hover:underline flex items-center gap-1">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                              عرض على الخريطة
+                            </button>
                           </div>
                           <button
                             onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }}
@@ -2509,9 +2515,9 @@ function OwnerDashboardPage() {
                     {/* Section header */}
                     <div className="px-4 py-3 flex items-center justify-between hover:bg-[var(--d-subtle-bg)]/50 transition-colors">
                       <button onClick={() => toggleSection(sec.id)} className="flex items-center gap-2.5 flex-1 min-w-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform flex-shrink-0 ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                         <span className="text-[13px] font-semibold text-[var(--d-text)]">{sec.name}</span>
                         <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-md bg-[var(--d-subtle-bg)] text-[var(--d-text-muted)]">{sec.items.length}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-[var(--d-text-muted)] transition-transform ${isCollapsed ? "rotate-180" : ""}`}><polyline points="6 9 12 15 18 9"/></svg>
                       </button>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button onClick={(e) => { e.stopPropagation(); setAddItemSection(sec.id); setSheet("addItem"); }} className="text-[12px] font-medium text-[var(--d-green)] border border-[var(--d-green)]/40 rounded-lg px-3 py-1.5 hover:bg-[var(--d-green-bg)] transition-colors">+ إضافة صنف</button>
@@ -2932,9 +2938,12 @@ function OwnerDashboardPage() {
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--d-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                       <span className="text-[13px] font-medium text-[var(--d-text)]">الموقع على الخريطة</span>
                     </div>
-                    <span className="text-[12px] text-[var(--d-text-muted)]">
+                    <span className="text-[12px]">
                       {place.latitude != null && place.longitude != null && !isNaN(Number(place.latitude)) && !isNaN(Number(place.longitude))
-                        ? <span dir="ltr">{place.latitude.toFixed(4)}, {place.longitude.toFixed(4)}</span>
+                        ? <button onClick={() => { populateEditForm(); setLocationPickerOpen(true); setSheet("edit"); }} className="text-[var(--d-green)] hover:underline flex items-center gap-1">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            عرض على الخريطة
+                          </button>
                         : <span className="text-amber-500">غير محدد — أضفه من التعديل</span>
                       }
                     </span>
@@ -3637,7 +3646,7 @@ function ActionItem({ icon, iconBg, iconColor, title, sub, badge, onClick, last,
 }) {
   return (
     <>
-      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-green-bg-hover)] ${active ? "bg-[var(--d-green-bg)]" : ""}`}>
+      <button onClick={onClick} className={`w-full flex items-center gap-3 px-3.5 py-3.5 text-right transition-colors hover:bg-[var(--d-green-bg-hover)] ${active ? "bg-[var(--d-green-bg-hover)]" : ""}`}>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
           <svg viewBox="0 0 24 24" className={`w-4 h-4 ${iconColor}`} fill="none" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             {(icon as React.ReactElement<{ children?: React.ReactNode }>).props.children}

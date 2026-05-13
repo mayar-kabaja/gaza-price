@@ -97,7 +97,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
         >
           <span className="w-[7px] h-[7px] rounded-full bg-confirm flex-shrink-0" />
           {area ? area.name_ar : "اختر منطقة"}
-          <span className="text-[10px] opacity-60">▾</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60 flex-shrink-0"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
         {open && (
@@ -123,12 +123,17 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
                     >
                       <span>{group.label}</span>
                       <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        className={cn("text-mist transition-transform", isGovOpen && "rotate-90")}
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={cn("text-mist transition-transform", isGovOpen && "rotate-180")}
                       >
-                        <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        <polyline points="6 9 12 15 18 9"/>
                       </svg>
                     </button>
                     {isGovOpen && (
