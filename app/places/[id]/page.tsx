@@ -314,7 +314,11 @@ function MenuContent({ place, cart, onAddToCart, onUpdateQty }: { place: Place; 
         if (res.ok) {
           const data = await res.json();
           const sections = (data.data || data || []) as MenuSection[];
-          setMenuSections(sections.filter((s) => s.items && s.items.length > 0));
+          setMenuSections(
+            sections
+              .map((s) => ({ ...s, items: s.items.filter((i) => i.available !== false) }))
+              .filter((s) => s.items.length > 0)
+          );
         }
       } catch { /* menu might not exist */ }
       setLoading(false);
