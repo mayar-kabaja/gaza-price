@@ -11,6 +11,20 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface OrderFormState {
+  note: string;
+  discountCode: string;
+  discountResult: {
+    valid: boolean;
+    discount_type?: string;
+    discount_value?: number;
+    min_order_total?: number;
+    message?: string;
+  } | null;
+  dineIn: boolean;
+  tableNumber: string;
+}
+
 interface OrderCartProps {
   placeId: string;
   placeWhatsapp?: string | null;
@@ -20,30 +34,38 @@ interface OrderCartProps {
   onOrderPlaced: (order: any) => void;
   userPhone?: string | null;
   userHandle?: string | null;
+  formState?: OrderFormState;
+  onFormChange?: (state: OrderFormState) => void;
 }
 
 function stripEmojis(text: string): string {
   return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "").replace(/\s+/g, " ").trim();
 }
 
-export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear, onOrderPlaced, userPhone, userHandle }: OrderCartProps) {
+export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear, onOrderPlaced, userPhone, userHandle, formState, onFormChange }: OrderCartProps) {
   const [name, setName] = useState(userHandle || "");
   const [phone, setPhone] = useState(userPhone || "");
 
   useEffect(() => { if (userPhone && !phone) setPhone(userPhone); }, [userPhone]);
   useEffect(() => { if (userHandle && !name) setName(userHandle); }, [userHandle]);
 
-  const [note, setNote] = useState("");
-  const [dineIn, setDineIn] = useState(false);
-  const [tableNumber, setTableNumber] = useState("");
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountResult, setDiscountResult] = useState<{
-    valid: boolean;
-    discount_type?: string;
-    discount_value?: number;
-    min_order_total?: number;
-    message?: string;
-  } | null>(null);
+  const note = formState?.note ?? "";
+  const dineIn = formState?.dineIn ?? false;
+  const tableNumber = formState?.tableNumber ?? "";
+  const discountCode = formState?.discountCode ?? "";
+  const discountResult = formState?.discountResult ?? null;
+
+  function updateForm(patch: Partial<OrderFormState>) {
+    if (onFormChange && formState) {
+      onFormChange({ ...formState, ...patch });
+    }
+  }
+  const setNote = (v: string) => updateForm({ note: v });
+  const setDineIn = (v: boolean) => updateForm({ dineIn: v, tableNumber: v ? formState?.tableNumber ?? "" : "" });
+  const setTableNumber = (v: string) => updateForm({ tableNumber: v });
+  const setDiscountCode = (v: string) => updateForm({ discountCode: v, discountResult: null });
+  const setDiscountResult = (v: OrderFormState["discountResult"]) => updateForm({ discountResult: v });
+
   const [validatingCode, setValidatingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -272,7 +294,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
           <div className="flex-1 flex items-center px-3 bg-[var(--color-fog,#f8f8f8)] rounded-xl h-10">
             <input
               value={discountCode}
-              onChange={(e) => { setDiscountCode(e.target.value); setDiscountResult(null); }}
+              onChange={(e) => setDiscountCode(e.target.value)}
               placeholder="كود الخصم"
               maxLength={20}
               className="flex-1 bg-transparent border-none outline-none text-[13px] text-ink text-right"
@@ -322,7 +344,7 @@ export function OrderSheet({ placeId, placeWhatsapp, cart, onUpdateQty, onClear,
         <div className="space-y-2">
           <button
             type="button"
-            onClick={() => { setDineIn(!dineIn); if (dineIn) setTableNumber(""); }}
+            onClick={() => setDineIn(!dineIn)}
             className="flex items-center gap-2.5 w-full"
           >
             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${dineIn ? 'bg-olive border-olive' : 'border-border'}`}>

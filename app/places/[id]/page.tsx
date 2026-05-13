@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/api/fetch';
 import type { Place, WorkspaceDetailsData } from '@/lib/api/places';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useGlobalSidebar } from '@/components/layout/GlobalDesktopShell';
-import { OrderSheet, CartBar, type CartItem } from '@/components/places/OrderCart';
+import { OrderSheet, CartBar, type CartItem, type OrderFormState } from '@/components/places/OrderCart';
 import { MyOrdersSheet } from '@/components/places/MyOrdersSheet';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { PhoneAuthPopup } from '@/components/auth/PhoneAuthPopup';
@@ -537,10 +537,41 @@ export default function PlaceDetailPage() {
   const [error, setError] = useState(false);
   const { contributor, refreshContributor } = useSessionContext();
   const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+  const cartKey = `cart_${id}`;
+  const formKey = `cart_form_${id}`;
+
+  const [cart, setCart] = useState<Map<string, CartItem>>(() => {
+    try {
+      const saved = localStorage.getItem(cartKey);
+      if (saved) return new Map(JSON.parse(saved));
+    } catch {}
+    return new Map();
+  });
   const [showCart, setShowCart] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
   const pendingItemRef = useRef<MenuItem | null>(null);
+  const [orderForm, setOrderForm] = useState<OrderFormState>(() => {
+    try {
+      const saved = localStorage.getItem(formKey);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { note: "", discountCode: "", discountResult: null, dineIn: false, tableNumber: "" };
+  });
+
+  // Persist cart and form to localStorage
+  useEffect(() => {
+    try {
+      if (cart.size > 0) {
+        localStorage.setItem(cartKey, JSON.stringify(Array.from(cart.entries())));
+      } else {
+        localStorage.removeItem(cartKey);
+      }
+    } catch {}
+  }, [cart, cartKey]);
+
+  useEffect(() => {
+    try { localStorage.setItem(formKey, JSON.stringify(orderForm)); } catch {}
+  }, [orderForm, formKey]);
 
   const addToCart = useCallback((item: MenuItem) => {
     if (!item.id) return;
@@ -574,8 +605,10 @@ export default function PlaceDetailPage() {
 
   const clearCart = useCallback(() => {
     setCart(new Map());
+    setOrderForm({ note: "", discountCode: "", discountResult: null, dineIn: false, tableNumber: "" });
     setShowCart(false);
-  }, []);
+    try { localStorage.removeItem(cartKey); localStorage.removeItem(formKey); } catch {}
+  }, [cartKey, formKey]);
 
   useEffect(() => {
     const fetchPlace = async () => {
@@ -813,9 +846,11 @@ export default function PlaceDetailPage() {
                       cart={cart}
                       onUpdateQty={updateCartQty}
                       onClear={clearCart}
-                      onOrderPlaced={() => setCart(new Map())}
+                      onOrderPlaced={() => { setCart(new Map()); try { localStorage.removeItem(cartKey); localStorage.removeItem(formKey); } catch {} }}
                       userPhone={contributor?.phone_number}
                       userHandle={contributor?.display_handle}
+                      formState={orderForm}
+                      onFormChange={setOrderForm}
                     />
                   </div>
                 </>
@@ -953,9 +988,11 @@ export default function PlaceDetailPage() {
                   cart={cart}
                   onUpdateQty={updateCartQty}
                   onClear={clearCart}
-                  onOrderPlaced={() => setCart(new Map())}
+                  onOrderPlaced={() => { setCart(new Map()); try { localStorage.removeItem(cartKey); localStorage.removeItem(formKey); } catch {} }}
                   userPhone={contributor?.phone_number}
                   userHandle={contributor?.display_handle}
+                  formState={orderForm}
+                  onFormChange={setOrderForm}
                 />
               </div>
             </>
