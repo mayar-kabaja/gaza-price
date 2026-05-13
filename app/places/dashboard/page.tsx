@@ -120,174 +120,150 @@ const PLAN_FEATURES: Record<string, { has: string[]; missing: string[] }> = {
   premium: { has: PREMIUM_FEATURES, missing: [] },
 };
 
-/* ── QR Card Generator (modern green branded card) ── */
+/* ── QR Card Generator (poster style — matches HTML reference) ── */
 async function generateQRCard(svgEl: Element, placeName: string, isFood: boolean) {
-  // Load Arabic font
+  // Load Arabic fonts (Tajawal + Noto Sans Arabic — same as website)
   try {
-    const font = new FontFace(
-      "Cairo",
-      "url(https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvangtZmZQcNirfH5lkQ.woff2)"
+    const tajawal = new FontFace(
+      "Tajawal",
+      "url(https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzSBC45I.woff2)"
     );
-    const loaded = await font.load();
-    document.fonts.add(loaded);
+    const noto = new FontFace(
+      "Noto Sans Arabic",
+      "url(https://fonts.gstatic.com/s/notosansarabic/v36/nwpCtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlhQ5l3sQWIHPqzCfyG2vu3CBFQLaig.woff2)"
+    );
+    const [t, n] = await Promise.all([tajawal.load(), noto.load()]);
+    document.fonts.add(t);
+    document.fonts.add(n);
   } catch {}
 
   const svgData = new XMLSerializer().serializeToString(svgEl);
-  const scale = 2; // retina quality
+  const scale = 2;
   const W = 540 * scale;
-  const H = 760 * scale;
+  const H = 780 * scale;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   ctx.scale(scale, scale);
-  const w = 540, h = 760;
+  const w = 540, h = 780;
 
-  const f = (px: number, weight: string) => `${weight} ${px}px 'Cairo', 'SF Pro Display', 'Segoe UI', sans-serif`;
+  const f = (px: number, weight: string) => `${weight} ${px}px 'Tajawal', 'Noto Sans Arabic', sans-serif`;
 
-  // Rounded card clip
-  const cr = 28;
-  ctx.beginPath();
-  ctx.moveTo(cr, 0); ctx.lineTo(w - cr, 0);
-  ctx.quadraticCurveTo(w, 0, w, cr);
-  ctx.lineTo(w, h - cr);
-  ctx.quadraticCurveTo(w, h, w - cr, h);
-  ctx.lineTo(cr, h);
-  ctx.quadraticCurveTo(0, h, 0, h - cr);
-  ctx.lineTo(0, cr);
-  ctx.quadraticCurveTo(0, 0, cr, 0);
-  ctx.closePath();
+  // Helper: rounded rect
+  function roundRect(x: number, y: number, rw: number, rh: number, r: number) {
+    ctx!.beginPath();
+    ctx!.moveTo(x + r, y);
+    ctx!.lineTo(x + rw - r, y); ctx!.quadraticCurveTo(x + rw, y, x + rw, y + r);
+    ctx!.lineTo(x + rw, y + rh - r); ctx!.quadraticCurveTo(x + rw, y + rh, x + rw - r, y + rh);
+    ctx!.lineTo(x + r, y + rh); ctx!.quadraticCurveTo(x, y + rh, x, y + rh - r);
+    ctx!.lineTo(x, y + r); ctx!.quadraticCurveTo(x, y, x + r, y);
+    ctx!.closePath();
+  }
+
+  // ── Card clip ──
+  roundRect(0, 0, w, h, 28);
   ctx.clip();
 
-  // Background gradient — rich dark green
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, "#1B3D2A");
-  grad.addColorStop(0.5, "#234A33");
-  grad.addColorStop(1, "#1A3726");
-  ctx.fillStyle = grad;
+  // ── Background ──
+  ctx.fillStyle = "#1F3D2C";
   ctx.fillRect(0, 0, w, h);
 
-  // Subtle decorative circles (background texture)
-  ctx.globalAlpha = 0.04;
-  ctx.fillStyle = "#FFFFFF";
-  ctx.beginPath(); ctx.arc(w + 20, -30, 180, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(-40, h + 10, 140, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  // Thin top accent line
-  const accent = ctx.createLinearGradient(60, 0, w - 60, 0);
-  accent.addColorStop(0, "rgba(255,255,255,0)");
-  accent.addColorStop(0.5, "rgba(255,255,255,0.15)");
-  accent.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(60, 44); ctx.lineTo(w - 60, 44); ctx.stroke();
-
-  // ── Header text ──
+  // ── Header: section label + place name ──
+  let y = 60;
   ctx.textAlign = "center";
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = f(42, "700");
-  ctx.fillText(isFood ? "شوف المنيو واطلب" : "تصفّح واطلب", w / 2, 100);
-
   ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = f(18, "400");
+  ctx.font = f(16, "400");
+  ctx.letterSpacing = "2px";
+  ctx.fillText(isFood ? "مطعم" : "متجر", w / 2, y);
 
-  // ── QR code area ──
+  y += 42;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = f(34, "500");
+  ctx.fillText(placeName, w / 2, y);
+
+  // ── Divider ──
+  y += 30;
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(w - 60, y); ctx.stroke();
+
+  // ── "من جوالك" pill ──
+  y += 35;
+  const pillText = "من جوالك";
+  ctx.font = f(13, "400");
+  const pillW = ctx.measureText(pillText).width + 32;
+  const pillH = 28;
+  const pillX = (w - pillW) / 2;
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  roundRect(pillX, y - pillH + 6, pillW, pillH, 14);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillText(pillText, w / 2, y);
+
+  // ── "امسح للطلب" ──
+  y += 42;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = f(32, "500");
+  ctx.fillText("امسح للطلب", w / 2, y);
+
+  // ── QR code white box ──
   const qrSize = 220;
-  const qrPad = 24;
+  const qrPad = 20;
   const boxW = qrSize + qrPad * 2;
   const boxH = qrSize + qrPad * 2;
   const boxX = (w - boxW) / 2;
-  const boxY = 175;
-  const boxR = 20;
-
-  // White rounded rect behind QR
+  y += 24;
+  const boxY = y;
   ctx.fillStyle = "#FFFFFF";
-  ctx.beginPath();
-  ctx.moveTo(boxX + boxR, boxY);
-  ctx.lineTo(boxX + boxW - boxR, boxY);
-  ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + boxR);
-  ctx.lineTo(boxX + boxW, boxY + boxH - boxR);
-  ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - boxR, boxY + boxH);
-  ctx.lineTo(boxX + boxR, boxY + boxH);
-  ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - boxR);
-  ctx.lineTo(boxX, boxY + boxR);
-  ctx.quadraticCurveTo(boxX, boxY, boxX + boxR, boxY);
-  ctx.closePath();
-  ctx.shadowColor = "rgba(0,0,0,0.25)";
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 8;
+  roundRect(boxX, boxY, boxW, boxH, 16);
+  ctx.shadowColor = "rgba(0,0,0,0.2)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 6;
   ctx.fill();
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // Corner brackets (decorative, subtle green)
-  ctx.strokeStyle = "rgba(74,124,89,0.35)";
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = "round";
-  const bLen = 28;
-  const bGap = 10;
-  const bx1 = boxX - bGap, by1 = boxY - bGap;
-  const bx2 = boxX + boxW + bGap, by2 = boxY + boxH + bGap;
-  // TL
-  ctx.beginPath(); ctx.moveTo(bx1, by1 + bLen); ctx.lineTo(bx1, by1); ctx.lineTo(bx1 + bLen, by1); ctx.stroke();
-  // TR
-  ctx.beginPath(); ctx.moveTo(bx2 - bLen, by1); ctx.lineTo(bx2, by1); ctx.lineTo(bx2, by1 + bLen); ctx.stroke();
-  // BL
-  ctx.beginPath(); ctx.moveTo(bx1, by2 - bLen); ctx.lineTo(bx1, by2); ctx.lineTo(bx1 + bLen, by2); ctx.stroke();
-  // BR
-  ctx.beginPath(); ctx.moveTo(bx2 - bLen, by2); ctx.lineTo(bx2, by2); ctx.lineTo(bx2, by2 - bLen); ctx.stroke();
-
-  // ── "SCAN" instruction ──
-  const instrY = boxY + boxH + bGap + 45;
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  // ── 3 steps: امسح → اختر → اطلب ──
+  const stepsY = boxY + boxH + 40;
+  const steps = ["امسح", "اختر", "اطلب"];
+  const stepIcons = ["1", "2", "3"];
+  const stepSpacing = w / 3;
   ctx.textAlign = "center";
-  ctx.font = f(16, "500");
-  ctx.fillText(isFood ? "شوف المنيو واطلب أونلاين" : "تصفّح المنتجات واطلب الآن", w / 2, instrY);
+  for (let i = 0; i < 3; i++) {
+    const sx = w - (stepSpacing * i + stepSpacing / 2);
+    // Circle
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.beginPath(); ctx.arc(sx, stepsY, 18, 0, Math.PI * 2); ctx.fill();
+    // Number
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = f(14, "700");
+    ctx.fillText(stepIcons[i], sx, stepsY + 5);
+    // Label
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = f(13, "400");
+    ctx.fillText(steps[i], sx, stepsY + 36);
+  }
 
-  // Thin divider line
-  const divY = instrY + 28;
-  const divGrad = ctx.createLinearGradient(w * 0.25, 0, w * 0.75, 0);
-  divGrad.addColorStop(0, "rgba(255,255,255,0)");
-  divGrad.addColorStop(0.5, "rgba(255,255,255,0.12)");
-  divGrad.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.strokeStyle = divGrad;
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(w * 0.25, divY); ctx.lineTo(w * 0.75, divY); ctx.stroke();
+  // ── Footer ──
+  const footY = h - 55;
+  ctx.strokeStyle = "rgba(255,255,255,0.1)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(40, footY); ctx.lineTo(w - 40, footY); ctx.stroke();
 
-  // ── Place name — centered below divider ──
-  const nameY = divY + 40;
-  ctx.fillStyle = "#FFFFFF";
-  ctx.textAlign = "center";
-  ctx.font = f(24, "700");
-  ctx.fillText(placeName, w / 2, nameY);
-
-  // Section label
+  // Left: "منصة الطلبات"
+  ctx.textAlign = "right";
   ctx.fillStyle = "rgba(255,255,255,0.4)";
-  ctx.font = f(14, "400");
-  ctx.fillText(isFood ? "مطعم" : "متجر", w / 2, nameY + 28);
-
-  // ── Bottom branding ──
-  // Thin line above footer
-  const footDivY = h - 70;
-  const footGrad = ctx.createLinearGradient(40, 0, w - 40, 0);
-  footGrad.addColorStop(0, "rgba(255,255,255,0)");
-  footGrad.addColorStop(0.5, "rgba(255,255,255,0.08)");
-  footGrad.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.strokeStyle = footGrad;
-  ctx.beginPath(); ctx.moveTo(40, footDivY); ctx.lineTo(w - 40, footDivY); ctx.stroke();
-
-  // Brand name centered
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.textAlign = "center";
-  ctx.font = f(16, "600");
-  ctx.fillText("غزة بريس", w / 2, h - 38);
-
-  ctx.fillStyle = "rgba(255,255,255,0.25)";
   ctx.font = f(11, "400");
-  ctx.fillText("gazaprice.com", w / 2, h - 18);
+  ctx.fillText("منصة الطلبات", w - 40, h - 25);
+
+  // Right: "gazaprice.com"
+  ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = f(12, "500");
+  ctx.fillText("gazaprice.com", 40, h - 25);
 
   // ── Draw QR code ──
   const qrImg = new Image();
