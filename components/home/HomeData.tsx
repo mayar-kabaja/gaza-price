@@ -370,14 +370,12 @@ export function HomeData() {
 
   // Desktop dashboard: nearby places — mix of all types from user's area
   const userAreaId = area?.id ?? null;
-  const { data: foodData, isLoading: foodLoading } = usePlaces("food", userAreaId, 3);
-  const { data: cafeData, isLoading: cafeLoading } = usePlaces("cafe", userAreaId, 2);
+  const { data: foodData, isLoading: foodLoading } = usePlaces("food", userAreaId, 5);
   const { data: storeData, isLoading: storeLoading } = usePlaces("store", userAreaId, 2);
   const { data: wsData, isLoading: wsLoading } = usePlaces("workspace", userAreaId, 2);
-  const placesLoading = foodLoading || cafeLoading || storeLoading || wsLoading;
+  const placesLoading = foodLoading || storeLoading || wsLoading;
   const homePlaces: Place[] = [
     ...((foodData as any)?.places ?? []),
-    ...((cafeData as any)?.places ?? []),
     ...((storeData as any)?.places ?? []),
     ...((wsData as any)?.places ?? []),
   ];
