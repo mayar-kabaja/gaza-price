@@ -1987,7 +1987,7 @@ function StoreCard({ place, index, onClick }: { place: Place; index: number; onC
       className={`bg-surface rounded-2xl border border-border flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all hover:shadow-[0_4px_14px_rgba(0,0,0,0.07)] active:scale-[0.99] ${closed ? 'opacity-55' : ''}`}
       style={{ animation: `slideUp 0.22s ease both ${0.04 * (index + 1)}s` }}
     >
-      {/* Emoji */}
+      {/* Avatar */}
       <div className="w-[42px] h-[42px] rounded-full bg-fog flex items-center justify-center text-[20px] flex-shrink-0 overflow-hidden">
         {place.avatar_url ? (
           <img src={place.avatar_url} alt="" className="w-full h-full object-cover rounded-full" loading="lazy" />
@@ -2052,9 +2052,9 @@ function PlaceRow({ place, index, onClick }: { place: Place; index: number; onCl
     >
       {/* Avatar */}
       <div
-        className={`w-[46px] h-[46px] ${place.avatar_url ? 'rounded-full' : 'rounded-[13px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
+        className={`w-[46px] h-[46px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
           closed ? 'border-2 border-border' : 'border-2 border-olive'
-        } ${!place.avatar_url && isBoth ? 'text-[10px] gap-0' : !place.avatar_url ? 'text-[22px]' : ''}`}
+        } ${!place.avatar_url ? 'text-[22px]' : ''}`}
         style={{ background: closed ? 'var(--color-fog)' : bg }}
       >
         {place.avatar_url ? (
@@ -2138,7 +2138,7 @@ function WorkspaceCard({ place, index, onClick }: { place: Place; index: number;
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div
-          className={`w-[46px] h-[46px] ${place.avatar_url ? 'rounded-full' : 'rounded-[13px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
+          className={`w-[46px] h-[46px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden ${
             closed ? 'border-2 border-border' : 'border-2 border-olive'
           } ${!place.avatar_url ? 'text-[22px]' : ''}`}
           style={{ background: closed ? 'var(--color-fog)' : bg }}
@@ -2235,7 +2235,7 @@ function DesktopWorkspaceCard({ place, index, onClick }: { place: Place; index: 
         <div className="flex items-center gap-3">
           {/* Avatar */}
           <div
-            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            className={`w-[56px] h-[56px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
             style={{ background: closed ? 'var(--color-fog)' : bg }}
           >
             {place.avatar_url ? (
@@ -2330,7 +2330,7 @@ function DesktopStoreCard({ place, index, onClick }: { place: Place; index: numb
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">
           <div
-            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            className={`w-[56px] h-[56px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
             style={{ background: closed ? 'var(--color-fog)' : accent.bg }}
           >
             {place.avatar_url ? (
@@ -2401,7 +2401,7 @@ function DesktopFoodCard({ place, index, onClick }: { place: Place; index: numbe
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center gap-3">
           <div
-            className={`w-[56px] h-[56px] ${place.avatar_url ? 'rounded-full' : 'rounded-[15px]'} flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
+            className={`w-[56px] h-[56px] rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden border-2 ${closed ? 'border-border' : 'border-olive'}`}
             style={{ background: closed ? 'var(--color-fog)' : accent.bg }}
           >
             {place.avatar_url ? (
