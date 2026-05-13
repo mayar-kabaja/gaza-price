@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api/fetch';
@@ -540,10 +540,12 @@ export default function PlaceDetailPage() {
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [showCart, setShowCart] = useState(false);
   const [showMyOrders, setShowMyOrders] = useState(false);
+  const pendingItemRef = useRef<MenuItem | null>(null);
 
   const addToCart = useCallback((item: MenuItem) => {
     if (!item.id) return;
     if (!contributor?.phone_verified) {
+      pendingItemRef.current = item;
       setShowAuthPopup(true);
       return;
     }
@@ -823,10 +825,25 @@ export default function PlaceDetailPage() {
 
           <PhoneAuthPopup
             open={showAuthPopup}
-            onClose={() => setShowAuthPopup(false)}
-            onVerified={() => {
+            onClose={() => { setShowAuthPopup(false); pendingItemRef.current = null; }}
+            onVerified={async () => {
               setShowAuthPopup(false);
-              refreshContributor().catch(() => {});
+              await refreshContributor();
+              if (pendingItemRef.current) {
+                const item = pendingItemRef.current;
+                pendingItemRef.current = null;
+                setCart((prev) => {
+                  const next = new Map(prev);
+                  const existing = next.get(item.id!);
+                  if (existing) {
+                    next.set(item.id!, { ...existing, quantity: existing.quantity + 1 });
+                  } else {
+                    next.set(item.id!, { menu_item_id: item.id!, name: stripEmojis(item.name), price: Number(item.price), quantity: 1 });
+                  }
+                  return next;
+                });
+                setShowCart(true);
+              }
             }}
             mode="login"
             reason="سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك وتأكيد طلبك"
@@ -947,10 +964,25 @@ export default function PlaceDetailPage() {
       )}
       <PhoneAuthPopup
         open={showAuthPopup}
-        onClose={() => setShowAuthPopup(false)}
-        onVerified={() => {
+        onClose={() => { setShowAuthPopup(false); pendingItemRef.current = null; }}
+        onVerified={async () => {
           setShowAuthPopup(false);
-          refreshContributor().catch(() => {});
+          await refreshContributor();
+          if (pendingItemRef.current) {
+            const item = pendingItemRef.current;
+            pendingItemRef.current = null;
+            setCart((prev) => {
+              const next = new Map(prev);
+              const existing = next.get(item.id!);
+              if (existing) {
+                next.set(item.id!, { ...existing, quantity: existing.quantity + 1 });
+              } else {
+                next.set(item.id!, { menu_item_id: item.id!, name: stripEmojis(item.name), price: Number(item.price), quantity: 1 });
+              }
+              return next;
+            });
+            setShowCart(true);
+          }
         }}
         mode="login"
         reason="سجّل دخولك برقم الواتساب حتى يتمكن المطعم من التواصل معك وتأكيد طلبك"
