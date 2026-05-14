@@ -40,7 +40,7 @@ export function ReportCard({ report }: ReportCardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl px-3 pt-2.5 pb-1.5 relative overflow-hidden bg-surface border-[1.5px] border-border hover:border-olive/30 hover:shadow-sm transition-all duration-200"
+        "rounded-xl px-3 pt-2.5 pb-1.5 relative overflow-hidden bg-surface border-[1.5px] border-border hover:border-olive/30 hover:shadow-sm transition-all duration-200 flex flex-col h-full"
       )}
     >
       {/* Demo badge */}
@@ -146,10 +146,12 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       )}
 
+      {/* Spacer to push stats + actions to bottom */}
+      <div className="flex-1" />
+
       {/* Stats row */}
       <div className={cn("flex items-center justify-between", hasDetails ? "mt-1" : "mt-1.5")}>
-        <div className={cn("text-[10px]", stale ? "text-sand" : "text-mist")}>
-          {stale && "⚠️ "}
+        <div className="text-[10px] text-mist">
           {formatRelativeTime(report.reported_at)}
         </div>
         <div className="flex items-center gap-1.5">

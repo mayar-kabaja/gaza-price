@@ -35,7 +35,7 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl px-3.5 py-2.5 relative overflow-hidden bg-surface",
+        "rounded-2xl px-3.5 py-2.5 relative overflow-hidden bg-surface flex flex-col h-full",
         price.is_lowest ? "border-[0.5px] border-confirm bg-confirm/10" : "border-[1.5px] border-border"
       )}
     >
@@ -140,10 +140,12 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
         </div>
       )}
 
+      {/* Spacer to push stats + actions to bottom */}
+      <div className="flex-1" />
+
       {/* Stats row */}
       <div className={cn("flex items-center justify-between", hasDetails ? "mt-1.5" : "mt-2")}>
-        <div className={cn("text-[11px]", stale ? "text-sand" : "text-mist")}>
-          {stale && "⚠️ "}
+        <div className="text-[11px] text-mist">
           {formatRelativeTime(price.reported_at)}
         </div>
         <div className="flex items-center gap-1.5">

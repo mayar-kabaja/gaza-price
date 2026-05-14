@@ -70,7 +70,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
   })).filter((g) => g.areas.length > 0);
 
   return (
-    <header className="h-[60px] bg-olive-deep border-b border-white/8 flex items-center gap-4 px-5 z-40">
+    <header className="h-16 flex items-center gap-[18px] px-7 z-40 border-b border-white/[0.06] bg-olive-deep">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 flex-shrink-0">
         <img src="/logo.svg" alt="" className="w-[34px] h-[34px] rounded-full" />
@@ -173,11 +173,11 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        {/* Single Add button */}
+        {/* Add button */}
         <button
           type="button"
           onClick={onAddClick}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/15 border border-white/20 text-white text-[12px] font-display font-bold hover:bg-white/25 transition-all whitespace-nowrap cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-[5px] rounded-full bg-white/7 border border-white/12 text-white/85 text-[13px] font-body hover:bg-white/12 transition-colors cursor-pointer"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M12 5v14M5 12h14"/>
@@ -190,15 +190,21 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
             <button
               type="button"
               onClick={() => window.dispatchEvent(new Event('open-cart'))}
-              className="flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/7 border border-white/12 text-white hover:bg-white/12 transition-colors cursor-pointer relative"
+              aria-label="سلة الطلب"
             >
-              سلة الطلب
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+              </svg>
             </button>
             <Link
               href="/orders"
-              className="flex items-center px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[12px] font-display font-bold hover:bg-white/20 transition-all whitespace-nowrap"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/7 border border-white/12 text-white hover:bg-white/12 transition-colors relative"
+              aria-label="طلباتي"
             >
-              طلباتي
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
             </Link>
           </>
         )}
@@ -212,7 +218,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
               type="button"
               onClick={() => setShowProfileMenu((v) => !v)}
               className={cn(
-                "w-[32px] h-[32px] rounded-full flex items-center justify-center text-white font-display font-bold text-[12px] bg-white/15 border border-white/20 hover:bg-white/25 transition-colors cursor-pointer flex-shrink-0",
+                "w-9 h-9 rounded-full flex items-center justify-center text-white font-display font-semibold text-[13px] bg-white/7 border border-white/12 hover:bg-white/12 transition-colors cursor-pointer flex-shrink-0",
                 isProfileActive && "ring-2 ring-white/40"
               )}
               title="حسابي"
@@ -283,7 +289,7 @@ export function DesktopHeader({ onSubmitClick, onSuggestClick, onNewListingClick
         <button
           type="button"
           onClick={toggleTheme}
-          className="w-[32px] h-[32px] rounded-full flex items-center justify-center text-white/50 hover:bg-white/10 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+          className="w-9 h-9 rounded-full flex items-center justify-center bg-white/7 border border-white/12 text-white hover:bg-white/12 transition-colors cursor-pointer flex-shrink-0"
           aria-label={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
         >
           {theme === "dark" ? (

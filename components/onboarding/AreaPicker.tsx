@@ -138,7 +138,7 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
             <LoaderDots size="sm" variant="light" />
           ) : (
             <>
-              {selected ? `عرض أسعار ${selected.name_ar} ←` : "اختر منطقتك"}
+              {selected ? "عرض الأسعار ←" : "اختر منطقتك"}
             </>
           )}
         </button>

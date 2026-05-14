@@ -40,7 +40,7 @@ export default function DesktopSidebar({
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-body transition-colors text-right cursor-pointer",
             selectedCategoryId === "__all__"
-              ? "bg-fog font-medium text-ink"
+              ? "bg-olive-pale font-medium text-olive"
               : "text-ink hover:bg-fog"
           )}
         >
@@ -59,7 +59,7 @@ export default function DesktopSidebar({
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-body transition-colors text-right cursor-pointer",
                   isSelected
-                    ? "bg-fog font-medium text-ink"
+                    ? "bg-olive-pale font-medium text-olive"
                     : "text-ink hover:bg-fog"
                 )}
               >
