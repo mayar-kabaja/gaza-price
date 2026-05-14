@@ -191,13 +191,25 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
   const knownIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDoneRef = useRef(false);
 
+  // Track in-flight optimistic updates to prevent SSE/polling from reverting them
+  const inflightRef = useRef<Map<string, { status: string; ts: number }>>(new Map());
+
   const { data: orders = [], isLoading } = useQuery<Order[]>({
     queryKey,
     queryFn: async () => {
       const res = await apiFetch(`/api/places/dashboard/orders?token=${token}`);
       if (!res.ok) return [];
       const data = await res.json();
-      return data.data || [];
+      const fetched: Order[] = data.data || [];
+      // Preserve in-flight optimistic statuses so polling doesn't revert them
+      if (inflightRef.current.size === 0) return fetched;
+      return fetched.map((o) => {
+        const inflight = inflightRef.current.get(o.id);
+        if (inflight && o.status !== inflight.status) {
+          return { ...o, status: inflight.status };
+        }
+        return o;
+      });
     },
     refetchInterval: 10000,
     enabled: ordersEnabled,
@@ -246,6 +258,9 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
       try { new Audio("/sounds/order-notify.wav").play().catch(() => {}); } catch {}
     } else {
       const order = lastEvent.order as Order;
+      // Skip if we have an in-flight optimistic update for this order
+      const inflight = inflightRef.current.get(order.id);
+      if (inflight) return;
       queryClient.setQueryData<Order[]>(queryKey, (old = []) =>
         old.map((o) => (o.id === order.id ? order : o)),
       );
@@ -261,12 +276,19 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
 
   const updateMutation = useMutation({
     mutationFn: async ({ orderId, status, reason }: { orderId: string; status: string; reason?: string }) => {
-      await apiFetch(`/api/places/dashboard/orders/${orderId}/status?token=${token}`, {
+      const res = await apiFetch(`/api/places/dashboard/orders/${orderId}/status?token=${token}`, {
         method: "PATCH",
         body: JSON.stringify({ status, reject_reason: reason }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "فشل تحديث الحالة");
+      }
     },
     onMutate: async ({ orderId, status, reason }) => {
+      // Cancel any pending refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey });
+
       // Guard: check valid transition before optimistic update
       const prev = queryClient.getQueryData<Order[]>(queryKey);
       const currentOrder = prev?.find((o) => o.id === orderId);
@@ -276,6 +298,9 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
           throw new Error(`لا يمكن تغيير حالة الطلب من "${currentOrder.status}" إلى "${status}"`);
         }
       }
+      // Mark this order as in-flight so SSE/polling won't revert it
+      inflightRef.current.set(orderId, { status, ts: Date.now() });
+
       // Optimistic: update status locally
       queryClient.setQueryData<Order[]>(queryKey, (old = []) =>
         old.map((o) => o.id === orderId ? { ...o, status, reject_reason: reason || o.reject_reason } : o)
@@ -285,10 +310,16 @@ export function DashboardOrders({ token, ordersEnabled, onToggleOrders, lastEven
       return { prev };
     },
     onError: (_err, _vars, ctx) => {
+      inflightRef.current.delete(_vars.orderId);
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
     },
+    onSuccess: (_data, vars) => {
+      // Keep the inflight guard for a short window to prevent stale SSE/polling overwrites
+      setTimeout(() => inflightRef.current.delete(vars.orderId), 3000);
+    },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      // Delay refetch slightly to let the server commit
+      setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1000);
     },
   });
 
