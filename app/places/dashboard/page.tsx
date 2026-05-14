@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAreas } from "@/lib/queries/hooks";
 import { apiFetch } from "@/lib/api/fetch";
@@ -511,9 +511,28 @@ export default function OwnerDashboardPageWrapper() {
   );
 }
 
+const DASHBOARD_TOKEN_KEY = "gz_dashboard_token";
+
 function OwnerDashboardPage() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const router = useRouter();
+  const urlToken = searchParams.get("token");
+
+  // Persist token: save from URL to localStorage, then redirect to clean URL
+  const [token, setToken] = useState<string | null>(() => {
+    if (urlToken) return urlToken;
+    if (typeof window !== "undefined") return localStorage.getItem(DASHBOARD_TOKEN_KEY);
+    return null;
+  });
+
+  useEffect(() => {
+    if (urlToken) {
+      localStorage.setItem(DASHBOARD_TOKEN_KEY, urlToken);
+      setToken(urlToken);
+      router.replace("/places/dashboard");
+    }
+  }, [urlToken, router]);
+
   const { data: areasData } = useAreas();
   const areas = areasData?.areas ?? [];
 
@@ -533,6 +552,14 @@ function OwnerDashboardPage() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [lastOrderEvent, setLastOrderEvent] = useState<{ type: "order_created" | "order_updated"; order: any } | null>(null);
   const queryClient = useQueryClient();
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem(DASHBOARD_TOKEN_KEY);
+    setToken(null);
+    setPlace(null);
+    setLoading(false);
+    setError("رمز المالك مطلوب");
+  }, []);
 
   const handleOrderEvent = useCallback((type: "order_created" | "order_updated", order: any) => {
     setLastOrderEvent({ type, order });
@@ -853,7 +880,13 @@ function OwnerDashboardPage() {
     try {
       const res = await apiFetch(`/api/places/dashboard?${qs}&_t=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok || !data.success) { setError(data?.message ?? "رمز المالك غير صحيح"); setLoading(false); return; }
+      if (!res.ok || !data.success) {
+        // Clear invalid token from storage
+        localStorage.removeItem(DASHBOARD_TOKEN_KEY);
+        setError(data?.message ?? "رمز المالك غير صحيح");
+        setLoading(false);
+        return;
+      }
       setPlace(data.data);
     } catch { setError("تعذر الاتصال بالخادم"); } finally { setLoading(false); }
   }, [token, qs]);
@@ -2092,6 +2125,15 @@ function OwnerDashboardPage() {
               </div>
             </div>
 
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/30 text-red-400 text-[13px] font-medium hover:bg-red-500/10 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              تسجيل الخروج
+            </button>
+
           </div>
         )}
 
@@ -2192,6 +2234,15 @@ function OwnerDashboardPage() {
               <ActionItem icon={<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>} iconBg="bg-[var(--d-blue-bg)]" iconColor="stroke-[var(--d-blue-text)]" title={`بروفايل ${placeLabel(place.type, place.section)}`} sub="الاسم، الصورة، المنطقة، التواصل" onClick={openEdit} last />
             </div>
           </div>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/20 text-red-400 text-[12px] font-medium hover:bg-red-500/10 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            تسجيل الخروج
+          </button>
 
         </div>
 
