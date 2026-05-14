@@ -56,25 +56,23 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
         </div>
       )}
 
-      {/* Main row */}
-      <div className={cn("flex justify-between items-start", (price.is_lowest || isDemo) && "mt-3")}>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-sm text-ink">
-            {storeName}
-          </div>
-          <div className="text-xs text-mist mt-0.5">
-            {price.area?.name_ar}
-            {price.has_receipt && (
-              <span className="mr-2 text-olive">📷</span>
-            )}
-          </div>
+      {/* Product name + price row */}
+      <div className={cn("flex justify-between items-center", (price.is_lowest || isDemo) && "mt-3")}>
+        <div className="font-display font-bold text-sm text-ink truncate">
+          {price.product?.name_ar}
         </div>
-        <div className="text-right flex-shrink-0 mr-3">
+        <div className="flex items-baseline gap-1 flex-shrink-0 mr-3">
           <div className="price-number font-display font-extrabold text-xl leading-none text-olive">
             {price.price.toFixed(2)}
           </div>
-          <div className="text-[11px] text-mist text-left direction-ltr">₪ / {price.product?.unit ?? "كغ"}</div>
+          <div className="text-[11px] text-mist">₪ / {price.product?.unit ?? "كغ"}</div>
         </div>
+      </div>
+
+      {/* Store info */}
+      <div className="mt-1">
+        <div className="font-display font-medium text-xs text-ink">{storeName}</div>
+        <div className="text-[11px] text-mist">{price.area?.name_ar}</div>
       </div>
 
       {/* Store details toggle */}
@@ -140,44 +138,23 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
         </div>
       )}
 
-      {/* Spacer to push stats + actions to bottom */}
+      {/* Spacer to push footer to bottom */}
       <div className="flex-1" />
 
-      {/* Stats row */}
-      <div className={cn("flex items-center justify-between", hasDetails ? "mt-1.5" : "mt-2")}>
+      {/* Footer row */}
+      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border/50">
         <div className="text-[11px] text-mist">
           {formatRelativeTime(price.reported_at)}
         </div>
-        <div className="flex items-center gap-1.5">
-          {isRefetching ? (
-            <LoaderDots size="sm" className="inline-flex" />
+        <div className="flex items-center gap-2">
+          {price.is_mine ? (
+            <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
+              سعرك
+            </span>
           ) : (
-            <>
-              <TrustDots confirmations={confirmCount} />
-              <span className="text-[11px] text-mist">
-                {toArabicNumerals(confirmCount)} تأكيد
-              </span>
-              {flagCount > 0 && (
-                <span className="text-[11px] text-sand/80">
-                  · {toArabicNumerals(flagCount)} إبلاغ
-                </span>
-              )}
-            </>
+            <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
           )}
         </div>
-      </div>
-
-      {/* Actions row */}
-      <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-border/50">
-        {price.is_mine ? (
-          <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
-            سعرك
-          </span>
-        ) : (
-          <div className="flex items-center gap-2 mr-auto">
-            <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
-          </div>
-        )}
       </div>
     </div>
   );

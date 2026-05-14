@@ -23,6 +23,7 @@ import { normalizeDigits } from "@/lib/normalize-digits";
 import { useConnectionQuality } from "@/hooks/useConnectionQuality";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useGlobalSidebar, useGlobalHero, useGlobalContext } from "@/components/layout/GlobalDesktopShell";
+import { CategoryIcon } from "@/lib/category-icons";
 
 const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar"), { ssr: false });
 
@@ -602,7 +603,7 @@ export function HomeData() {
                                 السابق
                               </button>
                               <span className="text-[12px] text-mist">
-                                {toArabicNumerals(desktopPage + 1)} / {toArabicNumerals(totalPages)}
+                                <span className="text-olive font-bold">{toArabicNumerals(desktopPage + 1)}</span> / {toArabicNumerals(totalPages)}
                               </span>
                               <button
                                 type="button"
@@ -649,7 +650,7 @@ export function HomeData() {
                               السابق
                             </button>
                             <span className="text-[12px] text-mist">
-                              {toArabicNumerals(desktopPage + 1)} / {toArabicNumerals(totalPages)}
+                              <span className="text-olive font-bold">{toArabicNumerals(desktopPage + 1)}</span> / {toArabicNumerals(totalPages)}
                             </span>
                             <button
                               type="button"
@@ -687,11 +688,13 @@ export function HomeData() {
                   : "bg-surface border-border text-slate hover:border-olive/50"
               }`}
             >
-              🛒 الكل
+              <span className="inline-flex items-center gap-1.5">
+                <CategoryIcon name="__all__" size={14} />
+                الكل
+              </span>
             </button>
             {hasCategories ? (
               sortedCategories.map((c: Category) => {
-                const label = c.icon ? `${c.icon} ${c.name_ar}` : c.name_ar;
                 const isSelected = !isAllTab && effectiveCategoryId === c.id;
                 return (
                   <button
@@ -705,7 +708,10 @@ export function HomeData() {
                         : "bg-surface border-border text-slate hover:border-olive/50"
                     }`}
                   >
-                    {label}
+                    <span className="inline-flex items-center gap-1.5">
+                      <CategoryIcon name={c.name_ar} size={14} />
+                      {c.name_ar}
+                    </span>
                   </button>
                 );
               })

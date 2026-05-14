@@ -20,9 +20,7 @@ export function ReportCard({ report }: ReportCardProps) {
   const storeName = report.store?.name_ar ?? report.store_name_raw ?? "متجر غير محدد";
   const product = report.product;
   const categoryIcon = product?.category?.icon ?? "📦";
-  const productLabel = product
-    ? `${product.name_ar} · ${toArabicNumerals(product.unit_size)} ${product.unit}`
-    : "—";
+  const productLabel = product?.name_ar ?? "—";
   const stale = isStale(report.reported_at);
 
   const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(report.id, {
@@ -53,34 +51,26 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       )}
 
-      {/* Product name row */}
-      <Link
-        href={report.product_id ? `/product/${report.product_id}` : "#"}
-        className={cn("flex items-center gap-1 mb-0.5 focus:outline-none", isDemo && "mt-2")}
-      >
-        <span className="text-sm leading-none">{categoryIcon}</span>
-        <span className="font-display font-bold text-xs text-ink hover:text-olive transition-colors">{productLabel}</span>
-      </Link>
-
-      {/* Main row: store + price */}
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-xs text-ink">
-            {storeName}
-          </div>
-          <div className="text-[11px] text-mist">
-            {report.area?.name_ar}
-            {report.has_receipt && (
-              <span className="mr-2 text-olive">📷</span>
-            )}
-          </div>
-        </div>
-        <div className="text-right flex-shrink-0 mr-3">
+      {/* Product name + price row */}
+      <div className={cn("flex justify-between items-center", isDemo && "mt-2")}>
+        <Link
+          href={report.product_id ? `/product/${report.product_id}` : "#"}
+          className="font-display font-bold text-sm text-ink hover:text-olive transition-colors truncate focus:outline-none"
+        >
+          {productLabel}
+        </Link>
+        <div className="flex items-baseline gap-1 flex-shrink-0 mr-3">
           <div className="price-number font-display font-extrabold text-base leading-none text-olive">
             {report.price.toFixed(2)}
           </div>
-          <div className="text-[10px] text-mist text-left direction-ltr">₪ / {product?.unit ?? "كغ"}</div>
+          <div className="text-[11px] text-mist">₪ / {product?.unit ?? "كغ"}</div>
         </div>
+      </div>
+
+      {/* Store info */}
+      <div className="mt-1">
+        <div className="font-display font-medium text-xs text-ink">{storeName}</div>
+        <div className="text-[11px] text-mist">{report.area?.name_ar}</div>
       </div>
 
       {/* Store details toggle */}
@@ -146,40 +136,23 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       )}
 
-      {/* Spacer to push stats + actions to bottom */}
+      {/* Spacer to push footer to bottom */}
       <div className="flex-1" />
 
-      {/* Stats row */}
-      <div className={cn("flex items-center justify-between", hasDetails ? "mt-1" : "mt-1.5")}>
+      {/* Footer row */}
+      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border/50">
         <div className="text-[10px] text-mist">
           {formatRelativeTime(report.reported_at)}
         </div>
-        <div className="flex items-center gap-1.5">
-          <TrustDots confirmations={confirmCount} />
-          <span className="text-[10px] text-mist">
-            {toArabicNumerals(confirmCount)} تأكيد
-          </span>
-          {flagCount > 0 && (
-            <span className="text-[10px] text-sand/80">
-              · {toArabicNumerals(flagCount)} إبلاغ
+        <div className="flex items-center gap-2">
+          {report.is_mine ? (
+            <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
+              سعرك
             </span>
+          ) : (
+            <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
           )}
         </div>
-      </div>
-
-      {/* Actions row */}
-      <div className="flex items-center gap-1.5 mt-1 pt-1 border-t border-border/50">
-        {report.is_mine ? (
-          <span className="px-3 py-1 rounded-lg text-[11px] font-semibold font-body bg-olive/15 text-olive border border-olive/30">
-            سعرك
-          </span>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mr-auto">
-              <VoteButtons myVote={myVote} loading={loading} error={error} setError={setError} vote={vote} />
-            </div>
-          </>
-        )}
       </div>
     </div>
   );

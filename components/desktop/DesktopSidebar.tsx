@@ -3,6 +3,7 @@
 import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { useSectionsWithCategories } from "@/lib/queries/hooks";
+import { CategoryIcon } from "@/lib/category-icons";
 
 interface DesktopSidebarProps {
   selectedAreaId: string | null;
@@ -20,8 +21,6 @@ export default function DesktopSidebar({
   onSubmitClick,
 }: DesktopSidebarProps) {
   const { data: sections = [], isLoading: sectionsLoading } = useSectionsWithCategories();
-
-  const DOT_COLORS = ["#556070", "#BA7517", "#639922", "#378ADD", "#D4537E", "#7F77DD", "#993C1D", "#0F8B8D"];
 
   return (
     <div className="flex flex-col gap-px">
@@ -44,12 +43,12 @@ export default function DesktopSidebar({
               : "text-ink hover:bg-fog"
           )}
         >
+          <CategoryIcon name="__all__" size={16} />
           <span className="flex-1 font-medium">الكل</span>
         </button>
 
         {sections.flatMap((section, sIdx) =>
           (section.categories ?? []).map((cat, cIdx) => {
-            const dotColor = DOT_COLORS[(sIdx * 3 + cIdx) % DOT_COLORS.length];
             const isSelected = selectedCategoryId === cat.id;
             return (
               <button
@@ -63,6 +62,7 @@ export default function DesktopSidebar({
                     : "text-ink hover:bg-fog"
                 )}
               >
+                <CategoryIcon name={cat.name_ar} size={16} />
                 <span className="flex-1">
                   {cat.name_ar}
                 </span>
