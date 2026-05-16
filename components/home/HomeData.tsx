@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -28,6 +28,15 @@ import { CategoryIcon } from "@/lib/category-icons";
 const DesktopSidebar = dynamic(() => import("@/components/desktop/DesktopSidebar"), { ssr: false });
 
 const ALL_CATEGORY_ID = "__all__";
+
+function useClock() {
+  const [time, setTime] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return time.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit", hour12: true });
+}
 
 /** SVG icon lookup by category + product keywords */
 type CatIcon = { path: React.ReactNode; color: string; bg: string };
@@ -290,6 +299,7 @@ export function HomeData() {
   const isDesktop = useIsDesktop();
   const { openSubmitModal } = useGlobalContext();
   const { data: globalStats } = usePublicStats();
+  const clockTime = useClock();
 
   // Desktop: sidebar area is browse-only (doesn't save to profile)
   const [browseAreaId, setBrowseAreaId] = useState<string | null>(areaFromUrl);
@@ -359,6 +369,10 @@ export function HomeData() {
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
                 {area?.name_ar ?? "كل المناطق"} · {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
+                <span className="inline-flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {clockTime}
+                </span>
               </div>
             </div>
             <div className="flex items-center bg-white/[0.04] border border-white/[0.08] rounded-[14px] p-1 flex-shrink-0">

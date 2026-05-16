@@ -4,6 +4,28 @@ import type { Area } from "@/types/app";
 import { cn } from "@/lib/utils";
 import { useSectionsWithCategories } from "@/lib/queries/hooks";
 import { CategoryIcon } from "@/lib/category-icons";
+import { toArabicNumerals } from "@/lib/arabic";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api/fetch";
+
+function useCategoryCounts() {
+  return useQuery({
+    queryKey: ["category-price-counts"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/stats/categories", { credentials: "include" });
+      const data: { category_id: string; count: number }[] = await res.json();
+      const map: Record<string, number> = {};
+      let total = 0;
+      for (const row of data) {
+        map[row.category_id] = row.count;
+        total += row.count;
+      }
+      map["__all__"] = total;
+      return map;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 interface DesktopSidebarProps {
   selectedAreaId: string | null;
@@ -21,6 +43,7 @@ export default function DesktopSidebar({
   onSubmitClick,
 }: DesktopSidebarProps) {
   const { data: sections = [], isLoading: sectionsLoading } = useSectionsWithCategories();
+  const { data: counts } = useCategoryCounts();
 
   return (
     <div className="flex flex-col gap-px">
@@ -45,6 +68,9 @@ export default function DesktopSidebar({
         >
           <CategoryIcon name="__all__" size={16} />
           <span className="flex-1 font-medium">الكل</span>
+          {counts?.["__all__"] != null && (
+            <span className="text-[11px] text-mist tabular-nums">{toArabicNumerals(counts["__all__"])}</span>
+          )}
         </button>
 
         {sections.flatMap((section, sIdx) =>
@@ -66,6 +92,9 @@ export default function DesktopSidebar({
                 <span className="flex-1">
                   {cat.name_ar}
                 </span>
+                {counts?.[cat.id] != null && (
+                  <span className="text-[11px] text-mist tabular-nums">{toArabicNumerals(counts[cat.id])}</span>
+                )}
               </button>
             );
           })
