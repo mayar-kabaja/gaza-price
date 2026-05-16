@@ -138,6 +138,7 @@ export function PhoneAuthPopup({
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const savedOtpCode = useRef<string>("");
 
   // Reset state when popup opens
   useEffect(() => {
@@ -372,6 +373,7 @@ export function PhoneAuthPopup({
 
   function handleOtpComplete(code: string) {
     if (authMode === "forgot") {
+      savedOtpCode.current = code;
       setStep("password");
       setPassword("");
       return;
@@ -473,7 +475,7 @@ export function PhoneAuthPopup({
         const res = await fetch("/api/auth/phone/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: fullPhone, code: otp.join(""), password }),
+          body: JSON.stringify({ phone: fullPhone, code: savedOtpCode.current, password }),
         });
         const data = await res.json();
         if (!res.ok) {
