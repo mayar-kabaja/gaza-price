@@ -313,12 +313,12 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
                     <Link
                       key={href}
                       href={href}
-                      className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-colors w-full ${active ? "bg-fog" : "hover:bg-fog"}`}
+                      className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-colors w-full ${active ? "bg-olive-pale" : "hover:bg-fog"}`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? style.activeBg : style.bg}`}>
                         <span className={`${style.text} [&_svg]:w-[18px] [&_svg]:h-[18px]`}>{icon}</span>
                       </div>
-                      <span className={`text-[11px] leading-tight ${active ? "font-bold text-ink" : "text-mist"}`}>{label}</span>
+                      <span className={`text-[11px] leading-tight ${active ? "font-bold text-olive" : "text-mist"}`}>{label}</span>
                     </Link>
                   );
                 })}
