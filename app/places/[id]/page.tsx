@@ -824,7 +824,7 @@ export default function PlaceDetailPage() {
           )}
 
           {/* Desktop cart */}
-          {ordersEnabled && (
+          {ordersEnabled && contributor?.phone_verified && (
             <>
               <CartBar itemCount={cartCount} total={cartTotal} onClick={() => setShowCart(true)} />
               {showCart && (
@@ -967,7 +967,7 @@ export default function PlaceDetailPage() {
       </div>
 
       {/* Cart bar + order sheet */}
-      {ordersEnabled && (
+      {ordersEnabled && contributor?.phone_verified && (
         <>
           <CartBar itemCount={cartCount} total={cartTotal} onClick={() => setShowCart(true)} />
           {showCart && (
