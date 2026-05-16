@@ -138,7 +138,6 @@ export function PhoneAuthPopup({
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const savedOtpCode = useRef<string>("");
 
   // Reset state when popup opens
   useEffect(() => {
@@ -372,12 +371,6 @@ export function PhoneAuthPopup({
   }
 
   function handleOtpComplete(code: string) {
-    if (authMode === "forgot") {
-      savedOtpCode.current = code;
-      setStep("password");
-      setPassword("");
-      return;
-    }
     handleVerifyOtp(code);
   }
 
@@ -410,7 +403,7 @@ export function PhoneAuthPopup({
       setVerifiedToken(token);
       setIsNewUser(!!data.is_new_user);
 
-      if (data.is_new_user || !data.has_password) {
+      if (authMode === "forgot" || data.is_new_user || !data.has_password) {
         setStep("password");
         setVerifying(false);
         return;
@@ -471,26 +464,6 @@ export function PhoneAuthPopup({
     setError("");
 
     try {
-      if (authMode === "forgot") {
-        const res = await fetch("/api/auth/phone/reset-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: fullPhone, code: savedOtpCode.current, password }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.message || "فشل تعيين كلمة المرور");
-          setSettingPassword(false);
-          return;
-        }
-        const token = data.access_token;
-        setStoredToken(token);
-        setVerifiedToken(token);
-        setStep("success");
-        setTimeout(() => onVerified(token), 2000);
-        return;
-      }
-
       const res = await fetch("/api/auth/phone/set-password", {
         method: "POST",
         headers: {
