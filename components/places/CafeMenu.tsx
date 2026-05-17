@@ -326,13 +326,6 @@ export function CafeMenu({
                             )}
                             {/* Price + actions */}
                             <span className="flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
-                              {item.id && (
-                                <button onClick={() => openFlag(item)} className="opacity-0 group-hover:opacity-60 transition-opacity text-olive/40 hover:text-red-400">
-                                  <svg viewBox="0 0 24 24" className="w-3 h-3 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round">
-                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
-                                  </svg>
-                                </button>
-                              )}
                               {item.available && Number(item.price) > 0 ? (
                                 <span className="font-mono text-[12px] sm:text-[13px] tracking-[0.1em] text-olive font-medium">
                                   {item.price} <span className="text-[9px] text-olive/50">&#x20AA;</span>

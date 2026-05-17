@@ -518,8 +518,8 @@ export default function MarketPage() {
                 return (
                   <div key={gov} className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="flex-1 h-px bg-border" />
                       <span className="text-[11px] font-bold text-mist uppercase tracking-widest">{GOV_LABELS[gov]}</span>
+                      <div className="flex-1 h-px bg-border" />
                     </div>
                     {govAreas.map((a) => (
                       <button
@@ -535,7 +535,6 @@ export default function MarketPage() {
                         </div>
                         <div className="flex-1">
                           <div className={cn("font-display font-bold text-sm", selectedArea?.id === a.id ? "text-olive-deep" : "text-ink")}>{a.name_ar}</div>
-                          <div className="text-xs text-mist mt-0.5">{GOV_LABELS[a.governorate]}</div>
                         </div>
                       </button>
                     ))}

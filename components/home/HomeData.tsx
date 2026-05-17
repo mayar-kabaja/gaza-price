@@ -524,7 +524,7 @@ export function HomeData() {
                   <div className="text-[13px] font-display font-bold text-ink mb-0.5">{toArabicNumerals(homePlaces.length)} محلات قريبة منك</div>
                   <div className="text-[11.5px] text-mist truncate">
                     {homePlaces.slice(0, 4).map((p, i) => (
-                      <span key={p.id}>{i > 0 && <span className="mx-1.5 text-border">·</span>}{p.name}</span>
+                      <span key={p.id}>{i > 0 && <span className="mx-1 text-mist">-</span>}{p.name}</span>
                     ))}
                   </div>
                 </div>

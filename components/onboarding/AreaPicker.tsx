@@ -103,9 +103,6 @@ export function AreaPicker({ areas, onSelect, loading, loadError }: AreaPickerPr
                     >
                       {area.name_ar}
                     </div>
-                    <div className="text-xs text-mist mt-0.5">
-                      {GOV_LABELS[area.governorate ?? ""] ?? area.governorate ?? ""}
-                    </div>
                   </div>
 
                   {/* Checkmark */}

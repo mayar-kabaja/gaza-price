@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { VoteButtons } from "@/components/actions/VoteButtons";
@@ -23,8 +22,6 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   const isDemo = !!price.is_demo;
   const store_address = price.store_address;
   const store_phone = price.store_phone ? normalizeDigits(price.store_phone) : price.store_phone;
-  const hasDetails = !!(store_address || store_phone);
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(price.id, {
     initialVote: price.my_vote,
@@ -72,71 +69,17 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
       {/* Store info */}
       <div className="mt-1">
         <div className="font-display font-medium text-xs text-ink">{storeName}</div>
-        <div className="text-[11px] text-mist">{price.area?.name_ar}</div>
+        {store_address ? (
+          <div className="text-[11px] text-mist truncate">{store_address}</div>
+        ) : (
+          <div className="text-[11px] text-mist">{price.area?.name_ar}</div>
+        )}
+        {store_phone && (
+          <a href={`tel:${store_phone}`} className="text-[11px] text-olive hover:underline block" dir="ltr">
+            {store_phone}
+          </a>
+        )}
       </div>
-
-      {/* Store details toggle */}
-      {hasDetails && (
-        <div className="mt-2.5">
-          <button
-            type="button"
-            onClick={() => setDetailsOpen((v) => !v)}
-            className="inline-flex items-center gap-1 text-[10px] text-olive/60 hover:text-olive transition-colors"
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            <span>{detailsOpen ? "إخفاء التفاصيل" : "عرض العنوان والهاتف"}</span>
-            <svg
-              width="9"
-              height="9"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={cn("transition-transform duration-200", detailsOpen && "rotate-180")}
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {/* Expandable panel */}
-          <div
-            className={cn(
-              "overflow-hidden transition-all duration-200 ease-in-out",
-              detailsOpen ? "max-h-40 opacity-100 mt-1.5" : "max-h-0 opacity-0"
-            )}
-          >
-            <div
-              className="px-3 py-2.5 space-y-2 text-[12px] border"
-              style={{ background: "var(--details-bg)", borderColor: "var(--details-border)", borderRadius: 10 }}
-            >
-              {store_address && (
-                <div className="flex items-start gap-2 text-ink">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5 text-olive/70">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  <span className="leading-relaxed">{store_address}</span>
-                </div>
-              )}
-              {store_phone && (
-                <div className="flex items-center gap-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-olive/70">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <a href={`tel:${store_phone}`} className="text-olive hover:underline" dir="ltr">
-                    {store_phone}
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Spacer to push footer to bottom */}
       <div className="flex-1" />
