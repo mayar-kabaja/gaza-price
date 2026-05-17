@@ -356,7 +356,7 @@ export default function MarketPage() {
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
               </svg>
-              <span className="font-display font-bold text-[13px] text-ink">إعلاناتي</span>
+              <span className="font-display font-bold text-[13px] text-ink">مبيعاتي</span>
             </Link>
             <Link href="/market/saved" onClick={() => setMenuOpen(false)}
               className="flex items-center gap-3 px-4 py-3 hover:bg-fog transition-colors border-b border-border/50">

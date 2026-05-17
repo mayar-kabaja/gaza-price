@@ -419,7 +419,7 @@ export function HomeData() {
               className="px-5 py-3 bg-white text-olive-deep rounded-xl text-[14px] font-display font-bold hover:-translate-y-0.5 hover:shadow-lg transition-all flex-shrink-0 flex items-center gap-2"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-sand"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-              أبلغ عن سعر
+              أضف سعر
             </button>
           </div>
           <ExchangeRatesBanner />

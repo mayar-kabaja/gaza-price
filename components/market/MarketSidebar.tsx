@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/market", label: "السوق", icon: "shop" },
-  { href: "/market/my", label: "إعلاناتي", icon: "grid" },
+  { href: "/market/my", label: "مبيعاتي", icon: "grid" },
   { href: "/market/saved", label: "المحفوظات", icon: "bookmark" },
 ] as const;
 
