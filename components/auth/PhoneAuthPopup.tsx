@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { setStoredToken } from "@/lib/auth/token";
 import { getDeviceId } from "@/lib/fingerprint";
+import { useSessionContext } from "@/contexts/SessionContext";
 
 // ── SVG Icon Components ──
 function IconWave({ className = "w-7 h-7" }: { className?: string }) {
@@ -133,7 +134,11 @@ export function PhoneAuthPopup({
   const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState<"register" | "login" | "forgot">("login");
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isReturningUser, setIsReturningUser] = useState(false);
+  const [returningHandle, setReturningHandle] = useState<string | null>(null);
   const [settingPassword, setSettingPassword] = useState(false);
+
+  const session = useSessionContext();
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const phoneInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +167,8 @@ export function PhoneAuthPopup({
       setShowPassword(false);
       setAuthMode("login");
       setIsNewUser(false);
+      setIsReturningUser(false);
+      setReturningHandle(null);
       setSettingPassword(false);
       if (retryTimerRef.current) clearInterval(retryTimerRef.current);
       setTimeout(() => phoneInputRef.current?.focus(), 300);
@@ -271,8 +278,13 @@ export function PhoneAuthPopup({
       const token = data.access_token;
       setStoredToken(token);
       setVerifiedToken(token);
+      setIsReturningUser(true);
+      setReturningHandle(data.user?.display_handle ?? null);
       setStep("success");
-      setTimeout(() => onVerified(token), 2000);
+      setTimeout(async () => {
+        await session.refreshContributor();
+        onVerified(token);
+      }, 2000);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
     } finally {
@@ -315,6 +327,21 @@ export function PhoneAuthPopup({
         setTimeout(() => setError((prev) => prev === (data.message || "فشل إرسال الرمز") ? "" : prev), 5000);
         setSending(false);
         return;
+      }
+
+      // Already-verified phone: password reset flow, not new registration
+      if (data.account_status === "existing_verified") {
+        setIsReturningUser(true);
+        setReturningHandle(data.display_handle ?? null);
+        if (authMode === "register") {
+          setAuthMode("forgot");
+        }
+        if (data.has_password && authMode === "register") {
+          setError("هذا الرقم مسجّل مسبقاً — أدخل كلمة المرور الجديدة بعد التحقق");
+        }
+      } else {
+        setIsReturningUser(false);
+        setReturningHandle(null);
       }
 
       setStep("otp");
@@ -402,15 +429,25 @@ export function PhoneAuthPopup({
       setStoredToken(token);
       setVerifiedToken(token);
       setIsNewUser(!!data.is_new_user);
+      setIsReturningUser(!!data.is_returning_user || data.account_status === "existing_verified");
+      setReturningHandle(data.user?.display_handle ?? null);
 
-      if (authMode === "forgot" || data.is_new_user || !data.has_password) {
+      const needsPassword =
+        authMode === "forgot" ||
+        !data.has_password ||
+        (data.is_returning_user && authMode === "register");
+
+      if (needsPassword) {
         setStep("password");
         setVerifying(false);
         return;
       }
 
       setStep("success");
-      setTimeout(() => onVerified(token), 2000);
+      setTimeout(async () => {
+        await session.refreshContributor();
+        onVerified(token);
+      }, 2000);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
       setVerifying(false);
@@ -445,7 +482,10 @@ export function PhoneAuthPopup({
       }
 
       setStep("success");
-      setTimeout(() => onVerified(verifiedToken), 2000);
+      setTimeout(async () => {
+        await session.refreshContributor();
+        onVerified(verifiedToken);
+      }, 2000);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
       setSavingName(false);
@@ -480,14 +520,17 @@ export function PhoneAuthPopup({
         return;
       }
 
-      if (isNewUser) {
+      if (isNewUser && !returningHandle) {
         setStep("name");
         setSettingPassword(false);
         return;
       }
 
       setStep("success");
-      setTimeout(() => onVerified(verifiedToken), 2000);
+      setTimeout(async () => {
+        await session.refreshContributor();
+        onVerified(verifiedToken);
+      }, 2000);
     } catch {
       setError("تعذر الاتصال — تحقق من الإنترنت");
       setSettingPassword(false);
@@ -495,11 +538,14 @@ export function PhoneAuthPopup({
   }
 
   function handleSkipPassword() {
-    if (isNewUser) {
+    if (isNewUser && !returningHandle) {
       setStep("name");
     } else {
       setStep("success");
-      setTimeout(() => onVerified(verifiedToken), 2000);
+      setTimeout(async () => {
+        await session.refreshContributor();
+        onVerified(verifiedToken);
+      }, 2000);
     }
   }
 
@@ -951,8 +997,10 @@ export function PhoneAuthPopup({
                 {authMode === "forgot" ? "كلمة مرور جديدة" : "اختر كلمة مرور"}
               </h2>
               <p className="text-[13px] text-mist text-center leading-relaxed mb-5">
-                {authMode === "forgot"
-                  ? "أدخل كلمة المرور الجديدة لحسابك"
+                {authMode === "forgot" || isReturningUser
+                  ? returningHandle
+                    ? `مرحباً ${returningHandle} — اختر كلمة مرور جديدة لحسابك`
+                    : "أدخل كلمة المرور الجديدة لحسابك المسجّل"
                   : "ستستخدمها للدخول في المرات القادمة بدون كود"}
               </p>
 
@@ -1091,14 +1139,26 @@ export function PhoneAuthPopup({
               </div>
 
               <h2 className="font-display font-extrabold text-[22px] text-ink mb-1.5">
-                {mode === "login" ? "تم تسجيل الدخول!" : "تم التحقق!"}
+                {isReturningUser
+                  ? returningHandle
+                    ? `أهلاً ${returningHandle}!`
+                    : "مرحباً بعودتك!"
+                  : mode === "login"
+                  ? "تم تسجيل الدخول!"
+                  : "تم التحقق!"}
               </h2>
               <p className="text-[13px] text-mist leading-relaxed mb-6">
-                {mode === "login"
+                {isReturningUser
+                  ? "تم استعادة حسابك — بياناتك وأسعارك كما هي"
+                  : mode === "login"
                   ? "مرحباً بك — حسابك جاهز الآن"
                   : "رقمك مسجّل — سعرك يُرسل الآن"}
                 <br />
-                <span className="text-[11px]">ستدخل في المرات القادمة بكلمة المرور فقط</span>
+                <span className="text-[11px]">
+                  {isReturningUser
+                    ? "استخدم رقمك وكلمة المرور في المرات القادمة"
+                    : "ستدخل في المرات القادمة بكلمة المرور فقط"}
+                </span>
               </p>
 
               {mode === "submit" && (
