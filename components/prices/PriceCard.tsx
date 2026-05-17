@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Price } from "@/types/app";
 import { TrustDots } from "@/components/trust/TrustDots";
 import { VoteButtons } from "@/components/actions/VoteButtons";
@@ -23,6 +24,7 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
   const store_address = price.store_address;
   const store_phone = price.store_phone ? normalizeDigits(price.store_phone) : price.store_phone;
 
+  const [open, setOpen] = useState(false);
   const { myVote, confirmCount, flagCount, loading, error, setError, vote } = useVote(price.id, {
     initialVote: price.my_vote,
     initialConfirmCount: price.confirmation_count,
@@ -69,15 +71,24 @@ export function PriceCard({ price, isRefetching = false }: PriceCardProps) {
       {/* Store info */}
       <div className="mt-1">
         <div className="font-display font-medium text-xs text-ink">{storeName}</div>
-        {store_address ? (
-          <div className="text-[11px] text-mist truncate">{store_address}</div>
-        ) : (
-          <div className="text-[11px] text-mist">{price.area?.name_ar}</div>
-        )}
-        {store_phone && (
-          <a href={`tel:${store_phone}`} className="text-[11px] text-olive hover:underline block" dir="ltr">
-            {store_phone}
-          </a>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="text-[11px] text-olive hover:underline mt-0.5"
+        >
+          {open ? "إخفاء العنوان والهاتف" : "عرض العنوان والهاتف"}
+        </button>
+        {open && (
+          <div className="mt-1 text-[11px]">
+            <div className="text-mist truncate">
+              {price.area?.name_ar}{store_address ? ` - ${store_address}` : ""}
+            </div>
+            {store_phone && (
+              <a href={`tel:${store_phone}`} className="text-olive hover:underline block text-right" dir="ltr">
+                {store_phone}
+              </a>
+            )}
+          </div>
         )}
       </div>
 

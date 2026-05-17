@@ -232,6 +232,29 @@ function DesktopReportCard({ report, isLast }: { report: ReportFeedItem; isLast?
             </>
           )}
         </div>
+        {hasDetails && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDetailsOpen(!detailsOpen); }}
+              className="text-[10px] text-olive hover:underline"
+            >
+              {detailsOpen ? "إخفاء العنوان والهاتف" : "عرض العنوان والهاتف"}
+            </button>
+            {detailsOpen && (
+              <div className="text-[10px] mt-0.5">
+                <div className="text-mist truncate">
+                  {areaName}{store_address ? ` - ${store_address}` : ""}
+                </div>
+                {store_phone && (
+                  <a href={`tel:${store_phone}`} className="text-olive hover:underline block text-right" dir="ltr" onClick={(e) => e.stopPropagation()}>
+                    {store_phone}
+                  </a>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Right — price + actions */}
