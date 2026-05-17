@@ -232,6 +232,29 @@ function DesktopReportCard({ report, isLast }: { report: ReportFeedItem; isLast?
             </>
           )}
         </div>
+        {hasDetails && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDetailsOpen(!detailsOpen); }}
+              className="text-[10px] text-olive hover:underline"
+            >
+              {detailsOpen ? "إخفاء العنوان والهاتف" : "عرض العنوان والهاتف"}
+            </button>
+            {detailsOpen && (
+              <div className="text-[10px] mt-0.5">
+                <div className="text-mist truncate">
+                  {areaName}{store_address ? ` - ${store_address}` : ""}
+                </div>
+                {store_phone && (
+                  <a href={`tel:${store_phone}`} className="text-olive hover:underline block text-right" dir="ltr" onClick={(e) => e.stopPropagation()}>
+                    {store_phone}
+                  </a>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Right — price + actions */}
@@ -524,7 +547,7 @@ export function HomeData() {
                   <div className="text-[13px] font-display font-bold text-ink mb-0.5">{toArabicNumerals(homePlaces.length)} محلات قريبة منك</div>
                   <div className="text-[11.5px] text-mist truncate">
                     {homePlaces.slice(0, 4).map((p, i) => (
-                      <span key={p.id}>{i > 0 && <span className="mx-1.5 text-border">·</span>}{p.name}</span>
+                      <span key={p.id}>{i > 0 && <span className="mx-1 text-mist">-</span>}{p.name}</span>
                     ))}
                   </div>
                 </div>
