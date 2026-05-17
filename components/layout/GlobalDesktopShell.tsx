@@ -62,6 +62,24 @@ function SidebarSlot() {
   return <>{content}</>;
 }
 
+function useSidebarHasContent() {
+  const { content } = useSyncExternalStore(_sidebarSubscribe, _getSidebarSnapshot, _getServerSnapshot);
+  return content != null;
+}
+
+function SidebarAside() {
+  const hasContent = useSidebarHasContent();
+  if (!hasContent) return null;
+  return (
+    <aside className="w-[280px] flex-shrink-0 flex flex-col border-l border-border/40 pt-5 pb-4 px-3 gap-4 bg-surface sticky top-0 self-start h-[calc(100vh-96px)] overflow-y-auto">
+      <p className="text-[15px] font-display font-bold text-ink pr-1">الأقسام</p>
+      <div>
+        <SidebarSlot />
+      </div>
+    </aside>
+  );
+}
+
 // ── Global hero store (full-width hero above sidebar row) ──
 let _heroSnapshot: { content: React.ReactNode } = { content: null };
 const _heroListeners = new Set<() => void>();
@@ -327,18 +345,7 @@ export function GlobalDesktopShell({ children }: { children: React.ReactNode }) 
             )}
 
             {/* Categories / filters sidebar */}
-            {isDesktop && (
-              <aside className="w-[280px] flex-shrink-0 flex flex-col border-l border-border/40 pt-5 pb-4 px-3 gap-4 bg-surface sticky top-0 self-start h-[calc(100vh-96px)] overflow-y-auto">
-                {/* Section title */}
-                <p className="text-[15px] font-display font-bold text-ink pr-1">الأقسام</p>
-
-                {/* Categories list */}
-                <div>
-                  <SidebarSlot />
-                </div>
-
-              </aside>
-            )}
+            {isDesktop && <SidebarAside />}
 
             {/* Main content */}
             <div className={isDesktop ? "flex-1 min-w-0 flex flex-col" : "contents"}>

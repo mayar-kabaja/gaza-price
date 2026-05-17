@@ -5,7 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useListing, useAreas } from "@/lib/queries/hooks";
+import { useListing, useListingsInfinite, useAreas } from "@/lib/queries/hooks";
+import { ListingCard } from "@/components/market/ListingCard";
+import { SliderRow } from "@/components/market/SliderRow";
 import { compressImage } from "@/lib/compress-image";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { LoaderDots } from "@/components/ui/LoaderDots";
@@ -15,7 +17,6 @@ import { PhoneAuthPopup } from "@/components/auth/PhoneAuthPopup";
 import { useSession } from "@/hooks/useSession";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useMarketSidebar } from "@/app/market/layout";
-import { MarketSidebar } from "@/components/market/MarketSidebar";
 
 const CONDITION_LABEL: Record<string, { label: string; cls: string }> = {
   new:    { label: "جديد",    cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
@@ -90,34 +91,14 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
   // Desktop
   const isDesktop = useIsDesktop();
 
-  // Inject listing context into the global sidebar slot
-  const cond_for_sidebar = listing ? (CONDITION_LABEL[listing.condition] ?? CONDITION_LABEL.used) : null;
-  useMarketSidebar(
-    isDesktop && listing ? (
-      <MarketSidebar>
-        <div className="space-y-3">
-          <div>
-            <div className="text-[10px] font-semibold text-mist uppercase tracking-widest mb-1.5">التصنيف</div>
-            <span className="text-[13px] font-body text-ink">{CATEGORY_LABEL[listing.category]}</span>
-          </div>
-          <div>
-            <div className="text-[10px] font-semibold text-mist uppercase tracking-widest mb-1.5">الحالة</div>
-            <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border", cond_for_sidebar!.cls)}>{cond_for_sidebar!.label}</span>
-          </div>
-          {listing.area && (
-            <div>
-              <div className="text-[10px] font-semibold text-mist uppercase tracking-widest mb-1.5">المنطقة</div>
-              <span className="text-[13px] font-body text-ink">{listing.area.name_ar}</span>
-            </div>
-          )}
-          <div>
-            <div className="text-[10px] font-semibold text-mist uppercase tracking-widest mb-1.5">تاريخ النشر</div>
-            <span className="text-xs text-mist">{timeAgo(listing.created_at)}</span>
-          </div>
-        </div>
-      </MarketSidebar>
-    ) : null
-  );
+  // Hide sidebar on listing detail page
+  useMarketSidebar(null);
+
+  // Similar listings
+  const { data: similarData } = useListingsInfinite({ category: listing?.category });
+  const similarListings = (similarData?.pages?.flatMap((p: any) => p.listings) ?? [])
+    .filter((l: any) => l.id !== id)
+    .slice(0, 8);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -340,6 +321,14 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       <div className="h-full overflow-y-auto bg-fog">
         <div className="px-6 py-5">
 
+          {/* Back arrow */}
+          <button onClick={() => router.push("/market")} className="flex items-center gap-1.5 text-sm text-mist hover:text-ink transition-colors mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="font-semibold">العودة للسوق</span>
+          </button>
+
           {/* Status banners */}
           {currentStatus === "pending" && (
             <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
@@ -361,7 +350,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex">
 
               {/* Image — right side */}
-              <div className="w-[42%] flex-shrink-0 relative bg-fog aspect-[3/4]">
+              <div className="w-[42%] flex-shrink-0 relative bg-fog aspect-[4/3]">
                 {sortedImages.length > 0 ? (
                   <Image
                     src={sortedImages[imgIndex].url}
@@ -545,6 +534,20 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           </div>
+
+          {/* Similar listings */}
+          {similarListings.length > 0 && (
+            <div className="mt-5">
+              <h2 className="font-display font-bold text-[15px] text-ink mb-3">إعلانات مشابهة</h2>
+              <SliderRow>
+                {similarListings.map((l: any) => (
+                  <div key={l.id} className="w-[200px] flex-shrink-0">
+                    <ListingCard listing={l} isSaved={false} onSaveToggle={() => {}} />
+                  </div>
+                ))}
+              </SliderRow>
+            </div>
+          )}
 
               {/* Edit bottom sheet */}
               {showEdit && (

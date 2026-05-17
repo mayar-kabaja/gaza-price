@@ -125,7 +125,7 @@ export function DesktopMarketModal({ open, onClose }: Props) {
             onClick={onClose}
             className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors text-white text-[12px] font-semibold px-3 py-1.5 rounded-full"
           >
-            إعلاناتي
+            مبيعاتي
           </Link>
 
           {/* Add listing link */}
